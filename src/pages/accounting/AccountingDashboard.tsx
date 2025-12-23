@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Modal from '../../components/Modal'
+import { FilesIcon, FileTextIcon, CheckCircleIcon, ClipboardListIcon } from '../../components/Icons'
 import './AccountingDashboard.css'
 
 interface DocumentItem {
@@ -113,7 +114,7 @@ export default function AccountingDashboard() {
             {/* Header */}
             <header className="dashboard-header">
                 <div className="header-left">
-                    <h1>📄 정산 관리</h1>
+                    <h1><FilesIcon size={24} /> 정산 관리</h1>
                     <p className="header-date">{new Date().toLocaleDateString('ko-KR', {
                         year: 'numeric',
                         month: 'long',
@@ -137,14 +138,14 @@ export default function AccountingDashboard() {
                         </div>
                     </div>
                     <div className="summary-card partial">
-                        <div className="summary-icon">📝</div>
+                        <div className="summary-icon"><FileTextIcon size={24} /></div>
                         <div className="summary-content">
                             <span className="summary-value">{documents.filter(d => d.status === 'PARTIAL').length}</span>
                             <span className="summary-label">부분 완료</span>
                         </div>
                     </div>
                     <div className="summary-card completed">
-                        <div className="summary-icon">✅</div>
+                        <div className="summary-icon"><CheckCircleIcon size={24} /></div>
                         <div className="summary-content">
                             <span className="summary-value">{completedDocs.length}</span>
                             <span className="summary-label">오늘 완료</span>
@@ -165,7 +166,7 @@ export default function AccountingDashboard() {
                     className={`tab-btn ${activeTab === 'completed' ? 'active' : ''}`}
                     onClick={() => setActiveTab('completed')}
                 >
-                    ✅ 완료 ({completedDocs.length})
+                    <CheckCircleIcon size={16} /> 완료 ({completedDocs.length})
                 </button>
             </div>
 
@@ -173,7 +174,7 @@ export default function AccountingDashboard() {
             <section className="documents-section">
                 {currentDocs.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon">📄</span>
+                        <span className="empty-icon"><FilesIcon size={48} /></span>
                         <p>해당 항목이 없습니다</p>
                     </div>
                 ) : (
@@ -195,11 +196,11 @@ export default function AccountingDashboard() {
                                     {/* 거래명세서 */}
                                     <div className={`upload-item ${doc.invoiceUploaded ? 'uploaded' : ''}`}>
                                         <div className="upload-info">
-                                            <span className="upload-icon">📋</span>
+                                            <span className="upload-icon"><ClipboardListIcon size={16} /></span>
                                             <span className="upload-name">거래명세서</span>
                                         </div>
                                         {doc.invoiceUploaded ? (
-                                            <span className="upload-status uploaded">✅ 업로드됨</span>
+                                            <span className="upload-status uploaded"><CheckCircleIcon size={14} /> 업로드됨</span>
                                         ) : (
                                             <button
                                                 className="btn btn-primary btn-sm"
@@ -217,7 +218,7 @@ export default function AccountingDashboard() {
                                             <span className="upload-name">등급확인서</span>
                                         </div>
                                         {doc.gradeCertUploaded ? (
-                                            <span className="upload-status uploaded">✅ 업로드됨</span>
+                                            <span className="upload-status uploaded"><CheckCircleIcon size={14} /> 업로드됨</span>
                                         ) : (
                                             <button
                                                 className="btn btn-primary btn-sm"
@@ -231,7 +232,7 @@ export default function AccountingDashboard() {
 
                                 {doc.status === 'COMPLETED' && (
                                     <div className="doc-footer completed">
-                                        ✅ 모든 서류가 업로드되었습니다.
+                                        <CheckCircleIcon size={18} /> 모든 서류가 업로드되었습니다.
                                     </div>
                                 )}
                             </div>

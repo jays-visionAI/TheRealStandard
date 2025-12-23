@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ClipboardListIcon, TruckDeliveryIcon, UserIcon, CheckCircleIcon, MapPinIcon } from '../../components/Icons'
 import './StepDispatch.css'
+import type { ReactNode } from 'react'
 
 // 배차 프로세스의 단계
-const DISPATCH_STEPS = [
-    { id: 1, label: '주문 확인', icon: '📋' },
-    { id: 2, label: '차량 선택', icon: '🚛' },
-    { id: 3, label: '기사 배정', icon: '👤' },
-    { id: 4, label: '배차 완료', icon: '✅' },
+const DISPATCH_STEPS: { id: number; label: string; icon: ReactNode }[] = [
+    { id: 1, label: '주문 확인', icon: <ClipboardListIcon size={20} /> },
+    { id: 2, label: '차량 선택', icon: <TruckDeliveryIcon size={20} /> },
+    { id: 3, label: '기사 배정', icon: <UserIcon size={20} /> },
+    { id: 4, label: '배차 완료', icon: <CheckCircleIcon size={20} /> },
 ]
 
 interface VehicleType {
@@ -89,7 +91,7 @@ export default function StepDispatch() {
 
                 <div className="header-main">
                     <div className="order-info">
-                        <h1>🚛 배차 입력</h1>
+                        <h1><TruckDeliveryIcon size={24} /> 배차 입력</h1>
                         <div className="order-meta">
                             <span className="customer-name">{order.customerName}</span>
                             <span className="order-id">{order.id}</span>
@@ -124,7 +126,7 @@ export default function StepDispatch() {
                 {/* Step 1: 주문 확인 */}
                 {currentStep === 1 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>📋 주문 내용 확인</h2>
+                        <h2><ClipboardListIcon size={20} /> 주문 내용 확인</h2>
                         <p className="section-desc">배송할 주문의 상세 내용을 확인합니다.</p>
 
                         <div className="info-cards">
@@ -136,7 +138,7 @@ export default function StepDispatch() {
                                 </div>
                             </div>
                             <div className="info-card">
-                                <span className="info-icon">📍</span>
+                                <span className="info-icon"><MapPinIcon size={16} /></span>
                                 <div className="info-content">
                                     <span className="info-label">배송지</span>
                                     <span className="info-value">{order.shipTo}</span>
@@ -163,7 +165,7 @@ export default function StepDispatch() {
                 {/* Step 2: 차량 선택 */}
                 {currentStep === 2 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>🚛 차량 선택</h2>
+                        <h2><TruckDeliveryIcon size={20} /> 차량 선택</h2>
                         <p className="section-desc">
                             총 <strong>{order.totalKg}kg</strong>을 운송할 차량을 선택하세요.
                             <span className="recommend-text">추천: {recommendedVehicle.name}</span>
@@ -182,7 +184,7 @@ export default function StepDispatch() {
                                         onClick={() => !isUnderCapacity && setSelectedVehicle(vehicle.id)}
                                     >
                                         {isRecommended && <span className="recommend-badge">추천</span>}
-                                        <div className="vehicle-icon">🚛</div>
+                                        <div className="vehicle-icon"><TruckDeliveryIcon size={32} /></div>
                                         <div className="vehicle-name">{vehicle.name}</div>
                                         <div className="vehicle-capacity">{vehicle.capacityKg.toLocaleString()} kg</div>
                                         <div className="vehicle-available">가용: {vehicle.available}대</div>
@@ -197,7 +199,7 @@ export default function StepDispatch() {
                 {/* Step 3: 기사 배정 */}
                 {currentStep === 3 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>👤 기사 배정</h2>
+                        <h2><UserIcon size={20} /> 기사 배정</h2>
                         <p className="section-desc">배송을 담당할 기사를 배정합니다.</p>
 
                         <div className="form-group mb-4">
@@ -248,7 +250,7 @@ export default function StepDispatch() {
                 {/* Step 4: 배차 완료 */}
                 {currentStep === 4 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>✅ 배차 정보 확인</h2>
+                        <h2><CheckCircleIcon size={20} /> 배차 정보 확인</h2>
                         <p className="section-desc">아래 내용으로 배차를 완료합니다.</p>
 
                         <div className="summary-card">
@@ -279,7 +281,7 @@ export default function StepDispatch() {
                         </div>
 
                         <button className="btn btn-primary btn-lg w-full mt-6" onClick={handleComplete}>
-                            🚛 배차 완료하기
+                            <TruckDeliveryIcon size={18} /> 배차 완료하기
                         </button>
                     </section>
                 )}

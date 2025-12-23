@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ClipboardListIcon, FactoryIcon, DashboardIcon, CheckCircleIcon, PackageIcon } from '../../components/Icons'
 import './StepPO.css'
+import type { ReactNode } from 'react'
 
-const PO_STEPS = [
-    { id: 1, label: '주문 확인', icon: '📋' },
-    { id: 2, label: '매입처 선택', icon: '🏭' },
-    { id: 3, label: '수량 배분', icon: '📊' },
-    { id: 4, label: '발주 완료', icon: '✅' },
+const PO_STEPS: { id: number; label: string; icon: ReactNode }[] = [
+    { id: 1, label: '주문 확인', icon: <ClipboardListIcon size={20} /> },
+    { id: 2, label: '매입처 선택', icon: <FactoryIcon size={20} /> },
+    { id: 3, label: '수량 배분', icon: <DashboardIcon size={20} /> },
+    { id: 4, label: '발주 완료', icon: <CheckCircleIcon size={20} /> },
 ]
 
 // 매입처 목록 (우리에게 공급하는 업체들)
@@ -108,7 +110,7 @@ export default function StepPO() {
 
                 <div className="header-main">
                     <div className="order-info">
-                        <h1>📦 발주 생성</h1>
+                        <h1><PackageIcon size={24} /> 발주 생성</h1>
                         <div className="order-meta">
                             <span className="customer-name">{order.customerName}</span>
                             <span className="order-id">{order.id}</span>
@@ -144,7 +146,7 @@ export default function StepPO() {
                 {/* Step 1: 주문 확인 */}
                 {currentStep === 1 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>📋 확정된 주문 내역</h2>
+                        <h2><ClipboardListIcon size={20} /> 확정된 주문 내역</h2>
                         <p className="section-desc">고객 주문이 확정되었습니다. 내역을 확인하고 발주를 진행하세요.</p>
 
                         <div className="items-table">
@@ -174,7 +176,7 @@ export default function StepPO() {
                 {/* Step 2: 매입처 선택 */}
                 {currentStep === 2 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>🏭 매입처 선택</h2>
+                        <h2><FactoryIcon size={20} /> 매입처 선택</h2>
                         <p className="section-desc">발주할 매입처를 선택하세요. (복수 선택 가능)</p>
 
                         <div className="supplier-list">
@@ -205,7 +207,7 @@ export default function StepPO() {
                 {/* Step 3: 수량 배분 */}
                 {currentStep === 3 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>📊 수량 배분</h2>
+                        <h2><DashboardIcon size={20} /> 수량 배분</h2>
                         <p className="section-desc">각 품목을 매입처별로 수량을 배분하세요.</p>
 
                         {items.map(item => (
@@ -245,7 +247,7 @@ export default function StepPO() {
                 {/* Step 4: 발주 완료 */}
                 {currentStep === 4 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>✅ 발주 확인</h2>
+                        <h2><CheckCircleIcon size={20} /> 발주 확인</h2>
                         <p className="section-desc">아래 내용으로 발주서를 생성합니다.</p>
 
                         {selectedSuppliers.map(sId => {
@@ -257,7 +259,7 @@ export default function StepPO() {
                             return (
                                 <div key={sId} className="po-summary-card">
                                     <div className="po-supplier-header">
-                                        <span className="supplier-name">📦 {supplier?.name}</span>
+                                        <span className="supplier-name"><PackageIcon size={16} /> {supplier?.name}</span>
                                         <span className="po-number">PO-2024-{Math.floor(Math.random() * 1000).toString().padStart(3, '0')}</span>
                                     </div>
                                     <div className="po-items">
@@ -273,7 +275,7 @@ export default function StepPO() {
                         })}
 
                         <button className="btn btn-primary btn-lg w-full mt-6" onClick={handleComplete}>
-                            📦 발주서 생성하기
+                            <PackageIcon size={18} /> 발주서 생성하기
                         </button>
                     </section>
                 )}

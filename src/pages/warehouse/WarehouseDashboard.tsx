@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { FactoryIcon, CheckCircleIcon, PackageIcon, TruckDeliveryIcon, PhoneIcon } from '../../components/Icons'
 import './WarehouseDashboard.css'
 
 interface PendingItem {
@@ -95,7 +96,7 @@ export default function WarehouseDashboard() {
             {/* Header */}
             <header className="dashboard-header">
                 <div className="header-left">
-                    <h1>🏭 물류창고 관리</h1>
+                    <h1><FactoryIcon size={24} /> 물류창고 관리</h1>
                     <p className="header-date">{new Date().toLocaleDateString('ko-KR', {
                         year: 'numeric',
                         month: 'long',
@@ -126,7 +127,7 @@ export default function WarehouseDashboard() {
                         </div>
                     </div>
                     <div className="summary-card completed">
-                        <div className="summary-icon">✅</div>
+                        <div className="summary-icon"><CheckCircleIcon size={24} /></div>
                         <div className="summary-content">
                             <span className="summary-value">8</span>
                             <span className="summary-label">오늘 처리 완료</span>
@@ -155,7 +156,7 @@ export default function WarehouseDashboard() {
             <section className="items-section">
                 {currentItems.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon">📦</span>
+                        <span className="empty-icon"><PackageIcon size={48} /></span>
                         <p>대기 중인 항목이 없습니다</p>
                     </div>
                 ) : (
@@ -187,7 +188,7 @@ export default function WarehouseDashboard() {
 
                                     <div className="item-vehicle">
                                         <div className="vehicle-info">
-                                            <span className="vehicle-no">🚛 {item.vehicleNo}</span>
+                                            <span className="vehicle-no"><TruckDeliveryIcon size={14} /> {item.vehicleNo}</span>
                                             <span className="driver">{item.driverName}</span>
                                         </div>
                                         <a
@@ -195,7 +196,7 @@ export default function WarehouseDashboard() {
                                             className="phone-btn"
                                             onClick={(e) => e.stopPropagation()}
                                         >
-                                            📞 {item.driverPhone}
+                                            <PhoneIcon size={14} /> {item.driverPhone}
                                         </a>
                                     </div>
                                 </div>

@@ -1,12 +1,14 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { FilesIcon, TruckDeliveryIcon, FactoryIcon, CheckCircleIcon } from '../../components/Icons'
 import './StepGate.css'
+import type { ReactNode } from 'react'
 
-const GATE_STEPS = [
-    { id: 1, label: '문서 확인', icon: '📄' },
+const GATE_STEPS: { id: number; label: string; icon: ReactNode }[] = [
+    { id: 1, label: '문서 확인', icon: <FilesIcon size={20} /> },
     { id: 2, label: '품목 검수', icon: '✓' },
     { id: 3, label: '서명', icon: '✍️' },
-    { id: 4, label: '출고 완료', icon: '🚛' },
+    { id: 4, label: '출고 완료', icon: <TruckDeliveryIcon size={20} /> },
 ]
 
 const checklistItems = [
@@ -121,14 +123,14 @@ export default function StepGate() {
 
                 <div className="header-main">
                     <div className="shipment-info">
-                        <h1>🏭 출고 검수</h1>
+                        <h1><FactoryIcon size={24} /> 출고 검수</h1>
                         <div className="shipment-meta">
                             <span className="customer">{shipment.customerName}</span>
                             <span className="shipment-id">{shipment.id}</span>
                         </div>
                     </div>
                     <div className="vehicle-badge">
-                        <span className="vehicle-icon">🚛</span>
+                        <span className="vehicle-icon"><TruckDeliveryIcon size={20} /></span>
                         <span className="vehicle-no">{shipment.vehicleNo}</span>
                     </div>
                 </div>
@@ -156,13 +158,13 @@ export default function StepGate() {
                 {/* Step 1: 문서 확인 */}
                 {currentStep === 1 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>📄 문서 확인</h2>
+                        <h2><FilesIcon size={20} /> 문서 확인</h2>
                         <p className="section-desc">출고에 필요한 문서가 모두 매칭되었는지 확인합니다.</p>
 
                         <div className="document-list">
                             {shipment.documents.map((doc, idx) => (
                                 <div key={idx} className="document-item">
-                                    <div className="doc-icon">📄</div>
+                                    <div className="doc-icon"><FilesIcon size={24} /></div>
                                     <div className="doc-info">
                                         <span className="doc-name">{doc.name}</span>
                                         <span className="doc-status matched">✓ 매칭됨</span>
@@ -173,7 +175,7 @@ export default function StepGate() {
                         </div>
 
                         <div className="doc-status-summary">
-                            <span className="status-icon">✅</span>
+                            <span className="status-icon"><CheckCircleIcon size={20} /></span>
                             <span className="status-text">모든 필수 문서가 매칭되었습니다</span>
                         </div>
                     </section>
@@ -300,7 +302,7 @@ export default function StepGate() {
                         </div>
 
                         <button className="btn btn-primary btn-lg w-full mt-6" onClick={handleComplete}>
-                            🚛 출고 완료하기
+                            <TruckDeliveryIcon size={18} /> 출고 완료하기
                         </button>
                     </section>
                 )}

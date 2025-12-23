@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { CheckCircleIcon, PackageIcon, TruckDeliveryIcon, FileTextIcon } from '../../components/Icons'
 import './CustomerConfirm.css'
 
 export default function CustomerConfirm() {
@@ -57,7 +58,7 @@ export default function CustomerConfirm() {
         <div className="customer-confirm">
             {/* Header */}
             <header className="confirm-header">
-                <div className="header-logo">🥩 TRS 주문시스템</div>
+                <div className="header-logo">TRS 주문시스템</div>
                 <div className="header-info">
                     <h1>{finalizedOrder.customerName}님</h1>
                     <p>최종 확정안을 확인해주세요</p>
@@ -67,7 +68,7 @@ export default function CustomerConfirm() {
             {/* Status Banner */}
             {isConfirmed ? (
                 <div className="status-banner confirmed">
-                    <span className="status-icon">✅</span>
+                    <span className="status-icon"><CheckCircleIcon size={24} /></span>
                     <span>이미 확정되었습니다</span>
                 </div>
             ) : (
@@ -88,7 +89,7 @@ export default function CustomerConfirm() {
 
                     {/* Items */}
                     <div className="card-section">
-                        <h3>📦 확정 품목</h3>
+                        <h3><PackageIcon size={20} /> 확정 품목</h3>
                         <div className="items-list">
                             {finalizedOrder.items.map((item, idx) => (
                                 <div key={idx} className="item-row">
@@ -111,7 +112,7 @@ export default function CustomerConfirm() {
 
                     {/* Delivery Info */}
                     <div className="card-section">
-                        <h3>🚛 배송 정보</h3>
+                        <h3><TruckDeliveryIcon size={20} /> 배송 정보</h3>
                         <div className="info-grid">
                             <div className="info-item">
                                 <span className="info-label">배송일</span>
@@ -172,18 +173,18 @@ export default function CustomerConfirm() {
                         {!showRevisionForm ? (
                             <>
                                 <button className="btn btn-primary btn-lg w-full" onClick={handleConfirm}>
-                                    ✅ 확정하기
+                                    <CheckCircleIcon size={18} /> 확정하기
                                 </button>
                                 <button
                                     className="btn btn-ghost w-full mt-3"
                                     onClick={() => setShowRevisionForm(true)}
                                 >
-                                    📝 수정 요청하기
+                                    <FileTextIcon size={18} /> 수정 요청하기
                                 </button>
                             </>
                         ) : (
                             <div className="revision-form glass-card">
-                                <h3>📝 수정 요청</h3>
+                                <h3><FileTextIcon size={18} /> 수정 요청</h3>
                                 <p>수정이 필요한 내용을 입력해주세요.</p>
                                 <textarea
                                     className="input textarea"

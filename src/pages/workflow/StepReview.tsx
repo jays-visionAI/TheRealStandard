@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ClipboardListIcon, PencilIcon, FilePlusIcon, MapPinIcon, PhoneIcon, PackageIcon, TruckDeliveryIcon, FileTextIcon } from '../../components/Icons'
 import './StepReview.css'
+import type { ReactNode } from 'react'
 
 // 단순화된 검토 스텝 (v1.0)
-const REVIEW_STEPS = [
-    { id: 1, label: '주문 확인', icon: '📋' },
-    { id: 2, label: '최종 확정 입력', icon: '✏️' },
-    { id: 3, label: '고객 발송', icon: '📤' },
+const REVIEW_STEPS: { id: number; label: string; icon: ReactNode }[] = [
+    { id: 1, label: '주문 확인', icon: <ClipboardListIcon size={20} /> },
+    { id: 2, label: '최종 확정 입력', icon: <PencilIcon size={20} /> },
+    { id: 3, label: '고객 발송', icon: <FilePlusIcon size={20} /> },
 ]
 
 // 차량 타입 목록 (선택만 - 추천 없음)
@@ -181,7 +183,7 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                 {/* Step 1: 주문 확인 */}
                 {currentStep === 1 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>📋 고객 주문 확인</h2>
+                        <h2><ClipboardListIcon size={20} /> 고객 주문 확인</h2>
                         <p className="section-desc">고객이 제출한 주문 내용을 확인합니다.</p>
 
                         <div className="items-table">
@@ -214,11 +216,11 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
 
                         <div className="delivery-info">
                             <div className="info-row">
-                                <span className="info-label">📍 배송지</span>
+                                <span className="info-label"><MapPinIcon size={16} /> 배송지</span>
                                 <span className="info-value">{order.shipTo}</span>
                             </div>
                             <div className="info-row">
-                                <span className="info-label">📞 연락처</span>
+                                <span className="info-label"><PhoneIcon size={16} /> 연락처</span>
                                 <span className="info-value">{order.customerContact}</span>
                             </div>
                         </div>
@@ -228,12 +230,12 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                 {/* Step 2: 최종 확정 입력 (Manual Finalization) */}
                 {currentStep === 2 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>✏️ 최종 확정 입력</h2>
+                        <h2><PencilIcon size={20} /> 최종 확정 입력</h2>
                         <p className="section-desc">고객과 협의한 최종 수량과 배송 정보를 입력합니다.</p>
 
                         {/* 품목별 최종 수량 */}
                         <div className="finalization-section">
-                            <h3>📦 품목별 최종 수량</h3>
+                            <h3><PackageIcon size={18} /> 품목별 최종 수량</h3>
                             <div className="final-items-list">
                                 {finalizedItems.map((item, idx) => (
                                     <div key={idx} className="final-item-row">
@@ -284,7 +286,7 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
 
                         {/* 차량 선택 (추천 없음, 선택만) */}
                         <div className="finalization-section">
-                            <h3>🚛 차량 타입 선택</h3>
+                            <h3><TruckDeliveryIcon size={18} /> 차량 타입 선택</h3>
                             <div className="vehicle-select-grid">
                                 {vehicleTypes.map(vt => (
                                     <div
@@ -301,7 +303,7 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
 
                         {/* 배차 정보 */}
                         <div className="finalization-section">
-                            <h3>📝 배차 정보 (선택)</h3>
+                            <h3><FileTextIcon size={18} /> 배차 정보 (선택)</h3>
                             <p className="section-hint">배차가 확정되지 않았으면 비워둬도 됩니다.</p>
                             <div className="dispatch-inputs">
                                 <div className="input-group">
@@ -379,7 +381,7 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                             </div>
 
                             <div className="summary-section">
-                                <h4>📦 확정 품목</h4>
+                                <h4><PackageIcon size={16} /> 확정 품목</h4>
                                 {finalizedItems.map((item, idx) => (
                                     <div key={idx} className="summary-item-row">
                                         <span>{item.productName}</span>
@@ -394,7 +396,7 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                             </div>
 
                             <div className="summary-section">
-                                <h4>🚛 배송 정보</h4>
+                                <h4><TruckDeliveryIcon size={16} /> 배송 정보</h4>
                                 <div className="summary-row">
                                     <span>총 예상 중량</span>
                                     <span className="value-highlight">{finalEstimatedTotalKg}kg</span>
@@ -432,7 +434,7 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                         </div>
 
                         <button className="btn btn-primary btn-lg w-full mt-6" onClick={handleSendToCustomer}>
-                            📤 고객에게 최종안 발송하기
+                            <FilePlusIcon size={18} /> 고객에게 최종안 발송하기
                         </button>
                         <p className="send-hint">고객은 링크를 통해 확인 후 컨펌 또는 수정 요청을 할 수 있습니다.</p>
                     </section>

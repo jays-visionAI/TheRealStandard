@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ClipboardListIcon, PackageIcon, CheckCircleIcon } from '../../components/Icons'
 import './CustomerOrder.css'
+import type { ReactNode } from 'react'
 
-const ORDER_STEPS = [
-    { id: 1, label: '주문 정보', icon: '📋' },
-    { id: 2, label: '품목 선택', icon: '🥩' },
+const ORDER_STEPS: { id: number; label: string; icon: ReactNode }[] = [
+    { id: 1, label: '주문 정보', icon: <ClipboardListIcon size={20} /> },
+    { id: 2, label: '품목 선택', icon: <PackageIcon size={20} /> },
     { id: 3, label: '수량 입력', icon: '🔢' },
-    { id: 4, label: '주문 확인', icon: '✅' },
+    { id: 4, label: '주문 확인', icon: <CheckCircleIcon size={20} /> },
 ]
 
 interface OrderItem {
@@ -109,7 +111,7 @@ export default function CustomerOrder() {
         <div className="customer-order">
             {/* Header */}
             <header className="order-header glass-card">
-                <div className="header-logo">🥩 TRS 주문시스템</div>
+                <div className="header-logo">TRS 주문시스템</div>
 
                 <div className="header-info">
                     <h1>{orderInfo.customerName}님의 주문서</h1>
@@ -143,7 +145,7 @@ export default function CustomerOrder() {
                 {/* Step 1: 주문 정보 */}
                 {currentStep === 1 && (
                     <section className="step-section glass-card animate-slide-up">
-                        <div className="section-icon">📋</div>
+                        <div className="section-icon"><ClipboardListIcon size={32} /></div>
                         <h2>주문 정보 확인</h2>
                         <p className="section-desc">아래 정보를 확인하고 주문을 시작하세요.</p>
 
@@ -167,7 +169,7 @@ export default function CustomerOrder() {
                         </div>
 
                         <button className="btn btn-primary btn-lg w-full mt-6" onClick={handleNext}>
-                            🥩 주문 품목 선택하기 →
+                            <PackageIcon size={18} /> 주문 품목 선택하기 →
                         </button>
                     </section>
                 )}
@@ -175,7 +177,7 @@ export default function CustomerOrder() {
                 {/* Step 2: 품목 선택 */}
                 {currentStep === 2 && (
                     <section className="step-section glass-card animate-slide-up">
-                        <div className="section-icon">🥩</div>
+                        <div className="section-icon"><PackageIcon size={32} /></div>
                         <h2>품목 선택</h2>
                         <p className="section-desc">주문할 품목을 선택하세요. (복수 선택 가능)</p>
 
@@ -251,7 +253,7 @@ export default function CustomerOrder() {
                 {/* Step 4: 주문 확인 */}
                 {currentStep === 4 && (
                     <section className="step-section glass-card animate-slide-up">
-                        <div className="section-icon">✅</div>
+                        <div className="section-icon"><CheckCircleIcon size={32} /></div>
                         <h2>주문 확인</h2>
                         <p className="section-desc">주문 내용을 확인하고 제출하세요.</p>
 
