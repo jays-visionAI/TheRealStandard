@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import './CustomerConfirm.css'
 
 export default function CustomerConfirm() {
-    const { token } = useParams()
-    const navigate = useNavigate()
+    // token은 향후 API 연동 시 사용 예정
+    useParams()
     const [revisionComment, setRevisionComment] = useState('')
     const [showRevisionForm, setShowRevisionForm] = useState(false)
 
