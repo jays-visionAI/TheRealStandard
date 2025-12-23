@@ -653,3 +653,130 @@
         width: 40px;
     }
 }
+
+/* ============================================
+   주요 거래처 & 일반 거래처 스타일 추가
+   ============================================ */
+
+/* Subsection Title */
+.subsection-title {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-3);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.mt-6 {
+    margin-top: var(--space-6);
+}
+
+/* 주요 거래처 카드 추가 스타일 */
+.customer-card.key-account {
+    border: 2px solid rgba(245, 158, 11, 0.3);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, white 100%);
+}
+
+.customer-card.key-account:hover {
+    border-color: rgba(245, 158, 11, 0.6);
+}
+
+.customer-card.key-account.selected {
+    border-color: var(--color-primary);
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.key-badge {
+    font-size: var(--text-xs);
+    margin-left: var(--space-1);
+}
+
+/* 일반 거래처 테이블 */
+.customer-table-container {
+    overflow-x: auto;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.customer-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+}
+
+.customer-table th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-tertiary);
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    font-weight: var(--font-semibold);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-primary);
+    z-index: 1;
+}
+
+.customer-table td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-secondary);
+    font-size: var(--text-sm);
+}
+
+.customer-table tbody tr {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.customer-table tbody tr:hover {
+    background: var(--bg-secondary);
+}
+
+.customer-table tbody tr.selected {
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.customer-table tbody tr.selected td {
+    color: var(--color-primary);
+}
+
+.radio-cell {
+    text-align: center;
+}
+
+.radio-cell input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+.name-cell strong {
+    color: var(--text-primary);
+}
+
+.customer-table .mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+}
+
+.address-cell {
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .customer-table-container {
+        max-height: 300px;
+    }
+
+    .customer-table .address-cell {
+        display: none;
+    }
+}

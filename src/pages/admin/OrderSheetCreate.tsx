@@ -42,11 +42,19 @@ const PRODUCT_MASTER: Product[] = [
     { id: 'p21', name: '미니족(냉동)', category: '부산물', unitPrice: 5000, unit: 'kg' },
 ]
 
-// Mock 고객 데이터
-const mockCustomers: Organization[] = [
-    { id: 'org-001', bizRegNo: '123-45-67890', name: '한우명가', ceoName: '김대표', address: '서울시 강남구 역삼동 123-45', tel: '02-1234-5678', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date() },
-    { id: 'org-002', bizRegNo: '234-56-78901', name: '정육왕', ceoName: '이대표', address: '서울시 서초구 서초동 234-56', tel: '02-2345-6789', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date() },
-    { id: 'org-003', bizRegNo: '345-67-89012', name: '고기마을', ceoName: '박대표', address: '경기도 성남시 분당구 정자동 345', tel: '031-345-6789', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date() },
+// Mock 고객 데이터 (isKeyAccount: 주요 거래처 여부)
+interface CustomerWithKeyFlag extends Organization {
+    isKeyAccount?: boolean
+}
+
+const mockCustomers: CustomerWithKeyFlag[] = [
+    { id: 'org-001', bizRegNo: '123-45-67890', name: '한우명가', ceoName: '김대표', address: '서울시 강남구 역삼동 123-45', tel: '02-1234-5678', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: true },
+    { id: 'org-002', bizRegNo: '234-56-78901', name: '정육왕', ceoName: '이대표', address: '서울시 서초구 서초동 234-56', tel: '02-2345-6789', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: true },
+    { id: 'org-003', bizRegNo: '345-67-89012', name: '고기마을', ceoName: '박대표', address: '경기도 성남시 분당구 정자동 345', tel: '031-345-6789', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: false },
+    { id: 'org-004', bizRegNo: '456-78-90123', name: '미트하우스', ceoName: '최대표', address: '서울시 마포구 상암동 456', tel: '02-456-7890', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: false },
+    { id: 'org-005', bizRegNo: '567-89-01234', name: '육가공센터', ceoName: '정대표', address: '경기도 용인시 기흥구 567', tel: '031-567-8901', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: false },
+    { id: 'org-006', bizRegNo: '678-90-12345', name: '프리미엄정육', ceoName: '한대표', address: '서울시 송파구 잠실동 678', tel: '02-678-9012', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: true },
+    { id: 'org-007', bizRegNo: '789-01-23456', name: '테이스티미트', ceoName: '강대표', address: '인천시 연수구 송도동 789', tel: '032-789-0123', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: false },
 ]
 
 // Mock 이전 주문 데이터
@@ -107,7 +115,7 @@ export default function OrderSheetCreate() {
     const [step, setStep] = useState(1)
 
     // Step 1: 고객 선택
-    const [selectedCustomer, setSelectedCustomer] = useState<Organization | null>(null)
+    const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithKeyFlag | null>(null)
     const [customerSearch, setCustomerSearch] = useState('')
 
     // Step 2: 품목 설정 (엑셀 그리드)
@@ -406,25 +414,80 @@ export default function OrderSheetCreate() {
                             />
                         </div>
 
-                        <div className="customer-grid">
-                            {filteredCustomers.map((customer) => (
-                                <div
-                                    key={customer.id}
-                                    className={`customer-card ${selectedCustomer?.id === customer.id ? 'selected' : ''}`}
-                                    onClick={() => setSelectedCustomer(customer)}
-                                >
-                                    <div className="customer-name">{customer.name}</div>
-                                    <div className="customer-info">
-                                        <span>📍 {customer.address}</span>
-                                        <span>📞 {customer.tel}</span>
-                                    </div>
-                                    <div className="customer-biz">사업자: {customer.bizRegNo}</div>
-                                    {selectedCustomer?.id === customer.id && (
-                                        <div className="selected-badge">✓ 선택됨</div>
-                                    )}
+                        {/* 주요 거래처 카드 */}
+                        {filteredCustomers.filter(c => c.isKeyAccount).length > 0 && (
+                            <>
+                                <h3 className="subsection-title">⭐ 주요 거래처</h3>
+                                <div className="customer-grid">
+                                    {filteredCustomers.filter(c => c.isKeyAccount).map((customer) => (
+                                        <div
+                                            key={customer.id}
+                                            className={`customer-card key-account ${selectedCustomer?.id === customer.id ? 'selected' : ''}`}
+                                            onClick={() => setSelectedCustomer(customer)}
+                                        >
+                                            <div className="customer-name">
+                                                {customer.name}
+                                                <span className="key-badge">⭐</span>
+                                            </div>
+                                            <div className="customer-info">
+                                                <span>📍 {customer.address}</span>
+                                                <span>📞 {customer.tel}</span>
+                                            </div>
+                                            <div className="customer-biz">사업자: {customer.bizRegNo}</div>
+                                            {selectedCustomer?.id === customer.id && (
+                                                <div className="selected-badge">✓ 선택됨</div>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
+                            </>
+                        )}
+
+                        {/* 일반 거래처 테이블 */}
+                        {filteredCustomers.filter(c => !c.isKeyAccount).length > 0 && (
+                            <>
+                                <h3 className="subsection-title mt-6">📋 전체 거래처 목록</h3>
+                                <div className="customer-table-container">
+                                    <table className="customer-table">
+                                        <thead>
+                                            <tr>
+                                                <th style={{ width: 40 }}></th>
+                                                <th>거래처명</th>
+                                                <th>사업자번호</th>
+                                                <th>대표자</th>
+                                                <th>전화번호</th>
+                                                <th>주소</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredCustomers.filter(c => !c.isKeyAccount).map((customer) => (
+                                                <tr
+                                                    key={customer.id}
+                                                    className={selectedCustomer?.id === customer.id ? 'selected' : ''}
+                                                    onClick={() => setSelectedCustomer(customer)}
+                                                >
+                                                    <td className="radio-cell">
+                                                        <input
+                                                            type="radio"
+                                                            name="customer"
+                                                            checked={selectedCustomer?.id === customer.id}
+                                                            onChange={() => setSelectedCustomer(customer)}
+                                                        />
+                                                    </td>
+                                                    <td className="name-cell">
+                                                        <strong>{customer.name}</strong>
+                                                    </td>
+                                                    <td className="mono">{customer.bizRegNo}</td>
+                                                    <td>{customer.ceoName}</td>
+                                                    <td className="mono">{customer.tel}</td>
+                                                    <td className="address-cell">{customer.address}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
 
                         <div className="step-actions">
                             <div></div>
