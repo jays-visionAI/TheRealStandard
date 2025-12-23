@@ -1,0 +1,28 @@
+{
+  "name": "trs",
+  "version": "1.0.0",
+  "description": "육류유통 수발주/발주/물류/배차 프로토타입 시스템",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["meat-distribution", "order-management", "logistics"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "firebase": "^11.7.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}
