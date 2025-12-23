@@ -1,16 +1,34 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import {
+    DashboardIcon,
+    UsersIcon,
+    PackageIcon,
+    ClipboardListIcon,
+    WalletIcon,
+    SettingsIcon,
+} from '../components/Icons'
 import './AdminLayout.css'
+
+// 아이콘 매핑
+const iconComponents: Record<string, React.FC<{ size?: number; className?: string }>> = {
+    dashboard: DashboardIcon,
+    users: UsersIcon,
+    products: PackageIcon,
+    orders: ClipboardListIcon,
+    transactions: WalletIcon,
+    settings: SettingsIcon,
+}
 
 const navigation = [
     {
         label: '대시보드',
         path: '/admin',
-        icon: '📊',
+        iconKey: 'dashboard',
     },
     {
         label: 'Users',
-        icon: '👥',
+        iconKey: 'users',
         children: [
             { label: '고객사 (구매처)', path: '/admin/users/customers' },
             { label: '공급거래처', path: '/admin/users/suppliers' },
@@ -22,11 +40,11 @@ const navigation = [
     {
         label: 'Products',
         path: '/admin/products',
-        icon: '📦',
+        iconKey: 'products',
     },
     {
         label: 'Order Book',
-        icon: '📋',
+        iconKey: 'orders',
         children: [
             { label: '주문장 목록', path: '/admin/order-sheets' },
             { label: '주문장 생성', path: '/admin/order-sheets/create' },
@@ -35,7 +53,7 @@ const navigation = [
     },
     {
         label: '거래내역',
-        icon: '💰',
+        iconKey: 'transactions',
         children: [
             { label: '발주 관리', path: '/admin/purchase-orders' },
             { label: '배송 목록', path: '/admin/shipments' },
@@ -44,7 +62,7 @@ const navigation = [
     },
     {
         label: 'Settings',
-        icon: '⚙️',
+        iconKey: 'settings',
         children: [
             { label: '카탈로그 관리', path: '/admin/settings/catalogs' },
             { label: '차량 타입', path: '/admin/settings/vehicles' },
@@ -73,11 +91,14 @@ export default function AdminLayout() {
                 </div>
 
                 <nav className="sidebar-nav">
-                    {navigation.map((item) =>
-                        item.children ? (
+                    {navigation.map((item) => {
+                        const IconComponent = iconComponents[item.iconKey]
+                        return item.children ? (
                             <div key={item.label} className="nav-group">
                                 <div className="nav-group-title">
-                                    <span className="nav-icon">{item.icon}</span>
+                                    <span className="nav-icon">
+                                        {IconComponent && <IconComponent size={18} />}
+                                    </span>
                                     {item.label}
                                 </div>
                                 <div className="nav-group-items">
@@ -98,17 +119,19 @@ export default function AdminLayout() {
                         ) : (
                             <NavLink
                                 key={item.path}
-                                to={item.path}
+                                to={item.path!}
                                 end={item.path === '/admin'}
                                 className={({ isActive }) =>
                                     `nav-link nav-link-single ${isActive ? 'active' : ''}`
                                 }
                             >
-                                <span className="nav-icon">{item.icon}</span>
+                                <span className="nav-icon">
+                                    {IconComponent && <IconComponent size={18} />}
+                                </span>
                                 {item.label}
                             </NavLink>
                         )
-                    )}
+                    })}
                 </nav>
 
                 <div className="sidebar-footer">

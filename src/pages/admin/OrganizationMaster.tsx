@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useCustomerStore, type Customer } from '../../stores/customerStore'
+import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon } from '../../components/Icons'
 import './OrganizationMaster.css'
 
 export default function OrganizationMaster() {
@@ -134,7 +135,7 @@ export default function OrganizationMaster() {
             {/* Header */}
             <div className="page-header">
                 <div>
-                    <h1>🏢 거래처 관리</h1>
+                    <h1><BuildingIcon size={24} /> 거래처 관리</h1>
                     <p className="text-secondary">발주 고객사 정보를 등록하고 관리합니다</p>
                 </div>
                 <button className="btn btn-primary" onClick={openCreateModal}>
@@ -145,14 +146,14 @@ export default function OrganizationMaster() {
             {/* Stats Cards */}
             <div className="stats-grid">
                 <div className="stat-card">
-                    <div className="stat-icon">📊</div>
+                    <div className="stat-icon"><UsersIcon size={24} /></div>
                     <div className="stat-info">
                         <span className="stat-value">{stats.total}</span>
                         <span className="stat-label">전체 거래처</span>
                     </div>
                 </div>
                 <div className="stat-card active">
-                    <div className="stat-icon">✅</div>
+                    <div className="stat-icon"><CheckCircleIcon size={24} /></div>
                     <div className="stat-info">
                         <span className="stat-value">{stats.active}</span>
                         <span className="stat-label">활성 거래처</span>
@@ -170,7 +171,7 @@ export default function OrganizationMaster() {
             {/* Filters */}
             <div className="filters-bar glass-card">
                 <div className="search-box">
-                    <span className="search-icon">🔍</span>
+                    <span className="search-icon"><SearchIcon size={18} /></span>
                     <input
                         type="text"
                         className="input"
@@ -232,7 +233,7 @@ export default function OrganizationMaster() {
                                         </span>
                                     </td>
                                     <td className="company-name">
-                                        {customer.isKeyAccount && <span className="key-account-badge">⭐</span>}
+                                        {customer.isKeyAccount && <span className="key-account-badge"><StarIcon size={14} /></span>}
                                         <strong>{customer.companyName}</strong>
                                         {customer.memo && <span className="memo-tag">메모</span>}
                                     </td>
