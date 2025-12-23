@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { PackageIcon, SearchIcon, EditIcon, XIcon, WalletIcon, FileTextIcon } from '../../components/Icons'
 import './ProductMaster.css'
 
 // ============================================
@@ -205,7 +206,7 @@ export default function ProductMaster() {
             {/* Header */}
             <div className="page-header">
                 <div>
-                    <h1>📦 상품 마스터</h1>
+                    <h1><PackageIcon size={24} /> 상품 마스터</h1>
                     <p className="text-secondary">상품 정보 및 가격 관리</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => openModal()}>
@@ -236,7 +237,7 @@ export default function ProductMaster() {
             {/* Filters */}
             <div className="filters-bar glass-card">
                 <div className="search-box">
-                    <span className="search-icon">🔍</span>
+                    <span className="search-icon"><SearchIcon size={18} /></span>
                     <input
                         type="text"
                         className="input"
@@ -313,7 +314,7 @@ export default function ProductMaster() {
                                         onClick={() => openModal(product)}
                                         title="수정"
                                     >
-                                        ✏️
+                                        <EditIcon size={16} />
                                     </button>
                                     {product.isActive ? (
                                         <button
@@ -337,7 +338,7 @@ export default function ProductMaster() {
                                                 onClick={() => handlePermanentDelete(product)}
                                                 title="완전삭제"
                                             >
-                                                ❌
+                                                <XIcon size={14} />
                                             </button>
                                         </>
                                     )}
@@ -432,7 +433,7 @@ export default function ProductMaster() {
 
                             {/* 가격 정보 */}
                             <div className="form-section">
-                                <h4>💰 가격 정보 (원/kg)</h4>
+                                <h4><WalletIcon size={18} /> 가격 정보 (원/kg)</h4>
                                 <div className="form-grid price-grid">
                                     <div className="form-group">
                                         <label className="label">매입가</label>
@@ -494,7 +495,7 @@ export default function ProductMaster() {
 
                             {/* 비고 */}
                             <div className="form-section">
-                                <h4>📝 비고</h4>
+                                <h4><FileTextIcon size={18} /> 비고</h4>
                                 <textarea
                                     className="input textarea"
                                     value={formData.memo || ''}

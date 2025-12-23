@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon } from '../../components/Icons'
 import './Login.css'
 
 // Mock 사용자 목록 (데모용)
@@ -130,31 +131,31 @@ export default function Login() {
 
                 {/* Quick Login (Demo) */}
                 <div className="demo-section">
-                    <p className="demo-label">🧪 데모 빠른 로그인</p>
+                    <p className="demo-label"><InfoIcon size={16} /> 데모 빠른 로그인</p>
                     <div className="demo-buttons">
                         <button
                             className="demo-btn admin"
                             onClick={() => handleQuickLogin('admin@trs.co.kr')}
                         >
-                            👤 관리자
+                            <UserIcon size={16} /> 관리자
                         </button>
                         <button
                             className="demo-btn warehouse"
                             onClick={() => handleQuickLogin('warehouse@trs.co.kr')}
                         >
-                            🏭 창고직원
+                            <FactoryIcon size={16} /> 창고직원
                         </button>
                         <button
                             className="demo-btn accounting"
                             onClick={() => handleQuickLogin('accounting@trs.co.kr')}
                         >
-                            📄 경리직원
+                            <FilesIcon size={16} /> 경리직원
                         </button>
                         <button
                             className="demo-btn customer"
                             onClick={() => handleQuickLogin('customer@example.com')}
                         >
-                            🛒 고객
+                            <ShoppingCartIcon size={16} /> 고객
                         </button>
                     </div>
                 </div>

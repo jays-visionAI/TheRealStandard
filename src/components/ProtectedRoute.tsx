@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { PackageIcon } from './Icons'
 import type { UserRole } from '../types'
 
 interface ProtectedRouteProps {
@@ -16,7 +17,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
         return (
             <div className="loading-screen">
                 <div className="loading-spinner">
-                    <span className="spinner-icon">📦</span>
+                    <PackageIcon size={32} className="spinner-icon" />
                     <span className="spinner-text">로딩 중...</span>
                 </div>
             </div>
@@ -63,7 +64,7 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
         return (
             <div className="loading-screen">
                 <div className="loading-spinner">
-                    <span className="spinner-icon">📦</span>
+                    <PackageIcon size={32} className="spinner-icon" />
                     <span className="spinner-text">로딩 중...</span>
                 </div>
             </div>
