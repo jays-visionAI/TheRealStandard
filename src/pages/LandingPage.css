@@ -238,11 +238,10 @@ section {
     color: var(--lp-text-dark);
 }
 
-/* Bento Grid - Problem Section */
+/* Bento Grid - Problem Section (Updated Layout) */
 .bento-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(2, minmax(240px, auto));
     gap: 24px;
     margin-top: 64px;
 }
@@ -250,42 +249,122 @@ section {
 .bento-card {
     background: var(--lp-bg-card);
     border: 1px solid var(--lp-border);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 32px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     transition: all 0.3s ease;
-    overflow: hidden;
     position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 .bento-card:hover {
-    border-color: var(--lp-border-hover);
-    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+    border-color: var(--lp-accent);
 }
 
-.bento-card.large {
-    grid-column: span 2;
+/* Top Row: 1.5 + 1.5 columns (Wait, user image shows 2 large cards on top row) */
+/* Actually user image has Top Row with 2 cards. Left one seems wider? No, looks like 50/50 or 60/40. */
+/* Let's make Top Row span 3 columns with 2 items inside? Or just CSS Grid layout */
+
+.bento-row-top {
+    grid-column: span 3;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 24px;
 }
 
-.bento-icon {
+.bento-card-lg {
+    min-height: 320px;
+}
+
+.bento-icon-wrapper {
     width: 48px;
     height: 48px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--lp-accent-light);
+    color: var(--lp-accent);
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: auto;
-    color: var(--lp-text-white);
+    margin-bottom: 20px;
 }
 
 .bento-title {
-    margin-bottom: 8px;
     font-size: 1.25rem;
-    color: #fff;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--lp-text-main);
+}
+
+.bento-desc {
+    font-size: 0.95rem;
+    color: var(--lp-text-gray);
+    line-height: 1.6;
+}
+
+/* Badges */
+.badge-blue {
+    background: var(--lp-accent-light);
+    color: var(--lp-accent);
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    position: absolute;
+    top: 32px;
+    right: 32px;
+}
+
+.badge-red {
+    background: #FEF2F2;
+    color: #EF4444;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 24px;
+}
+
+.graph-container {
+    margin-top: auto;
+    width: 100%;
+    height: 120px;
+    position: relative;
+}
+
+.ops-badges {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.ops-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: #F1F5F9;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: var(--lp-text-dark);
+    font-weight: 500;
+}
+
+.card-footer {
+    margin-top: auto;
+    padding-top: 24px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 /* Solution - Process */
@@ -398,11 +477,12 @@ section {
 /* Responsive */
 @media (max-width: 1024px) {
     .bento-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
     }
 
-    .bento-card.large {
-        grid-column: span 2;
+    .bento-row-top {
+        grid-template-columns: 1fr;
+        grid-column: span 1;
     }
 
     .process-row {
@@ -452,5 +532,63 @@ section {
         display: none;
     }
 
-    /* Hide nav on mobile for simplicity */
+    /* Modern Industrial Tech Landing Page Theme (Light) */
+    :root {
+        /* Colors - Clean White & Tech Blue */
+        --lp-bg-main: #FFFFFF;
+        --lp-bg-sub: #F8FAFC;
+        --lp-bg-card: #FFFFFF;
+
+        --lp-text-white: #FFFFFF;
+        /* Keep for dark elements like buttons */
+        --lp-text-main: #1E293B;
+        --lp-text-gray: #64748B;
+        --lp-text-dark: #334155;
+
+        --lp-accent: #3B82F6;
+        /* Electric Blue */
+        --lp-accent-light: #EFF6FF;
+        --lp-accent-glow: rgba(59, 130, 246, 0.15);
+
+        --lp-border: #E2E8F0;
+        --lp-border-hover: #CBD5E1;
+
+        /* Typography */
+        --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --font-hero: clamp(3rem, 6vw, 4.5rem);
+        --font-h2: clamp(2rem, 4vw, 3rem);
+    }
+
+    /* Base Reset & Layout */
+    body {
+        margin: 0;
+        background-color: var(--lp-bg-sub);
+        color: var(--lp-text-main);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .landing-page {
+        min-height: 100vh;
+        width: 100%;
+        overflow-x: hidden;
+        background-image:
+            linear-gradient(#E2E8F0 1px, transparent 1px),
+            linear-gradient(90deg, #E2E8F0 1px, transparent 1px);
+        background-size: 40px 40px;
+        background-position: center top;
+    }
+
+    /* Mask the grid background to fade out */
+    .landing-page::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100vh;
+        background: linear-gradient(to bottom, transparent 0%, var(--lp-bg-sub) 80%);
+        pointer-events: none;
+        z-index: -1;
+    }
 }

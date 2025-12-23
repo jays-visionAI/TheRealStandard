@@ -77,47 +77,120 @@ export default function LandingPage() {
             </section>
 
             {/* Problem Section (Bento Grid) */}
-            <section id="problems">
+            {/* Problem Section (Bento Grid) */}
+            <section id="problems" className="relative z-10">
                 <div className="container">
-                    <h2 className="mb-4 text-center">Supply Chain Inefficiencies</h2>
-                    <p className="text-center mb-16 max-w-2xl mx-auto">데이터 부재로 반복되는 5가지 구조적 문제</p>
+                    <div className="text-center mb-16 animate-fade-in-up">
+                        <div className="inline-block px-3 py-1 mb-4 text-xs font-bold text-blue-600 bg-blue-50 rounded-full tracking-wider">
+                            PROBLEM DEFINITION
+                        </div>
+                        <h2 className="mb-4 text-4xl font-bold text-slate-800">
+                            Supply Chain <span className="text-blue-600">Inefficiencies</span>
+                        </h2>
+                        <p className="max-w-2xl mx-auto text-slate-500 text-lg">
+                            데이터 부재로 반복되는 5가지 구조적 문제점.<br />
+                            이러한 비효율은 기업의 성장 잠재력을 갉아먹습니다.
+                        </p>
+                    </div>
 
                     <div className="bento-grid">
-                        <div className="bento-card large">
-                            <div className="bento-icon"><ChartIcon /></div>
-                            <h3 className="bento-title">수요예측의 한계</h3>
-                            <p>경험과 감에 의존하는 발주로 인한 반복적인 과잉 재고와 품절 발생.</p>
-                            {/* Decorative Graph Line */}
-                            <div className="absolute right-0 bottom-0 text-blue-500 opacity-20 transform translate-y-4">
-                                <svg width="300" height="100" viewBox="0 0 300 100" fill="none">
-                                    <path d="M0 80 Q 75 20 150 50 T 300 40" stroke="currentColor" strokeWidth="2" fill="none" />
-                                </svg>
+                        {/* Top Row */}
+                        <div className="bento-row-top">
+                            {/* 1. Demand Forecasting */}
+                            <div className="bento-card bento-card-lg">
+                                <div className="flex justify-between items-start">
+                                    <div className="bento-icon-wrapper">
+                                        <ChartIcon size={24} />
+                                    </div>
+                                    <span className="badge-blue">Critical Impact</span>
+                                </div>
+                                <h3 className="bento-title">수요예측의 한계</h3>
+                                <p className="bento-desc">
+                                    경험과 감에 의존하는 발주로 인해 반복적인 과잉 재고와 품절이 발생합니다.
+                                    데이터 기반의 예측 모델 부재가 가장 큰 원인입니다.
+                                </p>
+                                {/* Graph Visualization */}
+                                <div className="graph-container">
+                                    <svg width="100%" height="100%" viewBox="0 0 400 120" preserveAspectRatio="none">
+                                        <path d="M0 100 C 50 100, 80 20, 150 20 S 250 80, 400 40"
+                                            fill="none" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round" />
+                                        <path d="M0 100 C 50 100, 80 20, 150 20 S 250 80, 400 40 V 120 H 0 Z"
+                                            fill="url(#fadeBlue)" opacity="0.1" />
+                                        <path d="M0 110 Q 50 105 100 110 T 200 108 T 300 112 T 400 110"
+                                            fill="none" stroke="#94A3B8" strokeWidth="2" strokeDasharray="4 4" />
+                                        <defs>
+                                            <linearGradient id="fadeBlue" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#3B82F6" />
+                                                <stop offset="100%" stopColor="white" stopOpacity="0" />
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                    <div className="flex gap-4 mt-2 text-xs text-slate-400 font-medium">
+                                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> 실제 재고 (Fluctuation)</span>
+                                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-400"></span> 예측 수요 (Miss)</span>
+                                    </div>
+                                </div>
+                                <div className="card-footer">Detail View →</div>
+                            </div>
+
+                            {/* 2. Margin Leak */}
+                            <div className="bento-card bento-card-lg">
+                                <div className="bento-icon-wrapper bg-red-50 text-red-500">
+                                    <AlertTriangleIcon size={24} />
+                                </div>
+                                <h3 className="bento-title">마진 누수</h3>
+                                <p className="bento-desc">
+                                    중간 유통 단계마다 불필요하게 쌓이는 비효율 비용이 전체 마진율을 심각하게 저해하고 있습니다.
+                                </p>
+                                <div className="badge-red">
+                                    <AlertTriangleIcon size={14} /> 누적 손실 발생 중
+                                </div>
+                                <div className="card-footer">Detail View →</div>
                             </div>
                         </div>
 
+                        {/* Bottom Row */}
+                        {/* 3. Inventory Imbalance */}
                         <div className="bento-card">
-                            <div className="bento-icon"><AlertTriangleIcon /></div>
-                            <h3 className="bento-title">마진 누수</h3>
-                            <p>중간 유통 단계마다 쌓이는 비효율 비용.</p>
-                        </div>
-
-                        <div className="bento-card">
-                            <div className="bento-icon"><SearchIcon /></div>
+                            <div className="bento-icon-wrapper">
+                                <SearchIcon size={24} />
+                            </div>
                             <h3 className="bento-title">재고 불균형</h3>
-                            <p>실시간으로 파악되지 않는 깜깜이 재고 현황.</p>
+                            <p className="bento-desc">
+                                실시간으로 파악되지 않는 "깜깜이" 재고 현황으로 인해 지점 간 재고 이동이나 적시 대응이 불가능합니다.
+                            </p>
+                            <div className="card-footer">Detail View →</div>
                         </div>
 
-                        <div className="bento-card large">
-                            <div className="bento-icon"><PackageIcon /></div>
-                            <h3 className="bento-title">수기 운영의 한계</h3>
-                            <p>엑셀과 전화, 카톡으로 처리되는 아날로그 방식의 비효율과 휴먼 에러.</p>
-                        </div>
-
+                        {/* 4. Manual Ops */}
                         <div className="bento-card">
-                            <div className="bento-icon"><TrashIcon /></div>
-                            <h3 className="bento-title">폐기 손실</h3>
-                            <p>신선도 관리 실패로 버려지는 재고 가치.</p>
+                            <div className="bento-icon-wrapper">
+                                <PackageIcon size={24} />
+                            </div>
+                            <h3 className="bento-title">수기 운영의 한계</h3>
+                            <p className="bento-desc">
+                                엑셀과 전화, 카톡으로 처리되는 아날로그 방식은 업무 속도를 늦추고 필연적인 휴먼 에러를 유발합니다.
+                            </p>
+                            <div className="ops-badges">
+                                <span className="ops-badge text-green-700 bg-green-50">Excel</span>
+                                <span className="ops-badge">📞 전화</span>
+                                <span className="ops-badge text-yellow-700 bg-yellow-50">📱 카톡</span>
+                            </div>
+                            <div className="card-footer">Detail View →</div>
                         </div>
+
+                        {/* 5. Waste Loss */}
+                        <div className="bento-card">
+                            <div className="bento-icon-wrapper text-slate-500 bg-slate-100">
+                                <TrashIcon size={24} />
+                            </div>
+                            <h3 className="bento-title">폐기 손실</h3>
+                            <p className="bento-desc">
+                                신선도 관리 실패로 버려지는 재고 가치는 단순한 비용 손실을 넘어 브랜드 이미지에도 타격을 줍니다.
+                            </p>
+                            <div className="card-footer">Detail View →</div>
+                        </div>
+
                     </div>
                 </div>
             </section>
