@@ -23,31 +23,44 @@
 .front-logo {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-}
-
-.front-logo .logo-icon {
-    font-size: 1.75rem;
-    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+    justify-content: center;
 }
 
 .front-logo .logo-text {
     display: flex;
     flex-direction: column;
+    align-items: center;
 }
 
 .front-logo .logo-title {
-    font-size: var(--text-lg);
-    font-weight: var(--font-bold);
-    background: var(--gradient-primary);
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 50%, #a93226 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    position: relative;
+}
+
+.front-logo .logo-title::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #e74c3c, #c0392b, transparent);
+    border-radius: 2px;
 }
 
 .front-logo .logo-subtitle {
-    font-size: var(--text-xs);
+    font-size: 0.5rem;
+    font-weight: 600;
     color: var(--text-tertiary);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 4px;
 }
 
 /* Main */

@@ -28,31 +28,45 @@
 .logo {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-}
-
-.logo-icon {
-    font-size: 2rem;
-    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+    justify-content: center;
 }
 
 .logo-text {
     display: flex;
     flex-direction: column;
+    align-items: center;
 }
 
 .logo-title {
-    font-size: var(--text-xl);
-    font-weight: var(--font-bold);
-    background: var(--gradient-primary);
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 50%, #a93226 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    text-shadow: 0 4px 20px rgba(231, 76, 60, 0.3);
+    position: relative;
+}
+
+.logo-title::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #e74c3c, #c0392b, transparent);
+    border-radius: 2px;
 }
 
 .logo-subtitle {
-    font-size: var(--text-xs);
+    font-size: 0.6rem;
+    font-weight: 600;
     color: var(--text-tertiary);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 6px;
 }
 
 /* Navigation */
