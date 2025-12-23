@@ -8,11 +8,15 @@
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
-  "keywords": ["meat-distribution", "order-management", "logistics"],
+  "keywords": [
+    "meat-distribution",
+    "order-management",
+    "logistics"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "firebase": "^11.7.0",
+    "firebase": "^11.10.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.1",

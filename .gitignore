@@ -19,7 +19,6 @@ build/
 .firebase/
 firebase-debug.log
 firebase-debug.*.log
-.firebaserc
 
 # IDE
 .vscode/
