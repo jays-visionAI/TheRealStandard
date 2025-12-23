@@ -401,3 +401,32 @@ export const AlertTriangleIcon: FC<IconProps> = ({ size = 20, className = '', co
         <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
 )
+
+// Chart / Data / Analysis
+export const ChartIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+)
+
+// Network / Connection
+export const NetworkIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="12" cy="5" r="3" />
+        <circle cx="6" cy="19" r="3" />
+        <circle cx="18" cy="19" r="3" />
+        <line x1="12" y1="8" x2="6" y2="16" />
+        <line x1="12" y1="8" x2="18" y2="16" />
+    </svg>
+)
+
+// Refresh / Update
+export const RefreshCwIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M23 4v6h-6" />
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+    </svg>
+)
+

@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute, { PublicRoute } from './components/ProtectedRoute'
 
 // Auth Pages
+import LandingPage from './pages/LandingPage'
 import Login from './pages/auth/Login'
 
 // Workflow Pages (ADMIN - v1.0)
@@ -159,8 +160,8 @@ function App() {
                     </Route>
 
                     {/* Default: 로그인 페이지로 */}
-                    <Route path="/" element={<Navigate to="/login" replace />} />
-                    <Route path="*" element={<Navigate to="/login" replace />} />
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </BrowserRouter>
         </AuthProvider>
