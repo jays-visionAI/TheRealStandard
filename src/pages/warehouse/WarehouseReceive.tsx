@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { TruckDeliveryIcon, PhoneIcon, SearchIcon, CheckCircleIcon, ClipboardListIcon, AlertTriangleIcon } from '../../components/Icons'
 import './WarehouseReceive.css'
 
 interface ReceiveItem {
@@ -83,10 +84,10 @@ export default function WarehouseReceive() {
                         <p className="order-id">주문: {receiveInfo.orderId} · 고객: {receiveInfo.customerName}</p>
                     </div>
                     <div className="vehicle-info">
-                        <span className="vehicle-no">🚛 {receiveInfo.vehicleNo}</span>
+                        <span className="vehicle-no"><TruckDeliveryIcon size={16} /> {receiveInfo.vehicleNo}</span>
                         <span className="driver">{receiveInfo.driverName}</span>
                         <a href={`tel:${receiveInfo.driverPhone}`} className="phone-link">
-                            📞 {receiveInfo.driverPhone}
+                            <PhoneIcon size={14} /> {receiveInfo.driverPhone}
                         </a>
                     </div>
                 </div>
@@ -115,7 +116,7 @@ export default function WarehouseReceive() {
                 {/* Step 1: 차량 확인 */}
                 {currentStep === 1 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>🚛 차량 확인</h2>
+                        <h2><TruckDeliveryIcon size={20} /> 차량 확인</h2>
                         <p className="section-desc">입고 차량 정보를 확인해주세요.</p>
 
                         <div className="vehicle-confirm-card">
@@ -143,7 +144,7 @@ export default function WarehouseReceive() {
 
                         <div className="confirm-actions">
                             <button className="btn btn-primary btn-lg" onClick={() => setCurrentStep(2)}>
-                                ✅ 차량 확인 완료 → 품목 검수
+                                <CheckCircleIcon size={18} /> 차량 확인 완료 → 품목 검수
                             </button>
                         </div>
                     </section>
@@ -152,7 +153,7 @@ export default function WarehouseReceive() {
                 {/* Step 2: 품목 검수 */}
                 {currentStep === 2 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>🔍 품목 검수</h2>
+                        <h2><SearchIcon size={20} /> 품목 검수</h2>
                         <p className="section-desc">각 품목을 확인하고 실제 수량을 입력해주세요.</p>
 
                         <div className="items-checklist">
@@ -168,7 +169,7 @@ export default function WarehouseReceive() {
                                         </div>
                                         <div className={`status-badge ${item.status.toLowerCase()}`}>
                                             {item.status === 'PENDING' && '⏳ 대기'}
-                                            {item.status === 'CHECKED' && '✅ 확인'}
+                                            {item.status === 'CHECKED' && <><CheckCircleIcon size={14} /> 확인</>}
                                             {item.status === 'ISSUE' && '⚠️ 이상'}
                                         </div>
                                     </div>
@@ -225,7 +226,7 @@ export default function WarehouseReceive() {
                                                 className="btn btn-success"
                                                 onClick={() => markItemChecked(idx)}
                                             >
-                                                ✅ 정상
+                                                <CheckCircleIcon size={16} /> 정상
                                             </button>
                                             <button
                                                 className="btn btn-danger"
@@ -257,7 +258,7 @@ export default function WarehouseReceive() {
                 {/* Step 3: 반입 완료 */}
                 {currentStep === 3 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>📋 반입 완료 확인</h2>
+                        <h2><ClipboardListIcon size={20} /> 반입 완료 확인</h2>
                         <p className="section-desc">검수 내역을 확인하고 반입을 완료해주세요.</p>
 
                         <div className="summary-card">
@@ -272,7 +273,7 @@ export default function WarehouseReceive() {
                                         <div className="item-info">
                                             <span className="name">{item.productName}</span>
                                             <span className={`status ${item.status.toLowerCase()}`}>
-                                                {item.status === 'CHECKED' ? '✅' : '⚠️'}
+                                                {item.status === 'CHECKED' ? <CheckCircleIcon size={14} /> : <AlertTriangleIcon size={14} />}
                                             </span>
                                         </div>
                                         <div className="item-qty">
@@ -307,7 +308,7 @@ export default function WarehouseReceive() {
                                 ← 이전
                             </button>
                             <button className="btn btn-primary btn-lg" onClick={handleComplete}>
-                                ✅ 반입 완료
+                                <CheckCircleIcon size={18} /> 반입 완료
                             </button>
                         </div>
                     </section>

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { FilesIcon } from '../../components/Icons'
 import type { GateStage } from '../../types'
 
 interface GateItem {
@@ -182,7 +183,7 @@ export default function WarehouseGate() {
 
                         <div className="gate-progress">
                             <div className="progress-item">
-                                <span className={item.documentsMatched >= item.documentsRequired ? 'done' : 'pending'}>📄</span>
+                                <span className={item.documentsMatched >= item.documentsRequired ? 'done' : 'pending'}><FilesIcon size={16} /></span>
                                 <span>문서 {item.documentsMatched}/{item.documentsRequired}</span>
                             </div>
                             <div className="progress-item">

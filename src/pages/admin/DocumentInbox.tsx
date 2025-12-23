@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import * as XLSX from 'xlsx'
+import { FilesIcon } from '../../components/Icons'
 import type { DocumentType, ParsedTransactionLine, ParsedInspectionPackage } from '../../types'
 
 export default function DocumentInbox() {
@@ -213,7 +214,7 @@ export default function DocumentInbox() {
                                             onChange={handleFileSelect}
                                             style={{ display: 'none' }}
                                         />
-                                        <div className="upload-icon">📄</div>
+                                        <div className="upload-icon"><FilesIcon size={48} /></div>
                                         <p>클릭하여 엑셀 파일 선택</p>
                                         <p className="text-sm text-muted">.xlsx, .xls 파일만 지원</p>
                                     </div>

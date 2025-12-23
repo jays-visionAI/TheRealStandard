@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { MapPinIcon, TruckDeliveryIcon, PhoneIcon, PackageIcon, CheckCircleIcon, ClipboardListIcon } from '../../components/Icons'
 import './WarehouseRelease.css'
 
 interface ReleaseItem {
@@ -85,13 +86,13 @@ export default function WarehouseRelease() {
                     <div className="release-info">
                         <h1>{releaseInfo.customerName}</h1>
                         <p className="order-id">주문: {releaseInfo.orderId}</p>
-                        <p className="ship-to">📍 {releaseInfo.shipTo}</p>
+                        <p className="ship-to"><MapPinIcon size={14} /> {releaseInfo.shipTo}</p>
                     </div>
                     <div className="vehicle-info">
-                        <span className="vehicle-no">🚛 {releaseInfo.vehicleNo}</span>
+                        <span className="vehicle-no"><TruckDeliveryIcon size={16} /> {releaseInfo.vehicleNo}</span>
                         <span className="driver">{releaseInfo.driverName}</span>
                         <a href={`tel:${releaseInfo.driverPhone}`} className="phone-link">
-                            📞 {releaseInfo.driverPhone}
+                            <PhoneIcon size={14} /> {releaseInfo.driverPhone}
                         </a>
                     </div>
                 </div>
@@ -120,7 +121,7 @@ export default function WarehouseRelease() {
                 {/* Step 1: 상품 적재 */}
                 {currentStep === 1 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>📦 상품 적재</h2>
+                        <h2><PackageIcon size={20} /> 상품 적재</h2>
                         <p className="section-desc">각 품목을 차량에 적재하고 확인해주세요.</p>
 
                         <div className="items-checklist">
@@ -136,7 +137,7 @@ export default function WarehouseRelease() {
                                         </div>
                                         <div className={`status-badge ${item.status.toLowerCase()}`}>
                                             {item.status === 'PENDING' && '⏳ 대기'}
-                                            {item.status === 'LOADED' && '✅ 적재완료'}
+                                            {item.status === 'LOADED' && <><CheckCircleIcon size={14} /> 적재완료</>}
                                             {item.status === 'ISSUE' && '⚠️ 이상'}
                                         </div>
                                     </div>
@@ -193,7 +194,7 @@ export default function WarehouseRelease() {
                                                 className="btn btn-success"
                                                 onClick={() => markItemLoaded(idx)}
                                             >
-                                                ✅ 적재 완료
+                                                <CheckCircleIcon size={16} /> 적재 완료
                                             </button>
                                             <button
                                                 className="btn btn-danger"
@@ -228,7 +229,7 @@ export default function WarehouseRelease() {
 
                         <div className="driver-confirm-card">
                             <div className="driver-info">
-                                <span className="driver-name">🚛 {releaseInfo.driverName}</span>
+                                <span className="driver-name"><TruckDeliveryIcon size={16} /> {releaseInfo.driverName}</span>
                                 <span className="vehicle-no">{releaseInfo.vehicleNo}</span>
                             </div>
 
@@ -285,7 +286,7 @@ export default function WarehouseRelease() {
                 {/* Step 3: 출고 완료 */}
                 {currentStep === 3 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2>📋 출고 완료 확인</h2>
+                        <h2><ClipboardListIcon size={20} /> 출고 완료 확인</h2>
                         <p className="section-desc">최종 내역을 확인하고 출고를 완료해주세요.</p>
 
                         <div className="final-summary-card">
@@ -327,7 +328,7 @@ export default function WarehouseRelease() {
                         </div>
 
                         <button className="btn btn-primary btn-lg w-full" onClick={handleComplete}>
-                            ✅ 출고 완료
+                            <CheckCircleIcon size={18} /> 출고 완료
                         </button>
 
                         <div className="step-footer">

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon } from '../../components/Icons'
+import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIcon } from '../../components/Icons'
 import './Login.css'
 
 // Mock 사용자 목록 (데모용)
@@ -79,7 +79,7 @@ export default function Login() {
                 {/* Logo & Title */}
                 <div className="login-header">
                     <div className="logo">
-                        <span className="logo-icon">📦</span>
+                        <span className="logo-icon"><PackageIcon size={48} /></span>
                         <span className="logo-text">TRS</span>
                     </div>
                     <h1>물류 주문관리 솔루션</h1>

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { PackageIcon, TruckDeliveryIcon, CheckCircleIcon, BuildingIcon, UserIcon, PhoneIcon } from '../../components/Icons'
 import type { ShipmentStatus } from '../../types'
+import type { ReactNode } from 'react'
 
 interface TrackingInfo {
   status: ShipmentStatus
@@ -36,11 +38,11 @@ export default function DeliveryTracking() {
     }, 500)
   }, [token])
 
-  const getStatusConfig = (status: ShipmentStatus) => {
-    const config = {
-      PREPARING: { label: '배송 준비중', icon: '📦', color: 'var(--color-warning)', step: 1 },
-      IN_TRANSIT: { label: '배송중', icon: '🚛', color: 'var(--color-primary)', step: 2 },
-      DELIVERED: { label: '배송 완료', icon: '✅', color: 'var(--color-accent)', step: 3 },
+  const getStatusConfig = (status: ShipmentStatus): { label: string; icon: ReactNode; color: string; step: number } => {
+    const config: Record<ShipmentStatus, { label: string; icon: ReactNode; color: string; step: number }> = {
+      PREPARING: { label: '배송 준비중', icon: <PackageIcon size={48} />, color: 'var(--color-warning)', step: 1 },
+      IN_TRANSIT: { label: '배송중', icon: <TruckDeliveryIcon size={48} />, color: 'var(--color-primary)', step: 2 },
+      DELIVERED: { label: '배송 완료', icon: <CheckCircleIcon size={48} />, color: 'var(--color-accent)', step: 3 },
     }
     return config[status]
   }
@@ -104,7 +106,7 @@ export default function DeliveryTracking() {
 
           <div className="info-grid">
             <div className="info-item">
-              <span className="info-icon">🏢</span>
+              <span className="info-icon"><BuildingIcon size={24} /></span>
               <div className="info-content">
                 <span className="label">배송업체</span>
                 <span className="value">{tracking.carrierName}</span>
@@ -120,7 +122,7 @@ export default function DeliveryTracking() {
             </div>
 
             <div className="info-item">
-              <span className="info-icon">👤</span>
+              <span className="info-icon"><UserIcon size={24} /></span>
               <div className="info-content">
                 <span className="label">기사님</span>
                 <span className="value">{tracking.driverName}</span>
@@ -128,7 +130,7 @@ export default function DeliveryTracking() {
             </div>
 
             <div className="info-item">
-              <span className="info-icon">📞</span>
+              <span className="info-icon"><PhoneIcon size={24} /></span>
               <div className="info-content">
                 <span className="label">연락처</span>
                 <a href={`tel:${tracking.driverPhone}`} className="value phone">

@@ -1,85 +1,86 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { XIcon, ClipboardListIcon } from '../../components/Icons'
 
 export default function InviteLanding() {
-    const { token } = useParams()
-    const navigate = useNavigate()
-    const [loading, setLoading] = useState(true)
-    const [valid, setValid] = useState(false)
-    const [orderInfo, setOrderInfo] = useState<any>(null)
+  const { token } = useParams()
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(true)
+  const [valid, setValid] = useState(false)
+  const [orderInfo, setOrderInfo] = useState<any>(null)
 
-    useEffect(() => {
-        // Simulate token validation
-        setTimeout(() => {
-            if (token) {
-                setValid(true)
-                setOrderInfo({
-                    id: 'OS-2024-001',
-                    customerName: '한우명가',
-                    shipDate: '2024-01-16',
-                    cutOffAt: '2024-01-15 18:00',
-                    status: 'SENT',
-                })
-            }
-            setLoading(false)
-        }, 1000)
-    }, [token])
+  useEffect(() => {
+    // Simulate token validation
+    setTimeout(() => {
+      if (token) {
+        setValid(true)
+        setOrderInfo({
+          id: 'OS-2024-001',
+          customerName: '한우명가',
+          shipDate: '2024-01-16',
+          cutOffAt: '2024-01-15 18:00',
+          status: 'SENT',
+        })
+      }
+      setLoading(false)
+    }, 1000)
+  }, [token])
 
-    if (loading) {
-        return (
-            <div className="invite-container">
-                <div className="glass-card invite-card">
-                    <div className="loading-spinner"></div>
-                    <p>주문장을 확인하고 있습니다...</p>
-                </div>
-            </div>
-        )
-    }
-
-    if (!valid) {
-        return (
-            <div className="invite-container">
-                <div className="glass-card invite-card error">
-                    <div className="icon">❌</div>
-                    <h2>유효하지 않은 링크</h2>
-                    <p>이 링크는 만료되었거나 유효하지 않습니다.</p>
-                    <p className="text-sm">담당자에게 문의해주세요.</p>
-                </div>
-            </div>
-        )
-    }
-
+  if (loading) {
     return (
-        <div className="invite-container">
-            <div className="glass-card invite-card">
-                <div className="icon">📋</div>
-                <h2 className="gradient-text">주문장 초대</h2>
-                <p className="customer-name">{orderInfo.customerName}님</p>
+      <div className="invite-container">
+        <div className="glass-card invite-card">
+          <div className="loading-spinner"></div>
+          <p>주문장을 확인하고 있습니다...</p>
+        </div>
+      </div>
+    )
+  }
 
-                <div className="order-info">
-                    <div className="info-row">
-                        <span className="label">주문번호</span>
-                        <span className="value">{orderInfo.id}</span>
-                    </div>
-                    <div className="info-row">
-                        <span className="label">배송예정일</span>
-                        <span className="value">{orderInfo.shipDate}</span>
-                    </div>
-                    <div className="info-row">
-                        <span className="label">주문마감</span>
-                        <span className="value highlight">{orderInfo.cutOffAt}</span>
-                    </div>
-                </div>
+  if (!valid) {
+    return (
+      <div className="invite-container">
+        <div className="glass-card invite-card error">
+          <div className="icon"><XIcon size={48} /></div>
+          <h2>유효하지 않은 링크</h2>
+          <p>이 링크는 만료되었거나 유효하지 않습니다.</p>
+          <p className="text-sm">담당자에게 문의해주세요.</p>
+        </div>
+      </div>
+    )
+  }
 
-                <button
-                    className="btn btn-primary btn-lg w-full"
-                    onClick={() => navigate(`/order/${token}/edit`)}
-                >
-                    주문하기 →
-                </button>
-            </div>
+  return (
+    <div className="invite-container">
+      <div className="glass-card invite-card">
+        <div className="icon"><ClipboardListIcon size={48} /></div>
+        <h2 className="gradient-text">주문장 초대</h2>
+        <p className="customer-name">{orderInfo.customerName}님</p>
 
-            <style>{`
+        <div className="order-info">
+          <div className="info-row">
+            <span className="label">주문번호</span>
+            <span className="value">{orderInfo.id}</span>
+          </div>
+          <div className="info-row">
+            <span className="label">배송예정일</span>
+            <span className="value">{orderInfo.shipDate}</span>
+          </div>
+          <div className="info-row">
+            <span className="label">주문마감</span>
+            <span className="value highlight">{orderInfo.cutOffAt}</span>
+          </div>
+        </div>
+
+        <button
+          className="btn btn-primary btn-lg w-full"
+          onClick={() => navigate(`/order/${token}/edit`)}
+        >
+          주문하기 →
+        </button>
+      </div>
+
+      <style>{`
         .invite-container {
           display: flex;
           justify-content: center;
@@ -154,6 +155,6 @@ export default function InviteLanding() {
           to { transform: rotate(360deg); }
         }
       `}</style>
-        </div>
-    )
+    </div>
+  )
 }

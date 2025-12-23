@@ -477,7 +477,7 @@ export default function OrganizationMaster() {
                                         checked={formData.isKeyAccount ?? false}
                                         onChange={(e) => setFormData({ ...formData, isKeyAccount: e.target.checked })}
                                     />
-                                    <span>⭐ 주요 거래처 (주문장 생성 시 상단에 노출)</span>
+                                    <span><StarIcon size={16} /> 주요 거래처 (주문장 생성 시 상단에 노출)</span>
                                 </label>
                                 <label className="checkbox-label">
                                     <input

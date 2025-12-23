@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ClipboardListIcon } from '../../components/Icons'
 import './B2BOrderGrid.css'
 
 // ============================================
@@ -378,7 +379,7 @@ export default function B2BOrderGrid() {
             {/* Header */}
             <header className="order-header glass-card">
                 <div className="header-left">
-                    <h1>📋 {orderInfo.customerName} 주문서</h1>
+                    <h1><ClipboardListIcon size={24} /> {orderInfo.customerName} 주문서</h1>
                     <div className="order-meta">
                         <span className="meta-item">
                             <span className="meta-icon">📅</span>

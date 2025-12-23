@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { XIcon } from '../../components/Icons'
 
 interface OrderItem {
     productName: string
@@ -135,7 +136,7 @@ export default function OrderReview() {
                         className="btn btn-secondary btn-lg"
                         onClick={() => setShowRevisionModal(true)}
                     >
-                        ❌ 수정 요청
+                        <XIcon size={18} /> 수정 요청
                     </button>
                     <button
                         className="btn btn-primary btn-lg"
