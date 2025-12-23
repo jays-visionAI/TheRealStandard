@@ -36,6 +36,7 @@ import CatalogManager from './pages/admin/CatalogManager'
 import VehicleTypeSettings from './pages/admin/VehicleTypeSettings'
 import ProductMaster from './pages/admin/ProductMaster'
 import OrganizationMaster from './pages/admin/OrganizationMaster'
+import SupplierMaster from './pages/admin/SupplierMaster'
 
 // Front (Customer) Pages
 import FrontLayout from './layouts/FrontLayout'
@@ -116,6 +117,7 @@ function App() {
                         <Route index element={<Dashboard />} />
                         {/* Users */}
                         <Route path="users/customers" element={<OrganizationMaster />} />
+                        <Route path="users/suppliers" element={<SupplierMaster />} />
                         <Route path="users/accounting" element={<Dashboard />} />
                         <Route path="users/warehouse" element={<Dashboard />} />
                         <Route path="users/sales" element={<Dashboard />} />

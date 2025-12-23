@@ -12,7 +12,8 @@ const navigation = [
         label: 'Users',
         icon: '👥',
         children: [
-            { label: '고객사 (거래처)', path: '/admin/users/customers' },
+            { label: '고객사 (구매처)', path: '/admin/users/customers' },
+            { label: '공급거래처', path: '/admin/users/suppliers' },
             { label: '회계팀', path: '/admin/users/accounting' },
             { label: '물류팀', path: '/admin/users/warehouse' },
             { label: '영업팀', path: '/admin/users/sales' },
@@ -152,7 +153,8 @@ function getPageTitle(pathname: string): string {
     const titles: Record<string, string> = {
         '/admin': '대시보드',
         // Users
-        '/admin/users/customers': '고객사 (거래처) 관리',
+        '/admin/users/customers': '고객사 (구매처) 관리',
+        '/admin/users/suppliers': '공급거래처 관리',
         '/admin/users/accounting': '회계팀 관리',
         '/admin/users/warehouse': '물류팀 관리',
         '/admin/users/sales': '영업팀 관리',

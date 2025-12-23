@@ -1,31 +1,27 @@
 import { useState, useMemo } from 'react'
-// Firebase 연동 시 사용 예정
-// import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'
-// import { db } from '../../lib/firebase'
-import './OrganizationMaster.css'
+import './OrganizationMaster.css'  // 같은 스타일 공유
 
-// 거래처 인터페이스
-interface Customer {
+// 공급업체 인터페이스
+interface Supplier {
     id: string
     // 기본 정보
     companyName: string
-    bizRegNo: string           // 사업자등록번호
-    ceoName: string            // 대표자명
+    bizRegNo: string
+    ceoName: string
     // 연락처
     phone: string
     fax?: string
     email: string
     // 주소
-    address: string            // 본사 주소
-    shipAddress1: string       // 배송지 주소 1
-    shipAddress2?: string      // 배송지 주소 2
+    address: string
     // 담당자 정보
-    contactPerson?: string     // 담당자명
-    contactPhone?: string      // 담당자 연락처
-    // 거래 정보
-    priceType: 'wholesale' | 'retail'  // 도매가 / 소매가 적용
-    paymentTerms?: string      // 결제 조건
-    creditLimit?: number       // 신용 한도
+    contactPerson?: string
+    contactPhone?: string
+    // 공급 정보
+    supplyCategory: 'meat' | 'byproduct' | 'packaging' | 'other'  // 공급 품목 카테고리
+    paymentTerms?: string
+    bankName?: string
+    bankAccount?: string
     // 메모
     memo?: string
     // 상태
@@ -35,100 +31,100 @@ interface Customer {
 }
 
 // Mock 데이터
-const mockCustomers: Customer[] = [
+const mockSuppliers: Supplier[] = [
     {
-        id: 'cust-001',
-        companyName: '한우명가',
-        bizRegNo: '123-45-67890',
-        ceoName: '김대표',
-        phone: '02-1234-5678',
-        fax: '02-1234-5679',
-        email: 'order@hanwoo.co.kr',
-        address: '서울시 강남구 역삼동 123-45',
-        shipAddress1: '서울시 강남구 역삼동 123-45 (본점)',
-        shipAddress2: '서울시 서초구 서초동 456-78 (2호점)',
-        contactPerson: '이과장',
-        contactPhone: '010-1234-5678',
-        priceType: 'wholesale',
-        paymentTerms: '월말 정산',
-        creditLimit: 50000000,
-        memo: 'VIP 거래처',
+        id: 'supp-001',
+        companyName: '돈우농장',
+        bizRegNo: '111-22-33333',
+        ceoName: '박농장',
+        phone: '031-111-2222',
+        email: 'donwoo@farm.co.kr',
+        address: '경기도 이천시 모가면 농장로 123',
+        contactPerson: '김과장',
+        contactPhone: '010-1111-2222',
+        supplyCategory: 'meat',
+        paymentTerms: '익월 10일',
+        bankName: '농협은행',
+        bankAccount: '123-4567-8901-23',
+        memo: '한돈 주요 공급처',
         isActive: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-15'),
+        createdAt: new Date('2023-01-01'),
+        updatedAt: new Date('2024-01-01'),
     },
     {
-        id: 'cust-002',
-        companyName: '정육의달인',
-        bizRegNo: '234-56-78901',
-        ceoName: '박사장',
-        phone: '02-2345-6789',
-        email: 'master@meat.co.kr',
-        address: '서울시 서초구 방배동 234-56',
-        shipAddress1: '서울시 서초구 방배동 234-56',
+        id: 'supp-002',
+        companyName: '한우목장',
+        bizRegNo: '222-33-44444',
+        ceoName: '이목장',
+        phone: '033-222-3333',
+        email: 'hanwoo@ranch.co.kr',
+        address: '강원도 횡성군 안흥면 목장길 456',
         contactPerson: '최대리',
-        contactPhone: '010-2345-6789',
-        priceType: 'wholesale',
+        contactPhone: '010-2222-3333',
+        supplyCategory: 'meat',
         paymentTerms: '선결제',
         isActive: true,
-        createdAt: new Date('2024-01-05'),
-        updatedAt: new Date('2024-01-05'),
+        createdAt: new Date('2023-06-01'),
+        updatedAt: new Date('2023-12-15'),
     },
     {
-        id: 'cust-003',
-        companyName: '고기마을',
-        bizRegNo: '345-67-89012',
-        ceoName: '최사장',
-        phone: '031-345-6789',
-        email: 'info@meatvillage.kr',
-        address: '경기도 성남시 분당구 정자동 345',
-        shipAddress1: '경기도 성남시 분당구 정자동 345',
-        priceType: 'retail',
+        id: 'supp-003',
+        companyName: '부산물유통',
+        bizRegNo: '333-44-55555',
+        ceoName: '최부산',
+        phone: '02-333-4444',
+        email: 'byproduct@trade.co.kr',
+        address: '서울시 마포구 도화동 789',
+        supplyCategory: 'byproduct',
         isActive: false,
-        createdAt: new Date('2024-01-10'),
-        updatedAt: new Date('2024-01-20'),
+        createdAt: new Date('2022-03-01'),
+        updatedAt: new Date('2023-06-30'),
     },
 ]
 
-export default function OrganizationMaster() {
-    const [customers, setCustomers] = useState<Customer[]>(mockCustomers)
+const CATEGORY_LABELS: Record<Supplier['supplyCategory'], string> = {
+    meat: '육류',
+    byproduct: '부산물',
+    packaging: '포장재',
+    other: '기타',
+}
+
+export default function SupplierMaster() {
+    const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers)
     const [searchQuery, setSearchQuery] = useState('')
     const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all')
     const [showModal, setShowModal] = useState(false)
-    const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
-    const [formData, setFormData] = useState<Partial<Customer>>({})
+    const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
+    const [formData, setFormData] = useState<Partial<Supplier>>({})
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    // 필터링된 거래처 목록
-    const filteredCustomers = useMemo(() => {
-        return customers.filter(customer => {
-            // 검색 필터
+    // 필터링된 공급업체 목록
+    const filteredSuppliers = useMemo(() => {
+        return suppliers.filter(supplier => {
             const q = searchQuery.toLowerCase()
             const matchesSearch = !searchQuery ||
-                customer.companyName.toLowerCase().includes(q) ||
-                customer.bizRegNo.includes(q) ||
-                customer.ceoName.toLowerCase().includes(q) ||
-                customer.email.toLowerCase().includes(q)
+                supplier.companyName.toLowerCase().includes(q) ||
+                supplier.bizRegNo.includes(q) ||
+                supplier.ceoName.toLowerCase().includes(q)
 
-            // 활성 상태 필터
             const matchesActive = filterActive === 'all' ||
-                (filterActive === 'active' && customer.isActive) ||
-                (filterActive === 'inactive' && !customer.isActive)
+                (filterActive === 'active' && supplier.isActive) ||
+                (filterActive === 'inactive' && !supplier.isActive)
 
             return matchesSearch && matchesActive
         })
-    }, [customers, searchQuery, filterActive])
+    }, [suppliers, searchQuery, filterActive])
 
     // 통계
     const stats = useMemo(() => ({
-        total: customers.length,
-        active: customers.filter(c => c.isActive).length,
-        inactive: customers.filter(c => !c.isActive).length,
-    }), [customers])
+        total: suppliers.length,
+        active: suppliers.filter(s => s.isActive).length,
+        inactive: suppliers.filter(s => !s.isActive).length,
+    }), [suppliers])
 
     // 모달 열기 - 신규 등록
     const openCreateModal = () => {
-        setEditingCustomer(null)
+        setEditingSupplier(null)
         setFormData({
             companyName: '',
             bizRegNo: '',
@@ -136,17 +132,16 @@ export default function OrganizationMaster() {
             phone: '',
             email: '',
             address: '',
-            shipAddress1: '',
-            priceType: 'wholesale',
+            supplyCategory: 'meat',
             isActive: true,
         })
         setShowModal(true)
     }
 
     // 모달 열기 - 수정
-    const openEditModal = (customer: Customer) => {
-        setEditingCustomer(customer)
-        setFormData({ ...customer })
+    const openEditModal = (supplier: Supplier) => {
+        setEditingSupplier(supplier)
+        setFormData({ ...supplier })
         setShowModal(true)
     }
 
@@ -156,35 +151,27 @@ export default function OrganizationMaster() {
         setIsSubmitting(true)
 
         try {
-            if (editingCustomer) {
-                // 수정
-                const updatedCustomer: Customer = {
-                    ...editingCustomer,
+            if (editingSupplier) {
+                const updatedSupplier: Supplier = {
+                    ...editingSupplier,
                     ...formData,
                     updatedAt: new Date(),
-                } as Customer
+                } as Supplier
 
-                // Firestore 업데이트 (향후)
-                // await updateDoc(doc(db, 'customers', editingCustomer.id), formData)
-
-                setCustomers(prev => prev.map(c =>
-                    c.id === editingCustomer.id ? updatedCustomer : c
+                setSuppliers(prev => prev.map(s =>
+                    s.id === editingSupplier.id ? updatedSupplier : s
                 ))
-                alert('✅ 거래처 정보가 수정되었습니다.')
+                alert('✅ 공급업체 정보가 수정되었습니다.')
             } else {
-                // 신규 등록
-                const newCustomer: Customer = {
-                    id: `cust-${Date.now()}`,
+                const newSupplier: Supplier = {
+                    id: `supp-${Date.now()}`,
                     ...formData,
                     createdAt: new Date(),
                     updatedAt: new Date(),
-                } as Customer
+                } as Supplier
 
-                // Firestore 저장 (향후)
-                // await addDoc(collection(db, 'customers'), newCustomer)
-
-                setCustomers(prev => [...prev, newCustomer])
-                alert('✅ 새 거래처가 등록되었습니다.')
+                setSuppliers(prev => [...prev, newSupplier])
+                alert('✅ 새 공급업체가 등록되었습니다.')
             }
 
             setShowModal(false)
@@ -198,65 +185,53 @@ export default function OrganizationMaster() {
     }
 
     // 삭제
-    const handleDelete = async (customer: Customer) => {
-        if (!confirm(`"${customer.companyName}" 거래처를 정말 삭제하시겠습니까?`)) return
+    const handleDelete = async (supplier: Supplier) => {
+        if (!confirm(`"${supplier.companyName}" 공급업체를 정말 삭제하시겠습니까?`)) return
 
-        try {
-            // Firestore 삭제 (향후)
-            // await deleteDoc(doc(db, 'customers', customer.id))
-
-            setCustomers(prev => prev.filter(c => c.id !== customer.id))
-            alert('삭제되었습니다.')
-        } catch (error) {
-            console.error('삭제 실패:', error)
-            alert('삭제에 실패했습니다.')
-        }
+        setSuppliers(prev => prev.filter(s => s.id !== supplier.id))
+        alert('삭제되었습니다.')
     }
 
     // 활성/비활성 토글
-    const toggleActive = async (customer: Customer) => {
-        const updated = { ...customer, isActive: !customer.isActive, updatedAt: new Date() }
-        setCustomers(prev => prev.map(c => c.id === customer.id ? updated : c))
+    const toggleActive = (supplier: Supplier) => {
+        const updated = { ...supplier, isActive: !supplier.isActive, updatedAt: new Date() }
+        setSuppliers(prev => prev.map(s => s.id === supplier.id ? updated : s))
     }
-
-    // 숫자 포맷 (향후 신용한도 표시에 사용)
-    // const formatCurrency = (value?: number) =>
-    //     value ? new Intl.NumberFormat('ko-KR').format(value) : '-'
 
     return (
         <div className="organization-master">
             {/* Header */}
             <div className="page-header">
                 <div>
-                    <h1>🏢 거래처 관리</h1>
-                    <p className="text-secondary">발주 고객사 정보를 등록하고 관리합니다</p>
+                    <h1>🏭 공급거래처 관리</h1>
+                    <p className="text-secondary">제품을 공급받는 업체(공급사) 정보를 관리합니다</p>
                 </div>
                 <button className="btn btn-primary" onClick={openCreateModal}>
-                    + 거래처 등록
+                    + 공급업체 등록
                 </button>
             </div>
 
             {/* Stats Cards */}
             <div className="stats-grid">
                 <div className="stat-card">
-                    <div className="stat-icon">📊</div>
+                    <div className="stat-icon">🏭</div>
                     <div className="stat-info">
                         <span className="stat-value">{stats.total}</span>
-                        <span className="stat-label">전체 거래처</span>
+                        <span className="stat-label">전체 공급업체</span>
                     </div>
                 </div>
                 <div className="stat-card active">
                     <div className="stat-icon">✅</div>
                     <div className="stat-info">
                         <span className="stat-value">{stats.active}</span>
-                        <span className="stat-label">활성 거래처</span>
+                        <span className="stat-label">활성 업체</span>
                     </div>
                 </div>
                 <div className="stat-card inactive">
                     <div className="stat-icon">⏸️</div>
                     <div className="stat-info">
                         <span className="stat-value">{stats.inactive}</span>
-                        <span className="stat-label">비활성 거래처</span>
+                        <span className="stat-label">비활성 업체</span>
                     </div>
                 </div>
             </div>
@@ -268,7 +243,7 @@ export default function OrganizationMaster() {
                     <input
                         type="text"
                         className="input"
-                        placeholder="회사명, 사업자번호, 대표자, 이메일 검색..."
+                        placeholder="회사명, 사업자번호, 대표자 검색..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -295,7 +270,7 @@ export default function OrganizationMaster() {
                 </div>
             </div>
 
-            {/* Customer Table */}
+            {/* Supplier Table */}
             <div className="glass-card table-container">
                 <table className="data-table">
                     <thead>
@@ -305,55 +280,55 @@ export default function OrganizationMaster() {
                             <th>사업자번호</th>
                             <th>대표자</th>
                             <th>연락처</th>
-                            <th>이메일</th>
-                            <th>가격타입</th>
+                            <th>공급품목</th>
+                            <th>결제조건</th>
                             <th>액션</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredCustomers.length === 0 ? (
+                        {filteredSuppliers.length === 0 ? (
                             <tr>
                                 <td colSpan={8} className="empty-row">
                                     검색 결과가 없습니다.
                                 </td>
                             </tr>
                         ) : (
-                            filteredCustomers.map(customer => (
-                                <tr key={customer.id} className={!customer.isActive ? 'inactive' : ''}>
+                            filteredSuppliers.map(supplier => (
+                                <tr key={supplier.id} className={!supplier.isActive ? 'inactive' : ''}>
                                     <td>
-                                        <span className={`status-badge ${customer.isActive ? 'active' : 'inactive'}`}>
-                                            {customer.isActive ? '활성' : '비활성'}
+                                        <span className={`status-badge ${supplier.isActive ? 'active' : 'inactive'}`}>
+                                            {supplier.isActive ? '활성' : '비활성'}
                                         </span>
                                     </td>
                                     <td className="company-name">
-                                        <strong>{customer.companyName}</strong>
-                                        {customer.memo && <span className="memo-tag">메모</span>}
+                                        <strong>{supplier.companyName}</strong>
+                                        {supplier.memo && <span className="memo-tag">메모</span>}
                                     </td>
-                                    <td className="mono">{customer.bizRegNo}</td>
-                                    <td>{customer.ceoName}</td>
-                                    <td className="mono">{customer.phone}</td>
-                                    <td>{customer.email}</td>
+                                    <td className="mono">{supplier.bizRegNo}</td>
+                                    <td>{supplier.ceoName}</td>
+                                    <td className="mono">{supplier.phone}</td>
                                     <td>
-                                        <span className={`price-badge ${customer.priceType}`}>
-                                            {customer.priceType === 'wholesale' ? '도매' : '소매'}
+                                        <span className={`price-badge ${supplier.supplyCategory}`}>
+                                            {CATEGORY_LABELS[supplier.supplyCategory]}
                                         </span>
                                     </td>
+                                    <td>{supplier.paymentTerms || '-'}</td>
                                     <td className="actions">
                                         <button
                                             className="btn btn-sm btn-ghost"
-                                            onClick={() => openEditModal(customer)}
+                                            onClick={() => openEditModal(supplier)}
                                         >
                                             수정
                                         </button>
                                         <button
                                             className="btn btn-sm btn-ghost"
-                                            onClick={() => toggleActive(customer)}
+                                            onClick={() => toggleActive(supplier)}
                                         >
-                                            {customer.isActive ? '비활성화' : '활성화'}
+                                            {supplier.isActive ? '비활성화' : '활성화'}
                                         </button>
                                         <button
                                             className="btn btn-sm btn-ghost danger"
-                                            onClick={() => handleDelete(customer)}
+                                            onClick={() => handleDelete(supplier)}
                                         >
                                             삭제
                                         </button>
@@ -370,7 +345,7 @@ export default function OrganizationMaster() {
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>{editingCustomer ? '거래처 수정' : '새 거래처 등록'}</h2>
+                            <h2>{editingSupplier ? '공급업체 수정' : '새 공급업체 등록'}</h2>
                             <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
                         </div>
 
@@ -422,7 +397,6 @@ export default function OrganizationMaster() {
                                         <input
                                             type="tel"
                                             className="input"
-                                            placeholder="02-0000-0000"
                                             value={formData.phone || ''}
                                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                             required
@@ -454,32 +428,13 @@ export default function OrganizationMaster() {
                             <div className="form-section">
                                 <h3>📍 주소</h3>
                                 <div className="form-group required full-width">
-                                    <label>본사 주소</label>
+                                    <label>본사/공장 주소</label>
                                     <input
                                         type="text"
                                         className="input"
                                         value={formData.address || ''}
                                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                         required
-                                    />
-                                </div>
-                                <div className="form-group required full-width">
-                                    <label>배송지 주소 1</label>
-                                    <input
-                                        type="text"
-                                        className="input"
-                                        value={formData.shipAddress1 || ''}
-                                        onChange={(e) => setFormData({ ...formData, shipAddress1: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="form-group full-width">
-                                    <label>배송지 주소 2 (선택)</label>
-                                    <input
-                                        type="text"
-                                        className="input"
-                                        value={formData.shipAddress2 || ''}
-                                        onChange={(e) => setFormData({ ...formData, shipAddress2: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -502,7 +457,6 @@ export default function OrganizationMaster() {
                                         <input
                                             type="tel"
                                             className="input"
-                                            placeholder="010-0000-0000"
                                             value={formData.contactPhone || ''}
                                             onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
                                         />
@@ -510,19 +464,21 @@ export default function OrganizationMaster() {
                                 </div>
                             </div>
 
-                            {/* 거래 정보 */}
+                            {/* 공급/결제 정보 */}
                             <div className="form-section">
-                                <h3>💰 거래 정보</h3>
+                                <h3>💰 공급 및 결제 정보</h3>
                                 <div className="form-grid">
                                     <div className="form-group required">
-                                        <label>가격 타입</label>
+                                        <label>공급 품목</label>
                                         <select
                                             className="input"
-                                            value={formData.priceType || 'wholesale'}
-                                            onChange={(e) => setFormData({ ...formData, priceType: e.target.value as 'wholesale' | 'retail' })}
+                                            value={formData.supplyCategory || 'meat'}
+                                            onChange={(e) => setFormData({ ...formData, supplyCategory: e.target.value as Supplier['supplyCategory'] })}
                                         >
-                                            <option value="wholesale">도매가 적용</option>
-                                            <option value="retail">소매가 적용</option>
+                                            <option value="meat">육류</option>
+                                            <option value="byproduct">부산물</option>
+                                            <option value="packaging">포장재</option>
+                                            <option value="other">기타</option>
                                         </select>
                                     </div>
                                     <div className="form-group">
@@ -530,18 +486,27 @@ export default function OrganizationMaster() {
                                         <input
                                             type="text"
                                             className="input"
-                                            placeholder="예: 월말 정산, 선결제"
+                                            placeholder="예: 익월 10일, 선결제"
                                             value={formData.paymentTerms || ''}
                                             onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label>신용 한도 (원)</label>
+                                        <label>은행명</label>
                                         <input
-                                            type="number"
+                                            type="text"
                                             className="input"
-                                            value={formData.creditLimit || ''}
-                                            onChange={(e) => setFormData({ ...formData, creditLimit: parseInt(e.target.value) || undefined })}
+                                            value={formData.bankName || ''}
+                                            onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>계좌번호</label>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            value={formData.bankAccount || ''}
+                                            onChange={(e) => setFormData({ ...formData, bankAccount: e.target.value })}
                                         />
                                     </div>
                                 </div>
@@ -554,7 +519,7 @@ export default function OrganizationMaster() {
                                     <textarea
                                         className="input textarea"
                                         rows={3}
-                                        placeholder="거래처 관련 메모를 입력하세요..."
+                                        placeholder="공급업체 관련 메모를 입력하세요..."
                                         value={formData.memo || ''}
                                         onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
                                     />
@@ -569,7 +534,7 @@ export default function OrganizationMaster() {
                                         checked={formData.isActive ?? true}
                                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                                     />
-                                    <span>활성 거래처</span>
+                                    <span>활성 공급업체</span>
                                 </label>
                             </div>
 
@@ -578,7 +543,7 @@ export default function OrganizationMaster() {
                                     취소
                                 </button>
                                 <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                                    {isSubmitting ? '저장 중...' : editingCustomer ? '수정 완료' : '등록하기'}
+                                    {isSubmitting ? '저장 중...' : editingSupplier ? '수정 완료' : '등록하기'}
                                 </button>
                             </div>
                         </form>
