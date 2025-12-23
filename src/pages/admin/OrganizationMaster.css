@@ -414,3 +414,31 @@
         max-height: 95vh;
     }
 }
+
+/* 주요 거래처 뱃지 */
+.key-account-badge {
+    font-size: var(--text-sm);
+    margin-right: var(--space-1);
+}
+
+/* 체크박스 섹션 */
+.checkbox-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.checkbox-section .checkbox-label {
+    padding: var(--space-2) var(--space-3);
+    background: white;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-secondary);
+    transition: all 0.15s;
+}
+
+.checkbox-section .checkbox-label:hover {
+    border-color: var(--color-primary-light);
+}

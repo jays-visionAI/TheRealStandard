@@ -30,6 +30,7 @@ interface Customer {
     memo?: string
     // 상태
     isActive: boolean
+    isKeyAccount: boolean      // ⭐ 주요 거래처 여부
     createdAt: Date
     updatedAt: Date
 }
@@ -54,6 +55,7 @@ const mockCustomers: Customer[] = [
         creditLimit: 50000000,
         memo: 'VIP 거래처',
         isActive: true,
+        isKeyAccount: true,
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-15'),
     },
@@ -71,6 +73,7 @@ const mockCustomers: Customer[] = [
         priceType: 'wholesale',
         paymentTerms: '선결제',
         isActive: true,
+        isKeyAccount: true,
         createdAt: new Date('2024-01-05'),
         updatedAt: new Date('2024-01-05'),
     },
@@ -85,6 +88,7 @@ const mockCustomers: Customer[] = [
         shipAddress1: '경기도 성남시 분당구 정자동 345',
         priceType: 'retail',
         isActive: false,
+        isKeyAccount: false,
         createdAt: new Date('2024-01-10'),
         updatedAt: new Date('2024-01-20'),
     },
@@ -139,6 +143,7 @@ export default function OrganizationMaster() {
             shipAddress1: '',
             priceType: 'wholesale',
             isActive: true,
+            isKeyAccount: false,
         })
         setShowModal(true)
     }
@@ -326,6 +331,7 @@ export default function OrganizationMaster() {
                                         </span>
                                     </td>
                                     <td className="company-name">
+                                        {customer.isKeyAccount && <span className="key-account-badge">⭐</span>}
                                         <strong>{customer.companyName}</strong>
                                         {customer.memo && <span className="memo-tag">메모</span>}
                                     </td>
@@ -562,7 +568,15 @@ export default function OrganizationMaster() {
                             </div>
 
                             {/* 상태 */}
-                            <div className="form-section">
+                            <div className="form-section checkbox-section">
+                                <label className="checkbox-label">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.isKeyAccount ?? false}
+                                        onChange={(e) => setFormData({ ...formData, isKeyAccount: e.target.checked })}
+                                    />
+                                    <span>⭐ 주요 거래처 (주문장 생성 시 상단에 노출)</span>
+                                </label>
                                 <label className="checkbox-label">
                                     <input
                                         type="checkbox"
