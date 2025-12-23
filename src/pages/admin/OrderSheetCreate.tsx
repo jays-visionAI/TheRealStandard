@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { Organization } from '../../types'
+import { useCustomerStore, type Customer } from '../../stores/customerStore'
 import './OrderSheetCreate.css'
 
 // ============================================
@@ -40,21 +40,6 @@ const PRODUCT_MASTER: Product[] = [
     { id: 'p20', name: '갈비(찜용)', category: '냉동', unitPrice: 7000, unit: 'kg' },
     // 부산물
     { id: 'p21', name: '미니족(냉동)', category: '부산물', unitPrice: 5000, unit: 'kg' },
-]
-
-// Mock 고객 데이터 (isKeyAccount: 주요 거래처 여부)
-interface CustomerWithKeyFlag extends Organization {
-    isKeyAccount?: boolean
-}
-
-const mockCustomers: CustomerWithKeyFlag[] = [
-    { id: 'org-001', bizRegNo: '123-45-67890', name: '한우명가', ceoName: '김대표', address: '서울시 강남구 역삼동 123-45', tel: '02-1234-5678', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: true },
-    { id: 'org-002', bizRegNo: '234-56-78901', name: '정육왕', ceoName: '이대표', address: '서울시 서초구 서초동 234-56', tel: '02-2345-6789', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: true },
-    { id: 'org-003', bizRegNo: '345-67-89012', name: '고기마을', ceoName: '박대표', address: '경기도 성남시 분당구 정자동 345', tel: '031-345-6789', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: false },
-    { id: 'org-004', bizRegNo: '456-78-90123', name: '미트하우스', ceoName: '최대표', address: '서울시 마포구 상암동 456', tel: '02-456-7890', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: false },
-    { id: 'org-005', bizRegNo: '567-89-01234', name: '육가공센터', ceoName: '정대표', address: '경기도 용인시 기흥구 567', tel: '031-567-8901', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: false },
-    { id: 'org-006', bizRegNo: '678-90-12345', name: '프리미엄정육', ceoName: '한대표', address: '서울시 송파구 잠실동 678', tel: '02-678-9012', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: true },
-    { id: 'org-007', bizRegNo: '789-01-23456', name: '테이스티미트', ceoName: '강대표', address: '인천시 연수구 송도동 789', tel: '032-789-0123', roles: ['CUSTOMER'], createdAt: new Date(), updatedAt: new Date(), isKeyAccount: false },
 ]
 
 // Mock 이전 주문 데이터
@@ -111,11 +96,14 @@ interface OrderRow {
 export default function OrderSheetCreate() {
     const navigate = useNavigate()
 
+    // 공유 스토어에서 고객 데이터 가져오기
+    const { customers } = useCustomerStore()
+
     // Step 관리
     const [step, setStep] = useState(1)
 
     // Step 1: 고객 선택
-    const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithKeyFlag | null>(null)
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
     const [customerSearch, setCustomerSearch] = useState('')
 
     // Step 2: 품목 설정 (엑셀 그리드)
@@ -327,15 +315,16 @@ export default function OrderSheetCreate() {
     // 통화 포맷
     const formatCurrency = (value: number) => new Intl.NumberFormat('ko-KR').format(value)
 
-    // 고객 필터링
+    // 고객 필터링 - 활성 고객만 표시
     const filteredCustomers = useMemo(() => {
-        if (!customerSearch) return mockCustomers
+        const activeCustomers = customers.filter((c: Customer) => c.isActive)
+        if (!customerSearch) return activeCustomers
         const q = customerSearch.toLowerCase()
-        return mockCustomers.filter(c =>
-            c.name.toLowerCase().includes(q) ||
+        return activeCustomers.filter((c: Customer) =>
+            c.companyName.toLowerCase().includes(q) ||
             c.bizRegNo.includes(q)
         )
-    }, [customerSearch])
+    }, [customerSearch, customers])
 
     // 주문장 발송
     const handleSubmit = () => {
@@ -426,12 +415,12 @@ export default function OrderSheetCreate() {
                                             onClick={() => setSelectedCustomer(customer)}
                                         >
                                             <div className="customer-name">
-                                                {customer.name}
+                                                {customer.companyName}
                                                 <span className="key-badge">⭐</span>
                                             </div>
                                             <div className="customer-info">
                                                 <span>📍 {customer.address}</span>
-                                                <span>📞 {customer.tel}</span>
+                                                <span>📞 {customer.phone}</span>
                                             </div>
                                             <div className="customer-biz">사업자: {customer.bizRegNo}</div>
                                             {selectedCustomer?.id === customer.id && (
@@ -475,11 +464,11 @@ export default function OrderSheetCreate() {
                                                         />
                                                     </td>
                                                     <td className="name-cell">
-                                                        <strong>{customer.name}</strong>
+                                                        <strong>{customer.companyName}</strong>
                                                     </td>
                                                     <td className="mono">{customer.bizRegNo}</td>
                                                     <td>{customer.ceoName}</td>
-                                                    <td className="mono">{customer.tel}</td>
+                                                    <td className="mono">{customer.phone}</td>
                                                     <td className="address-cell">{customer.address}</td>
                                                 </tr>
                                             ))}
@@ -512,7 +501,7 @@ export default function OrderSheetCreate() {
                             <div className="section-header">
                                 <h2 className="section-title">📦 품목 입력</h2>
                                 <span className="customer-badge">
-                                    🏢 {selectedCustomer?.name}
+                                    🏢 {selectedCustomer?.companyName}
                                 </span>
                             </div>
 
@@ -656,7 +645,7 @@ export default function OrderSheetCreate() {
                         {showPastOrders && (
                             <div className="sidebar-content glass-card">
                                 <h3 className="sidebar-title">📋 이전 주문</h3>
-                                <p className="sidebar-desc">{selectedCustomer?.name}의 과거 주문</p>
+                                <p className="sidebar-desc">{selectedCustomer?.companyName}의 과거 주문</p>
 
                                 {pastOrders.length === 0 ? (
                                     <div className="empty-orders">
@@ -739,7 +728,7 @@ export default function OrderSheetCreate() {
                             <div className="summary-grid">
                                 <div className="summary-item">
                                     <span className="summary-label">고객사</span>
-                                    <span className="summary-value">{selectedCustomer?.name}</span>
+                                    <span className="summary-value">{selectedCustomer?.companyName}</span>
                                 </div>
                                 <div className="summary-item">
                                     <span className="summary-label">품목 수</span>

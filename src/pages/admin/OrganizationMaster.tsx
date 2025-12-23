@@ -1,101 +1,11 @@
 import { useState, useMemo } from 'react'
-// Firebase 연동 시 사용 예정
-// import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'
-// import { db } from '../../lib/firebase'
+import { useCustomerStore, type Customer } from '../../stores/customerStore'
 import './OrganizationMaster.css'
 
-// 거래처 인터페이스
-interface Customer {
-    id: string
-    // 기본 정보
-    companyName: string
-    bizRegNo: string           // 사업자등록번호
-    ceoName: string            // 대표자명
-    // 연락처
-    phone: string
-    fax?: string
-    email: string
-    // 주소
-    address: string            // 본사 주소
-    shipAddress1: string       // 배송지 주소 1
-    shipAddress2?: string      // 배송지 주소 2
-    // 담당자 정보
-    contactPerson?: string     // 담당자명
-    contactPhone?: string      // 담당자 연락처
-    // 거래 정보
-    priceType: 'wholesale' | 'retail'  // 도매가 / 소매가 적용
-    paymentTerms?: string      // 결제 조건
-    creditLimit?: number       // 신용 한도
-    // 메모
-    memo?: string
-    // 상태
-    isActive: boolean
-    isKeyAccount: boolean      // ⭐ 주요 거래처 여부
-    createdAt: Date
-    updatedAt: Date
-}
-
-// Mock 데이터
-const mockCustomers: Customer[] = [
-    {
-        id: 'cust-001',
-        companyName: '한우명가',
-        bizRegNo: '123-45-67890',
-        ceoName: '김대표',
-        phone: '02-1234-5678',
-        fax: '02-1234-5679',
-        email: 'order@hanwoo.co.kr',
-        address: '서울시 강남구 역삼동 123-45',
-        shipAddress1: '서울시 강남구 역삼동 123-45 (본점)',
-        shipAddress2: '서울시 서초구 서초동 456-78 (2호점)',
-        contactPerson: '이과장',
-        contactPhone: '010-1234-5678',
-        priceType: 'wholesale',
-        paymentTerms: '월말 정산',
-        creditLimit: 50000000,
-        memo: 'VIP 거래처',
-        isActive: true,
-        isKeyAccount: true,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-15'),
-    },
-    {
-        id: 'cust-002',
-        companyName: '정육의달인',
-        bizRegNo: '234-56-78901',
-        ceoName: '박사장',
-        phone: '02-2345-6789',
-        email: 'master@meat.co.kr',
-        address: '서울시 서초구 방배동 234-56',
-        shipAddress1: '서울시 서초구 방배동 234-56',
-        contactPerson: '최대리',
-        contactPhone: '010-2345-6789',
-        priceType: 'wholesale',
-        paymentTerms: '선결제',
-        isActive: true,
-        isKeyAccount: true,
-        createdAt: new Date('2024-01-05'),
-        updatedAt: new Date('2024-01-05'),
-    },
-    {
-        id: 'cust-003',
-        companyName: '고기마을',
-        bizRegNo: '345-67-89012',
-        ceoName: '최사장',
-        phone: '031-345-6789',
-        email: 'info@meatvillage.kr',
-        address: '경기도 성남시 분당구 정자동 345',
-        shipAddress1: '경기도 성남시 분당구 정자동 345',
-        priceType: 'retail',
-        isActive: false,
-        isKeyAccount: false,
-        createdAt: new Date('2024-01-10'),
-        updatedAt: new Date('2024-01-20'),
-    },
-]
-
 export default function OrganizationMaster() {
-    const [customers, setCustomers] = useState<Customer[]>(mockCustomers)
+    // 공유 스토어에서 데이터 가져오기
+    const { customers, addCustomer, updateCustomer, deleteCustomer, toggleActive } = useCustomerStore()
+
     const [searchQuery, setSearchQuery] = useState('')
     const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all')
     const [showModal, setShowModal] = useState(false)
@@ -162,33 +72,34 @@ export default function OrganizationMaster() {
 
         try {
             if (editingCustomer) {
-                // 수정
-                const updatedCustomer: Customer = {
-                    ...editingCustomer,
-                    ...formData,
-                    updatedAt: new Date(),
-                } as Customer
-
-                // Firestore 업데이트 (향후)
-                // await updateDoc(doc(db, 'customers', editingCustomer.id), formData)
-
-                setCustomers(prev => prev.map(c =>
-                    c.id === editingCustomer.id ? updatedCustomer : c
-                ))
+                // 수정 - 스토어 메서드 사용
+                updateCustomer(editingCustomer.id, formData)
                 alert('✅ 거래처 정보가 수정되었습니다.')
             } else {
                 // 신규 등록
                 const newCustomer: Customer = {
                     id: `cust-${Date.now()}`,
-                    ...formData,
+                    companyName: formData.companyName || '',
+                    bizRegNo: formData.bizRegNo || '',
+                    ceoName: formData.ceoName || '',
+                    phone: formData.phone || '',
+                    email: formData.email || '',
+                    address: formData.address || '',
+                    shipAddress1: formData.shipAddress1 || '',
+                    shipAddress2: formData.shipAddress2,
+                    fax: formData.fax,
+                    contactPerson: formData.contactPerson,
+                    contactPhone: formData.contactPhone,
+                    priceType: formData.priceType || 'wholesale',
+                    paymentTerms: formData.paymentTerms,
+                    creditLimit: formData.creditLimit,
+                    memo: formData.memo,
+                    isActive: formData.isActive ?? true,
+                    isKeyAccount: formData.isKeyAccount ?? false,
                     createdAt: new Date(),
                     updatedAt: new Date(),
-                } as Customer
-
-                // Firestore 저장 (향후)
-                // await addDoc(collection(db, 'customers'), newCustomer)
-
-                setCustomers(prev => [...prev, newCustomer])
+                }
+                addCustomer(newCustomer)
                 alert('✅ 새 거래처가 등록되었습니다.')
             }
 
@@ -203,25 +114,15 @@ export default function OrganizationMaster() {
     }
 
     // 삭제
-    const handleDelete = async (customer: Customer) => {
+    const handleDelete = (customer: Customer) => {
         if (!confirm(`"${customer.companyName}" 거래처를 정말 삭제하시겠습니까?`)) return
-
-        try {
-            // Firestore 삭제 (향후)
-            // await deleteDoc(doc(db, 'customers', customer.id))
-
-            setCustomers(prev => prev.filter(c => c.id !== customer.id))
-            alert('삭제되었습니다.')
-        } catch (error) {
-            console.error('삭제 실패:', error)
-            alert('삭제에 실패했습니다.')
-        }
+        deleteCustomer(customer.id)
+        alert('삭제되었습니다.')
     }
 
     // 활성/비활성 토글
-    const toggleActive = async (customer: Customer) => {
-        const updated = { ...customer, isActive: !customer.isActive, updatedAt: new Date() }
-        setCustomers(prev => prev.map(c => c.id === customer.id ? updated : c))
+    const handleToggleActive = (customer: Customer) => {
+        toggleActive(customer.id)
     }
 
     // 숫자 포맷 (향후 신용한도 표시에 사용)
@@ -353,7 +254,7 @@ export default function OrganizationMaster() {
                                         </button>
                                         <button
                                             className="btn btn-sm btn-ghost"
-                                            onClick={() => toggleActive(customer)}
+                                            onClick={() => handleToggleActive(customer)}
                                         >
                                             {customer.isActive ? '비활성화' : '활성화'}
                                         </button>
