@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { ClipboardListIcon, PencilIcon, FilesIcon, TruckDeliveryIcon, FactoryIcon, FilePlusIcon } from '../../components/Icons'
 import './Dashboard.css'
 
 interface DashboardStats {
@@ -70,7 +71,7 @@ export default function Dashboard() {
             {/* Stats Grid */}
             <div className="stats-grid">
                 <Link to="/admin/order-sheets" className="stat-card glass-card">
-                    <div className="stat-icon">📋</div>
+                    <div className="stat-icon"><ClipboardListIcon size={24} /></div>
                     <div className="stat-content">
                         <div className="stat-value">{stats.pendingOrders}</div>
                         <div className="stat-label">미검토 주문</div>
@@ -79,7 +80,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link to="/admin/order-sheets" className="stat-card glass-card">
-                    <div className="stat-icon">✏️</div>
+                    <div className="stat-icon"><PencilIcon size={24} /></div>
                     <div className="stat-content">
                         <div className="stat-value">{stats.revisionRequested}</div>
                         <div className="stat-label">수정요청 대기</div>
@@ -88,7 +89,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link to="/admin/documents" className="stat-card glass-card">
-                    <div className="stat-icon">📄</div>
+                    <div className="stat-icon"><FilesIcon size={24} /></div>
                     <div className="stat-content">
                         <div className="stat-value">{stats.documentsWaiting}</div>
                         <div className="stat-label">문서 매칭 대기</div>
@@ -97,7 +98,7 @@ export default function Dashboard() {
                 </Link>
 
                 <Link to="/admin/shipments" className="stat-card glass-card">
-                    <div className="stat-icon">🚛</div>
+                    <div className="stat-icon"><TruckDeliveryIcon size={24} /></div>
                     <div className="stat-content">
                         <div className="stat-value">{stats.dispatchPending}</div>
                         <div className="stat-label">배차 미입력</div>
@@ -126,10 +127,10 @@ export default function Dashboard() {
                             + 주문장 생성
                         </Link>
                         <Link to="/admin/documents" className="btn btn-secondary">
-                            📤 문서 업로드
+                            <FilePlusIcon size={16} /> 문서 업로드
                         </Link>
                         <Link to="/admin/warehouse" className="btn btn-secondary">
-                            🏭 물류 게이트
+                            <FactoryIcon size={16} /> 물류 게이트
                         </Link>
                     </div>
                 </div>

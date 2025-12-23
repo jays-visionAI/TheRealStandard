@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import { TRSLogo } from '../components/Icons'
 import './FrontLayout.css'
 
 export default function FrontLayout() {
@@ -7,10 +8,10 @@ export default function FrontLayout() {
             {/* Header */}
             <header className="front-header">
                 <div className="front-logo">
-                    <span className="logo-icon">🥩</span>
+                    <TRSLogo size={36} className="logo-icon" />
                     <div className="logo-text">
                         <span className="logo-title">TRS</span>
-                        <span className="logo-subtitle">주문/배송 시스템</span>
+                        <span className="logo-subtitle">THE REAL STANDARD</span>
                     </div>
                 </div>
             </header>

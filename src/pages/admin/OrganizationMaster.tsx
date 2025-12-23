@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useCustomerStore, type Customer } from '../../stores/customerStore'
-import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon } from '../../components/Icons'
+import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon } from '../../components/Icons'
 import './OrganizationMaster.css'
 
 export default function OrganizationMaster() {
@@ -160,7 +160,7 @@ export default function OrganizationMaster() {
                     </div>
                 </div>
                 <div className="stat-card inactive">
-                    <div className="stat-icon">⏸️</div>
+                    <div className="stat-icon"><PauseCircleIcon size={24} /></div>
                     <div className="stat-info">
                         <span className="stat-value">{stats.inactive}</span>
                         <span className="stat-label">비활성 거래처</span>
@@ -285,7 +285,7 @@ export default function OrganizationMaster() {
                         <form onSubmit={handleSubmit} className="modal-body">
                             {/* 기본 정보 */}
                             <div className="form-section">
-                                <h3>📋 기본 정보</h3>
+                                <h3><ClipboardListIcon size={18} /> 기본 정보</h3>
                                 <div className="form-grid">
                                     <div className="form-group required">
                                         <label>회사명</label>
@@ -323,7 +323,7 @@ export default function OrganizationMaster() {
 
                             {/* 연락처 */}
                             <div className="form-section">
-                                <h3>📞 연락처</h3>
+                                <h3><PhoneIcon size={18} /> 연락처</h3>
                                 <div className="form-grid">
                                     <div className="form-group required">
                                         <label>전화번호</label>
@@ -360,7 +360,7 @@ export default function OrganizationMaster() {
 
                             {/* 주소 */}
                             <div className="form-section">
-                                <h3>📍 주소</h3>
+                                <h3><MapPinIcon size={18} /> 주소</h3>
                                 <div className="form-group required full-width">
                                     <label>본사 주소</label>
                                     <input
@@ -394,7 +394,7 @@ export default function OrganizationMaster() {
 
                             {/* 담당자 정보 */}
                             <div className="form-section">
-                                <h3>👤 담당자 정보</h3>
+                                <h3><UserIcon size={18} /> 담당자 정보</h3>
                                 <div className="form-grid">
                                     <div className="form-group">
                                         <label>담당자명</label>
@@ -420,7 +420,7 @@ export default function OrganizationMaster() {
 
                             {/* 거래 정보 */}
                             <div className="form-section">
-                                <h3>💰 거래 정보</h3>
+                                <h3><WalletIcon size={18} /> 거래 정보</h3>
                                 <div className="form-grid">
                                     <div className="form-group required">
                                         <label>가격 타입</label>
@@ -457,7 +457,7 @@ export default function OrganizationMaster() {
 
                             {/* 메모 */}
                             <div className="form-section">
-                                <h3>📝 메모</h3>
+                                <h3><FileTextIcon size={18} /> 메모</h3>
                                 <div className="form-group full-width">
                                     <textarea
                                         className="input textarea"

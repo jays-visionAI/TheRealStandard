@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { FactoryIcon, SearchIcon, CheckCircleIcon, PauseCircleIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon } from '../../components/Icons'
 import './OrganizationMaster.css'  // 같은 스타일 공유
 
 // 공급업체 인터페이스
@@ -203,7 +204,7 @@ export default function SupplierMaster() {
             {/* Header */}
             <div className="page-header">
                 <div>
-                    <h1>🏭 공급거래처 관리</h1>
+                    <h1><FactoryIcon size={24} /> 공급거래처 관리</h1>
                     <p className="text-secondary">제품을 공급받는 업체(공급사) 정보를 관리합니다</p>
                 </div>
                 <button className="btn btn-primary" onClick={openCreateModal}>
@@ -214,21 +215,21 @@ export default function SupplierMaster() {
             {/* Stats Cards */}
             <div className="stats-grid">
                 <div className="stat-card">
-                    <div className="stat-icon">🏭</div>
+                    <div className="stat-icon"><FactoryIcon size={24} /></div>
                     <div className="stat-info">
                         <span className="stat-value">{stats.total}</span>
                         <span className="stat-label">전체 공급업체</span>
                     </div>
                 </div>
                 <div className="stat-card active">
-                    <div className="stat-icon">✅</div>
+                    <div className="stat-icon"><CheckCircleIcon size={24} /></div>
                     <div className="stat-info">
                         <span className="stat-value">{stats.active}</span>
                         <span className="stat-label">활성 업체</span>
                     </div>
                 </div>
                 <div className="stat-card inactive">
-                    <div className="stat-icon">⏸️</div>
+                    <div className="stat-icon"><PauseCircleIcon size={24} /></div>
                     <div className="stat-info">
                         <span className="stat-value">{stats.inactive}</span>
                         <span className="stat-label">비활성 업체</span>
@@ -239,7 +240,7 @@ export default function SupplierMaster() {
             {/* Filters */}
             <div className="filters-bar glass-card">
                 <div className="search-box">
-                    <span className="search-icon">🔍</span>
+                    <span className="search-icon"><SearchIcon size={18} /></span>
                     <input
                         type="text"
                         className="input"
@@ -352,7 +353,7 @@ export default function SupplierMaster() {
                         <form onSubmit={handleSubmit} className="modal-body">
                             {/* 기본 정보 */}
                             <div className="form-section">
-                                <h3>📋 기본 정보</h3>
+                                <h3><ClipboardListIcon size={18} /> 기본 정보</h3>
                                 <div className="form-grid">
                                     <div className="form-group required">
                                         <label>회사명</label>
@@ -390,7 +391,7 @@ export default function SupplierMaster() {
 
                             {/* 연락처 */}
                             <div className="form-section">
-                                <h3>📞 연락처</h3>
+                                <h3><PhoneIcon size={18} /> 연락처</h3>
                                 <div className="form-grid">
                                     <div className="form-group required">
                                         <label>전화번호</label>
@@ -426,7 +427,7 @@ export default function SupplierMaster() {
 
                             {/* 주소 */}
                             <div className="form-section">
-                                <h3>📍 주소</h3>
+                                <h3><MapPinIcon size={18} /> 주소</h3>
                                 <div className="form-group required full-width">
                                     <label>본사/공장 주소</label>
                                     <input
@@ -441,7 +442,7 @@ export default function SupplierMaster() {
 
                             {/* 담당자 정보 */}
                             <div className="form-section">
-                                <h3>👤 담당자 정보</h3>
+                                <h3><UserIcon size={18} /> 담당자 정보</h3>
                                 <div className="form-grid">
                                     <div className="form-group">
                                         <label>담당자명</label>
@@ -466,7 +467,7 @@ export default function SupplierMaster() {
 
                             {/* 공급/결제 정보 */}
                             <div className="form-section">
-                                <h3>💰 공급 및 결제 정보</h3>
+                                <h3><WalletIcon size={18} /> 공급 및 결제 정보</h3>
                                 <div className="form-grid">
                                     <div className="form-group required">
                                         <label>공급 품목</label>
@@ -514,7 +515,7 @@ export default function SupplierMaster() {
 
                             {/* 메모 */}
                             <div className="form-section">
-                                <h3>📝 메모</h3>
+                                <h3><FileTextIcon size={18} /> 메모</h3>
                                 <div className="form-group full-width">
                                     <textarea
                                         className="input textarea"

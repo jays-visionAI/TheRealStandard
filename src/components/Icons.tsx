@@ -7,7 +7,88 @@ interface IconProps {
     color?: string
 }
 
-// Dashboard
+// TRS 로고 (THE REAL STANDARD)
+export const TRSLogo: FC<{ size?: number; className?: string }> = ({ size = 40, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" className={className}>
+        {/* 고기 모양 로고 */}
+        <defs>
+            <linearGradient id="meatGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#e74c3c" />
+                <stop offset="50%" stopColor="#c0392b" />
+                <stop offset="100%" stopColor="#a93226" />
+            </linearGradient>
+            <linearGradient id="fatGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#fce4ec" />
+                <stop offset="100%" stopColor="#f8bbd9" />
+            </linearGradient>
+        </defs>
+        {/* 메인 고기 부분 */}
+        <ellipse cx="24" cy="26" rx="18" ry="14" fill="url(#meatGradient)" />
+        {/* 지방 마블링 */}
+        <path d="M12 24 Q16 20 20 24 Q24 28 28 24 Q32 20 36 24" stroke="url(#fatGradient)" strokeWidth="3" fill="none" strokeLinecap="round" />
+        <path d="M14 30 Q18 26 22 30 Q26 34 30 30" stroke="url(#fatGradient)" strokeWidth="2" fill="none" strokeLinecap="round" />
+        {/* 뼈 부분 */}
+        <ellipse cx="10" cy="16" rx="6" ry="4" fill="#f5f5f5" stroke="#e0e0e0" strokeWidth="1" />
+        <rect x="8" y="16" width="8" height="12" rx="3" fill="#f5f5f5" stroke="#e0e0e0" strokeWidth="1" />
+    </svg>
+)
+
+// 문서/주문장 아이콘
+export const FileEditIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <path d="M12 18v-6" />
+        <path d="M9 15h6" />
+    </svg>
+)
+
+// 일시정지 아이콘 (비활성)
+export const PauseCircleIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="12" cy="12" r="10" />
+        <line x1="10" y1="15" x2="10" y2="9" />
+        <line x1="14" y1="15" x2="14" y2="9" />
+    </svg>
+)
+
+// 클립보드 체크
+export const ClipboardCheckIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+        <path d="M9 14l2 2 4-4" />
+    </svg>
+)
+
+// 수정/펜 아이콘
+export const PencilIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+    </svg>
+)
+
+// 문서 매칭 아이콘
+export const FilesIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+        <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+        <path d="M10 9H8" />
+        <path d="M16 13H8" />
+        <path d="M16 17H8" />
+    </svg>
+)
+
+// 트럭 아이콘 (배차)
+export const TruckDeliveryIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+        <path d="M15 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 13.52 8H14" />
+        <path d="M22 18h1" />
+        <circle cx="17" cy="18" r="2" />
+        <circle cx="7" cy="18" r="2" />
+    </svg>
+)
 export const DashboardIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <rect x="3" y="3" width="7" height="7" rx="1" />

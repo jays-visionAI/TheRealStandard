@@ -7,6 +7,7 @@ import {
     ClipboardListIcon,
     WalletIcon,
     SettingsIcon,
+    TRSLogo,
 } from '../components/Icons'
 import './AdminLayout.css'
 
@@ -82,10 +83,10 @@ export default function AdminLayout() {
             <aside className="admin-sidebar">
                 <div className="sidebar-header">
                     <div className="logo">
-                        <span className="logo-icon">🥩</span>
+                        <TRSLogo size={42} className="logo-icon" />
                         <div className="logo-text">
                             <span className="logo-title">TRS</span>
-                            <span className="logo-subtitle">물류 주문관리 솔루션</span>
+                            <span className="logo-subtitle">THE REAL STANDARD</span>
                         </div>
                     </div>
                 </div>

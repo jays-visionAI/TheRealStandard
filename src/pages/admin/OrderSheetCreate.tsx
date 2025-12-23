@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCustomerStore, type Customer } from '../../stores/customerStore'
+import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon } from '../../components/Icons'
 import './OrderSheetCreate.css'
 
 // ============================================
@@ -363,7 +364,7 @@ export default function OrderSheetCreate() {
             {/* Header */}
             <div className="page-header">
                 <div>
-                    <h1>📝 주문장 생성</h1>
+                    <h1><FileEditIcon size={24} /> 주문장 생성</h1>
                     <p className="text-secondary">B2B 거래처 주문장 작성</p>
                 </div>
             </div>
@@ -390,10 +391,10 @@ export default function OrderSheetCreate() {
             {step === 1 && (
                 <div className="step-content">
                     <div className="glass-card">
-                        <h2 className="section-title">🏢 고객사 선택</h2>
+                        <h2 className="section-title"><BuildingIcon size={20} /> 고객사 선택</h2>
 
                         <div className="search-box mb-4">
-                            <span className="search-icon">🔍</span>
+                            <span className="search-icon"><SearchIcon size={18} /></span>
                             <input
                                 type="text"
                                 className="input"
@@ -406,7 +407,7 @@ export default function OrderSheetCreate() {
                         {/* 주요 거래처 카드 */}
                         {filteredCustomers.filter(c => c.isKeyAccount).length > 0 && (
                             <>
-                                <h3 className="subsection-title">⭐ 주요 거래처</h3>
+                                <h3 className="subsection-title"><StarIcon size={16} /> 주요 거래처</h3>
                                 <div className="customer-grid">
                                     {filteredCustomers.filter(c => c.isKeyAccount).map((customer) => (
                                         <div
@@ -416,11 +417,11 @@ export default function OrderSheetCreate() {
                                         >
                                             <div className="customer-name">
                                                 {customer.companyName}
-                                                <span className="key-badge">⭐</span>
+                                                <span className="key-badge"><StarIcon size={12} /></span>
                                             </div>
                                             <div className="customer-info">
-                                                <span>📍 {customer.address}</span>
-                                                <span>📞 {customer.phone}</span>
+                                                <span><MapPinIcon size={14} /> {customer.address}</span>
+                                                <span><PhoneIcon size={14} /> {customer.phone}</span>
                                             </div>
                                             <div className="customer-biz">사업자: {customer.bizRegNo}</div>
                                             {selectedCustomer?.id === customer.id && (
@@ -435,7 +436,7 @@ export default function OrderSheetCreate() {
                         {/* 일반 거래처 테이블 */}
                         {filteredCustomers.filter(c => !c.isKeyAccount).length > 0 && (
                             <>
-                                <h3 className="subsection-title mt-6">📋 전체 거래처 목록</h3>
+                                <h3 className="subsection-title mt-6"><ClipboardListIcon size={16} /> 전체 거래처 목록</h3>
                                 <div className="customer-table-container">
                                     <table className="customer-table">
                                         <thead>
@@ -499,9 +500,9 @@ export default function OrderSheetCreate() {
                     <div className="main-panel">
                         <div className="glass-card">
                             <div className="section-header">
-                                <h2 className="section-title">📦 품목 입력</h2>
+                                <h2 className="section-title"><PackageIcon size={20} /> 품목 입력</h2>
                                 <span className="customer-badge">
-                                    🏢 {selectedCustomer?.companyName}
+                                    <BuildingIcon size={14} /> {selectedCustomer?.companyName}
                                 </span>
                             </div>
 
@@ -644,7 +645,7 @@ export default function OrderSheetCreate() {
 
                         {showPastOrders && (
                             <div className="sidebar-content glass-card">
-                                <h3 className="sidebar-title">📋 이전 주문</h3>
+                                <h3 className="sidebar-title"><ClipboardListIcon size={18} /> 이전 주문</h3>
                                 <p className="sidebar-desc">{selectedCustomer?.companyName}의 과거 주문</p>
 
                                 {pastOrders.length === 0 ? (
@@ -724,7 +725,7 @@ export default function OrderSheetCreate() {
 
                         {/* 주문 요약 */}
                         <div className="order-summary-box">
-                            <h4>📦 주문 요약</h4>
+                            <h4><PackageIcon size={18} /> 주문 요약</h4>
                             <div className="summary-grid">
                                 <div className="summary-item">
                                     <span className="summary-label">고객사</span>
