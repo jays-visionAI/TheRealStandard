@@ -161,7 +161,7 @@ export default function Login() {
 
                 {/* Footer */}
                 <div className="login-footer">
-                    <p>© 2024 태윤인터내셔널. All rights reserved.</p>
+                    <p>© 2024 The Real Standard. All rights reserved.</p>
                 </div>
             </div>
         </div>

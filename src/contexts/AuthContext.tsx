@@ -24,9 +24,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // Mock 사용자 목록 (데모용)
 const DEMO_USERS: User[] = [
-    { id: 'admin-001', email: 'admin@taeyoon.co.kr', name: '김관리', role: 'ADMIN' },
-    { id: 'warehouse-001', email: 'warehouse@taeyoon.co.kr', name: '박창고', role: 'WAREHOUSE' },
-    { id: 'accounting-001', email: 'accounting@taeyoon.co.kr', name: '이경리', role: 'ACCOUNTING' },
+    { id: 'admin-001', email: 'admin@trs.co.kr', name: '김관리', role: 'ADMIN' },
+    { id: 'warehouse-001', email: 'warehouse@trs.co.kr', name: '박창고', role: 'WAREHOUSE' },
+    { id: 'accounting-001', email: 'accounting@trs.co.kr', name: '이경리', role: 'ACCOUNTING' },
     { id: 'customer-001', email: 'customer@example.com', name: '최고객', role: 'CUSTOMER' },
 ]
 
