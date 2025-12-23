@@ -61,49 +61,6 @@ function App() {
                         }
                     />
 
-                    {/* ========================================
-                          ADMIN (관리자) - 워크플로우
-                       ======================================== */}
-                    <Route
-                        path="/admin/workflow"
-                        element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS']}>
-                                <WorkflowHome />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin/workflow/finalize/:id"
-                        element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS']}>
-                                <StepReview />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin/workflow/po/:id"
-                        element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS']}>
-                                <StepPO />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin/workflow/dispatch/:id"
-                        element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS']}>
-                                <StepDispatch />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin/workflow/order-create"
-                        element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS']}>
-                                <OrderSheetCreate />
-                            </ProtectedRoute>
-                        }
-                    />
 
                     {/* ========================================
                           WAREHOUSE (창고직원) - 반입/출고
@@ -146,10 +103,10 @@ function App() {
                     />
 
                     {/* ========================================
-                          레거시 Admin (설정/마스터 관리용)
+                          ADMIN (관리자) - 사이드바 레이아웃
                        ======================================== */}
                     <Route
-                        path="/admin/settings"
+                        path="/admin"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'OPS']}>
                                 <AdminLayout />
@@ -157,20 +114,35 @@ function App() {
                         }
                     >
                         <Route index element={<Dashboard />} />
+                        {/* Users */}
+                        <Route path="users/customers" element={<OrganizationMaster />} />
+                        <Route path="users/accounting" element={<Dashboard />} />
+                        <Route path="users/warehouse" element={<Dashboard />} />
+                        <Route path="users/sales" element={<Dashboard />} />
+                        {/* Products */}
+                        <Route path="products" element={<ProductMaster />} />
+                        {/* Order Book */}
                         <Route path="order-sheets" element={<OrderSheetList />} />
                         <Route path="order-sheets/create" element={<OrderSheetCreate />} />
                         <Route path="order-sheets/:id/review" element={<OrderReview />} />
                         <Route path="sales-orders" element={<SalesOrderList />} />
                         <Route path="sales-orders/:id" element={<SalesOrderDetail />} />
+                        {/* 거래내역 */}
                         <Route path="purchase-orders" element={<POList />} />
                         <Route path="shipments" element={<ShipmentList />} />
                         <Route path="shipments/:id" element={<ShipmentDetail />} />
-                        <Route path="documents" element={<DocumentInbox />} />
-                        <Route path="warehouse" element={<WarehouseGate />} />
-                        <Route path="catalogs" element={<CatalogManager />} />
-                        <Route path="vehicles" element={<VehicleTypeSettings />} />
-                        <Route path="products" element={<ProductMaster />} />
-                        <Route path="organizations" element={<OrganizationMaster />} />
+                        <Route path="transactions" element={<Dashboard />} />
+                        {/* Settings */}
+                        <Route path="settings/catalogs" element={<CatalogManager />} />
+                        <Route path="settings/vehicles" element={<VehicleTypeSettings />} />
+                        <Route path="settings/documents" element={<DocumentInbox />} />
+                        <Route path="settings/warehouse" element={<WarehouseGate />} />
+                        {/* Legacy: workflow */}
+                        <Route path="workflow" element={<WorkflowHome />} />
+                        <Route path="workflow/finalize/:id" element={<StepReview />} />
+                        <Route path="workflow/po/:id" element={<StepPO />} />
+                        <Route path="workflow/dispatch/:id" element={<StepDispatch />} />
+                        <Route path="workflow/order-create" element={<OrderSheetCreate />} />
                     </Route>
 
                     {/* ========================================
@@ -186,7 +158,6 @@ function App() {
 
                     {/* Default: 로그인 페이지로 */}
                     <Route path="/" element={<Navigate to="/login" replace />} />
-                    <Route path="/admin" element={<Navigate to="/admin/workflow" replace />} />
                     <Route path="*" element={<Navigate to="/login" replace />} />
                 </Routes>
             </BrowserRouter>

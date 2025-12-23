@@ -9,44 +9,46 @@ const navigation = [
         icon: '📊',
     },
     {
-        label: '주문관리',
+        label: 'Users',
+        icon: '👥',
+        children: [
+            { label: '고객사 (거래처)', path: '/admin/users/customers' },
+            { label: '회계팀', path: '/admin/users/accounting' },
+            { label: '물류팀', path: '/admin/users/warehouse' },
+            { label: '영업팀', path: '/admin/users/sales' },
+        ],
+    },
+    {
+        label: 'Products',
+        path: '/admin/products',
+        icon: '📦',
+    },
+    {
+        label: 'Order Book',
         icon: '📋',
         children: [
             { label: '주문장 목록', path: '/admin/order-sheets' },
             { label: '주문장 생성', path: '/admin/order-sheets/create' },
-            { label: '확정주문(SalesOrder)', path: '/admin/sales-orders' },
+            { label: '확정주문', path: '/admin/sales-orders' },
         ],
     },
     {
-        label: '발주관리',
-        path: '/admin/purchase-orders',
-        icon: '📦',
-    },
-    {
-        label: '배송/배차',
-        icon: '🚛',
+        label: '거래내역',
+        icon: '💰',
         children: [
+            { label: '발주 관리', path: '/admin/purchase-orders' },
             { label: '배송 목록', path: '/admin/shipments' },
+            { label: '정산 현황', path: '/admin/transactions' },
         ],
     },
     {
-        label: '문서관리',
-        path: '/admin/documents',
-        icon: '📄',
-    },
-    {
-        label: '물류게이트',
-        path: '/admin/warehouse',
-        icon: '🏭',
-    },
-    {
-        label: '설정',
+        label: 'Settings',
         icon: '⚙️',
         children: [
-            { label: '카탈로그 관리', path: '/admin/catalogs' },
+            { label: '카탈로그 관리', path: '/admin/settings/catalogs' },
             { label: '차량 타입', path: '/admin/settings/vehicles' },
-            { label: '제품 마스터', path: '/admin/settings/products' },
-            { label: '거래처 관리', path: '/admin/settings/organizations' },
+            { label: '문서 관리', path: '/admin/settings/documents' },
+            { label: '물류 게이트', path: '/admin/settings/warehouse' },
         ],
     },
 ]
@@ -149,17 +151,26 @@ export default function AdminLayout() {
 function getPageTitle(pathname: string): string {
     const titles: Record<string, string> = {
         '/admin': '대시보드',
+        // Users
+        '/admin/users/customers': '고객사 (거래처) 관리',
+        '/admin/users/accounting': '회계팀 관리',
+        '/admin/users/warehouse': '물류팀 관리',
+        '/admin/users/sales': '영업팀 관리',
+        // Products
+        '/admin/products': '상품 마스터',
+        // Order Book
         '/admin/order-sheets': '주문장 목록',
         '/admin/order-sheets/create': '주문장 생성',
         '/admin/sales-orders': '확정주문 목록',
-        '/admin/purchase-orders': '발주서 관리',
-        '/admin/shipments': '배송/배차 관리',
-        '/admin/documents': '문서 관리',
-        '/admin/warehouse': '물류 게이트',
-        '/admin/catalogs': '카탈로그 관리',
+        // 거래내역
+        '/admin/purchase-orders': '발주 관리',
+        '/admin/shipments': '배송 목록',
+        '/admin/transactions': '정산 현황',
+        // Settings
+        '/admin/settings/catalogs': '카탈로그 관리',
         '/admin/settings/vehicles': '차량 타입 설정',
-        '/admin/settings/products': '제품 마스터',
-        '/admin/settings/organizations': '거래처 관리',
+        '/admin/settings/documents': '문서 관리',
+        '/admin/settings/warehouse': '물류 게이트',
     }
     return titles[pathname] || 'TRS 물류관리'
 }
