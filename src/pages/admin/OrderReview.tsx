@@ -7,7 +7,7 @@ import { OrderSheet, OrderSheetItem } from '../../types'
 export default function OrderReview() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { getOrderSheetById, getOrderItems, updateOrderSheet, deleteOrderSheet } = useOrderStore()
+    const { getOrderSheetById, getOrderItems, updateOrderSheet, deleteOrderSheet, createSalesOrder } = useOrderStore()
 
     const [orderSheet, setOrderSheet] = useState<OrderSheet | null>(null)
     const [items, setItems] = useState<OrderSheetItem[]>([])
@@ -50,7 +50,9 @@ export default function OrderReview() {
                 status: 'CONFIRMED',
                 updatedAt: new Date()
             })
-            alert('주문이 확정되었습니다. SalesOrder가 생성됩니다.')
+            // SalesOrder 생성
+            createSalesOrder(orderSheet, items)
+            alert('주문이 확정되었습니다. 확정주문(SalesOrder)이 생성되었습니다.')
             navigate('/admin/order-sheets')
         }
     }
