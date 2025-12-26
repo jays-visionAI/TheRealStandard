@@ -18,7 +18,24 @@ import {
 } from '../../components/Icons'
 import { useDocStore, TRS_Document } from '../../stores/docStore'
 import { useAuth } from '../../contexts/AuthContext'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
 import './DocumentHub.css'
+
+const quillModules = {
+    toolbar: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        ['link', 'image'],
+        ['clean']
+    ],
+}
+
+const stripHtml = (html: string) => {
+    return html.replace(/<[^>]*>?/gm, '')
+}
 
 export default function DocumentHub() {
     const { user } = useAuth()
@@ -202,7 +219,7 @@ export default function DocumentHub() {
                                 </div>
                                 <div className="doc-info">
                                     <h3 className="doc-title">{doc.title}</h3>
-                                    <p className="doc-excerpt">{doc.content.substring(0, 60)}...</p>
+                                    <p className="doc-excerpt">{stripHtml(doc.content || '').substring(0, 100)}...</p>
                                     <div className="doc-meta">
                                         <span>{new Date(doc.updatedAt).toLocaleDateString()}</span>
                                         <span className="dot"></span>
@@ -284,14 +301,17 @@ export default function DocumentHub() {
                                 </div>
                             )}
 
-                            <div className="form-group">
-                                <label>설명 및 본문</label>
-                                <textarea
-                                    rows={10}
-                                    value={formData.content}
-                                    onChange={e => setFormData({ ...formData, content: e.target.value })}
-                                    placeholder="문서 내용을 입력하세요..."
-                                ></textarea>
+                            <div className="form-group mb-6">
+                                <label className="label">내용</label>
+                                <div className="quill-editor-container">
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={formData.content}
+                                        onChange={content => setFormData({ ...formData, content })}
+                                        modules={quillModules}
+                                        placeholder="문서 내용을 입력하세요 (HTML 서식, 링크, 이미지 삽입 가능)"
+                                    />
+                                </div>
                             </div>
 
                             <div className="modal-footer">
@@ -323,89 +343,91 @@ export default function DocumentHub() {
                                 </div>
                             </div>
                             <div className="viewer-content">
-                                <div className="doc-header">
-                                    <div className="doc-badge">{categories.find(c => c.id === viewingDoc.categoryId)?.name}</div>
-                                    <h1>{viewingDoc.title}</h1>
-                                    <div className="doc-meta">
-                                        <span><UserIcon size={14} /> {viewingDoc.author}</span>
-                                        <span>업데이트: {new Date(viewingDoc.updatedAt).toLocaleString()}</span>
+                                <div className="doc-header-top mb-8">
+                                    <span className="badge badge-primary mb-2">
+                                        {categories.find(c => c.id === viewingDoc.categoryId)?.name}
+                                    </span>
+                                    <h1 className="doc-title-large">{viewingDoc.title}</h1>
+                                    <div className="doc-meta-large">
+                                        <span className="author"><UserIcon size={14} /> {viewingDoc.author || '관리자'}</span>
+                                        <span className="dot"></span>
+                                        <span className="date">업데이트: {new Date(viewingDoc.updatedAt).toLocaleString()}</span>
                                     </div>
                                 </div>
 
-                                <div className="doc-body">
-                                    {viewingDoc.type !== 'MARKDOWN' && viewingDoc.url && (
-                                        <div className="embed-container">
-                                            <iframe
-                                                src={getEmbedUrl(viewingDoc.url, viewingDoc.type)}
-                                                frameBorder="0"
-                                                allowFullScreen
-                                                title={viewingDoc.title}
-                                            ></iframe>
-                                        </div>
-                                    )}
-                                    <div className="text-content">
-                                        {viewingDoc.content.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+                                <div
+                                    className="text-content"
+                                    dangerouslySetInnerHTML={{ __html: viewingDoc.content || '' }}
+                                />
+                                {viewingDoc.type !== 'MARKDOWN' && viewingDoc.url && (
+                                    <div className="embed-container">
+                                        <iframe
+                                            src={getEmbedUrl(viewingDoc.url, viewingDoc.type)}
+                                            frameBorder="0"
+                                            allowFullScreen
+                                            title={viewingDoc.title}
+                                        ></iframe>
                                     </div>
+                                )}
 
-                                    {/* Attachments Section */}
-                                    <div className="viewer-section attachments-section">
-                                        <h3><PaperclipIcon size={18} /> 첨부 파일 ({viewingDoc.attachments?.length || 0})</h3>
-                                        <div className="attachment-list">
-                                            {viewingDoc.attachments?.map(att => (
-                                                <div key={att.id} className="attachment-item">
-                                                    <div className="att-info">
-                                                        <span className="att-name">{att.name}</span>
-                                                        <span className="att-size">({(att.size / 1024).toFixed(1)} KB)</span>
-                                                    </div>
-                                                    <div className="att-actions">
-                                                        <a href={att.url} download={att.name} className="btn btn-xs btn-ghost">다운로드</a>
-                                                        {user?.role === 'ADMIN' && <button className="text-error" onClick={() => deleteAttachment(viewingDoc.id, att.id)}>✕</button>}
-                                                    </div>
+                                {/* Attachments Section */}
+                                <div className="viewer-section attachments-section">
+                                    <h3><PaperclipIcon size={18} /> 첨부 파일 ({viewingDoc.attachments?.length || 0})</h3>
+                                    <div className="attachment-list">
+                                        {viewingDoc.attachments?.map(att => (
+                                            <div key={att.id} className="attachment-item">
+                                                <div className="att-info">
+                                                    <span className="att-name">{att.name}</span>
+                                                    <span className="att-size">({(att.size / 1024).toFixed(1)} KB)</span>
                                                 </div>
-                                            ))}
-                                            <label className="add-att-manual">
-                                                <PlusIcon size={14} /> 파일 추가
-                                                <input type="file" hidden onChange={handleFileUpload} />
-                                            </label>
-                                        </div>
+                                                <div className="att-actions">
+                                                    <a href={att.url} download={att.name} className="btn btn-xs btn-ghost">다운로드</a>
+                                                    {user?.role === 'ADMIN' && <button className="text-error" onClick={() => deleteAttachment(viewingDoc.id, att.id)}>✕</button>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <label className="add-att-manual">
+                                            <PlusIcon size={14} /> 파일 추가
+                                            <input type="file" hidden onChange={handleFileUpload} />
+                                        </label>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Sidebar: Comments */}
-                        <aside className="viewer-side">
-                            <div className="side-header">
-                                <h3><MessageSquareIcon size={18} /> 댓글 ({viewingDoc.comments?.length || 0})</h3>
-                            </div>
-                            <div className="comment-list">
-                                {viewingDoc.comments?.map(cmt => (
-                                    <div key={cmt.id} className="comment-item">
-                                        <div className="cmt-header">
-                                            <span className="cmt-author">{cmt.author}</span>
-                                            <span className="cmt-date">{new Date(cmt.createdAt).toLocaleDateString()}</span>
-                                            {(user?.id === cmt.authorId || user?.role === 'ADMIN') && (
-                                                <button className="cmt-del" onClick={() => deleteComment(viewingDoc.id, cmt.id)}>✕</button>
-                                            )}
-                                        </div>
-                                        <div className="cmt-text">{cmt.text}</div>
-                                    </div>
-                                ))}
-                                {viewingDoc.comments?.length === 0 && (
-                                    <div className="empty-comments">첫 번째 댓글을 남겨보세요!</div>
-                                )}
-                            </div>
-                            <form className="comment-form" onSubmit={handleAddComment}>
-                                <input
-                                    type="text"
-                                    placeholder="의견을 남겨주세요..."
-                                    value={newComment}
-                                    onChange={e => setNewComment(e.target.value)}
-                                />
-                                <button type="submit" disabled={!newComment.trim()}><SendIcon size={18} /></button>
-                            </form>
-                        </aside>
                     </div>
+
+                    {/* Sidebar: Comments */}
+                    <aside className="viewer-side">
+                        <div className="side-header">
+                            <h3><MessageSquareIcon size={18} /> 댓글 ({viewingDoc.comments?.length || 0})</h3>
+                        </div>
+                        <div className="comment-list">
+                            {viewingDoc.comments?.map(cmt => (
+                                <div key={cmt.id} className="comment-item">
+                                    <div className="cmt-header">
+                                        <span className="cmt-author">{cmt.author}</span>
+                                        <span className="cmt-date">{new Date(cmt.createdAt).toLocaleDateString()}</span>
+                                        {(user?.id === cmt.authorId || user?.role === 'ADMIN') && (
+                                            <button className="cmt-del" onClick={() => deleteComment(viewingDoc.id, cmt.id)}>✕</button>
+                                        )}
+                                    </div>
+                                    <div className="cmt-text">{cmt.text}</div>
+                                </div>
+                            ))}
+                            {viewingDoc.comments?.length === 0 && (
+                                <div className="empty-comments">첫 번째 댓글을 남겨보세요!</div>
+                            )}
+                        </div>
+                        <form className="comment-form" onSubmit={handleAddComment}>
+                            <input
+                                type="text"
+                                placeholder="의견을 남겨주세요..."
+                                value={newComment}
+                                onChange={e => setNewComment(e.target.value)}
+                            />
+                            <button type="submit" disabled={!newComment.trim()}><SendIcon size={18} /></button>
+                        </form>
+                    </aside>
                 </div>
             )}
         </div>
