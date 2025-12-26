@@ -177,7 +177,7 @@ export default function SalesOrderList() {
             {/* Dispatch Modal */}
             {showDispatchModal && selectedOrder && (
                 <div className="modal-overlay" onClick={() => setShowDispatchModal(false)}>
-                    <div className="modal-content glass-card dispatch-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '2rem' }}>
+                    <div className="modal-content glass-card dispatch-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-form-side">
                             <div className="modal-header">
                                 <h2><TruckDeliveryIcon size={24} /> 출고 및 차량 배정</h2>

@@ -3,8 +3,32 @@
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 24px;
-    padding: 2.5rem;
+    padding: 3rem;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    width: 95%;
+    max-width: 1100px;
+    /* 좌우폭 확장 */
+    display: grid;
+    grid-template-columns: 1fr 450px;
+    gap: 3rem;
+    max-height: 95vh;
+    overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+    .dispatch-modal {
+        grid-template-columns: 1fr;
+        max-width: 600px;
+        padding: 2rem;
+    }
+
+    .modal-preview-side {
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-left: 0;
+        padding-top: 2rem;
+        margin-top: 1rem;
+    }
 }
 
 .modal-header h2 {
