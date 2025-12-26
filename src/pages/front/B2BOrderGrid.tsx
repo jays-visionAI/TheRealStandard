@@ -42,13 +42,18 @@ export default function B2BOrderGrid() {
     const { token } = useParams()
     const navigate = useNavigate()
 
-    const { getOrderSheetByToken, getOrderItems, updateOrderSheet, updateOrderItems } = useOrderStore()
+    const { getOrderItems, updateOrderSheet, updateOrderItems, orderSheets } = useOrderStore()
     const { products, initializeStore } = useProductStore()
 
     // 초기화
     useEffect(() => {
         initializeStore()
     }, [initializeStore])
+
+    // Reactive Order Information
+    const orderInfo = useMemo(() => {
+        return orderSheets.find(o => o.inviteTokenId === token)
+    }, [orderSheets, token])
 
     // 로컬에서 사용하기 편하도록 도매가를 unitPrice로 매핑
     const PRODUCT_MASTER = useMemo(() => products.map(p => ({
@@ -57,7 +62,6 @@ export default function B2BOrderGrid() {
     })), [products])
 
     // 상태
-    const [orderInfo, setOrderInfo] = useState<any>(null)
     const [rows, setRows] = useState<OrderRow[]>([])
     const [status, setStatus] = useState<OrderStatus>('DRAFT')
     const [activeRowId, setActiveRowId] = useState<string | null>(null)
@@ -71,38 +75,37 @@ export default function B2BOrderGrid() {
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-    // 데이터 로드
+    // 데이터 로드 및 초기화
     useEffect(() => {
-        if (token) {
-            const order = getOrderSheetByToken(token)
-            if (order) {
-                setOrderInfo(order)
-                if (order.status === 'SUBMITTED') {
-                    setStatus('PENDING_APPROVAL')
-                } else if (order.status === 'CONFIRMED') {
-                    setStatus('APPROVED')
-                }
-
-                const items = getOrderItems(order.id)
-                if (items && items.length > 0) {
-                    const mappedRows: OrderRow[] = items.map(item => ({
-                        id: item.id,
-                        productId: item.productId,
-                        productName: item.productName || '',
-                        unitPrice: item.unitPrice,
-                        quantity: (item.inputType === 'KG' ? item.qtyKg : item.qtyBox) || 0,
-                        unit: item.inputType.toLowerCase() as 'kg' | 'box',
-                        estimatedWeight: item.estimatedKg,
-                        totalAmount: item.amount
-                    }))
-                    setRows(mappedRows)
-                } else {
-                    setRows([createEmptyRow()])
-                }
+        if (orderInfo) {
+            if (orderInfo.status === 'SUBMITTED') {
+                setStatus('PENDING_APPROVAL')
+            } else if (orderInfo.status === 'CONFIRMED') {
+                setStatus('APPROVED')
             }
+
+            const items = getOrderItems(orderInfo.id)
+            if (items && items.length > 0 && rows.length === 0) {
+                const mappedRows: OrderRow[] = items.map(item => ({
+                    id: item.id,
+                    productId: item.productId,
+                    productName: item.productName || '',
+                    unitPrice: item.unitPrice,
+                    quantity: (item.inputType === 'KG' ? item.qtyKg : item.qtyBox) || 0,
+                    unit: item.inputType.toLowerCase() as 'kg' | 'box',
+                    estimatedWeight: item.estimatedKg,
+                    totalAmount: item.amount
+                }))
+                setRows(mappedRows)
+            } else if (rows.length === 0) {
+                setRows([createEmptyRow()])
+            }
+            setLoading(false)
+        } else if (!loading) {
+            // orderInfo가 없는데 로딩이 끝난 경우 (잘못된 토큰 등)
+            setLoading(false)
         }
-        setLoading(false)
-    }, [token, getOrderSheetByToken, getOrderItems])
+    }, [orderInfo, getOrderItems])
 
     // 빈 행 생성
     function createEmptyRow(): OrderRow {
@@ -318,8 +321,8 @@ export default function B2BOrderGrid() {
             <div className="b2b-order-grid">
                 <div className="pending-approval-view glass-card">
                     <div className="pending-icon">⏳</div>
-                    <h2>관리자 승인 대기 중</h2>
-                    <p>주문이 {submittedDate}에 제출되었습니다. 관리자 검토 후 확정됩니다.</p>
+                    <h2>고객 컨펌 완료</h2>
+                    <p>주문이 {submittedDate}에 제출되었습니다. 관리자 승인을 대기합니다.</p>
 
                     <div className="order-summary-card">
                         <div className="summary-row">
@@ -389,7 +392,7 @@ export default function B2BOrderGrid() {
                     </div>
                 </div>
                 <div className="header-right">
-                    <div className="status-badge draft">작성 중</div>
+                    <div className="status-badge draft">주문 작성 중</div>
                 </div>
             </header>
 
@@ -552,7 +555,7 @@ export default function B2BOrderGrid() {
                     onClick={handleSubmit}
                     disabled={totalItems === 0}
                 >
-                    주문 제출하기 📨
+                    주문 컨펌 및 승인 요청 📨
                 </button>
             </footer>
         </div>

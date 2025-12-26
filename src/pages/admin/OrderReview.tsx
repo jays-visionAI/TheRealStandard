@@ -96,7 +96,10 @@ export default function OrderReview() {
                         <p className="text-secondary">{orderSheet.id}</p>
                     </div>
                 </div>
-                <div className="badge badge-warning">제출됨</div>
+                {orderSheet.status === 'SUBMITTED' && <div className="badge badge-warning">고객 컨펌</div>}
+                {orderSheet.status === 'CONFIRMED' && <div className="badge badge-success">승인됨</div>}
+                {orderSheet.status === 'SENT' && <div className="badge badge-primary">발송됨</div>}
+                {orderSheet.status === 'REVISION' && <div className="badge badge-error">수정요청</div>}
             </div>
 
             {/* Order Info */}

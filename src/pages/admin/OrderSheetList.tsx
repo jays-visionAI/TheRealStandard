@@ -22,9 +22,9 @@ export default function OrderSheetList() {
         const statusConfig: Record<OrderSheetStatus, { label: string; class: string }> = {
             DRAFT: { label: '초안', class: 'badge-secondary' },
             SENT: { label: '발송됨', class: 'badge-primary' },
-            SUBMITTED: { label: '제출됨', class: 'badge-warning' },
+            SUBMITTED: { label: '고객 컨펌', class: 'badge-warning' },
             REVISION: { label: '수정요청', class: 'badge-error' },
-            CONFIRMED: { label: '확정', class: 'badge-success' },
+            CONFIRMED: { label: '승인됨', class: 'badge-success' },
         }
         const { label, class: className } = statusConfig[status]
         return <span className={`badge ${className}`}>{label}</span>
@@ -86,9 +86,9 @@ export default function OrderSheetList() {
                         <option value="ALL">전체 상태</option>
                         <option value="DRAFT">초안</option>
                         <option value="SENT">발송됨</option>
-                        <option value="SUBMITTED">제출됨</option>
+                        <option value="SUBMITTED">고객 컨펌</option>
                         <option value="REVISION">수정요청</option>
-                        <option value="CONFIRMED">확정</option>
+                        <option value="CONFIRMED">승인됨</option>
                     </select>
                 </div>
             </div>

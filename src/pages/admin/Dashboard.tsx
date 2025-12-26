@@ -46,9 +46,9 @@ export default function Dashboard() {
 
     const getStatusBadge = (status: string) => {
         const statusMap: Record<string, { label: string; class: string }> = {
-            SUBMITTED: { label: '제출됨', class: 'badge-primary' },
+            SUBMITTED: { label: '고객 컨펌', class: 'badge-primary' },
             REVISION: { label: '수정요청', class: 'badge-warning' },
-            CONFIRMED: { label: '확정', class: 'badge-success' },
+            CONFIRMED: { label: '승인됨', class: 'badge-success' },
             PREPARING: { label: '준비중', class: 'badge-secondary' },
             IN_TRANSIT: { label: '배송중', class: 'badge-primary' },
             DELIVERED: { label: '배송완료', class: 'badge-success' },
