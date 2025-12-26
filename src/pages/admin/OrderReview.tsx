@@ -1,58 +1,78 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { XIcon } from '../../components/Icons'
-
-interface OrderItem {
-    productName: string
-    qtyKg: number
-    unitPrice: number
-    amount: number
-}
+import { useOrderStore } from '../../stores/orderStore'
+import { OrderSheet, OrderSheetItem } from '../../types'
 
 export default function OrderReview() {
     const { id } = useParams()
     const navigate = useNavigate()
+    const { getOrderSheetById, getOrderItems, updateOrderSheet } = useOrderStore()
+
+    const [orderSheet, setOrderSheet] = useState<OrderSheet | null>(null)
+    const [items, setItems] = useState<OrderSheetItem[]>([])
+    const [loading, setLoading] = useState(true)
     const [revisionComment, setRevisionComment] = useState('')
     const [showRevisionModal, setShowRevisionModal] = useState(false)
 
-    // Mock data
-    const orderSheet = {
-        id: id || 'OS-2024-001',
-        customerName: '한우명가',
-        shipDate: '2024-01-16',
-        shipTo: '서울시 강남구 역삼동 123-45',
-        submittedAt: '2024-01-15 14:30',
-        items: [
-            { productName: '한우 등심 1++', qtyKg: 50, unitPrice: 85000, amount: 4250000 },
-            { productName: '한우 안심 1++', qtyKg: 30, unitPrice: 95000, amount: 2850000 },
-            { productName: '한우 채끝 1+', qtyKg: 25, unitPrice: 72000, amount: 1800000 },
-            { productName: '수입 부채살', qtyKg: 100, unitPrice: 35000, amount: 3500000 },
-        ] as OrderItem[],
-    }
+    useEffect(() => {
+        if (id) {
+            const order = getOrderSheetById(id)
+            if (order) {
+                setOrderSheet(order)
+                setItems(getOrderItems(order.id))
+            }
+            setLoading(false)
+        }
+    }, [id, getOrderSheetById, getOrderItems])
 
-    const totalKg = orderSheet.items.reduce((sum, item) => sum + item.qtyKg, 0)
-    const totalAmount = orderSheet.items.reduce((sum, item) => sum + item.amount, 0)
+    const totalKg = items.reduce((sum, item) => sum + (item.estimatedKg || 0), 0)
+    const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0)
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
     }
 
+    const formatDateOnly = (date: Date | string) => {
+        if (!date) return '-'
+        return new Date(date).toLocaleDateString('ko-KR')
+    }
+
+    const formatDateTime = (date: Date | string) => {
+        if (!date) return '-'
+        return new Date(date).toLocaleString('ko-KR')
+    }
+
     const handleConfirm = () => {
+        if (!orderSheet) return
         if (confirm('주문을 확정하시겠습니까? 확정 후에는 수정이 불가합니다.')) {
+            updateOrderSheet(orderSheet.id, {
+                status: 'CONFIRMED',
+                updatedAt: new Date()
+            })
             alert('주문이 확정되었습니다. SalesOrder가 생성됩니다.')
-            navigate('/admin/sales-orders')
+            navigate('/admin/order-sheets')
         }
     }
 
     const handleRevisionRequest = () => {
+        if (!orderSheet) return
         if (!revisionComment.trim()) {
             alert('수정 요청 사유를 입력해주세요.')
             return
         }
+        updateOrderSheet(orderSheet.id, {
+            status: 'REVISION',
+            revisionComment: revisionComment,
+            updatedAt: new Date()
+        })
         alert('수정 요청이 전송되었습니다.')
         setShowRevisionModal(false)
         navigate('/admin/order-sheets')
     }
+
+    if (loading) return <div className="p-8 text-center text-white">불러오는 중...</div>
+    if (!orderSheet) return <div className="p-8 text-center text-white">주문을 찾을 수 없습니다.</div>
 
     return (
         <div className="page-container">
@@ -79,11 +99,11 @@ export default function OrderReview() {
                     </div>
                     <div className="info-item">
                         <span className="info-label">배송일</span>
-                        <span className="info-value">{orderSheet.shipDate}</span>
+                        <span className="info-value">{formatDateOnly(orderSheet.shipDate)}</span>
                     </div>
                     <div className="info-item">
                         <span className="info-label">제출시간</span>
-                        <span className="info-value">{orderSheet.submittedAt}</span>
+                        <span className="info-value">{formatDateTime(orderSheet.lastSubmittedAt || '')}</span>
                     </div>
                     <div className="info-item full-width">
                         <span className="info-label">배송지</span>
@@ -106,10 +126,10 @@ export default function OrderReview() {
                             </tr>
                         </thead>
                         <tbody>
-                            {orderSheet.items.map((item, index) => (
+                            {items.map((item, index) => (
                                 <tr key={index}>
                                     <td className="font-medium">{item.productName}</td>
-                                    <td className="text-right">{item.qtyKg.toFixed(1)}</td>
+                                    <td className="text-right">{item.estimatedKg.toFixed(1)}</td>
                                     <td className="text-right">{formatCurrency(item.unitPrice)}</td>
                                     <td className="text-right font-semibold">{formatCurrency(item.amount)}</td>
                                 </tr>
