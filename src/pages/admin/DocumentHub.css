@@ -224,19 +224,20 @@
 
 .viewer-layout {
     width: 100%;
-    max-width: 1400px;
+    max-width: 1000px;
+    /* Reduced max-width for single column readability */
     height: 90vh;
     display: grid;
-    grid-template-columns: 1fr 350px;
+    grid-template-columns: 1fr;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
 }
 
 .viewer-main {
     display: flex;
     flex-direction: column;
     background: white;
-    border-right: 1px solid #f0f0f0;
     min-height: 0;
     /* Important for flex scrolling */
 }
@@ -352,24 +353,23 @@
 }
 
 /* Comments Sidebar */
-.viewer-side {
-    background: #fdfdfd;
-    display: flex;
-    flex-direction: column;
+.comments-bottom-section {
+    background: #fafafa;
+    border-radius: 0 0 20px 20px;
 }
 
-.side-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid #f0f0f0;
+.comments-bottom-section .side-header {
+    padding: 1.5rem 0 1rem 0;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 2rem;
 }
 
 .comment-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1.5rem;
+    padding: 0;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .comment-item {
@@ -418,25 +418,32 @@
 }
 
 .comment-form {
-    padding: 1.5rem;
-    border-top: 1px solid #f0f0f0;
+    padding: 1.5rem 0;
+    border-top: 1px solid #eee;
     display: flex;
-    gap: 0.5rem;
+    gap: 1rem;
 }
 
 .comment-form input {
     flex: 1;
-    background: #f5f5f5;
-    border: none;
-    padding: 0.75rem 1rem;
-    border-radius: 20px;
-    font-size: 0.875rem;
+    background: #f8f9fa;
+    border: 1px solid #eee;
+    padding: 1rem 1.5rem;
+    border-radius: 30px;
+    font-size: 0.9375rem;
     outline: none;
+    transition: all 0.2s;
+}
+
+.comment-form input:focus {
+    background: white;
+    border-color: #7c4dff;
+    box-shadow: 0 0 0 4px rgba(124, 77, 255, 0.1);
 }
 
 .comment-form button {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     border: none;
     background: #7c4dff;
@@ -595,13 +602,8 @@
 /* Responsive Overrides */
 @media (max-width: 1024px) {
     .viewer-layout {
-        grid-template-columns: 1fr;
+        border-radius: 0;
         height: 100vh;
-    }
-
-    .viewer-side {
-        height: 400px;
-        border-top: 1px solid #f0f0f0;
     }
 
     .editor-modal {

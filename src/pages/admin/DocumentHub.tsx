@@ -454,42 +454,42 @@ export default function DocumentHub() {
                                         </label>
                                     </div>
                                 </div>
+
+                                {/* Comments Section (Moved Inside Content for Bottom Placement) */}
+                                <div className="viewer-section comments-bottom-section">
+                                    <div className="side-header">
+                                        <h3><MessageSquareIcon size={18} /> 댓글 ({viewingDoc.comments?.length || 0})</h3>
+                                    </div>
+                                    <div className="comment-list">
+                                        {viewingDoc.comments?.map(cmt => (
+                                            <div key={cmt.id} className="comment-item">
+                                                <div className="cmt-header">
+                                                    <span className="cmt-author">{cmt.author}</span>
+                                                    <span className="cmt-date">{new Date(cmt.createdAt).toLocaleDateString()}</span>
+                                                    {(user?.id === cmt.authorId || user?.role === 'ADMIN') && (
+                                                        <button className="cmt-del" onClick={() => deleteComment(viewingDoc.id, cmt.id)}>✕</button>
+                                                    )}
+                                                </div>
+                                                <div className="cmt-text">{cmt.text}</div>
+                                            </div>
+                                        ))}
+                                        {viewingDoc.comments?.length === 0 && (
+                                            <div className="empty-comments">첫 번째 댓글을 남겨보세요!</div>
+                                        )}
+                                    </div>
+                                    <form className="comment-form" onSubmit={handleAddComment}>
+                                        <input
+                                            type="text"
+                                            placeholder="의견을 남겨주세요..."
+                                            value={newComment}
+                                            onChange={e => setNewComment(e.target.value)}
+                                        />
+                                        <button type="submit" disabled={!newComment.trim()}><SendIcon size={18} /></button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    {/* Sidebar: Comments */}
-                    <aside className="viewer-side">
-                        <div className="side-header">
-                            <h3><MessageSquareIcon size={18} /> 댓글 ({viewingDoc.comments?.length || 0})</h3>
-                        </div>
-                        <div className="comment-list">
-                            {viewingDoc.comments?.map(cmt => (
-                                <div key={cmt.id} className="comment-item">
-                                    <div className="cmt-header">
-                                        <span className="cmt-author">{cmt.author}</span>
-                                        <span className="cmt-date">{new Date(cmt.createdAt).toLocaleDateString()}</span>
-                                        {(user?.id === cmt.authorId || user?.role === 'ADMIN') && (
-                                            <button className="cmt-del" onClick={() => deleteComment(viewingDoc.id, cmt.id)}>✕</button>
-                                        )}
-                                    </div>
-                                    <div className="cmt-text">{cmt.text}</div>
-                                </div>
-                            ))}
-                            {viewingDoc.comments?.length === 0 && (
-                                <div className="empty-comments">첫 번째 댓글을 남겨보세요!</div>
-                            )}
-                        </div>
-                        <form className="comment-form" onSubmit={handleAddComment}>
-                            <input
-                                type="text"
-                                placeholder="의견을 남겨주세요..."
-                                value={newComment}
-                                onChange={e => setNewComment(e.target.value)}
-                            />
-                            <button type="submit" disabled={!newComment.trim()}><SendIcon size={18} /></button>
-                        </form>
-                    </aside>
                 </div>
             )}
         </div>
