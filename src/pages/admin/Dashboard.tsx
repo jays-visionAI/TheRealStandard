@@ -26,27 +26,18 @@ export default function Dashboard() {
     const [recentShipments, setRecentShipments] = useState<any[]>([])
 
     useEffect(() => {
-        // 프로토타입용 목업 데이터
+        // 프로토타입용 목업 데이터 제거
         setStats({
-            pendingOrders: 5,
-            revisionRequested: 2,
-            documentsWaiting: 8,
-            dispatchPending: 3,
-            todayShipments: 12,
-            todayAmount: 45680000,
+            pendingOrders: 0,
+            revisionRequested: 0,
+            documentsWaiting: 0,
+            dispatchPending: 0,
+            todayShipments: 0,
+            todayAmount: 0,
         })
 
-        setRecentOrders([
-            { id: 'OS-001', customer: '한우명가', status: 'SUBMITTED', date: '2024-01-15', amount: 3500000 },
-            { id: 'OS-002', customer: '정육왕', status: 'REVISION', date: '2024-01-15', amount: 2200000 },
-            { id: 'OS-003', customer: '고기마을', status: 'CONFIRMED', date: '2024-01-14', amount: 5100000 },
-        ])
-
-        setRecentShipments([
-            { id: 'SH-001', customer: '한우명가', status: 'IN_TRANSIT', vehicleNo: '서울12가3456', eta: '14:00' },
-            { id: 'SH-002', customer: '정육왕', status: 'PREPARING', vehicleNo: '-', eta: '16:30' },
-            { id: 'SH-003', customer: '고기마을', status: 'DELIVERED', vehicleNo: '서울34나7890', eta: '완료' },
-        ])
+        setRecentOrders([])
+        setRecentShipments([])
     }, [])
 
     const formatCurrency = (value: number) => {

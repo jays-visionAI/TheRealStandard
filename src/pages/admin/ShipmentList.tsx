@@ -20,11 +20,7 @@ interface ShipmentData {
     totalsKg: number
 }
 
-const mockShipments: ShipmentData[] = [
-    { id: 'SH-2024-001', status: 'IN_TRANSIT', carrierName: '한국물류', vehicleTypeName: '3.5톤', vehicleNo: '서울12가3456', driverName: '김기사', driverPhone: '010-1234-5678', totalsKg: 205 },
-    { id: 'SH-2024-002', status: 'PREPARING', totalsKg: 150 },
-    { id: 'SH-2024-003', status: 'DELIVERED', carrierName: '한우익스프레스', vehicleTypeName: '1.8톤', vehicleNo: '경기34나7890', driverName: '이기사', totalsKg: 85 },
-]
+const mockShipments: ShipmentData[] = []
 
 export default function ShipmentList() {
     const [shipments, setShipments] = useState(mockShipments)

@@ -19,59 +19,7 @@ interface Product {
     taxFree: boolean      // 면세 여부
 }
 
-const PRODUCT_MASTER: Product[] = [
-    // ========== 냉장 ==========
-    { id: 'p01', name: '삼겹살', category: '냉장', unitPrice: 17500, retailPrice: 25000, unit: 'kg', taxFree: true },
-    { id: 'p02', name: '미삼겹살', category: '냉장', unitPrice: 17000, retailPrice: 25000, unit: 'kg', taxFree: true },
-    { id: 'p03', name: '삼겹살(대패)', category: '냉장', unitPrice: 18500, retailPrice: 26000, unit: 'kg', taxFree: true },
-    { id: 'p04', name: '삼겹살(칼집)', category: '냉장', unitPrice: 19500, retailPrice: 27000, unit: 'kg', taxFree: true },
-    { id: 'p05', name: '삼겹살/오겹살(찌개용)', category: '냉장', unitPrice: 14000, retailPrice: 17000, unit: 'kg', taxFree: true },
-    { id: 'p06', name: '삼겹살/오겹살(불고기용)', category: '냉장', unitPrice: 14000, retailPrice: 17000, unit: 'kg', taxFree: true },
-    { id: 'p07', name: '목살', category: '냉장', unitPrice: 16000, retailPrice: 23000, unit: 'kg', taxFree: true },
-    { id: 'p08', name: '목살(대패)', category: '냉장', unitPrice: 16500, retailPrice: 24000, unit: 'kg', taxFree: true },
-    { id: 'p09', name: '항정살', category: '냉장', unitPrice: 34000, retailPrice: 42000, unit: 'kg', taxFree: true },
-    { id: 'p10', name: '가브리살', category: '냉장', unitPrice: 25000, retailPrice: 33000, unit: 'kg', taxFree: true },
-    { id: 'p11', name: '갈매기살', category: '냉장', unitPrice: 22000, retailPrice: 30000, unit: 'kg', taxFree: true },
-    { id: 'p12', name: '토시살', category: '냉장', unitPrice: 7000, retailPrice: 9000, unit: 'kg', taxFree: true },
-    { id: 'p13', name: '앞다리살', category: '냉장', unitPrice: 10300, retailPrice: 12500, unit: 'kg', taxFree: true },
-    { id: 'p14', name: '미박 앞다리살(미전지)', category: '냉장', unitPrice: 10000, retailPrice: 12500, unit: 'kg', taxFree: true },
-    { id: 'p15', name: '속사태', category: '냉장', unitPrice: 6500, retailPrice: 11000, unit: 'kg', taxFree: true },
-    { id: 'p16', name: '수육', category: '냉장', unitPrice: 6500, retailPrice: 11000, unit: 'kg', taxFree: true },
-    { id: 'p17', name: '꽃살', category: '냉장', unitPrice: 17500, retailPrice: 25000, unit: 'kg', taxFree: true },
-    { id: 'p18', name: '미사태', category: '냉장', unitPrice: 9500, retailPrice: 18000, unit: 'kg', taxFree: true },
-    { id: 'p19', name: '안심', category: '냉장', unitPrice: 8500, retailPrice: 10000, unit: 'kg', taxFree: true },
-    { id: 'p20', name: '등심(짜장용)', category: '냉장', unitPrice: 8300, retailPrice: 11000, unit: 'kg', taxFree: true },
-    { id: 'p21', name: '등심(카레용)', category: '냉장', unitPrice: 8300, retailPrice: 11000, unit: 'kg', taxFree: true },
-    { id: 'p22', name: '등심(돈까스용)', category: '냉장', unitPrice: 8300, retailPrice: 11000, unit: 'kg', taxFree: true },
-    { id: 'p23', name: '등심(잡채용)', category: '냉장', unitPrice: 8300, retailPrice: 11000, unit: 'kg', taxFree: true },
-    { id: 'p24', name: '등심(탕수육용)', category: '냉장', unitPrice: 8300, retailPrice: 11000, unit: 'kg', taxFree: true },
-    { id: 'p25', name: '뒷다리살', category: '냉장', unitPrice: 5700, retailPrice: 7500, unit: 'kg', taxFree: true },
-    { id: 'p26', name: '갈비', category: '냉장', unitPrice: 8500, retailPrice: 13000, unit: 'kg', taxFree: true },
-    { id: 'p27', name: '등갈비', category: '냉장', unitPrice: 15000, retailPrice: 25000, unit: 'kg', taxFree: true },
-    { id: 'p28', name: '꼬리반골', category: '냉장', unitPrice: 1000, retailPrice: 1500, unit: 'kg', taxFree: true },
-    { id: 'p29', name: '등뼈', category: '냉장', unitPrice: 2500, retailPrice: 3500, unit: 'kg', taxFree: true },
-    { id: 'p30', name: '목뼈', category: '냉장', unitPrice: 2500, retailPrice: 3500, unit: 'kg', taxFree: true },
-    { id: 'p31', name: '돈우콤마', category: '냉장', unitPrice: 17500, retailPrice: 25000, unit: 'kg', taxFree: true },
-    { id: 'p32', name: '사골', category: '냉장', unitPrice: 1500, retailPrice: 1500, unit: 'kg', taxFree: true },
-    { id: 'p33', name: '돈피(껍데기)', category: '냉장', unitPrice: 2500, retailPrice: 3500, unit: 'kg', taxFree: true },
-    { id: 'p34', name: '뒷고기(잡육)', category: '냉장', unitPrice: 4500, retailPrice: 5000, unit: 'kg', taxFree: true },
-    { id: 'p35', name: 'A지방', category: '냉장', unitPrice: 2000, retailPrice: 2000, unit: 'kg', taxFree: true },
-    { id: 'p36', name: '꼬들살', category: '냉장', unitPrice: 18500, retailPrice: 26000, unit: 'kg', taxFree: true },
-
-    // ========== 냉동 ==========
-    { id: 'p37', name: '등심(짜장,카레,돈까스,잡채,탕수육)', category: '냉동', unitPrice: 8000, retailPrice: 10000, unit: 'kg', taxFree: true },
-    { id: 'p38', name: '뒷다리(다짐육)', category: '냉동', unitPrice: 5700, retailPrice: 6500, unit: 'kg', taxFree: true },
-    { id: 'p39', name: '등갈비', category: '냉동', unitPrice: 15000, retailPrice: 23000, unit: 'kg', taxFree: true },
-    { id: 'p40', name: '목살(대패)', category: '냉동', unitPrice: 13000, retailPrice: 21000, unit: 'kg', taxFree: true },
-    { id: 'p41', name: '삼겹살(대패)', category: '냉동', unitPrice: 13500, retailPrice: 22000, unit: 'kg', taxFree: true },
-    { id: 'p42', name: '갈비(LA식)', category: '냉동', unitPrice: 7000, retailPrice: 11500, unit: 'kg', taxFree: true },
-    { id: 'p43', name: '갈비(찜용)', category: '냉동', unitPrice: 7000, retailPrice: 10500, unit: 'kg', taxFree: true },
-    { id: 'p44', name: '앞장족', category: '냉동', unitPrice: 6000, retailPrice: 8000, unit: 'kg', taxFree: true },
-    { id: 'p45', name: '뒷장족', category: '냉동', unitPrice: 5500, retailPrice: 7000, unit: 'kg', taxFree: true },
-
-    // ========== 한돈 부산물 ==========
-    { id: 'p46', name: '미니족(냉동)', category: '부산물', unitPrice: 5000, retailPrice: 7000, unit: 'kg', taxFree: true },
-]
+const PRODUCT_MASTER: Product[] = []
 
 // ============================================
 // 주문 행 인터페이스

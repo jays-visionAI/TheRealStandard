@@ -17,32 +17,7 @@ interface Product {
     boxWeight?: number
 }
 
-const PRODUCT_MASTER: Product[] = [
-    // 냉장
-    { id: 'p01', name: '삼겹살', category: '냉장', unitPrice: 17500, unit: 'kg' },
-    { id: 'p02', name: '미삼겹살', category: '냉장', unitPrice: 17000, unit: 'kg' },
-    { id: 'p03', name: '삼겹살(대패)', category: '냉장', unitPrice: 18500, unit: 'kg' },
-    { id: 'p04', name: '삼겹살(칼집)', category: '냉장', unitPrice: 19500, unit: 'kg' },
-    { id: 'p05', name: '삼겹살/오겹살(찌개용)', category: '냉장', unitPrice: 14000, unit: 'kg' },
-    { id: 'p06', name: '목살', category: '냉장', unitPrice: 16000, unit: 'kg' },
-    { id: 'p07', name: '목살(대패)', category: '냉장', unitPrice: 16500, unit: 'kg' },
-    { id: 'p08', name: '항정살', category: '냉장', unitPrice: 34000, unit: 'kg' },
-    { id: 'p09', name: '가브리살', category: '냉장', unitPrice: 25000, unit: 'kg' },
-    { id: 'p10', name: '갈매기살', category: '냉장', unitPrice: 22000, unit: 'kg' },
-    { id: 'p11', name: '토시살', category: '냉장', unitPrice: 7000, unit: 'kg' },
-    { id: 'p12', name: '앞다리살', category: '냉장', unitPrice: 10300, unit: 'kg' },
-    { id: 'p13', name: '등갈비', category: '냉장', unitPrice: 15000, unit: 'kg' },
-    { id: 'p14', name: '갈비', category: '냉장', unitPrice: 8500, unit: 'kg' },
-    { id: 'p15', name: '안심', category: '냉장', unitPrice: 8500, unit: 'kg' },
-    // 냉동
-    { id: 'p16', name: '삼겹살(대패)', category: '냉동', unitPrice: 13500, unit: 'kg' },
-    { id: 'p17', name: '목살(대패)', category: '냉동', unitPrice: 13000, unit: 'kg' },
-    { id: 'p18', name: '등갈비', category: '냉동', unitPrice: 15000, unit: 'kg' },
-    { id: 'p19', name: '갈비(LA식)', category: '냉동', unitPrice: 7000, unit: 'kg' },
-    { id: 'p20', name: '갈비(찜용)', category: '냉동', unitPrice: 7000, unit: 'kg' },
-    // 부산물
-    { id: 'p21', name: '미니족(냉동)', category: '부산물', unitPrice: 5000, unit: 'kg' },
-]
+const PRODUCT_MASTER: Product[] = []
 
 // Mock 이전 주문 데이터
 interface PastOrder {
@@ -52,31 +27,7 @@ interface PastOrder {
     totalAmount: number
 }
 
-const mockPastOrders: Record<string, PastOrder[]> = {
-    'org-001': [
-        {
-            id: 'PO-001', date: '2024-01-10', items: [
-                { productId: 'p01', productName: '삼겹살', qty: 40 },
-                { productId: 'p06', productName: '목살', qty: 30 },
-                { productId: 'p08', productName: '항정살', qty: 10 },
-            ], totalAmount: 1540000
-        },
-        {
-            id: 'PO-002', date: '2024-01-05', items: [
-                { productId: 'p01', productName: '삼겹살', qty: 50 },
-                { productId: 'p13', productName: '등갈비', qty: 20 },
-            ], totalAmount: 1175000
-        },
-    ],
-    'org-002': [
-        {
-            id: 'PO-003', date: '2024-01-08', items: [
-                { productId: 'p03', productName: '삼겹살(대패)', qty: 25 },
-                { productId: 'p07', productName: '목살(대패)', qty: 25 },
-            ], totalAmount: 875000
-        },
-    ],
-}
+const mockPastOrders: Record<string, PastOrder[]> = {}
 
 // ============================================
 // 주문 행 인터페이스

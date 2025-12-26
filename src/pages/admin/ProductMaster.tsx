@@ -28,26 +28,7 @@ interface Product {
 // ============================================
 // Mock 상품 데이터 (실제로는 Firebase/API에서 로드)
 // ============================================
-const INITIAL_PRODUCTS: Product[] = [
-    // 냉장
-    { id: 'p01', name: '삼겹살', category: '냉장', unit: 'kg', taxFree: true, costPrice: 15000, wholesalePrice: 17500, retailPrice: 25000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p02', name: '미삼겹살', category: '냉장', unit: 'kg', taxFree: true, costPrice: 14500, wholesalePrice: 17000, retailPrice: 25000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p03', name: '삼겹살(대패)', category: '냉장', unit: 'kg', taxFree: true, costPrice: 16000, wholesalePrice: 18500, retailPrice: 26000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p04', name: '삼겹살(칼집)', category: '냉장', unit: 'kg', taxFree: true, costPrice: 17000, wholesalePrice: 19500, retailPrice: 27000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p05', name: '목살', category: '냉장', unit: 'kg', taxFree: true, costPrice: 14000, wholesalePrice: 16000, retailPrice: 23000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p06', name: '목살(대패)', category: '냉장', unit: 'kg', taxFree: true, costPrice: 14500, wholesalePrice: 16500, retailPrice: 24000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p07', name: '항정살', category: '냉장', unit: 'kg', taxFree: true, costPrice: 30000, wholesalePrice: 34000, retailPrice: 42000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p08', name: '가브리살', category: '냉장', unit: 'kg', taxFree: true, costPrice: 22000, wholesalePrice: 25000, retailPrice: 33000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p09', name: '갈매기살', category: '냉장', unit: 'kg', taxFree: true, costPrice: 19000, wholesalePrice: 22000, retailPrice: 30000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p10', name: '등갈비', category: '냉장', unit: 'kg', taxFree: true, costPrice: 13000, wholesalePrice: 15000, retailPrice: 25000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    // 냉동
-    { id: 'p11', name: '삼겹살(대패)', category: '냉동', unit: 'kg', taxFree: true, costPrice: 11500, wholesalePrice: 13500, retailPrice: 22000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p12', name: '목살(대패)', category: '냉동', unit: 'kg', taxFree: true, costPrice: 11000, wholesalePrice: 13000, retailPrice: 21000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p13', name: '등갈비', category: '냉동', unit: 'kg', taxFree: true, costPrice: 13000, wholesalePrice: 15000, retailPrice: 23000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    { id: 'p14', name: '갈비(LA식)', category: '냉동', unit: 'kg', taxFree: true, costPrice: 6000, wholesalePrice: 7000, retailPrice: 11500, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-    // 부산물
-    { id: 'p15', name: '미니족(냉동)', category: '부산물', unit: 'kg', taxFree: true, costPrice: 4000, wholesalePrice: 5000, retailPrice: 7000, isActive: true, createdAt: '2024-01-01', updatedAt: '2024-01-15' },
-]
+const INITIAL_PRODUCTS: Product[] = []
 
 // ============================================
 // 메인 컴포넌트

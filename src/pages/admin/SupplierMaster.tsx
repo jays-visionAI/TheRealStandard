@@ -32,56 +32,7 @@ interface Supplier {
 }
 
 // Mock 데이터
-const mockSuppliers: Supplier[] = [
-    {
-        id: 'supp-001',
-        companyName: '돈우농장',
-        bizRegNo: '111-22-33333',
-        ceoName: '박농장',
-        phone: '031-111-2222',
-        email: 'donwoo@farm.co.kr',
-        address: '경기도 이천시 모가면 농장로 123',
-        contactPerson: '김과장',
-        contactPhone: '010-1111-2222',
-        supplyCategory: 'meat',
-        paymentTerms: '익월 10일',
-        bankName: '농협은행',
-        bankAccount: '123-4567-8901-23',
-        memo: '한돈 주요 공급처',
-        isActive: true,
-        createdAt: new Date('2023-01-01'),
-        updatedAt: new Date('2024-01-01'),
-    },
-    {
-        id: 'supp-002',
-        companyName: '한우목장',
-        bizRegNo: '222-33-44444',
-        ceoName: '이목장',
-        phone: '033-222-3333',
-        email: 'hanwoo@ranch.co.kr',
-        address: '강원도 횡성군 안흥면 목장길 456',
-        contactPerson: '최대리',
-        contactPhone: '010-2222-3333',
-        supplyCategory: 'meat',
-        paymentTerms: '선결제',
-        isActive: true,
-        createdAt: new Date('2023-06-01'),
-        updatedAt: new Date('2023-12-15'),
-    },
-    {
-        id: 'supp-003',
-        companyName: '부산물유통',
-        bizRegNo: '333-44-55555',
-        ceoName: '최부산',
-        phone: '02-333-4444',
-        email: 'byproduct@trade.co.kr',
-        address: '서울시 마포구 도화동 789',
-        supplyCategory: 'byproduct',
-        isActive: false,
-        createdAt: new Date('2022-03-01'),
-        updatedAt: new Date('2023-06-30'),
-    },
-]
+const mockSuppliers: Supplier[] = []
 
 const CATEGORY_LABELS: Record<Supplier['supplyCategory'], string> = {
     meat: '육류',
