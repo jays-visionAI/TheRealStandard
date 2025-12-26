@@ -145,10 +145,10 @@ export default function UserList() {
                         </div>
                         <div className="user-card-body">
                             <div className="avatar">
-                                {user.name.charAt(0)}
+                                {(user.name || 'U').charAt(0)}
                             </div>
-                            <h3 className="user-name">{user.name}</h3>
-                            <p className="user-email"><MailIcon size={14} /> {user.email}</p>
+                            <h3 className="user-name">{user.name || '이름 없음'}</h3>
+                            <p className="user-email"><MailIcon size={14} /> {user.email || '이메일 없음'}</p>
 
                             {user.orgId && (
                                 <p className="user-org">

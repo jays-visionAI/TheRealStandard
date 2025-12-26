@@ -249,7 +249,7 @@ export default function OrganizationMaster() {
                             filteredCustomers.map(customer => (
                                 <tr key={customer.id} className={!customer.isActive ? 'inactive' : ''}>
                                     <td>
-                                        <span className={`status-badge ${customer.status.toLowerCase()}`}>
+                                        <span className={`status-badge ${(customer.status || 'PENDING').toLowerCase()}`}>
                                             {customer.status === 'PENDING' ? '초대대기' :
                                                 customer.status === 'ACTIVE' ? '활성' : '비활성'}
                                         </span>
