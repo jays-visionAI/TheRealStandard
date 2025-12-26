@@ -31,7 +31,7 @@
     }
 }
 
-.modal-header h2 {
+.dispatch-modal .modal-header h2 {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -40,7 +40,7 @@
     margin-bottom: 0.5rem;
 }
 
-.modal-body label {
+.dispatch-modal .modal-body label {
     display: block;
     font-size: 0.85rem;
     font-weight: 600;
@@ -48,7 +48,7 @@
     margin-bottom: 0.5rem;
 }
 
-.modal-body .input {
+.dispatch-modal .modal-body .input {
     width: 100%;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -59,13 +59,13 @@
     transition: all 0.2s;
 }
 
-.modal-body .input:focus {
+.dispatch-modal .modal-body .input:focus {
     outline: none;
     border-color: var(--color-primary);
     background: rgba(255, 255, 255, 0.08);
 }
 
-.modal-preview-side {
+.dispatch-modal .modal-preview-side {
     border-left: 1px solid rgba(255, 255, 255, 0.1);
     padding-left: 2rem;
     display: flex;
