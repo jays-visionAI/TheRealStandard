@@ -18,8 +18,8 @@ import {
 } from '../../components/Icons'
 import { useDocStore, TRS_Document } from '../../stores/docStore'
 import { useAuth } from '../../contexts/AuthContext'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
+import ReactQuill from 'react-quill-new'
+import 'react-quill-new/dist/quill.snow.css'
 import './DocumentHub.css'
 
 const quillModules = {
