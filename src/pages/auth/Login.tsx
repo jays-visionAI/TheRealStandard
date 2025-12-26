@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIcon } from '../../components/Icons'
+import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIcon, KakaoIcon } from '../../components/Icons'
+import { kakaoLogin } from '../../lib/kakaoService'
 import './Login.css'
 
 // Mock 사용자 목록 (데모용)
@@ -14,7 +15,7 @@ const DEMO_USERS = [
 
 export default function Login() {
     const navigate = useNavigate()
-    const { login } = useAuth()
+    const { login, loginWithKakao } = useAuth()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -60,6 +61,21 @@ export default function Login() {
             }
         } catch {
             setError('로그인 중 오류가 발생했습니다.')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleKakaoLogin = async () => {
+        setError('')
+        setIsLoading(true)
+        try {
+            const result = await kakaoLogin()
+            await loginWithKakao(result.user)
+            navigate('/order/my-orders')
+        } catch (err) {
+            console.error(err)
+            setError('카카오 로그인에 실패했습니다.')
         } finally {
             setIsLoading(false)
         }
@@ -126,6 +142,19 @@ export default function Login() {
                         disabled={isLoading}
                     >
                         {isLoading ? '로그인 중...' : '로그인'}
+                    </button>
+
+                    <div className="login-divider">
+                        <span>또는</span>
+                    </div>
+
+                    <button
+                        type="button"
+                        className="btn btn-kakao btn-lg w-full flex items-center justify-center gap-2"
+                        onClick={handleKakaoLogin}
+                        disabled={isLoading}
+                    >
+                        <KakaoIcon size={20} /> 카카오톡으로 시작하기
                     </button>
                 </form>
 

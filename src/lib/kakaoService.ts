@@ -82,3 +82,37 @@ export const sendOrderMessage = (customerName: string, orderId: string, vehicleN
         ],
     });
 };
+
+/**
+ * 카카오 로그인 실행
+ */
+export const kakaoLogin = (): Promise<any> => {
+    return new Promise((resolve, reject) => {
+        if (!window.Kakao) {
+            reject('Kakao SDK not loaded');
+            return;
+        }
+
+        window.Kakao.Auth.login({
+            success: function (authObj: any) {
+                console.log('Kakao Login Success:', authObj);
+                // 사용자 정보 가져오기
+                window.Kakao.API.request({
+                    url: '/v2/user/me',
+                    success: function (res: any) {
+                        console.log('Kakao User Info:', res);
+                        resolve({ auth: authObj, user: res });
+                    },
+                    fail: function (error: any) {
+                        console.error('Kakao User Info Fail:', error);
+                        reject(error);
+                    },
+                });
+            },
+            fail: function (err: any) {
+                console.error('Kakao Login Fail:', err);
+                reject(err);
+            },
+        });
+    });
+};

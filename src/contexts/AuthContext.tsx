@@ -13,6 +13,7 @@ interface AuthContextType {
     user: User | null
     loading: boolean
     login: (email: string, password: string) => Promise<void>
+    loginWithKakao: (kakaoUser: any) => Promise<void>
     logout: () => void
     isAdmin: boolean
     isCustomer: boolean
@@ -79,6 +80,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(mappedUser)
     }
 
+    const loginWithKakao = async (kakaoUser: any) => {
+        // 실제 운영 환경에서는 카카오 ID로 DB 연동이 필요하지만, 
+        // 데모 환경에서는 카카오에서 가져온 정보를 기반으로 고객 계정을 시뮬레이션합니다.
+        const mappedUser: User = {
+            id: `kakao-${kakaoUser.id}`,
+            email: kakaoUser.kakao_account?.email || `${kakaoUser.id}@kakao.com`,
+            name: kakaoUser.properties?.nickname || '카카오 사용자',
+            role: 'CUSTOMER', // 기본적으로 고객사 역할을 부여
+        }
+
+        localStorage.setItem('trs_user', JSON.stringify(mappedUser))
+        setUser(mappedUser)
+    }
+
     const logout = () => {
         localStorage.removeItem('trs_user')
         setUser(null)
@@ -95,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 user,
                 loading,
                 login,
+                loginWithKakao,
                 logout,
                 isAdmin,
                 isCustomer,

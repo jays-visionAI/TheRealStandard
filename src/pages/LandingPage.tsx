@@ -5,13 +5,28 @@ import {
     AlertTriangleIcon,
     PackageIcon,
     SearchIcon,
-    CheckIcon
+    CheckIcon,
+    KakaoIcon
 } from '../components/Icons'
 import { LogoSmall, Logo } from '../components/Logo'
+import { useAuth } from '../contexts/AuthContext'
+import { kakaoLogin } from '../lib/kakaoService'
 import './LandingPage.css'
 
 export default function LandingPage() {
     const navigate = useNavigate()
+    const { loginWithKakao } = useAuth()
+
+    const handleKakaoLogin = async () => {
+        try {
+            const result = await kakaoLogin()
+            await loginWithKakao(result.user)
+            navigate('/order/my-orders') // 고객 대시보드로 이동
+        } catch (error) {
+            console.error('Kakao login failed:', error)
+            alert('카카오 로그인에 실패했습니다. 다시 시도해 주세요.')
+        }
+    }
 
     const scrollToSection = (id: string) => {
         const el = document.getElementById(id)
@@ -35,7 +50,9 @@ export default function LandingPage() {
                     </nav>
                     <div className="flex gap-4 items-center">
                         <button className="btn btn-secondary" onClick={() => navigate('/login')}>Login</button>
-                        <button className="btn btn-primary" onClick={() => scrollToSection('contact')}>Contact Sales</button>
+                        <button className="btn btn-kakao flex items-center gap-2" onClick={handleKakaoLogin}>
+                            <KakaoIcon size={18} /> 카카오 로그인
+                        </button>
                     </div>
                 </div>
             </header>
@@ -56,9 +73,12 @@ export default function LandingPage() {
                             데이터로 육류 밸류체인의 마진 구조를 혁신합니다.<br />
                             수요 예측부터 재고 배분, 발주 실행까지. 완전히 새로운 산업 표준.
                         </p>
-                        <div className="hero-cta-group">
+                        <div className="hero-cta-group flex-wrap">
                             <button className="btn btn-accent h-12 px-8 text-lg" onClick={() => scrollToSection('contact')}>도입 문의하기</button>
                             <button className="btn btn-secondary h-12 px-8 text-lg" onClick={() => scrollToSection('technology')}>기술 로드맵</button>
+                            <button className="btn btn-kakao h-12 px-8 text-lg flex items-center gap-2 justify-center" onClick={handleKakaoLogin}>
+                                <KakaoIcon size={20} /> 카카오로 시작하기
+                            </button>
                         </div>
                     </div>
 

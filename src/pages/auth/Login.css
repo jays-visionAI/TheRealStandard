@@ -59,6 +59,32 @@
     margin-bottom: var(--space-6);
 }
 
+.login-divider {
+    position: relative;
+    text-align: center;
+    margin: var(--space-6) 0;
+}
+
+.login-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border-primary);
+    z-index: 1;
+}
+
+.login-divider span {
+    position: relative;
+    background: var(--bg-primary);
+    padding: 0 var(--space-3);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    z-index: 2;
+}
+
 .form-group {
     margin-bottom: var(--space-4);
 }
