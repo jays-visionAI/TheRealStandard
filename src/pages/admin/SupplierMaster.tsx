@@ -29,10 +29,12 @@ export default function SupplierMaster() {
     const filteredSuppliers = useMemo(() => {
         return suppliers.filter(supplier => {
             const q = searchQuery.toLowerCase()
+            const name = supplier.companyName || ''
+            const ceo = supplier.ceoName || ''
             const matchesSearch = !searchQuery ||
-                supplier.companyName.toLowerCase().includes(q) ||
-                supplier.bizRegNo.includes(q) ||
-                supplier.ceoName.toLowerCase().includes(q)
+                name.toLowerCase().includes(q) ||
+                (supplier.bizRegNo || '').includes(q) ||
+                ceo.toLowerCase().includes(q)
 
             const matchesActive = filterActive === 'all' ||
                 (filterActive === 'active' && supplier.isActive) ||

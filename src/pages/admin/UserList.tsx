@@ -50,9 +50,11 @@ export default function UserList() {
 
     const filteredUsers = useMemo(() => {
         return users.filter(user => {
+            const name = user.name || ''
+            const email = user.email || ''
             const matchesSearch = !searchQuery ||
-                user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchQuery.toLowerCase())
+                name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                email.toLowerCase().includes(searchQuery.toLowerCase())
             const matchesRole = filterRole === 'ALL' || user.role === filterRole
             return matchesSearch && matchesRole
         })
@@ -133,7 +135,7 @@ export default function UserList() {
                 {filteredUsers.map(user => (
                     <div key={user.id} className="user-card glass-card">
                         <div className="user-card-header">
-                            <div className={`role-badge ${user.role.toLowerCase()}`}>
+                            <div className={`role-badge ${(user.role || 'OPS').toLowerCase()}`}>
                                 {ROLE_LABELS[user.role]}
                             </div>
                             <div className="user-actions">

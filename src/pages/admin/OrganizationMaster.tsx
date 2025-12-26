@@ -24,11 +24,14 @@ export default function OrganizationMaster() {
         return customers.filter(customer => {
             // 검색 필터
             const q = searchQuery.toLowerCase()
+            const name = customer.companyName || ''
+            const ceo = customer.ceoName || ''
+            const email = customer.email || ''
             const matchesSearch = !searchQuery ||
-                customer.companyName.toLowerCase().includes(q) ||
-                customer.bizRegNo.includes(q) ||
-                customer.ceoName.toLowerCase().includes(q) ||
-                customer.email.toLowerCase().includes(q)
+                name.toLowerCase().includes(q) ||
+                (customer.bizRegNo || '').includes(q) ||
+                ceo.toLowerCase().includes(q) ||
+                email.toLowerCase().includes(q)
 
             // 활성 상태 필터
             const matchesActive = filterActive === 'all' ||

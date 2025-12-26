@@ -59,8 +59,10 @@ export default function DocumentHub() {
             if (!hasPermission) return false
 
             const matchesTab = activeTab === 'cat-all' || doc.categoryId === activeTab
-            const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                doc.content.toLowerCase().includes(searchQuery.toLowerCase())
+            const title = doc.title || ''
+            const content = doc.content || ''
+            const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                content.toLowerCase().includes(searchQuery.toLowerCase())
             return matchesTab && matchesSearch
         }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     }, [documents, activeTab, searchQuery, user, categories])
