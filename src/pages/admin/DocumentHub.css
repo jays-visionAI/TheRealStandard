@@ -438,7 +438,8 @@
 .quill-editor-container {
     display: flex;
     flex-direction: column;
-    height: 400px;
+    height: 600px;
+    /* 늘어난 높이 */
     background: white;
     border-radius: 12px;
     border: 1px solid #ddd;
@@ -454,20 +455,30 @@
 .quill-editor-container .ql-container {
     border: none;
     flex: 1;
-    overflow-y: auto;
+    overflow-y: auto !important;
+    /* 스크롤 강제 활성화 */
     font-family: 'Pretendard', sans-serif;
     font-size: 1rem;
     min-height: 0;
 }
 
 .quill-editor-container .ql-editor {
-    min-height: 200px;
-    padding: 1.5rem;
+    min-height: 100%;
+    /* 컨테이너 전체를 채우도록 설정 */
+    padding: 2rem;
+    line-height: 1.6;
 }
 
 .ql-editor.ql-blank::before {
     color: #bbb;
     font-style: normal;
+}
+
+/* Editor Modal Width */
+.editor-modal {
+    max-width: 1100px !important;
+    /* 좌우 폭 50% 이상 확장 */
+    width: 95%;
 }
 
 /* Responsive Overrides */
@@ -480,5 +491,13 @@
     .viewer-side {
         height: 400px;
         border-top: 1px solid #f0f0f0;
+    }
+
+    .editor-modal {
+        width: 100%;
+        max-width: 100% !important;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
     }
 }
