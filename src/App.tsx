@@ -5,6 +5,7 @@ import ProtectedRoute, { PublicRoute } from './components/ProtectedRoute'
 // Auth Pages
 import LandingPage from './pages/LandingPage'
 import Login from './pages/auth/Login'
+import InviteActivation from './pages/auth/InviteActivation'
 
 // Workflow Pages (ADMIN - v1.0)
 import WorkflowHome from './pages/workflow/WorkflowHome'
@@ -38,6 +39,8 @@ import VehicleTypeSettings from './pages/admin/VehicleTypeSettings'
 import ProductMaster from './pages/admin/ProductMaster'
 import OrganizationMaster from './pages/admin/OrganizationMaster'
 import SupplierMaster from './pages/admin/SupplierMaster'
+import UserList from './pages/admin/UserList'
+import DocumentHub from './pages/admin/DocumentHub'
 
 // Front (Customer) Pages
 import FrontLayout from './layouts/FrontLayout'
@@ -54,6 +57,7 @@ function App() {
                     {/* ========================================
                           로그인/인증
                        ======================================== */}
+                    <Route path="/invite/:token" element={<InviteActivation />} />
                     <Route
                         path="/login"
                         element={
@@ -116,12 +120,13 @@ function App() {
                         }
                     >
                         <Route index element={<Dashboard />} />
-                        {/* Users */}
+                        <Route path="documents" element={<DocumentHub />} />
+                        <Route path="users" element={<UserList />} />
                         <Route path="users/customers" element={<OrganizationMaster />} />
                         <Route path="users/suppliers" element={<SupplierMaster />} />
-                        <Route path="users/accounting" element={<Dashboard />} />
-                        <Route path="users/warehouse" element={<Dashboard />} />
-                        <Route path="users/sales" element={<Dashboard />} />
+                        <Route path="users/accounting" element={<Navigate to="/admin/users?role=ACCOUNTING" replace />} />
+                        <Route path="users/warehouse" element={<Navigate to="/admin/users?role=WAREHOUSE" replace />} />
+                        <Route path="users/sales" element={<Navigate to="/admin/users?role=OPS" replace />} />
                         {/* Products */}
                         <Route path="products" element={<ProductMaster />} />
                         {/* Order Book */}

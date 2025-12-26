@@ -139,6 +139,70 @@
     margin-bottom: var(--space-6);
 }
 
+/* Admin Request Section */
+.admin-request-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+}
+
+.memo-section h3,
+.doc-section h3 {
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-3);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.memo-content {
+    background: rgba(14, 165, 233, 0.05);
+    /* Blue-ish for admin requests */
+    border-left: 4px solid #0ea5e9;
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--text-base);
+    line-height: 1.6;
+}
+
+.doc-section .doc-preview-placeholder {
+    aspect-ratio: 16/9;
+    background: var(--bg-tertiary);
+    border: 1px dashed var(--border-primary);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    color: var(--text-muted);
+}
+
+.confirm-check {
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border-secondary);
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    cursor: pointer;
+    font-weight: var(--font-semibold);
+}
+
+.checkbox-container input {
+    width: 20px;
+    height: 20px;
+}
+
 /* Items Checklist - reuse from WarehouseReceive */
 .items-checklist {
     display: flex;

@@ -1,195 +1,272 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { ClipboardListIcon, PencilIcon, FilesIcon, TruckDeliveryIcon, FactoryIcon, FilePlusIcon } from '../../components/Icons'
+import { useState, useMemo } from 'react'
+import {
+    TrendingUpIcon,
+    PackageIcon,
+    TruckIcon,
+    ClockIcon,
+    ChevronUpIcon,
+    ChevronDownIcon
+} from '../../components/Icons'
 import './Dashboard.css'
 
-interface DashboardStats {
-    pendingOrders: number
-    revisionRequested: number
-    documentsWaiting: number
-    dispatchPending: number
-    todayShipments: number
-    todayAmount: number
-}
+// Helper for currency and numbers
+const formatKRW = (v: number) => new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(v)
+const formatNum = (v: number) => new Intl.NumberFormat('ko-KR').format(v)
 
 export default function Dashboard() {
-    const [stats, setStats] = useState<DashboardStats>({
-        pendingOrders: 0,
-        revisionRequested: 0,
-        documentsWaiting: 0,
-        dispatchPending: 0,
-        todayShipments: 0,
-        todayAmount: 0,
-    })
+    const [timeframe, setTimeframe] = useState<'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('WEEKLY')
 
-    const [recentOrders, setRecentOrders] = useState<any[]>([])
-    const [recentShipments, setRecentShipments] = useState<any[]>([])
+    // Mock Data for Charts (Usually from a store or API)
+    const salesData = useMemo(() => {
+        const base = timeframe === 'WEEKLY' ? [45, 52, 48, 70, 61, 85, 80] :
+            timeframe === 'MONTHLY' ? [450, 520, 480, 700, 610, 850, 800, 950, 1100, 1050, 1200, 1150] :
+                [1200, 1500, 1800, 2100] // Quarterly/Yearly
+        return base
+    }, [timeframe])
 
-    useEffect(() => {
-        // 프로토타입용 목업 데이터 제거
-        setStats({
-            pendingOrders: 0,
-            revisionRequested: 0,
-            documentsWaiting: 0,
-            dispatchPending: 0,
-            todayShipments: 0,
-            todayAmount: 0,
-        })
+    const labels = useMemo(() => {
+        if (timeframe === 'WEEKLY') return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        if (timeframe === 'MONTHLY') return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        return ['Q1', 'Q2', 'Q3', 'Q4']
+    }, [timeframe])
 
-        setRecentOrders([])
-        setRecentShipments([])
-    }, [])
+    // Donut Data
+    const productMix = [
+        { name: '한우/돈육', value: 45, color: '#7c4dff' },
+        { name: '수입육', value: 25, color: '#00d2ff' },
+        { name: '가공품', value: 15, color: '#ff9d00' },
+        { name: '부속/기타', value: 15, color: '#ff5252' },
+    ]
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
-    }
-
-    const getStatusBadge = (status: string) => {
-        const statusMap: Record<string, { label: string; class: string }> = {
-            SUBMITTED: { label: '고객 컨펌', class: 'badge-primary' },
-            REVISION: { label: '수정요청', class: 'badge-warning' },
-            CONFIRMED: { label: '승인됨', class: 'badge-success' },
-            PREPARING: { label: '준비중', class: 'badge-secondary' },
-            IN_TRANSIT: { label: '배송중', class: 'badge-primary' },
-            DELIVERED: { label: '배송완료', class: 'badge-success' },
-        }
-        const { label, class: className } = statusMap[status] || { label: status, class: 'badge-secondary' }
-        return <span className={`badge ${className}`}>{label}</span>
-    }
+    // Logistics Data
+    const logisticsStatus = [
+        { label: '입고(In)', value: 88, color: '#7c4dff' },
+        { label: '출고(Out)', value: 72, color: '#00d2ff' },
+        { label: '배송(Del)', value: 95, color: '#00e676' },
+        { label: '재고(Inv)', value: 64, color: '#ff9d00' },
+    ]
 
     return (
-        <div className="dashboard">
-            {/* Stats Grid */}
-            <div className="stats-grid">
-                <Link to="/admin/order-sheets" className="stat-card glass-card">
-                    <div className="stat-icon"><ClipboardListIcon size={24} /></div>
-                    <div className="stat-content">
-                        <div className="stat-value">{stats.pendingOrders}</div>
-                        <div className="stat-label">미검토 주문</div>
-                    </div>
-                    <div className="stat-indicator pending"></div>
-                </Link>
-
-                <Link to="/admin/order-sheets" className="stat-card glass-card">
-                    <div className="stat-icon"><PencilIcon size={24} /></div>
-                    <div className="stat-content">
-                        <div className="stat-value">{stats.revisionRequested}</div>
-                        <div className="stat-label">수정요청 대기</div>
-                    </div>
-                    <div className="stat-indicator warning"></div>
-                </Link>
-
-                <Link to="/admin/documents" className="stat-card glass-card">
-                    <div className="stat-icon"><FilesIcon size={24} /></div>
-                    <div className="stat-content">
-                        <div className="stat-value">{stats.documentsWaiting}</div>
-                        <div className="stat-label">문서 매칭 대기</div>
-                    </div>
-                    <div className="stat-indicator info"></div>
-                </Link>
-
-                <Link to="/admin/shipments" className="stat-card glass-card">
-                    <div className="stat-icon"><TruckDeliveryIcon size={24} /></div>
-                    <div className="stat-content">
-                        <div className="stat-value">{stats.dispatchPending}</div>
-                        <div className="stat-label">배차 미입력</div>
-                    </div>
-                    <div className="stat-indicator error"></div>
-                </Link>
-            </div>
-
-            {/* Summary Row */}
-            <div className="summary-row">
-                <div className="summary-card glass-card">
-                    <div className="summary-header">
-                        <h3>오늘의 배송</h3>
-                        <span className="summary-badge">{stats.todayShipments}건</span>
-                    </div>
-                    <div className="summary-value gradient-text">
-                        {formatCurrency(stats.todayAmount)}
-                    </div>
-                    <p className="summary-note">총 출고 금액</p>
+        <div className="dashboard-v2">
+            {/* Header */}
+            <header className="dashboard-v2-header">
+                <div>
+                    <h1>TRS Insights Hub</h1>
+                    <p className="text-secondary mt-1">오늘의 비즈니스 현황을 요약합니다</p>
                 </div>
+                <div className="date-badge">
+                    {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+                </div>
+            </header>
 
-                <div className="summary-card glass-card quick-actions">
-                    <h3>빠른 작업</h3>
-                    <div className="action-buttons">
-                        <Link to="/admin/order-sheets/create" className="btn btn-primary">
-                            + 주문장 생성
-                        </Link>
-                        <Link to="/admin/documents" className="btn btn-secondary">
-                            <FilePlusIcon size={16} /> 문서 업로드
-                        </Link>
-                        <Link to="/admin/warehouse" className="btn btn-secondary">
-                            <FactoryIcon size={16} /> 물류 게이트
-                        </Link>
+            {/* Top Stats Row */}
+            <div className="stats-v2-grid">
+                <div className="premium-card stat-v2-card">
+                    <span className="stat-v2-label">오늘의 매출</span>
+                    <div className="stat-v2-value">{formatKRW(12450000)}</div>
+                    <div className="stat-v2-trend up">
+                        <TrendingUpIcon size={14} /> 12.5% vs Yesterday
+                    </div>
+                </div>
+                <div className="premium-card stat-v2-card">
+                    <span className="stat-v2-label">활성 거래처 (Active)</span>
+                    <div className="stat-v2-value">{formatNum(128)}</div>
+                    <div className="stat-v2-trend up">
+                        <ChevronUpIcon size={14} /> 4 신규 가입
+                    </div>
+                </div>
+                <div className="premium-card stat-v2-card">
+                    <span className="stat-v2-label">주문 처리율</span>
+                    <div className="stat-v2-value">94.2%</div>
+                    <div className="stat-v2-trend up">
+                        <TrendingUpIcon size={14} /> 2.1% 목표 달성
+                    </div>
+                </div>
+                <div className="premium-card stat-v2-card">
+                    <span className="stat-v2-label">평균 리드타임</span>
+                    <div className="stat-v2-value">28.4시간</div>
+                    <div className="stat-v2-trend down">
+                        <ChevronDownIcon size={14} /> 1.2시간 단축
                     </div>
                 </div>
             </div>
 
-            {/* Tables Row */}
-            <div className="tables-row">
-                {/* Recent Orders */}
-                <div className="table-section glass-card">
-                    <div className="section-header">
-                        <h3>최근 주문</h3>
-                        <Link to="/admin/order-sheets" className="btn btn-ghost btn-sm">
-                            전체보기 →
-                        </Link>
+            {/* Middle Row: Sales Trend & Product Mix */}
+            <div className="chart-grid">
+                {/* Sales Trend */}
+                <div className="premium-card">
+                    <div className="card-header">
+                        <h3><TrendingUpIcon size={18} className="text-primary mr-2" /> Sales Trend</h3>
+                        <div className="timeframe-selector">
+                            {(['WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'] as const).map(tf => (
+                                <button
+                                    key={tf}
+                                    className={timeframe === tf ? 'active' : ''}
+                                    onClick={() => setTimeframe(tf)}
+                                >
+                                    {tf === 'WEEKLY' ? '주간' : tf === 'MONTHLY' ? '월간' : tf === 'QUARTERLY' ? '분기' : '연간'}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <div className="table-container">
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>주문번호</th>
-                                    <th>고객사</th>
-                                    <th>상태</th>
-                                    <th>금액</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {recentOrders.map((order) => (
-                                    <tr key={order.id}>
-                                        <td className="font-medium">{order.id}</td>
-                                        <td>{order.customer}</td>
-                                        <td>{getStatusBadge(order.status)}</td>
-                                        <td>{formatCurrency(order.amount)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+
+                    <div className="chart-container">
+                        <svg width="100%" height="100%" viewBox="0 0 1000 300" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#7c4dff" stopOpacity="0.4" />
+                                    <stop offset="100%" stopColor="#7c4dff" stopOpacity="0" />
+                                </linearGradient>
+                            </defs>
+                            {/* Simple Line Chart logic */}
+                            <polyline
+                                className="chart-line"
+                                points={salesData.map((d, i) => `${(i / (salesData.length - 1)) * 1000},${300 - (d / Math.max(...salesData)) * 250}`).join(' ')}
+                            />
+                            <path
+                                className="chart-area"
+                                d={`M0,300 ${salesData.map((d, i) => `${(i / (salesData.length - 1)) * 1000},${300 - (d / Math.max(...salesData)) * 250}`).join(' ')} L1000,300 Z`}
+                            />
+                        </svg>
+
+                        {/* Labels Overlay */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem', padding: '0 10px' }}>
+                            {labels.map(l => <span key={l} style={{ fontSize: '0.65rem', color: '#999', fontWeight: 600 }}>{l}</span>)}
+                        </div>
                     </div>
                 </div>
 
-                {/* Recent Shipments */}
-                <div className="table-section glass-card">
-                    <div className="section-header">
-                        <h3>오늘 배송</h3>
-                        <Link to="/admin/shipments" className="btn btn-ghost btn-sm">
-                            전체보기 →
-                        </Link>
+                {/* Product Mix Donut */}
+                <div className="premium-card">
+                    <div className="card-header">
+                        <h3><PackageIcon size={18} className="text-primary mr-2" /> Product Mix</h3>
                     </div>
-                    <div className="table-container">
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>배송번호</th>
-                                    <th>고객사</th>
-                                    <th>상태</th>
-                                    <th>ETA</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {recentShipments.map((shipment) => (
-                                    <tr key={shipment.id}>
-                                        <td className="font-medium">{shipment.id}</td>
-                                        <td>{shipment.customer}</td>
-                                        <td>{getStatusBadge(shipment.status)}</td>
-                                        <td>{shipment.eta}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="donut-container">
+                        <div style={{ position: 'relative', width: '180px', height: '180px' }}>
+                            <svg width="180" height="180" className="donut-svg">
+                                <circle cx="90" cy="90" r="70" fill="transparent" stroke="#f0f0f0" strokeWidth="20" />
+                                {productMix.reduce((acc, item, i) => {
+                                    const offset = productMix.slice(0, i).reduce((sum, prev) => sum + prev.value, 0)
+                                    const length = (item.value / 100) * (2 * Math.PI * 70)
+                                    const totalLength = 2 * Math.PI * 70
+                                    acc.push(
+                                        <circle
+                                            key={item.name}
+                                            cx="90" cy="90" r="70"
+                                            fill="transparent"
+                                            stroke={item.color}
+                                            strokeWidth="22"
+                                            strokeDasharray={`${length} ${totalLength - length}`}
+                                            strokeDashoffset={-(offset / 100) * totalLength}
+                                            strokeLinecap="round"
+                                        />
+                                    )
+                                    return acc
+                                }, [] as any)}
+                            </svg>
+                            <div className="donut-center-text">
+                                <div className="donut-center-label">총 매출</div>
+                                <div className="donut-center-value">84%</div>
+                            </div>
+                        </div>
+                        <div className="donut-legend">
+                            {productMix.map(item => (
+                                <div key={item.name} className="legend-item">
+                                    <div className="legend-color" style={{ background: item.color }}></div>
+                                    <span>{item.name} ({item.value}%)</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom Row: Logistics & Operational Lead Time */}
+            <div className="bottom-grid">
+                {/* Logistics status bars */}
+                <div className="premium-card">
+                    <div className="card-header">
+                        <h3><TruckIcon size={18} className="text-primary mr-2" /> Logistics Throughput</h3>
+                    </div>
+                    <div className="logistics-grid">
+                        {logisticsStatus.map(item => (
+                            <div key={item.label} className="progress-tube-container">
+                                <div className="progress-tube">
+                                    <div className="progress-fill" style={{ height: `${item.value}%`, background: `linear-gradient(to top, ${item.color}, ${item.color}cc)` }}></div>
+                                    <div className="progress-segments">
+                                        {[...Array(10)].map((_, i) => <div key={i} className="segment-divider"></div>)}
+                                    </div>
+                                </div>
+                                <div className="progress-label">{item.label}</div>
+                                <div className="progress-percent">{item.value}%</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Lead Time Operational Matrix */}
+                <div className="premium-card">
+                    <div className="card-header">
+                        <h3><ClockIcon size={18} className="text-primary mr-2" /> Operational Matrix</h3>
+                        <span className="text-xs text-secondary">Avg. Lead Time: <strong>2.4 Days</strong></span>
+                    </div>
+                    <div className="lead-time-matrix">
+                        <div className="timeline">
+                            <div className="timeline-step active">
+                                <div className="step-node"></div>
+                                <div className="step-info">
+                                    <div className="step-name">주문접수</div>
+                                    <div className="step-time">Day 0</div>
+                                </div>
+                            </div>
+                            <div className="timeline-step active">
+                                <div className="step-node"></div>
+                                <div className="step-info">
+                                    <div className="step-name">내부승인</div>
+                                    <div className="step-time">+4h</div>
+                                </div>
+                            </div>
+                            <div className="timeline-step active">
+                                <div className="step-node"></div>
+                                <div className="step-info">
+                                    <div className="step-name">발주완료</div>
+                                    <div className="step-time">+12h</div>
+                                </div>
+                            </div>
+                            <div className="timeline-step active">
+                                <div className="step-node"></div>
+                                <div className="step-info">
+                                    <div className="step-name">배차매칭</div>
+                                    <div className="step-time">+18h</div>
+                                </div>
+                            </div>
+                            <div className="timeline-step">
+                                <div className="step-node"></div>
+                                <div className="step-info">
+                                    <div className="step-name">배송완료</div>
+                                    <div className="step-time">Day 2.4</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="metrics-summary">
+                            <div className="metric-item">
+                                <span className="metric-label">주문 → 발주</span>
+                                <span className="metric-avg">8.5h</span>
+                            </div>
+                            <div className="metric-item">
+                                <span className="metric-label">발주 → 출고</span>
+                                <span className="metric-avg">14.2h</span>
+                            </div>
+                            <div className="metric-item">
+                                <span className="metric-label">총 배송 소요</span>
+                                <span className="metric-avg">32.8h</span>
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: 'auto', textAlign: 'right' }}>
+                            <button className="btn btn-ghost btn-sm">세부 지표 리포트 보기 →</button>
+                        </div>
                     </div>
                 </div>
             </div>

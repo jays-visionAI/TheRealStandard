@@ -1,0 +1,76 @@
+.activation-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    padding: var(--space-4);
+}
+
+.activation-card {
+    width: 100%;
+    max-width: 480px;
+    padding: var(--space-10);
+    text-align: center;
+}
+
+.activation-card h1 {
+    font-size: var(--text-2xl);
+    margin: var(--space-4) 0 var(--space-2);
+}
+
+.activation-card .brand {
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    color: var(--color-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.customer-preview {
+    margin: var(--space-8) 0;
+    padding: var(--space-4);
+    background: rgba(var(--color-primary-rgb), 0.05);
+    border-radius: var(--radius-lg);
+    display: flex;
+    justify-content: center;
+    gap: var(--space-6);
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+}
+
+.activation-form {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-2);
+}
+
+.success-icon {
+    color: var(--color-accent);
+}
+
+.error .activation-card {
+    border-color: var(--color-error);
+}
+
+.success .activation-card {
+    border-color: var(--color-accent);
+}

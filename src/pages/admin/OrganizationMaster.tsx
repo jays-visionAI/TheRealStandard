@@ -102,11 +102,12 @@ export default function OrganizationMaster() {
                     memo: formData.memo,
                     isActive: formData.isActive ?? true,
                     isKeyAccount: formData.isKeyAccount ?? false,
+                    status: 'PENDING', // 신규 등록 시 대기 상태
                     createdAt: new Date(),
                     updatedAt: new Date(),
                 }
                 addCustomer(newCustomer)
-                alert('✅ 새 거래처가 등록되었습니다.')
+                alert('✅ 새 거래처가 등록되었습니다. 초대장을 발송할 수 있습니다.')
             }
 
             setShowModal(false)
@@ -117,6 +118,18 @@ export default function OrganizationMaster() {
         } finally {
             setIsSubmitting(false)
         }
+    }
+
+    // 초대장 생성 및 링크 복사
+    const handleGenerateInvite = (customer: Customer) => {
+        const { generateInviteToken } = useCustomerStore.getState()
+        const token = generateInviteToken(customer.id)
+        const inviteUrl = `${window.location.origin}/invite/${token}`
+
+        // 실제 환경에서는 이메일 발송 API 등을 호출하겠지만, 여기서는 클립보드 복사로 갈음
+        navigator.clipboard.writeText(inviteUrl).then(() => {
+            alert(`✅ 초대 링크가 복사되었습니다!\n고객님께 전달해주세요.\n\n${inviteUrl}`)
+        })
     }
 
     // 삭제
@@ -233,8 +246,9 @@ export default function OrganizationMaster() {
                             filteredCustomers.map(customer => (
                                 <tr key={customer.id} className={!customer.isActive ? 'inactive' : ''}>
                                     <td>
-                                        <span className={`status-badge ${customer.isActive ? 'active' : 'inactive'}`}>
-                                            {customer.isActive ? '활성' : '비활성'}
+                                        <span className={`status-badge ${customer.status.toLowerCase()}`}>
+                                            {customer.status === 'PENDING' ? '초대대기' :
+                                                customer.status === 'ACTIVE' ? '활성' : '비활성'}
                                         </span>
                                     </td>
                                     <td className="company-name">
@@ -252,6 +266,14 @@ export default function OrganizationMaster() {
                                         </span>
                                     </td>
                                     <td className="actions">
+                                        {customer.status === 'PENDING' && (
+                                            <button
+                                                className="btn btn-sm btn-primary"
+                                                onClick={() => handleGenerateInvite(customer)}
+                                            >
+                                                초대장 복사
+                                            </button>
+                                        )}
                                         <button
                                             className="btn btn-sm btn-ghost"
                                             onClick={() => openEditModal(customer)}

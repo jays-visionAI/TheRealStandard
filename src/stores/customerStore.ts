@@ -24,6 +24,10 @@ export interface Customer {
     isKeyAccount: boolean
     createdAt: Date
     updatedAt: Date
+    // 인증 관련 필드 추가
+    password?: string
+    inviteToken?: string
+    status: 'PENDING' | 'ACTIVE' | 'INACTIVE'
 }
 
 // 초기 Mock 데이터
@@ -42,6 +46,8 @@ const initialCustomers: Customer[] = [
         isKeyAccount: true,
         createdAt: new Date('2025-12-01'),
         updatedAt: new Date('2025-12-01'),
+        status: 'ACTIVE',
+        password: '1234'
     },
     {
         id: 'cust-2',
@@ -57,6 +63,8 @@ const initialCustomers: Customer[] = [
         isKeyAccount: true,
         createdAt: new Date('2025-12-01'),
         updatedAt: new Date('2025-12-01'),
+        status: 'PENDING',
+        inviteToken: 'welcome-jinsim'
     }
 ]
 
@@ -69,7 +77,14 @@ interface CustomerStore {
     deleteCustomer: (id: string) => void
     toggleKeyAccount: (id: string) => void
     toggleActive: (id: string) => void
+
+    // 초대/활성화 액션 추가
+    generateInviteToken: (id: string) => string
+    activateCustomer: (token: string, email: string, password: string) => Promise<void>
+
     // 조회
+    getCustomerByToken: (token: string) => Customer | undefined
+    getCustomerByEmail: (email: string) => Customer | undefined
     getKeyAccounts: () => Customer[]
     getActiveCustomers: () => Customer[]
     initializeStore: () => void
@@ -102,16 +117,52 @@ export const useCustomerStore = create<CustomerStore>()(
 
             toggleActive: (id) => set((state) => ({
                 customers: state.customers.map(c =>
-                    c.id === id ? { ...c, isActive: !c.isActive, updatedAt: new Date() } : c
+                    c.id === id ? {
+                        ...c,
+                        isActive: !c.isActive,
+                        status: !c.isActive ? (c.status === 'INACTIVE' ? 'PENDING' : c.status) : 'INACTIVE',
+                        updatedAt: new Date()
+                    } : c
                 )
             })),
 
+            generateInviteToken: (id) => {
+                const token = `invite-${Math.random().toString(36).substr(2, 9)}`
+                set((state) => ({
+                    customers: state.customers.map(c =>
+                        c.id === id ? { ...c, inviteToken: token, updatedAt: new Date() } : c
+                    )
+                }))
+                return token
+            },
+
+            activateCustomer: async (token, email, password) => {
+                const customer = get().customers.find(c => c.inviteToken === token)
+                if (!customer) throw new Error('유효하지 않은 초대 토큰입니다.')
+
+                set((state) => ({
+                    customers: state.customers.map(c =>
+                        c.inviteToken === token ? {
+                            ...c,
+                            email,
+                            password,
+                            status: 'ACTIVE',
+                            isActive: true,
+                            inviteToken: undefined, // 사용 후 제거
+                            updatedAt: new Date()
+                        } : c
+                    )
+                }))
+            },
+
+            getCustomerByToken: (token) => get().customers.find(c => c.inviteToken === token),
+            getCustomerByEmail: (email) => get().customers.find(c => c.email === email),
+
             getKeyAccounts: () => get().customers.filter(c => c.isKeyAccount && c.isActive),
 
-            getActiveCustomers: () => get().customers.filter(c => c.isActive),
+            getActiveCustomers: () => get().customers.filter(c => c.isActive && c.status === 'ACTIVE'),
 
             initializeStore: () => {
-                // 현재 데이터가 없고 초기 데이터가 정의되어 있다면 초기화 가능
                 if (get().customers.length === 0 && initialCustomers.length > 0) {
                     set({ customers: initialCustomers })
                 }

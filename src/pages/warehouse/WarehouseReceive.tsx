@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { TruckDeliveryIcon, PhoneIcon, SearchIcon, CheckCircleIcon, ClipboardListIcon, AlertTriangleIcon } from '../../components/Icons'
+import { useOrderStore } from '../../stores/orderStore'
+import { TruckDeliveryIcon, SearchIcon, CheckCircleIcon, ClipboardListIcon, AlertTriangleIcon, FilesIcon } from '../../components/Icons'
 import './WarehouseReceive.css'
 
 interface ReceiveItem {
@@ -16,25 +17,44 @@ interface ReceiveItem {
 export default function WarehouseReceive() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
+    const { getPurchaseOrderById, getPurchaseOrderItems } = useOrderStore()
 
-    // Mock 데이터
-    const receiveInfo = {
-        id: id || 'R-001',
-        orderId: 'OS-2024-003',
-        customerName: '태윤유통',
-        supplier: '우경인터내셔널',
-        vehicleNo: '서울12가3456',
-        driverName: '김기사',
-        driverPhone: '010-1234-5678',
-        expectedTime: '09:30',
-    }
+    const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1)
 
-    const [items, setItems] = useState<ReceiveItem[]>([
-        { productName: '한우 등심 1++', spec: '냉장/1kg', expectedKg: 50, actualKg: 50, boxCount: 5, status: 'PENDING', note: '' },
-        { productName: '한우 안심 1++', spec: '냉장/1kg', expectedKg: 30, actualKg: 30, boxCount: 3, status: 'PENDING', note: '' },
-        { productName: '한우 채끝 1+', spec: '냉장/1kg', expectedKg: 25, actualKg: 25, boxCount: 3, status: 'PENDING', note: '' },
-    ])
+    // 실데이터 연동 (Fallback 포함)
+    const po = useMemo(() => getPurchaseOrderById(id || ''), [id, getPurchaseOrderById])
+    const poItems = useMemo(() => getPurchaseOrderItems(id || ''), [id, getPurchaseOrderItems])
+
+    const receiveInfo = useMemo(() => ({
+        id: id || '',
+        orderId: po?.id || '',
+        customerName: 'Internal',
+        supplier: po?.supplierName || '',
+        vehicleNo: '배정대기',
+        driverName: po?.supplierName ? '직배송기사' : '',
+        driverPhone: '010-0000-0000',
+        expectedTime: '미정',
+    }), [po, id])
+
+    const [items, setItems] = useState<ReceiveItem[]>(() => {
+        if (poItems.length > 0) {
+            return poItems.map(item => ({
+                productName: item.productName || '알 수 없는 상품',
+                spec: '기본규격',
+                expectedKg: item.qtyKg,
+                actualKg: item.qtyKg,
+                boxCount: Math.ceil(item.qtyKg / 10),
+                status: 'PENDING',
+                note: ''
+            }))
+        }
+        return []
+    })
+
+    const [docsVerified, setDocsVerified] = useState({
+        statement: false,
+        gradeCert: false
+    })
 
     const updateItem = (index: number, field: keyof ReceiveItem, value: any) => {
         const updated = [...items]
@@ -83,29 +103,27 @@ export default function WarehouseReceive() {
                         <h1>{receiveInfo.supplier}</h1>
                         <p className="order-id">주문: {receiveInfo.orderId} · 고객: {receiveInfo.customerName}</p>
                     </div>
-                    <div className="vehicle-info">
-                        <span className="vehicle-no"><TruckDeliveryIcon size={16} /> {receiveInfo.vehicleNo}</span>
-                        <span className="driver">{receiveInfo.driverName}</span>
-                        <a href={`tel:${receiveInfo.driverPhone}`} className="phone-link">
-                            <PhoneIcon size={14} /> {receiveInfo.driverPhone}
-                        </a>
-                    </div>
                 </div>
 
                 {/* Progress Steps */}
                 <div className="progress-steps">
                     <div className={`progress-step ${currentStep >= 1 ? 'active' : ''}`}>
                         <span className="step-num">1</span>
-                        <span className="step-label">차량 확인</span>
+                        <span className="step-label">서류 확인</span>
                     </div>
                     <div className="progress-line" />
                     <div className={`progress-step ${currentStep >= 2 ? 'active' : ''}`}>
                         <span className="step-num">2</span>
-                        <span className="step-label">품목 검수</span>
+                        <span className="step-label">차량 확인</span>
                     </div>
                     <div className="progress-line" />
                     <div className={`progress-step ${currentStep >= 3 ? 'active' : ''}`}>
                         <span className="step-num">3</span>
+                        <span className="step-label">품목 검수</span>
+                    </div>
+                    <div className="progress-line" />
+                    <div className={`progress-step ${currentStep >= 4 ? 'active' : ''}`}>
+                        <span className="step-num">4</span>
                         <span className="step-label">반입 완료</span>
                     </div>
                 </div>
@@ -113,8 +131,60 @@ export default function WarehouseReceive() {
 
             {/* Content */}
             <main className="receive-content">
-                {/* Step 1: 차량 확인 */}
+                {/* Step 1: 서류 확인 */}
                 {currentStep === 1 && (
+                    <section className="step-section glass-card animate-fade-in">
+                        <h2><ClipboardListIcon size={20} /> 서류 일치 확인</h2>
+                        <p className="section-desc">공급사가 제출한 거래명세서와 등급확인서를 대조해주세요.</p>
+
+                        <div className="doc-verification-grid">
+                            <div className={`doc-card ${docsVerified.statement ? 'verified' : ''}`}>
+                                <div className="doc-preview-placeholder">
+                                    <FilesIcon size={40} />
+                                    <span>공급사 거래명세서</span>
+                                    <button className="btn btn-sm btn-ghost">미리보기</button>
+                                </div>
+                                <label className="checkbox-container">
+                                    <input
+                                        type="checkbox"
+                                        checked={docsVerified.statement}
+                                        onChange={(e) => setDocsVerified({ ...docsVerified, statement: e.target.checked })}
+                                    />
+                                    <span>명세서 내용 일치 확인</span>
+                                </label>
+                            </div>
+
+                            <div className={`doc-card ${docsVerified.gradeCert ? 'verified' : ''}`}>
+                                <div className="doc-preview-placeholder">
+                                    <CheckCircleIcon size={40} />
+                                    <span>등급확인서</span>
+                                    <button className="btn btn-sm btn-ghost">미리보기</button>
+                                </div>
+                                <label className="checkbox-container">
+                                    <input
+                                        type="checkbox"
+                                        checked={docsVerified.gradeCert}
+                                        onChange={(e) => setDocsVerified({ ...docsVerified, gradeCert: e.target.checked })}
+                                    />
+                                    <span>등급/이력번호 일치 확인</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="confirm-actions">
+                            <button
+                                className="btn btn-primary btn-lg"
+                                onClick={() => setCurrentStep(2)}
+                                disabled={!docsVerified.statement || !docsVerified.gradeCert}
+                            >
+                                서류 확인 완료 → 차량 확인
+                            </button>
+                        </div>
+                    </section>
+                )}
+
+                {/* Step 2: 차량 확인 */}
+                {currentStep === 2 && (
                     <section className="step-section glass-card animate-fade-in">
                         <h2><TruckDeliveryIcon size={20} /> 차량 확인</h2>
                         <p className="section-desc">입고 차량 정보를 확인해주세요.</p>
@@ -143,15 +213,20 @@ export default function WarehouseReceive() {
                         </div>
 
                         <div className="confirm-actions">
-                            <button className="btn btn-primary btn-lg" onClick={() => setCurrentStep(2)}>
-                                <CheckCircleIcon size={18} /> 차량 확인 완료 → 품목 검수
-                            </button>
+                            <div className="flex gap-4">
+                                <button className="btn btn-secondary" onClick={() => setCurrentStep(1)}>
+                                    이전
+                                </button>
+                                <button className="btn btn-primary btn-lg flex-1" onClick={() => setCurrentStep(3)}>
+                                    <CheckCircleIcon size={18} /> 차량 확인 완료 → 품목 검수
+                                </button>
+                            </div>
                         </div>
                     </section>
                 )}
 
-                {/* Step 2: 품목 검수 */}
-                {currentStep === 2 && (
+                {/* Step 3: 품목 검수 */}
+                {currentStep === 3 && (
                     <section className="step-section glass-card animate-fade-in">
                         <h2><SearchIcon size={20} /> 품목 검수</h2>
                         <p className="section-desc">각 품목을 확인하고 실제 수량을 입력해주세요.</p>

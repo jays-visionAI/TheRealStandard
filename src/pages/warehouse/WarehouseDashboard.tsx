@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useOrderStore } from '../../stores/orderStore'
 import { FactoryIcon, CheckCircleIcon, PackageIcon, TruckDeliveryIcon, PhoneIcon } from '../../components/Icons'
 import './WarehouseDashboard.css'
 
@@ -19,67 +20,42 @@ interface PendingItem {
 
 export default function WarehouseDashboard() {
     const navigate = useNavigate()
+    const { purchaseOrders, salesOrders } = useOrderStore()
     const [activeTab, setActiveTab] = useState<'receive' | 'release'>('receive')
 
-    // Mock 데이터 - 반입 대기
-    const receiveItems: PendingItem[] = [
-        {
-            id: 'R-001',
-            orderId: 'OS-2024-003',
-            customerName: '태윤유통',
-            supplier: '우경인터내셔널',
-            totalKg: 105,
-            vehicleNo: '서울12가3456',
-            driverName: '김기사',
-            driverPhone: '010-1234-5678',
-            expectedTime: '09:30',
-            status: 'PENDING',
+    // 매입 발주 데이터를 반입 대기로 매핑
+    const receiveItems: PendingItem[] = useMemo(() => {
+        return purchaseOrders.map(po => ({
+            id: po.id,
+            orderId: po.id,
+            customerName: 'Internal', // 매입의 경우 입고 주체
+            supplier: po.supplierName || '공급사 미정',
+            totalKg: po.totalsKg,
+            vehicleNo: '배정대기',
+            driverName: '기사 미정',
+            driverPhone: '',
+            expectedTime: '오늘',
+            status: po.status === 'SENT' ? 'PENDING' : 'COMPLETED',
             type: 'RECEIVE',
-        },
-        {
-            id: 'R-002',
-            orderId: 'OS-2024-004',
-            customerName: '한우명가',
-            supplier: '다한식품',
-            totalKg: 80,
-            vehicleNo: '경기34나5678',
-            driverName: '박기사',
-            driverPhone: '010-2345-6789',
-            expectedTime: '10:00',
-            status: 'PENDING',
-            type: 'RECEIVE',
-        },
-    ]
+        }))
+    }, [purchaseOrders])
 
-    // Mock 데이터 - 출고 대기
-    const releaseItems: PendingItem[] = [
-        {
-            id: 'L-001',
-            orderId: 'OS-2024-001',
-            customerName: '프라임미트',
+    // 확정 주문 데이터를 출고 대기로 매핑
+    const releaseItems: PendingItem[] = useMemo(() => {
+        return salesOrders.map(so => ({
+            id: so.id,
+            orderId: so.sourceOrderSheetId,
+            customerName: so.customerName || '고객사 미정',
             supplier: '',
-            totalKg: 95,
-            vehicleNo: '서울56다7890',
-            driverName: '이기사',
-            driverPhone: '010-3456-7890',
-            expectedTime: '14:00',
+            totalKg: so.totalsKg,
+            vehicleNo: '배차대기',
+            driverName: '기사 미정',
+            driverPhone: '',
+            expectedTime: '오늘',
             status: 'PENDING',
             type: 'RELEASE',
-        },
-        {
-            id: 'L-002',
-            orderId: 'OS-2024-002',
-            customerName: '고기마을',
-            supplier: '',
-            totalKg: 120,
-            vehicleNo: '인천78라1234',
-            driverName: '최기사',
-            driverPhone: '010-4567-8901',
-            expectedTime: '15:30',
-            status: 'PENDING',
-            type: 'RELEASE',
-        },
-    ]
+        }))
+    }, [salesOrders])
 
     const currentItems = activeTab === 'receive' ? receiveItems : releaseItems
 
@@ -105,7 +81,7 @@ export default function WarehouseDashboard() {
                     })}</p>
                 </div>
                 <div className="header-right">
-                    <span className="user-info">창고담당: 홍길동</span>
+                    <span className="user-info">창고담당: 관리자</span>
                 </div>
             </header>
 
@@ -129,7 +105,9 @@ export default function WarehouseDashboard() {
                     <div className="summary-card completed">
                         <div className="summary-icon"><CheckCircleIcon size={24} /></div>
                         <div className="summary-content">
-                            <span className="summary-value">8</span>
+                            <span className="summary-value">
+                                {receiveItems.filter(i => i.status === 'COMPLETED').length + releaseItems.filter(i => i.status === 'COMPLETED').length}
+                            </span>
                             <span className="summary-label">오늘 처리 완료</span>
                         </div>
                     </div>

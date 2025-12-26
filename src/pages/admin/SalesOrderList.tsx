@@ -1,13 +1,12 @@
-// Placeholder components for admin pages
-// These will be fully implemented as development progresses
-
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useOrderStore } from '../../stores/orderStore'
 import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon } from '../../components/Icons'
 
 export default function SalesOrderList() {
     const { salesOrders } = useOrderStore()
     const [searchTerm, setSearchTerm] = useState('')
+    const navigate = useNavigate()
 
     const filteredOrders = useMemo(() => {
         return salesOrders.filter(so =>
@@ -79,7 +78,12 @@ export default function SalesOrderList() {
                                         </td>
                                         <td className="p-4 text-sm">
                                             <div className="flex gap-2">
-                                                <button className="btn btn-sm btn-ghost">상세</button>
+                                                <button
+                                                    className="btn btn-sm btn-ghost"
+                                                    onClick={() => navigate(`/admin/sales-orders/${so.id}`)}
+                                                >
+                                                    상세
+                                                </button>
                                                 <button className="btn btn-sm btn-secondary">
                                                     <TruckDeliveryIcon size={14} /> 출고지시
                                                 </button>
@@ -98,6 +102,6 @@ export default function SalesOrderList() {
                     </table>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }

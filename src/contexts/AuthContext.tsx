@@ -22,14 +22,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Mock 사용자 목록 (데모용)
-const DEMO_USERS: User[] = [
-    { id: 'admin-001', email: 'admin@trs.co.kr', name: '김관리', role: 'ADMIN' },
-    { id: 'warehouse-001', email: 'warehouse@trs.co.kr', name: '박창고', role: 'WAREHOUSE' },
-    { id: 'accounting-001', email: 'accounting@trs.co.kr', name: '이경리', role: 'ACCOUNTING' },
-    { id: 'customer-001', email: 'customer@example.com', name: '최고객', role: 'CUSTOMER' },
-]
-
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
@@ -49,18 +41,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [])
 
     const login = async (email: string, password: string) => {
-        // 데모용 비밀번호 체크 (실제로는 Firebase Auth 사용)
-        if (password !== '1234') {
-            throw new Error('Invalid password')
-        }
+        const { useUserStore } = await import('../stores/userStore')
+        const { users } = useUserStore.getState()
 
-        const foundUser = DEMO_USERS.find(u => u.email === email)
+        const foundUser = users.find(u => u.email === email && u.password === password && u.status === 'ACTIVE')
+
         if (!foundUser) {
-            throw new Error('User not found')
+            // 고객 초대 프로세스로 가입된 고객 계정 백업 체크
+            const { useCustomerStore } = await import('../stores/customerStore')
+            const { customers } = useCustomerStore.getState()
+            const foundCustomer = customers.find(c => c.email === email && c.password === password && c.status === 'ACTIVE')
+
+            if (foundCustomer) {
+                const mappedUser: User = {
+                    id: foundCustomer.id,
+                    email: foundCustomer.email,
+                    name: foundCustomer.ceoName,
+                    role: 'CUSTOMER',
+                    orgId: foundCustomer.id
+                }
+                localStorage.setItem('trs_user', JSON.stringify(mappedUser))
+                setUser(mappedUser)
+                return
+            }
+            throw new Error('이메일 또는 비밀번호가 일치하지 않거나 유효하지 않은 계정입니다.')
         }
 
-        localStorage.setItem('trs_user', JSON.stringify(foundUser))
-        setUser(foundUser)
+        const mappedUser: User = {
+            id: foundUser.id,
+            email: foundUser.email,
+            name: foundUser.name,
+            role: foundUser.role,
+            orgId: foundUser.orgId
+        }
+
+        localStorage.setItem('trs_user', JSON.stringify(mappedUser))
+        setUser(mappedUser)
     }
 
     const logout = () => {

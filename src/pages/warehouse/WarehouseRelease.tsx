@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { MapPinIcon, TruckDeliveryIcon, PhoneIcon, PackageIcon, CheckCircleIcon, ClipboardListIcon } from '../../components/Icons'
+import { useOrderStore } from '../../stores/orderStore'
+import { MapPinIcon, TruckDeliveryIcon, PackageIcon, CheckCircleIcon, ClipboardListIcon } from '../../components/Icons'
 import './WarehouseRelease.css'
 
 interface ReleaseItem {
@@ -16,25 +17,42 @@ interface ReleaseItem {
 export default function WarehouseRelease() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
+    const { getSalesOrderById, getSalesOrderItems } = useOrderStore()
 
-    // Mock 데이터
-    const releaseInfo = {
-        id: id || 'L-001',
-        orderId: 'OS-2024-001',
-        customerName: '프라임미트',
-        shipTo: '서울시 강남구 역삼동 123-45',
-        vehicleNo: '서울56다7890',
-        driverName: '이기사',
-        driverPhone: '010-3456-7890',
-        expectedTime: '14:00',
-    }
+    const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1)
 
-    const [items, setItems] = useState<ReleaseItem[]>([
-        { productName: '한우 등심 1++', spec: '냉장/1kg', orderedKg: 50, loadedKg: 50, boxCount: 5, status: 'PENDING', note: '' },
-        { productName: '한우 안심 1++', spec: '냉장/1kg', orderedKg: 30, loadedKg: 30, boxCount: 3, status: 'PENDING', note: '' },
-        { productName: '한우 채끝 1+', spec: '냉장/1kg', orderedKg: 15, loadedKg: 15, boxCount: 2, status: 'PENDING', note: '' },
-    ])
+    // 실데이터 연동
+    const so = useMemo(() => getSalesOrderById(id || ''), [id, getSalesOrderById])
+    const soItems = useMemo(() => getSalesOrderItems(id || ''), [id, getSalesOrderItems])
+
+    const releaseInfo = useMemo(() => ({
+        id: id || '',
+        orderId: so?.sourceOrderSheetId || '',
+        customerName: so?.customerName || '',
+        shipTo: '배송지 정보 확인 필요',
+        vehicleNo: '배차대기',
+        driverName: '',
+        driverPhone: '010-0000-0000',
+        expectedTime: '미정',
+        adminMemo: '특별 요청사항 없음',
+    }), [so, id])
+
+    const [items, setItems] = useState<ReleaseItem[]>(() => {
+        if (soItems.length > 0) {
+            return soItems.map(item => ({
+                productName: item.productName || '알 수 없는 상품',
+                spec: '기본규격',
+                orderedKg: item.qtyKg,
+                loadedKg: item.qtyKg,
+                boxCount: Math.ceil(item.qtyKg / 10),
+                status: 'PENDING',
+                note: ''
+            }))
+        }
+        return []
+    })
+
+    const [requestConfirmed, setRequestConfirmed] = useState(false)
 
     const [driverConfirmation, setDriverConfirmation] = useState({
         confirmed: false,
@@ -88,29 +106,27 @@ export default function WarehouseRelease() {
                         <p className="order-id">주문: {releaseInfo.orderId}</p>
                         <p className="ship-to"><MapPinIcon size={14} /> {releaseInfo.shipTo}</p>
                     </div>
-                    <div className="vehicle-info">
-                        <span className="vehicle-no"><TruckDeliveryIcon size={16} /> {releaseInfo.vehicleNo}</span>
-                        <span className="driver">{releaseInfo.driverName}</span>
-                        <a href={`tel:${releaseInfo.driverPhone}`} className="phone-link">
-                            <PhoneIcon size={14} /> {releaseInfo.driverPhone}
-                        </a>
-                    </div>
                 </div>
 
                 {/* Progress Steps */}
                 <div className="progress-steps">
                     <div className={`progress-step ${currentStep >= 1 ? 'active' : ''}`}>
                         <span className="step-num">1</span>
-                        <span className="step-label">상품 적재</span>
+                        <span className="step-label">요청 확인</span>
                     </div>
                     <div className="progress-line" />
                     <div className={`progress-step ${currentStep >= 2 ? 'active' : ''}`}>
                         <span className="step-num">2</span>
-                        <span className="step-label">기사 확인</span>
+                        <span className="step-label">상품 적재</span>
                     </div>
                     <div className="progress-line" />
                     <div className={`progress-step ${currentStep >= 3 ? 'active' : ''}`}>
                         <span className="step-num">3</span>
+                        <span className="step-label">기사 확인</span>
+                    </div>
+                    <div className="progress-line" />
+                    <div className={`progress-step ${currentStep >= 4 ? 'active' : ''}`}>
+                        <span className="step-num">4</span>
                         <span className="step-label">출고 완료</span>
                     </div>
                 </div>
@@ -118,8 +134,56 @@ export default function WarehouseRelease() {
 
             {/* Content */}
             <main className="release-content">
-                {/* Step 1: 상품 적재 */}
+                {/* Step 1: 요청 및 서류 확인 */}
                 {currentStep === 1 && (
+                    <section className="step-section glass-card animate-fade-in">
+                        <h2>📝 관리자 반출 요청 확인</h2>
+                        <p className="section-desc">관리자의 특별 요청사항과 거래명세서를 확인해주세요.</p>
+
+                        <div className="admin-request-card">
+                            <div className="memo-section">
+                                <h3>💡 개별 요청사항</h3>
+                                <div className="memo-content">
+                                    {releaseInfo.adminMemo}
+                                </div>
+                            </div>
+
+                            <div className="doc-section">
+                                <h3>📑 출고 거래명세서</h3>
+                                <div className="doc-preview-placeholder">
+                                    <ClipboardListIcon size={40} />
+                                    <span>출고용 거래명세서.pdf</span>
+                                    <button className="btn btn-sm btn-secondary">내용 확인</button>
+                                </div>
+                            </div>
+
+                            <div className="confirm-check mt-6">
+                                <label className="checkbox-container">
+                                    <input
+                                        type="checkbox"
+                                        checked={requestConfirmed}
+                                        onChange={(e) => setRequestConfirmed(e.target.checked)}
+                                    />
+                                    <span>요청사항 및 서류 확인 완료</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="step-footer mt-6">
+                            <div />
+                            <button
+                                className="btn btn-primary btn-lg flex-1"
+                                onClick={() => setCurrentStep(2)}
+                                disabled={!requestConfirmed}
+                            >
+                                다음 → 상품 적재 시작
+                            </button>
+                        </div>
+                    </section>
+                )}
+
+                {/* Step 2: 상품 적재 */}
+                {currentStep === 2 && (
                     <section className="step-section glass-card animate-fade-in">
                         <h2><PackageIcon size={20} /> 상품 적재</h2>
                         <p className="section-desc">각 품목을 차량에 적재하고 확인해주세요.</p>
@@ -209,10 +273,12 @@ export default function WarehouseRelease() {
                         </div>
 
                         <div className="step-footer">
-                            <div />
+                            <button className="btn btn-secondary" onClick={() => setCurrentStep(1)}>
+                                ← 이전
+                            </button>
                             <button
                                 className="btn btn-primary"
-                                onClick={() => setCurrentStep(2)}
+                                onClick={() => setCurrentStep(3)}
                                 disabled={!allItemsLoaded}
                             >
                                 다음 → 기사 확인
@@ -221,8 +287,8 @@ export default function WarehouseRelease() {
                     </section>
                 )}
 
-                {/* Step 2: 기사 확인 */}
-                {currentStep === 2 && (
+                {/* Step 3: 기사 확인 */}
+                {currentStep === 3 && (
                     <section className="step-section glass-card animate-fade-in">
                         <h2>✍️ 기사 확인</h2>
                         <p className="section-desc">기사님께 적재 내역을 확인받으세요.</p>

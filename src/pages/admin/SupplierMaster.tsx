@@ -1,38 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { FactoryIcon, SearchIcon, CheckCircleIcon, PauseCircleIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon } from '../../components/Icons'
 import './OrganizationMaster.css'  // 같은 스타일 공유
-
-// 공급업체 인터페이스
-interface Supplier {
-    id: string
-    // 기본 정보
-    companyName: string
-    bizRegNo: string
-    ceoName: string
-    // 연락처
-    phone: string
-    fax?: string
-    email: string
-    // 주소
-    address: string
-    // 담당자 정보
-    contactPerson?: string
-    contactPhone?: string
-    // 공급 정보
-    supplyCategory: 'meat' | 'byproduct' | 'packaging' | 'other'  // 공급 품목 카테고리
-    paymentTerms?: string
-    bankName?: string
-    bankAccount?: string
-    // 메모
-    memo?: string
-    // 상태
-    isActive: boolean
-    createdAt: Date
-    updatedAt: Date
-}
-
-// Mock 데이터
-const mockSuppliers: Supplier[] = []
+import { useSupplierStore, type Supplier } from '../../stores/supplierStore'
 
 const CATEGORY_LABELS: Record<Supplier['supplyCategory'], string> = {
     meat: '육류',
@@ -42,7 +11,13 @@ const CATEGORY_LABELS: Record<Supplier['supplyCategory'], string> = {
 }
 
 export default function SupplierMaster() {
-    const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers)
+    const { suppliers, addSupplier, updateSupplier, deleteSupplier, initializeStore } = useSupplierStore()
+
+    // 초기화
+    useEffect(() => {
+        initializeStore()
+    }, [initializeStore])
+
     const [searchQuery, setSearchQuery] = useState('')
     const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all')
     const [showModal, setShowModal] = useState(false)
@@ -104,15 +79,7 @@ export default function SupplierMaster() {
 
         try {
             if (editingSupplier) {
-                const updatedSupplier: Supplier = {
-                    ...editingSupplier,
-                    ...formData,
-                    updatedAt: new Date(),
-                } as Supplier
-
-                setSuppliers(prev => prev.map(s =>
-                    s.id === editingSupplier.id ? updatedSupplier : s
-                ))
+                updateSupplier(editingSupplier.id, formData)
                 alert('✅ 공급업체 정보가 수정되었습니다.')
             } else {
                 const newSupplier: Supplier = {
@@ -121,8 +88,7 @@ export default function SupplierMaster() {
                     createdAt: new Date(),
                     updatedAt: new Date(),
                 } as Supplier
-
-                setSuppliers(prev => [...prev, newSupplier])
+                addSupplier(newSupplier)
                 alert('✅ 새 공급업체가 등록되었습니다.')
             }
 
@@ -139,15 +105,13 @@ export default function SupplierMaster() {
     // 삭제
     const handleDelete = async (supplier: Supplier) => {
         if (!confirm(`"${supplier.companyName}" 공급업체를 정말 삭제하시겠습니까?`)) return
-
-        setSuppliers(prev => prev.filter(s => s.id !== supplier.id))
+        deleteSupplier(supplier.id)
         alert('삭제되었습니다.')
     }
 
     // 활성/비활성 토글
     const toggleActive = (supplier: Supplier) => {
-        const updated = { ...supplier, isActive: !supplier.isActive, updatedAt: new Date() }
-        setSuppliers(prev => prev.map(s => s.id === supplier.id ? updated : s))
+        updateSupplier(supplier.id, { isActive: !supplier.isActive })
     }
 
     return (

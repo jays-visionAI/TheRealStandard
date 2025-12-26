@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useOrderStore } from '../../stores/orderStore'
 import { FilesIcon } from '../../components/Icons'
 import type { GateStage } from '../../types'
 
@@ -14,12 +15,6 @@ interface GateItem {
     status: 'PENDING' | 'READY' | 'COMPLETED'
 }
 
-const mockGateItems: GateItem[] = [
-    { id: 'G-001', shipmentId: 'SH-2024-001', customerName: '한우명가', stage: 'OUTBOUND', documentsRequired: 2, documentsMatched: 2, checklistCompleted: false, signatureCompleted: false, status: 'READY' },
-    { id: 'G-002', shipmentId: 'SH-2024-002', customerName: '정육왕', stage: 'OUTBOUND', documentsRequired: 2, documentsMatched: 1, checklistCompleted: false, signatureCompleted: false, status: 'PENDING' },
-    { id: 'G-003', shipmentId: 'SH-2024-003', customerName: '고기마을', stage: 'OUTBOUND', documentsRequired: 2, documentsMatched: 2, checklistCompleted: true, signatureCompleted: true, status: 'COMPLETED' },
-]
-
 const checklistItems = [
     '거래내역서 확인',
     '검수확인서 확인',
@@ -29,7 +24,22 @@ const checklistItems = [
 ]
 
 export default function WarehouseGate() {
-    const [gateItems, setGateItems] = useState(mockGateItems)
+    const { shipments } = useOrderStore()
+
+    // shipments를 GateItem으로 매핑
+    const [gateItems, setGateItems] = useState<GateItem[]>(() =>
+        shipments.map(s => ({
+            id: s.id,
+            shipmentId: s.id,
+            customerName: '고객사', // Shipment 타입에 customerName이 없을 수 있으므로 store에서 보정 필요하거나 기본값
+            stage: 'OUTBOUND',
+            documentsRequired: 2,
+            documentsMatched: 2,
+            checklistCompleted: false,
+            signatureCompleted: false,
+            status: 'READY'
+        }))
+    )
     const [filterStage, setFilterStage] = useState<GateStage | 'ALL'>('ALL')
     const [selectedItem, setSelectedItem] = useState<GateItem | null>(null)
     const [showGateModal, setShowGateModal] = useState(false)
