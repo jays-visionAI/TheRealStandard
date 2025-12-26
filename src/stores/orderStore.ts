@@ -1,12 +1,18 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { OrderSheet, OrderSheetItem, SalesOrder, SalesOrderItem } from '../types'
+import {
+    OrderSheet, OrderSheetItem, SalesOrder, SalesOrderItem,
+    PurchaseOrder, PurchaseOrderItem, Shipment
+} from '../types'
 
 interface OrderStore {
     orderSheets: OrderSheet[]
     orderItems: Record<string, OrderSheetItem[]> // orderSheetId -> items
     salesOrders: SalesOrder[]
     salesOrderItems: Record<string, SalesOrderItem[]> // salesOrderId -> items
+    purchaseOrders: PurchaseOrder[]
+    purchaseOrderItems: Record<string, PurchaseOrderItem[]> // poId -> items
+    shipments: Shipment[]
 
     // Actions
     addOrderSheet: (order: OrderSheet, items: OrderSheetItem[]) => void
@@ -21,6 +27,17 @@ interface OrderStore {
     createSalesOrder: (orderSheet: OrderSheet, items: OrderSheetItem[]) => void
     getSalesOrderById: (id: string) => SalesOrder | undefined
     getSalesOrderItems: (salesOrderId: string) => SalesOrderItem[]
+
+    // PurchaseOrder Actions
+    addPurchaseOrder: (po: PurchaseOrder, items: PurchaseOrderItem[]) => void
+    updatePurchaseOrder: (id: string, data: Partial<PurchaseOrder>) => void
+    getPurchaseOrderById: (id: string) => PurchaseOrder | undefined
+    getPurchaseOrderItems: (poId: string) => PurchaseOrderItem[]
+
+    // Shipment Actions
+    addShipment: (shipment: Shipment) => void
+    updateShipment: (id: string, data: Partial<Shipment>) => void
+    getShipmentById: (id: string) => Shipment | undefined
 }
 
 export const useOrderStore = create<OrderStore>()(
@@ -30,6 +47,9 @@ export const useOrderStore = create<OrderStore>()(
             orderItems: {},
             salesOrders: [],
             salesOrderItems: {},
+            purchaseOrders: [],
+            purchaseOrderItems: {},
+            shipments: [],
 
             addOrderSheet: (order, items) => set((state) => ({
                 orderSheets: [...state.orderSheets, order],
@@ -105,6 +125,39 @@ export const useOrderStore = create<OrderStore>()(
 
             getSalesOrderItems: (salesOrderId) => {
                 return get().salesOrderItems[salesOrderId] || []
+            },
+
+            addPurchaseOrder: (po, items) => set((state) => ({
+                purchaseOrders: [...state.purchaseOrders, po],
+                purchaseOrderItems: { ...state.purchaseOrderItems, [po.id]: items }
+            })),
+
+            updatePurchaseOrder: (id, data) => set((state) => ({
+                purchaseOrders: state.purchaseOrders.map(p =>
+                    p.id === id ? { ...p, ...data, updatedAt: new Date() } : p
+                )
+            })),
+
+            getPurchaseOrderById: (id) => {
+                return get().purchaseOrders.find(p => p.id === id)
+            },
+
+            getPurchaseOrderItems: (poId) => {
+                return get().purchaseOrderItems[poId] || []
+            },
+
+            addShipment: (shipment) => set((state) => ({
+                shipments: [...state.shipments, shipment]
+            })),
+
+            updateShipment: (id, data) => set((state) => ({
+                shipments: state.shipments.map(s =>
+                    s.id === id ? { ...s, ...data, updatedAt: new Date() } : s
+                )
+            })),
+
+            getShipmentById: (id) => {
+                return get().shipments.find(s => s.id === id)
             }
         }),
         {

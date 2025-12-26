@@ -1,306 +1,209 @@
-import { useState } from 'react'
-import Modal from '../../components/Modal'
-import { FilesIcon, FileTextIcon, CheckCircleIcon, ClipboardListIcon } from '../../components/Icons'
+import { useState, useMemo } from 'react'
+import { useOrderStore } from '../../stores/orderStore'
+import {
+    ClipboardListIcon,
+    TruckDeliveryIcon,
+    ShoppingCartIcon
+} from '../../components/Icons'
 import './AccountingDashboard.css'
 
-interface DocumentItem {
-    id: string
-    orderId: string
-    customerName: string
-    shipDate: string
-    totalAmount: number
-    invoiceUploaded: boolean
-    gradeCertUploaded: boolean
-    status: 'PENDING' | 'PARTIAL' | 'COMPLETED'
-}
-
 export default function AccountingDashboard() {
-    const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending')
+    const { orderSheets, salesOrders, purchaseOrders, shipments } = useOrderStore()
 
-    // Modal State
-    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
-    const [currentDoc, setCurrentDoc] = useState<{ id: string, type: 'invoice' | 'gradeCert', name: string } | null>(null)
-    const [selectedFile, setSelectedFile] = useState<File | null>(null)
-    const [isUploading, setIsUploading] = useState(false)
+    // 메인 섹션: 'sales' (발주받기), 'purchase' (발주하기), 'delivery' (배송리스트)
+    const [mainSection, setMainSection] = useState<'sales' | 'purchase' | 'delivery'>('sales')
 
-    // Mock 데이터
-    const [documents, setDocuments] = useState<DocumentItem[]>([
-        {
-            id: 'D-001',
-            orderId: 'OS-2024-001',
-            customerName: '프라임미트',
-            shipDate: '2024-01-16',
-            totalAmount: 3500000,
-            invoiceUploaded: false,
-            gradeCertUploaded: false,
-            status: 'PENDING',
-        },
-        {
-            id: 'D-002',
-            orderId: 'OS-2024-002',
-            customerName: '고기마을',
-            shipDate: '2024-01-16',
-            totalAmount: 5100000,
-            invoiceUploaded: true,
-            gradeCertUploaded: false,
-            status: 'PARTIAL',
-        },
-        {
-            id: 'D-003',
-            orderId: 'OS-2024-003',
-            customerName: '태윤유통',
-            shipDate: '2024-01-15',
-            totalAmount: 4250000,
-            invoiceUploaded: true,
-            gradeCertUploaded: true,
-            status: 'COMPLETED',
-        },
-    ])
+    // 발주받기 서브 탭
+    const [salesTab, setSalesTab] = useState<'waiting' | 'customer' | 'admin'>('waiting')
 
-    const pendingDocs = documents.filter(d => d.status !== 'COMPLETED')
-    const completedDocs = documents.filter(d => d.status === 'COMPLETED')
-    const currentDocs = activeTab === 'pending' ? pendingDocs : completedDocs
+    // 발주하기 서브 탭
+    const [purchaseTab, setPurchaseTab] = useState<'sent' | 'confirmed'>('sent')
+
+
+    // 데이터 필터링 로직
+    const salesData = useMemo(() => {
+        if (salesTab === 'waiting') return orderSheets.filter(o => o.status === 'SENT')
+        if (salesTab === 'customer') return orderSheets.filter(o => o.status === 'SUBMITTED')
+        return salesOrders // CONFIRMED 상태는 salesOrders로 변환됨
+    }, [orderSheets, salesOrders, salesTab])
+
+    const purchaseData = useMemo(() => {
+        if (purchaseTab === 'sent') return purchaseOrders.filter(p => p.status === 'SENT')
+        return purchaseOrders.filter(p => p.status === 'CONFIRMED')
+    }, [purchaseOrders, purchaseTab])
+
+    const deliveryData = useMemo(() => shipments, [shipments])
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
     }
 
-    const openUploadModal = (doc: DocumentItem, type: 'invoice' | 'gradeCert') => {
-        const typeName = type === 'invoice' ? '거래명세서' : '등급확인서'
-        setCurrentDoc({ id: doc.id, type, name: typeName })
-        setSelectedFile(null)
-        setIsUploadModalOpen(true)
-    }
-
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setSelectedFile(e.target.files[0])
-        }
-    }
-
-    const handleUploadConfirm = () => {
-        if (!currentDoc || !selectedFile) return
-
-        setIsUploading(true)
-
-        // Simulate API call
-        setTimeout(() => {
-            setDocuments(prev => prev.map(doc => {
-                if (doc.id === currentDoc.id) {
-                    const updated = {
-                        ...doc,
-                        [currentDoc.type === 'invoice' ? 'invoiceUploaded' : 'gradeCertUploaded']: true
-                    }
-                    // Update status if needed
-                    if (updated.invoiceUploaded && updated.gradeCertUploaded) {
-                        updated.status = 'COMPLETED'
-                    } else if (updated.invoiceUploaded || updated.gradeCertUploaded) {
-                        updated.status = 'PARTIAL'
-                    }
-                    return updated
-                }
-                return doc
-            }))
-
-            setIsUploading(false)
-            setIsUploadModalOpen(false)
-            // Show success toast (mock)
-            alert('✅ 업로드 완료되었습니다.')
-        }, 1500)
+    const formatDate = (date: Date | string) => {
+        if (!date) return '-'
+        return new Date(date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     }
 
     return (
         <div className="accounting-dashboard">
-            {/* Header */}
-            <header className="dashboard-header">
+            {/* Main Navigation */}
+            <nav className="main-nav glass-card">
+                <button
+                    className={`nav-item ${mainSection === 'sales' ? 'active' : ''}`}
+                    onClick={() => setMainSection('sales')}
+                >
+                    <ClipboardListIcon size={20} />
+                    <span>1. 발주받기 (매출)</span>
+                </button>
+                <button
+                    className={`nav-item ${mainSection === 'purchase' ? 'active' : ''}`}
+                    onClick={() => setMainSection('purchase')}
+                >
+                    <ShoppingCartIcon size={20} />
+                    <span>2. 발주하기 (매입)</span>
+                </button>
+                <button
+                    className={`nav-item ${mainSection === 'delivery' ? 'active' : ''}`}
+                    onClick={() => setMainSection('delivery')}
+                >
+                    <TruckDeliveryIcon size={20} />
+                    <span>3. 배송리스트</span>
+                </button>
+            </nav>
+
+            <header className="dashboard-header mt-6">
                 <div className="header-left">
-                    <h1><FilesIcon size={24} /> 정산 관리</h1>
-                    <p className="header-date">{new Date().toLocaleDateString('ko-KR', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        weekday: 'long'
-                    })}</p>
-                </div>
-                <div className="header-right">
-                    <span className="user-info">경리담당: 김경리</span>
+                    <h1>
+                        {mainSection === 'sales' && '발주받기 관리'}
+                        {mainSection === 'purchase' && '발주하기 관리'}
+                        {mainSection === 'delivery' && '배송 현황 리스트'}
+                    </h1>
+                    <p className="header-date">경리 회계 단계 업무 대시보드</p>
                 </div>
             </header>
 
-            {/* Summary Cards */}
-            <section className="summary-section">
-                <div className="summary-grid">
-                    <div className="summary-card pending">
-                        <div className="summary-icon">⏳</div>
-                        <div className="summary-content">
-                            <span className="summary-value">{pendingDocs.length}</span>
-                            <span className="summary-label">업로드 대기</span>
-                        </div>
-                    </div>
-                    <div className="summary-card partial">
-                        <div className="summary-icon"><FileTextIcon size={24} /></div>
-                        <div className="summary-content">
-                            <span className="summary-value">{documents.filter(d => d.status === 'PARTIAL').length}</span>
-                            <span className="summary-label">부분 완료</span>
-                        </div>
-                    </div>
-                    <div className="summary-card completed">
-                        <div className="summary-icon"><CheckCircleIcon size={24} /></div>
-                        <div className="summary-content">
-                            <span className="summary-value">{completedDocs.length}</span>
-                            <span className="summary-label">오늘 완료</span>
-                        </div>
-                    </div>
+            {/* Sub Tabs based on Main Section */}
+            {mainSection === 'sales' && (
+                <div className="tab-navigation sales-tabs">
+                    <button className={`tab-btn ${salesTab === 'waiting' ? 'active' : ''}`} onClick={() => setSalesTab('waiting')}>
+                        대기주문 ({orderSheets.filter(o => o.status === 'SENT').length})
+                    </button>
+                    <button className={`tab-btn ${salesTab === 'customer' ? 'active' : ''}`} onClick={() => setSalesTab('customer')}>
+                        고객 확정 ({orderSheets.filter(o => o.status === 'SUBMITTED').length})
+                    </button>
+                    <button className={`tab-btn ${salesTab === 'admin' ? 'active' : ''}`} onClick={() => setSalesTab('admin')}>
+                        회사 승인 ({salesOrders.length})
+                    </button>
                 </div>
-            </section>
+            )}
 
-            {/* Tab Navigation */}
-            <div className="tab-navigation">
-                <button
-                    className={`tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('pending')}
-                >
-                    ⏳ 업로드 대기 ({pendingDocs.length})
-                </button>
-                <button
-                    className={`tab-btn ${activeTab === 'completed' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('completed')}
-                >
-                    <CheckCircleIcon size={16} /> 완료 ({completedDocs.length})
-                </button>
-            </div>
+            {mainSection === 'purchase' && (
+                <div className="tab-navigation purchase-tabs">
+                    <button className={`tab-btn ${purchaseTab === 'sent' ? 'active' : ''}`} onClick={() => setPurchaseTab('sent')}>
+                        발주주문 ({purchaseOrders.filter(p => p.status === 'SENT').length})
+                    </button>
+                    <button className={`tab-btn ${purchaseTab === 'confirmed' ? 'active' : ''}`} onClick={() => setPurchaseTab('confirmed')}>
+                        확정/서류완료 ({purchaseOrders.filter(p => p.status === 'CONFIRMED').length})
+                    </button>
+                </div>
+            )}
 
-            {/* Documents List */}
-            <section className="documents-section">
-                {currentDocs.length === 0 ? (
-                    <div className="empty-state">
-                        <span className="empty-icon"><FilesIcon size={48} /></span>
-                        <p>해당 항목이 없습니다</p>
-                    </div>
-                ) : (
-                    <div className="documents-list">
-                        {currentDocs.map(doc => (
-                            <div key={doc.id} className="document-card glass-card">
-                                <div className="doc-header">
-                                    <div className="doc-info">
-                                        <h3>{doc.customerName}</h3>
-                                        <span className="order-id">{doc.orderId}</span>
-                                    </div>
-                                    <div className="doc-meta">
-                                        <span className="ship-date">배송일: {doc.shipDate}</span>
-                                        <span className="amount">{formatCurrency(doc.totalAmount)}</span>
-                                    </div>
-                                </div>
-
-                                <div className="doc-body">
-                                    {/* 거래명세서 */}
-                                    <div className={`upload-item ${doc.invoiceUploaded ? 'uploaded' : ''}`}>
-                                        <div className="upload-info">
-                                            <span className="upload-icon"><ClipboardListIcon size={16} /></span>
-                                            <span className="upload-name">거래명세서</span>
-                                        </div>
-                                        {doc.invoiceUploaded ? (
-                                            <span className="upload-status uploaded"><CheckCircleIcon size={14} /> 업로드됨</span>
-                                        ) : (
-                                            <button
-                                                className="btn btn-primary btn-sm"
-                                                onClick={() => openUploadModal(doc, 'invoice')}
-                                            >
-                                                📤 업로드
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* 등급확인서 */}
-                                    <div className={`upload-item ${doc.gradeCertUploaded ? 'uploaded' : ''}`}>
-                                        <div className="upload-info">
-                                            <span className="upload-icon">🏷️</span>
-                                            <span className="upload-name">등급확인서</span>
-                                        </div>
-                                        {doc.gradeCertUploaded ? (
-                                            <span className="upload-status uploaded"><CheckCircleIcon size={14} /> 업로드됨</span>
-                                        ) : (
-                                            <button
-                                                className="btn btn-primary btn-sm"
-                                                onClick={() => openUploadModal(doc, 'gradeCert')}
-                                            >
-                                                📤 업로드
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {doc.status === 'COMPLETED' && (
-                                    <div className="doc-footer completed">
-                                        <CheckCircleIcon size={18} /> 모든 서류가 업로드되었습니다.
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </section>
-
-            {/* Upload Modal */}
-            <Modal
-                isOpen={isUploadModalOpen}
-                onClose={() => setIsUploadModalOpen(false)}
-                title={`${currentDoc?.name} 업로드`}
-                footer={
-                    <>
-                        <button
-                            className="btn btn-secondary"
-                            onClick={() => setIsUploadModalOpen(false)}
-                            disabled={isUploading}
-                        >
-                            취소
-                        </button>
-                        <button
-                            className="btn btn-primary"
-                            onClick={handleUploadConfirm}
-                            disabled={!selectedFile || isUploading}
-                        >
-                            {isUploading ? '업로드 중...' : '업로드'}
-                        </button>
-                    </>
-                }
-            >
-                <div className="upload-modal-content">
-                    <p className="mb-4 text-secondary">
-                        {currentDoc?.name} 파일을 선택해주세요. (PDF, JPG, PNG)
-                    </p>
-
-                    <div className="file-upload-area">
-                        <input
-                            type="file"
-                            className="file-input-hidden"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            onChange={handleFileSelect}
-                        />
-                        <div className="pointer-events-none">
-                            <span className="upload-placeholder-icon">📁</span>
-                            {selectedFile ? (
-                                <div className="text-primary font-medium">
-                                    {selectedFile.name}
-                                    <span className="text-xs text-secondary block mt-1">
-                                        {(selectedFile.size / 1024).toFixed(1)} KB
-                                    </span>
-                                </div>
-                            ) : (
-                                <div className="text-secondary">
-                                    <span className="text-primary font-medium">클릭하여 파일 선택</span>
-                                    <br />
-                                    <span className="text-xs">또는 파일을 여기로 드래그하세요</span>
-                                </div>
+            {/* Content Table */}
+            <section className="content-section glass-card">
+                <div className="table-container">
+                    <table className="table">
+                        <thead>
+                            {mainSection === 'sales' && (
+                                <tr>
+                                    <th>일시</th>
+                                    <th>주문번호</th>
+                                    <th>고객사</th>
+                                    <th className="text-right">금액</th>
+                                    <th>필요서류</th>
+                                    <th>작업</th>
+                                </tr>
                             )}
-                        </div>
-                    </div>
-
-                    <div className="upload-info-box">
-                        ℹ️ 실제 파일은 서버로 전송되며, 보안 연결을 통해 안전하게 저장됩니다.
-                    </div>
+                            {mainSection === 'purchase' && (
+                                <tr>
+                                    <th>발주일</th>
+                                    <th>발주번호</th>
+                                    <th>공급사</th>
+                                    <th className="text-right">금액</th>
+                                    <th>서류확인</th>
+                                    <th>작업</th>
+                                </tr>
+                            )}
+                            {mainSection === 'delivery' && (
+                                <tr>
+                                    <th>시간</th>
+                                    <th>배송번호</th>
+                                    <th>고객사</th>
+                                    <th>배송업체</th>
+                                    <th>차량/기사</th>
+                                    <th>결제상태</th>
+                                </tr>
+                            )}
+                        </thead>
+                        <tbody>
+                            {mainSection === 'sales' && salesData.length > 0 && salesData.map(item => (
+                                <tr key={item.id}>
+                                    <td>{formatDate(item.createdAt)}</td>
+                                    <td className="font-mono text-primary">{item.id}</td>
+                                    <td>{item.customerName}</td>
+                                    <td className="text-right font-medium">
+                                        {'totalsAmount' in item ? formatCurrency(item.totalsAmount) : '-'}
+                                    </td>
+                                    <td>
+                                        <div className="doc-tags">
+                                            <span className="doc-tag pending">명세서</span>
+                                            <span className="doc-tag pending">등급서</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button className="btn btn-xs btn-secondary">서류 업로드</button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {mainSection === 'purchase' && purchaseData.length > 0 && purchaseData.map(item => (
+                                <tr key={item.id}>
+                                    <td>{formatDate(item.createdAt)}</td>
+                                    <td className="font-mono text-primary">{item.id}</td>
+                                    <td>{item.supplierName || '공급사 미정'}</td>
+                                    <td className="text-right font-medium">{formatCurrency(item.totalsAmount)}</td>
+                                    <td>
+                                        <span className={`status-pill ${item.status === 'CONFIRMED' ? 'success' : 'warning'}`}>
+                                            {item.status === 'CONFIRMED' ? '확인완료' : '서류대기'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button className="btn btn-xs btn-ghost">상세보기</button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {mainSection === 'delivery' && deliveryData.length > 0 && deliveryData.map(item => (
+                                <tr key={item.id}>
+                                    <td>{formatDate(item.createdAt)}</td>
+                                    <td className="font-mono text-primary">{item.id}</td>
+                                    <td>{item.carrierName || '-'}</td>
+                                    <td>{item.carrierName || '직배'}</td>
+                                    <td>{item.vehicleNo} / {item.driverName}</td>
+                                    <td>
+                                        <span className="status-pill info">지급대기</span>
+                                    </td>
+                                </tr>
+                            ))}
+                            {(mainSection === 'sales' && salesData.length === 0) ||
+                                (mainSection === 'purchase' && purchaseData.length === 0) ||
+                                (mainSection === 'delivery' && deliveryData.length === 0) ? (
+                                <tr>
+                                    <td colSpan={6} className="text-center p-12 text-muted">
+                                        표시할 거래 내역이 없습니다.
+                                    </td>
+                                </tr>
+                            ) : null}
+                        </tbody>
+                    </table>
                 </div>
-            </Modal>
+            </section>
         </div>
     )
 }
