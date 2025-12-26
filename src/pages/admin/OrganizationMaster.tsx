@@ -1,11 +1,16 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useCustomerStore, type Customer } from '../../stores/customerStore'
 import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon } from '../../components/Icons'
 import './OrganizationMaster.css'
 
 export default function OrganizationMaster() {
     // 공유 스토어에서 데이터 가져오기
-    const { customers, addCustomer, updateCustomer, deleteCustomer, toggleActive } = useCustomerStore()
+    const { customers, addCustomer, updateCustomer, deleteCustomer, toggleActive, initializeStore } = useCustomerStore()
+
+    // 초기화
+    useEffect(() => {
+        initializeStore()
+    }, [initializeStore])
 
     const [searchQuery, setSearchQuery] = useState('')
     const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all')

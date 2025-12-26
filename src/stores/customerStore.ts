@@ -37,6 +37,8 @@ export interface Customer {
 // 초기 Mock 데이터
 const initialCustomers: Customer[] = []
 
+import { persist } from 'zustand/middleware'
+
 // Zustand 스토어 정의
 interface CustomerStore {
     customers: Customer[]
@@ -49,38 +51,53 @@ interface CustomerStore {
     // 조회
     getKeyAccounts: () => Customer[]
     getActiveCustomers: () => Customer[]
+    initializeStore: () => void
 }
 
-export const useCustomerStore = create<CustomerStore>((set, get) => ({
-    customers: initialCustomers,
+export const useCustomerStore = create<CustomerStore>()(
+    persist(
+        (set, get) => ({
+            customers: initialCustomers,
 
-    addCustomer: (customer) => set((state) => ({
-        customers: [...state.customers, customer]
-    })),
+            addCustomer: (customer) => set((state) => ({
+                customers: [...state.customers, customer]
+            })),
 
-    updateCustomer: (id, data) => set((state) => ({
-        customers: state.customers.map(c =>
-            c.id === id ? { ...c, ...data, updatedAt: new Date() } : c
-        )
-    })),
+            updateCustomer: (id, data) => set((state) => ({
+                customers: state.customers.map(c =>
+                    c.id === id ? { ...c, ...data, updatedAt: new Date() } : c
+                )
+            })),
 
-    deleteCustomer: (id) => set((state) => ({
-        customers: state.customers.filter(c => c.id !== id)
-    })),
+            deleteCustomer: (id) => set((state) => ({
+                customers: state.customers.filter(c => c.id !== id)
+            })),
 
-    toggleKeyAccount: (id) => set((state) => ({
-        customers: state.customers.map(c =>
-            c.id === id ? { ...c, isKeyAccount: !c.isKeyAccount, updatedAt: new Date() } : c
-        )
-    })),
+            toggleKeyAccount: (id) => set((state) => ({
+                customers: state.customers.map(c =>
+                    c.id === id ? { ...c, isKeyAccount: !c.isKeyAccount, updatedAt: new Date() } : c
+                )
+            })),
 
-    toggleActive: (id) => set((state) => ({
-        customers: state.customers.map(c =>
-            c.id === id ? { ...c, isActive: !c.isActive, updatedAt: new Date() } : c
-        )
-    })),
+            toggleActive: (id) => set((state) => ({
+                customers: state.customers.map(c =>
+                    c.id === id ? { ...c, isActive: !c.isActive, updatedAt: new Date() } : c
+                )
+            })),
 
-    getKeyAccounts: () => get().customers.filter(c => c.isKeyAccount && c.isActive),
+            getKeyAccounts: () => get().customers.filter(c => c.isKeyAccount && c.isActive),
 
-    getActiveCustomers: () => get().customers.filter(c => c.isActive),
-}))
+            getActiveCustomers: () => get().customers.filter(c => c.isActive),
+
+            initializeStore: () => {
+                // 현재 데이터가 없고 초기 데이터가 정의되어 있다면 초기화 가능
+                if (get().customers.length === 0 && initialCustomers.length > 0) {
+                    set({ customers: initialCustomers })
+                }
+            }
+        }),
+        {
+            name: 'trs-customer-storage',
+        }
+    )
+)
