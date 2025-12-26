@@ -23,7 +23,7 @@ import './DocumentHub.css'
 export default function DocumentHub() {
     const { user } = useAuth()
     const {
-        categories, documents, addCategory, deleteCategory, updateCategory,
+        categories, documents, addCategory, deleteCategory,
         addDocument, updateDocument, deleteDocument,
         addComment, deleteComment, addAttachment, deleteAttachment
     } = useDocStore()
