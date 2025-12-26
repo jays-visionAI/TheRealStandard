@@ -1,11 +1,22 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrderStore } from '../../stores/orderStore'
+import { useShipmentStore } from '../../stores/shipmentStore'
+import { useVehicleStore } from '../../stores/vehicleStore'
+import { type SalesOrder } from '../../types'
 import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon } from '../../components/Icons'
+import ShippingCard from '../../components/ShippingCard'
+import './SalesOrderList.css'
 
 export default function SalesOrderList() {
     const { salesOrders } = useOrderStore()
+    const { addShipment, getShipmentByOrderId } = useShipmentStore()
+    const { vehicleTypes } = useVehicleStore()
+
     const [searchTerm, setSearchTerm] = useState('')
+    const [showDispatchModal, setShowDispatchModal] = useState(false)
+    const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null)
+
     const navigate = useNavigate()
 
     const filteredOrders = useMemo(() => {
@@ -15,16 +26,60 @@ export default function SalesOrderList() {
         ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     }, [salesOrders, searchTerm])
 
+    // --- Dispatch Logic ---
+    const [dispatchForm, setDispatchForm] = useState({
+        company: '',
+        driverName: '',
+        driverPhone: '',
+        vehicleNumber: '',
+        vehicleType: '',
+        eta: ''
+    })
+
+    const handleOpenDispatch = (so: SalesOrder) => {
+        const existing = getShipmentByOrderId(so.id)
+        if (existing) {
+            alert('이미 배차 정보가 등록된 주문입니다.')
+            return
+        }
+        setSelectedOrder(so)
+        setDispatchForm({
+            company: '대한통운',
+            driverName: '',
+            driverPhone: '',
+            vehicleNumber: '',
+            vehicleType: vehicleTypes.find(v => v.enabled)?.name || '',
+            eta: new Date(Date.now() + 86400000).toISOString().slice(0, 16) // Tomorrow
+        })
+        setShowDispatchModal(true)
+    }
+
+    const handleDispatchSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!selectedOrder) return
+
+        const shipmentId = `SH-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+
+        addShipment({
+            id: shipmentId,
+            orderId: selectedOrder.id,
+            customerName: selectedOrder.customerName || '알 수 없는 고객',
+            ...dispatchForm,
+            status: 'READY',
+            createdAt: new Date().toISOString()
+        })
+
+        setShowDispatchModal(false)
+        alert(`배송 지시가 완료되었습니다. [${shipmentId}]`)
+    }
+
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
     }
 
     const formatDate = (date: Date | string) => {
         return new Date(date).toLocaleDateString('ko-KR', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         })
     }
 
@@ -66,31 +121,47 @@ export default function SalesOrderList() {
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {filteredOrders.length > 0 ? (
-                                filteredOrders.map((so) => (
-                                    <tr key={so.id} className="hover:bg-white/5 transition-colors">
-                                        <td className="p-4 text-sm">{formatDate(so.createdAt)}</td>
-                                        <td className="p-4 text-sm font-mono text-primary">{so.id}</td>
-                                        <td className="p-4 text-sm font-medium">{so.customerName}</td>
-                                        <td className="p-4 text-sm text-right">{so.totalsKg.toFixed(1)} kg</td>
-                                        <td className="p-4 text-sm text-right font-medium">{formatCurrency(so.totalsAmount)}</td>
-                                        <td className="p-4 text-sm">
-                                            <span className="badge badge-success">승인완료</span>
-                                        </td>
-                                        <td className="p-4 text-sm">
-                                            <div className="flex gap-2">
-                                                <button
-                                                    className="btn btn-sm btn-ghost"
-                                                    onClick={() => navigate(`/admin/sales-orders/${so.id}`)}
-                                                >
-                                                    상세
-                                                </button>
-                                                <button className="btn btn-sm btn-secondary">
-                                                    <TruckDeliveryIcon size={14} /> 출고지시
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                filteredOrders.map((so) => {
+                                    const shipment = getShipmentByOrderId(so.id)
+                                    return (
+                                        <tr key={so.id} className="hover:bg-white/5 transition-colors">
+                                            <td className="p-4 text-sm">{formatDate(so.createdAt)}</td>
+                                            <td className="p-4 text-sm font-mono text-primary">{so.id}</td>
+                                            <td className="p-4 text-sm font-medium">{so.customerName}</td>
+                                            <td className="p-4 text-sm text-right">{so.totalsKg.toFixed(1)} kg</td>
+                                            <td className="p-4 text-sm text-right font-medium">{formatCurrency(so.totalsAmount)}</td>
+                                            <td className="p-4 text-sm">
+                                                {shipment ? (
+                                                    <span className="badge badge-primary">배차완료</span>
+                                                ) : (
+                                                    <span className="badge badge-success">승인완료</span>
+                                                )}
+                                            </td>
+                                            <td className="p-4 text-sm">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        className="btn btn-sm btn-ghost"
+                                                        onClick={() => navigate(`/admin/sales-orders/${so.id}`)}
+                                                    >
+                                                        상세
+                                                    </button>
+                                                    {!shipment ? (
+                                                        <button
+                                                            className="btn btn-sm btn-secondary"
+                                                            onClick={() => handleOpenDispatch(so)}
+                                                        >
+                                                            <TruckDeliveryIcon size={14} /> 출고지시
+                                                        </button>
+                                                    ) : (
+                                                        <button className="btn btn-sm btn-ghost text-primary">
+                                                            배차정보
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })
                             ) : (
                                 <tr>
                                     <td colSpan={7} className="p-12 text-center text-muted">
@@ -102,6 +173,76 @@ export default function SalesOrderList() {
                     </table>
                 </div>
             </div>
-        </div >
+
+            {/* Dispatch Modal */}
+            {showDispatchModal && selectedOrder && (
+                <div className="modal-overlay" onClick={() => setShowDispatchModal(false)}>
+                    <div className="modal-content glass-card dispatch-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '2rem' }}>
+                        <div className="modal-form-side">
+                            <div className="modal-header">
+                                <h2><TruckDeliveryIcon size={24} /> 출고 및 차량 배정</h2>
+                                <p className="text-secondary">주문 [{selectedOrder.id}] 에 대한 배송 정보를력하세요</p>
+                            </div>
+                            <form onSubmit={handleDispatchSubmit} className="modal-body">
+                                <div className="form-group mb-4">
+                                    <label>배송업체</label>
+                                    <input type="text" value={dispatchForm.company} onChange={e => setDispatchForm({ ...dispatchForm, company: e.target.value })} required className="input" />
+                                </div>
+                                <div className="form-row flex gap-4 mb-4">
+                                    <div className="form-group flex-1">
+                                        <label>기사명</label>
+                                        <input type="text" value={dispatchForm.driverName} onChange={e => setDispatchForm({ ...dispatchForm, driverName: e.target.value })} required className="input" />
+                                    </div>
+                                    <div className="form-group flex-1">
+                                        <label>연락처</label>
+                                        <input type="text" value={dispatchForm.driverPhone} onChange={e => setDispatchForm({ ...dispatchForm, driverPhone: e.target.value })} required className="input" placeholder="010-0000-0000" />
+                                    </div>
+                                </div>
+                                <div className="form-row flex gap-4 mb-4">
+                                    <div className="form-group flex-1">
+                                        <label>차량번호</label>
+                                        <input type="text" value={dispatchForm.vehicleNumber} onChange={e => setDispatchForm({ ...dispatchForm, vehicleNumber: e.target.value })} required className="input" placeholder="12가 3456" />
+                                    </div>
+                                    <div className="form-group flex-1">
+                                        <label>차량 타입</label>
+                                        <select value={dispatchForm.vehicleType} onChange={e => setDispatchForm({ ...dispatchForm, vehicleType: e.target.value })} className="input">
+                                            {vehicleTypes.filter(v => v.enabled).map(v => (
+                                                <option key={v.id} value={v.name}>{v.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="form-group mb-6">
+                                    <label>도착 예정 시간 (ETA)</label>
+                                    <input type="datetime-local" value={dispatchForm.eta} onChange={e => setDispatchForm({ ...dispatchForm, eta: e.target.value })} required className="input" />
+                                </div>
+                                <div className="modal-footer flex gap-2">
+                                    <button type="button" className="btn btn-ghost" onClick={() => setShowDispatchModal(false)}>취소</button>
+                                    <button type="submit" className="btn btn-primary">출고 지시 완료</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div className="modal-preview-side">
+                            <h3 className="mb-4 text-secondary text-sm font-bold">배송 정보 카드 미리보기</h3>
+                            <ShippingCard shipment={{
+                                id: 'SH-AUTO-GENERATED',
+                                orderId: selectedOrder.id,
+                                customerName: selectedOrder.customerName || '알 수 없는 고객',
+                                ...dispatchForm,
+                                status: 'READY',
+                                createdAt: new Date().toISOString()
+                            }} />
+                            <div className="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                                <p className="text-xs text-primary leading-relaxed">
+                                    * 지시 완료 시 물류팀 대시보드에 즉시 반영되며,<br />
+                                    고객사에게 카카오 알림톡(시뮬레이션)과 트래킹 링크가 전송됩니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     )
 }

@@ -1,15 +1,8 @@
 import { useState } from 'react'
-import type { VehicleType } from '../../types'
-
-const initialVehicleTypes: VehicleType[] = [
-    { id: 'vt-1', name: '1.8톤', capacityKg: 1800, enabled: true, createdAt: new Date(), updatedAt: new Date() },
-    { id: 'vt-2', name: '3.5톤', capacityKg: 3500, enabled: true, createdAt: new Date(), updatedAt: new Date() },
-    { id: 'vt-3', name: '5톤', capacityKg: 5000, enabled: true, createdAt: new Date(), updatedAt: new Date() },
-    { id: 'vt-4', name: '11톤', capacityKg: 11000, enabled: true, createdAt: new Date(), updatedAt: new Date() },
-]
+import { useVehicleStore, type VehicleType } from '../../stores/vehicleStore'
 
 export default function VehicleTypeSettings() {
-    const [vehicleTypes, setVehicleTypes] = useState(initialVehicleTypes)
+    const { vehicleTypes, addVehicleType, updateVehicleType, toggleVehicleEnabled } = useVehicleStore()
     const [showModal, setShowModal] = useState(false)
     const [editingType, setEditingType] = useState<VehicleType | null>(null)
     const [name, setName] = useState('')
@@ -36,30 +29,12 @@ export default function VehicleTypeSettings() {
         }
 
         if (editingType) {
-            setVehicleTypes(vehicleTypes.map(vt =>
-                vt.id === editingType.id
-                    ? { ...vt, name, capacityKg: parseInt(capacityKg), updatedAt: new Date() }
-                    : vt
-            ))
+            updateVehicleType(editingType.id, name, parseInt(capacityKg))
         } else {
-            const newVt: VehicleType = {
-                id: 'vt-' + Date.now(),
-                name,
-                capacityKg: parseInt(capacityKg),
-                enabled: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            }
-            setVehicleTypes([...vehicleTypes, newVt])
+            addVehicleType(name, parseInt(capacityKg))
         }
 
         setShowModal(false)
-    }
-
-    const toggleEnabled = (id: string) => {
-        setVehicleTypes(vehicleTypes.map(vt =>
-            vt.id === id ? { ...vt, enabled: !vt.enabled } : vt
-        ))
     }
 
     return (
@@ -93,7 +68,7 @@ export default function VehicleTypeSettings() {
                                     <td>
                                         <button
                                             className={`toggle-btn ${vt.enabled ? 'active' : ''}`}
-                                            onClick={() => toggleEnabled(vt.id)}
+                                            onClick={() => toggleVehicleEnabled(vt.id)}
                                         >
                                             {vt.enabled ? '사용중' : '미사용'}
                                         </button>
@@ -147,28 +122,28 @@ export default function VehicleTypeSettings() {
             )}
 
             <style>{`
-        .toggle-btn {
-          padding: var(--space-1) var(--space-3);
-          border-radius: var(--radius-full);
-          font-size: var(--text-xs);
-          font-weight: var(--font-medium);
-          border: none;
-          cursor: pointer;
-          background: var(--bg-tertiary);
-          color: var(--text-muted);
-          transition: all var(--transition-fast);
-        }
-        
-        .toggle-btn.active {
-          background: rgba(16, 185, 129, 0.2);
-          color: var(--color-accent);
-        }
-        
-        .form-group {
-          display: flex;
-          flex-direction: column;
-        }
-      `}</style>
+                .toggle-btn {
+                  padding: var(--space-1) var(--space-3);
+                  border-radius: var(--radius-full);
+                  font-size: var(--text-xs);
+                  font-weight: var(--font-medium);
+                  border: none;
+                  cursor: pointer;
+                  background: var(--bg-tertiary);
+                  color: var(--text-muted);
+                  transition: all var(--transition-fast);
+                }
+                
+                .toggle-btn.active {
+                  background: rgba(16, 185, 129, 0.2);
+                  color: var(--color-accent);
+                }
+                
+                .form-group {
+                  display: flex;
+                  flex-direction: column;
+                }
+            `}</style>
         </div>
     )
 }

@@ -1,0 +1,157 @@
+.shipping-card {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #f0f0f0;
+}
+
+.shipping-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: var(--color-primary);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.shipment-no {
+    display: flex;
+    flex-direction: column;
+}
+
+.no-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #999;
+    letter-spacing: 0.5px;
+}
+
+.no-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: 16px;
+    color: #1a1a1a;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.status-badge.ready {
+    background: #fff8e1;
+    color: #f57c00;
+}
+
+.status-badge.shipping {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.card-workflow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-top: 1px dashed #eee;
+    border-bottom: 1px dashed #eee;
+    margin-bottom: 20px;
+}
+
+.node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.node-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+}
+
+.node-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+}
+
+.path-line {
+    flex: 1;
+    height: 2px;
+    background: #eee;
+    margin: 0 10px;
+    position: relative;
+}
+
+.truck-indicator {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--color-primary);
+}
+
+.vehicle-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.info-label {
+    font-size: 11px;
+    color: #999;
+}
+
+.info-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+}
+
+.eta-box {
+    background: #f8faff;
+    padding: 12px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #eef2ff;
+}
+
+.eta-icon {
+    color: var(--color-primary);
+}
+
+.eta-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4361ee;
+}

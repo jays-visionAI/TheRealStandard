@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOrderStore } from '../../stores/orderStore'
+import { useShipmentStore } from '../../stores/shipmentStore'
 import { FactoryIcon, CheckCircleIcon, PackageIcon, TruckDeliveryIcon, PhoneIcon } from '../../components/Icons'
 import './WarehouseDashboard.css'
 
@@ -21,6 +22,7 @@ interface PendingItem {
 export default function WarehouseDashboard() {
     const navigate = useNavigate()
     const { purchaseOrders, salesOrders } = useOrderStore()
+    const { shipments } = useShipmentStore()
     const [activeTab, setActiveTab] = useState<'receive' | 'release'>('receive')
 
     // 매입 발주 데이터를 반입 대기로 매핑
@@ -28,7 +30,7 @@ export default function WarehouseDashboard() {
         return purchaseOrders.map(po => ({
             id: po.id,
             orderId: po.id,
-            customerName: 'Internal', // 매입의 경우 입고 주체
+            customerName: 'Internal',
             supplier: po.supplierName || '공급사 미정',
             totalKg: po.totalsKg,
             vehicleNo: '배정대기',
@@ -40,22 +42,25 @@ export default function WarehouseDashboard() {
         }))
     }, [purchaseOrders])
 
-    // 확정 주문 데이터를 출고 대기로 매핑
+    // 확정 주문 데이터를 출고 대기로 매핑 (배송 정보 동기화)
     const releaseItems: PendingItem[] = useMemo(() => {
-        return salesOrders.map(so => ({
-            id: so.id,
-            orderId: so.sourceOrderSheetId,
-            customerName: so.customerName || '고객사 미정',
-            supplier: '',
-            totalKg: so.totalsKg,
-            vehicleNo: '배차대기',
-            driverName: '기사 미정',
-            driverPhone: '',
-            expectedTime: '오늘',
-            status: 'PENDING',
-            type: 'RELEASE',
-        }))
-    }, [salesOrders])
+        return salesOrders.map(so => {
+            const shipment = shipments.find(s => s.orderId === so.id)
+            return {
+                id: so.id,
+                orderId: so.id,
+                customerName: so.customerName || '고객사 미정',
+                supplier: '',
+                totalKg: so.totalsKg,
+                vehicleNo: shipment?.vehicleNumber || '배차대기',
+                driverName: shipment?.driverName || '기사 미정',
+                driverPhone: shipment?.driverPhone || '',
+                expectedTime: shipment ? new Date(shipment.eta).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '오늘',
+                status: 'PENDING',
+                type: 'RELEASE',
+            }
+        })
+    }, [salesOrders, shipments])
 
     const currentItems = activeTab === 'receive' ? receiveItems : releaseItems
 
