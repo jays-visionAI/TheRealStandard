@@ -10,6 +10,7 @@ interface OrderStore {
     addOrderSheet: (order: OrderSheet, items: OrderSheetItem[]) => void
     updateOrderSheet: (id: string, data: Partial<OrderSheet>) => void
     updateOrderItems: (orderSheetId: string, items: OrderSheetItem[]) => void
+    deleteOrderSheet: (id: string) => void
     getOrderSheetById: (id: string) => OrderSheet | undefined
     getOrderSheetByToken: (token: string) => OrderSheet | undefined
     getOrderItems: (orderSheetId: string) => OrderSheetItem[]
@@ -35,6 +36,14 @@ export const useOrderStore = create<OrderStore>()(
             updateOrderItems: (orderSheetId, items) => set((state) => ({
                 orderItems: { ...state.orderItems, [orderSheetId]: items }
             })),
+
+            deleteOrderSheet: (id) => set((state) => {
+                const { [id]: _, ...remainingItems } = state.orderItems;
+                return {
+                    orderSheets: state.orderSheets.filter(o => o.id !== id),
+                    orderItems: remainingItems
+                };
+            }),
 
             getOrderSheetById: (id) => {
                 return get().orderSheets.find(o => o.id === id)

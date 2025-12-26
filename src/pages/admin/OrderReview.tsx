@@ -7,7 +7,7 @@ import { OrderSheet, OrderSheetItem } from '../../types'
 export default function OrderReview() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { getOrderSheetById, getOrderItems, updateOrderSheet } = useOrderStore()
+    const { getOrderSheetById, getOrderItems, updateOrderSheet, deleteOrderSheet } = useOrderStore()
 
     const [orderSheet, setOrderSheet] = useState<OrderSheet | null>(null)
     const [items, setItems] = useState<OrderSheetItem[]>([])
@@ -69,6 +69,15 @@ export default function OrderReview() {
         alert('수정 요청이 전송되었습니다.')
         setShowRevisionModal(false)
         navigate('/admin/order-sheets')
+    }
+
+    const handleDelete = () => {
+        if (!orderSheet) return
+        if (confirm('정말로 이 주문장을 삭제하시겠습니까? 삭제된 주문장은 복구할 수 없습니다.')) {
+            deleteOrderSheet(orderSheet.id)
+            alert('주문장이 삭제되었습니다.')
+            navigate('/admin/order-sheets')
+        }
     }
 
     if (loading) return <div className="p-8 text-center text-white">불러오는 중...</div>
@@ -152,6 +161,12 @@ export default function OrderReview() {
             {/* Actions */}
             <div className="glass-card">
                 <div className="action-panel">
+                    <button
+                        className="btn btn-ghost danger"
+                        onClick={handleDelete}
+                    >
+                        삭제하기
+                    </button>
                     <button
                         className="btn btn-secondary btn-lg"
                         onClick={() => setShowRevisionModal(true)}

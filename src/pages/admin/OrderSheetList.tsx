@@ -4,7 +4,7 @@ import { useOrderStore } from '../../stores/orderStore'
 import type { OrderSheetStatus } from '../../types'
 
 export default function OrderSheetList() {
-    const { orderSheets } = useOrderStore()
+    const { orderSheets, deleteOrderSheet } = useOrderStore()
     const [filterStatus, setFilterStatus] = useState<OrderSheetStatus | 'ALL'>('ALL')
     const [searchTerm, setSearchTerm] = useState('')
 
@@ -44,6 +44,13 @@ export default function OrderSheetList() {
         const link = `${window.location.origin}/order/${token}`
         await navigator.clipboard.writeText(link)
         alert('주문 링크가 복사되었습니다!')
+    }
+
+    const handleDelete = (id: string) => {
+        if (confirm('정말로 이 주문장을 삭제하시겠습니까?')) {
+            deleteOrderSheet(id)
+            alert('삭제되었습니다.')
+        }
     }
 
     return (
@@ -142,8 +149,17 @@ export default function OrderSheetList() {
                                                         편집
                                                     </Link>
                                                 )}
-                                                <button className="btn btn-ghost btn-sm">
+                                                <Link
+                                                    to={`/admin/order-sheets/${order.id}/review`}
+                                                    className="btn btn-ghost btn-sm"
+                                                >
                                                     상세
+                                                </Link>
+                                                <button
+                                                    className="btn btn-ghost btn-sm text-error"
+                                                    onClick={() => handleDelete(order.id)}
+                                                >
+                                                    삭제
                                                 </button>
                                             </div>
                                         </td>
