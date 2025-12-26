@@ -4,7 +4,8 @@ import { useOrderStore } from '../../stores/orderStore'
 import { useShipmentStore } from '../../stores/shipmentStore'
 import { useVehicleStore } from '../../stores/vehicleStore'
 import { type SalesOrder } from '../../types'
-import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon } from '../../components/Icons'
+import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon, KakaoIcon } from '../../components/Icons'
+import { sendOrderMessage } from '../../lib/kakaoService'
 import ShippingCard from '../../components/ShippingCard'
 import './SalesOrderList.css'
 
@@ -153,8 +154,11 @@ export default function SalesOrderList() {
                                                             <TruckDeliveryIcon size={14} /> 출고지시
                                                         </button>
                                                     ) : (
-                                                        <button className="btn btn-sm btn-ghost text-primary">
-                                                            배차정보
+                                                        <button
+                                                            className="btn btn-sm btn-kakao"
+                                                            onClick={() => sendOrderMessage(so.customerName || '고객', so.id, shipment.vehicleNumber, shipment.eta)}
+                                                        >
+                                                            <KakaoIcon size={14} /> 주문서 전송
                                                         </button>
                                                     )}
                                                 </div>

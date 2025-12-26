@@ -542,3 +542,10 @@ export const MessageSquareIcon: FC<IconProps> = ({ size = 20, className = '', co
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
 )
+
+// Kakao
+export const KakaoIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} className={className}>
+        <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.558 1.712 4.8 4.37 6.04-.19.645-.685 2.32-.783 2.684-.123.45.153.444.323.33.132-.088 2.11-1.43 2.955-2.006.37.052.75.078 1.135.078 4.97 0 9-3.186 9-7.115S16.97 3 12 3z" />
+    </svg>
+)

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useCustomerStore, type Customer } from '../../stores/customerStore'
-import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon } from '../../components/Icons'
+import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon, KakaoIcon } from '../../components/Icons'
+import { sendInviteMessage } from '../../lib/kakaoService'
 import './OrganizationMaster.css'
 
 export default function OrganizationMaster() {
@@ -133,6 +134,15 @@ export default function OrganizationMaster() {
         navigator.clipboard.writeText(inviteUrl).then(() => {
             alert(`✅ 초대 링크가 복사되었습니다!\n고객님께 전달해주세요.\n\n${inviteUrl}`)
         })
+    }
+
+    // 카카오톡 초대 메시지 전송
+    const handleKakaoInvite = (customer: Customer) => {
+        const { generateInviteToken } = useCustomerStore.getState()
+        const token = generateInviteToken(customer.id)
+        const inviteUrl = `${window.location.origin}/invite/${token}`
+
+        sendInviteMessage(customer.companyName, inviteUrl)
     }
 
     // 삭제
@@ -270,12 +280,20 @@ export default function OrganizationMaster() {
                                     </td>
                                     <td className="actions">
                                         {customer.status === 'PENDING' && (
-                                            <button
-                                                className="btn btn-sm btn-primary"
-                                                onClick={() => handleGenerateInvite(customer)}
-                                            >
-                                                초대장 복사
-                                            </button>
+                                            <>
+                                                <button
+                                                    className="btn btn-sm btn-primary"
+                                                    onClick={() => handleGenerateInvite(customer)}
+                                                >
+                                                    <ClipboardListIcon size={14} /> 초대장 복사
+                                                </button>
+                                                <button
+                                                    className="btn btn-sm btn-kakao"
+                                                    onClick={() => handleKakaoInvite(customer)}
+                                                >
+                                                    <KakaoIcon size={14} /> 카톡 초대
+                                                </button>
+                                            </>
                                         )}
                                         <button
                                             className="btn btn-sm btn-ghost"

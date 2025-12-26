@@ -368,6 +368,15 @@ code {
   background: var(--color-accent-dark);
 }
 
+.btn-kakao {
+  background: #fee500;
+  color: #191919;
+}
+
+.btn-kakao:hover:not(:disabled) {
+  background: #fada0a;
+}
+
 .btn-sm {
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-xs);

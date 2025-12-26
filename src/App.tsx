@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
+import { initKakao } from './lib/kakaoService'
 import ProtectedRoute, { PublicRoute } from './components/ProtectedRoute'
 
 // Auth Pages
@@ -50,6 +52,10 @@ import CustomerConfirm from './pages/front/CustomerConfirm'
 import DeliveryTracking from './pages/front/DeliveryTracking'
 
 function App() {
+    useEffect(() => {
+        initKakao();
+    }, []);
+
     return (
         <AuthProvider>
             <BrowserRouter>
