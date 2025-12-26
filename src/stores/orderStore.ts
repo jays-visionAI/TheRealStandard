@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { OrderSheet, OrderSheetStatus, OrderSheetItem } from '../types'
+import { OrderSheet, OrderSheetItem } from '../types'
 
 interface OrderStore {
     orderSheets: OrderSheet[]
