@@ -123,7 +123,7 @@ export default function OrderSheetCreate() {
             p.name.toLowerCase().includes(q) && !p.name.toLowerCase().startsWith(q)
         )
         return [...startsWithProducts, ...containsProducts]
-    }, [])
+    }, [PRODUCT_MASTER])
 
     // 검색어 변경 시 필터링
     useEffect(() => {
