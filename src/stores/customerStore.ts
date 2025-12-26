@@ -1,43 +1,64 @@
-// 거래처(고객사) 공유 데이터 스토어
-// 향후 Firebase Firestore로 교체 시 이 파일만 수정하면 됨
-
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 // 거래처 인터페이스
+// ... (Customer interface remains same)
 export interface Customer {
     id: string
-    // 기본 정보
     companyName: string
-    bizRegNo: string           // 사업자등록번호
-    ceoName: string            // 대표자명
-    // 연락처
+    bizRegNo: string
+    ceoName: string
     phone: string
     fax?: string
     email: string
-    // 주소
-    address: string            // 본사 주소
-    shipAddress1: string       // 배송지 주소 1
-    shipAddress2?: string      // 배송지 주소 2
-    // 담당자 정보
-    contactPerson?: string     // 담당자명
-    contactPhone?: string      // 담당자 연락처
-    // 거래 정보
-    priceType: 'wholesale' | 'retail'  // 도매가 / 소매가 적용
-    paymentTerms?: string      // 결제 조건
-    creditLimit?: number       // 신용 한도
-    // 메모
+    address: string
+    shipAddress1: string
+    shipAddress2?: string
+    contactPerson?: string
+    contactPhone?: string
+    priceType: 'wholesale' | 'retail'
+    paymentTerms?: string
+    creditLimit?: number
     memo?: string
-    // 상태
     isActive: boolean
-    isKeyAccount: boolean      // ⭐ 주요 거래처 여부
+    isKeyAccount: boolean
     createdAt: Date
     updatedAt: Date
 }
 
 // 초기 Mock 데이터
-const initialCustomers: Customer[] = []
-
-import { persist } from 'zustand/middleware'
+const initialCustomers: Customer[] = [
+    {
+        id: 'cust-1',
+        companyName: '아우내식품',
+        bizRegNo: '123-45-67890',
+        ceoName: '박아우',
+        phone: '02-1234-5678',
+        email: 'aunae@example.com',
+        address: '서울시 강남구 삼성동 123',
+        shipAddress1: '서울시 강남구 삼성동 123',
+        priceType: 'wholesale',
+        isActive: true,
+        isKeyAccount: true,
+        createdAt: new Date('2025-12-01'),
+        updatedAt: new Date('2025-12-01'),
+    },
+    {
+        id: 'cust-2',
+        companyName: '진심왕돈가스',
+        bizRegNo: '987-65-43210',
+        ceoName: '김진심',
+        phone: '02-9876-5432',
+        email: 'jinsim@example.com',
+        address: '서울시 송파구 잠실동 456',
+        shipAddress1: '서울시 송파구 잠실동 456',
+        priceType: 'wholesale',
+        isActive: true,
+        isKeyAccount: true,
+        createdAt: new Date('2025-12-01'),
+        updatedAt: new Date('2025-12-01'),
+    }
+]
 
 // Zustand 스토어 정의
 interface CustomerStore {
