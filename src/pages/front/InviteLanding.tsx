@@ -1,30 +1,30 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { XIcon, ClipboardListIcon } from '../../components/Icons'
+import { useOrderStore } from '../../stores/orderStore'
 
 export default function InviteLanding() {
   const { token } = useParams()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
-  const [valid, setValid] = useState(false)
   const [orderInfo, setOrderInfo] = useState<any>(null)
 
+  const { getOrderSheetByToken } = useOrderStore()
+
   useEffect(() => {
-    // Simulate token validation
-    setTimeout(() => {
+    // Simulate slight delay for validation
+    const timer = setTimeout(() => {
       if (token) {
-        setValid(true)
-        setOrderInfo({
-          id: 'OS-2024-001',
-          customerName: '한우명가',
-          shipDate: '2024-01-16',
-          cutOffAt: '2024-01-15 18:00',
-          status: 'SENT',
-        })
+        const order = getOrderSheetByToken(token)
+        if (order) {
+          setOrderInfo(order)
+        }
       }
       setLoading(false)
-    }, 1000)
-  }, [token])
+    }, 800)
+
+    return () => clearTimeout(timer)
+  }, [token, getOrderSheetByToken])
 
   if (loading) {
     return (
@@ -37,7 +37,7 @@ export default function InviteLanding() {
     )
   }
 
-  if (!valid) {
+  if (!orderInfo) {
     return (
       <div className="invite-container">
         <div className="glass-card invite-card error">
@@ -48,6 +48,23 @@ export default function InviteLanding() {
         </div>
       </div>
     )
+  }
+
+  const formatDate = (date: Date | string) => {
+    return new Date(date).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const formatDateTime = (date: Date | string) => {
+    return new Date(date).toLocaleString('ko-KR', {
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   }
 
   return (
@@ -64,11 +81,11 @@ export default function InviteLanding() {
           </div>
           <div className="info-row">
             <span className="label">배송예정일</span>
-            <span className="value">{orderInfo.shipDate}</span>
+            <span className="value">{formatDate(orderInfo.shipDate)}</span>
           </div>
           <div className="info-row">
             <span className="label">주문마감</span>
-            <span className="value highlight">{orderInfo.cutOffAt}</span>
+            <span className="value highlight">{formatDateTime(orderInfo.cutOffAt)}</span>
           </div>
         </div>
 
@@ -98,6 +115,8 @@ export default function InviteLanding() {
         .invite-card .icon {
           font-size: 4rem;
           margin-bottom: var(--space-4);
+          display: flex;
+          justify-content: center;
         }
         
         .invite-card h2 {
@@ -139,6 +158,7 @@ export default function InviteLanding() {
         
         .error .icon {
           font-size: 5rem;
+          color: var(--color-error);
         }
         
         .loading-spinner {

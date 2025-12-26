@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCustomerStore, type Customer } from '../../stores/customerStore'
+import { useOrderStore } from '../../stores/orderStore'
 import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon } from '../../components/Icons'
 import './OrderSheetCreate.css'
 
@@ -99,6 +100,7 @@ export default function OrderSheetCreate() {
 
     // 공유 스토어에서 고객 데이터 가져오기
     const { customers } = useCustomerStore()
+    const { addOrderSheet } = useOrderStore()
 
     // Step 관리
     const [step, setStep] = useState(1)
@@ -108,7 +110,7 @@ export default function OrderSheetCreate() {
     const [customerSearch, setCustomerSearch] = useState('')
 
     // Step 2: 품목 설정 (엑셀 그리드)
-    const [rows, setRows] = useState<OrderRow[]>([createEmptyRow()])
+    const [rows, setRows] = useState<OrderRow[]>([])
     const [activeRowId, setActiveRowId] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [showDropdown, setShowDropdown] = useState(false)
@@ -141,6 +143,13 @@ export default function OrderSheetCreate() {
             totalAmount: 0,
         }
     }
+
+    // 초기 행 설정
+    useEffect(() => {
+        if (rows.length === 0) {
+            setRows([createEmptyRow()])
+        }
+    }, [])
 
     // 고객 선택 시 배송지 자동 설정
     useEffect(() => {
@@ -334,16 +343,37 @@ export default function OrderSheetCreate() {
             return
         }
 
-        const token = 'order-' + Date.now()
+        const orderId = 'OS-' + Date.now()
+        const token = 'token-' + Math.random().toString(36).substr(2, 9)
         const link = `${window.location.origin}/order/${token}`
 
-        console.log('주문장 생성:', {
-            customer: selectedCustomer,
-            items: validRows,
-            shipDate,
-            cutOffAt,
-            shipTo,
-        })
+        const newOrder = {
+            id: orderId,
+            customerOrgId: selectedCustomer.id,
+            customerName: selectedCustomer.companyName,
+            shipDate: new Date(shipDate),
+            cutOffAt: new Date(cutOffAt),
+            shipTo: shipTo,
+            status: 'SENT' as const,
+            inviteTokenId: token,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }
+
+        const items = validRows.map((row, idx) => ({
+            id: `item-${orderId}-${idx}`,
+            orderSheetId: orderId,
+            productId: row.productId || '',
+            productName: row.productName,
+            inputType: row.unit.toUpperCase() as any,
+            qtyKg: row.unit === 'kg' ? row.quantity : undefined,
+            qtyBox: row.unit === 'box' ? row.quantity : undefined,
+            estimatedKg: row.estimatedWeight,
+            unitPrice: row.unitPrice,
+            amount: row.totalAmount,
+        }))
+
+        addOrderSheet(newOrder, items)
 
         navigator.clipboard.writeText(link)
         alert(`✅ 주문장이 생성되었습니다!\n\n고객 링크가 클립보드에 복사되었습니다.\n\n${link}`)

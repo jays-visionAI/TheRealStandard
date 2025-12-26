@@ -98,10 +98,8 @@ p {
 }
 
 .lp-logo {
-    font-weight: 700;
-    font-size: 1.125rem;
-    letter-spacing: -0.03em;
-    color: var(--lp-text-white);
+    display: flex;
+    align-items: center;
 }
 
 .lp-nav ul {

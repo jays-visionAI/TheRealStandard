@@ -7,6 +7,7 @@ import {
     SearchIcon,
     CheckIcon
 } from '../components/Icons'
+import { LogoSmall, Logo } from '../components/Logo'
 import './LandingPage.css'
 
 export default function LandingPage() {
@@ -22,7 +23,9 @@ export default function LandingPage() {
             {/* Navbar */}
             <header className="lp-header">
                 <div className="container header-inner">
-                    <div className="lp-logo">TRS</div>
+                    <div className="lp-logo">
+                        <LogoSmall />
+                    </div>
                     <nav className="lp-nav">
                         <ul>
                             <li><a href="#problems" onClick={(e) => { e.preventDefault(); scrollToSection('problems') }}>Problems</a></li>
@@ -290,7 +293,7 @@ export default function LandingPage() {
                 <div className="container">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="text-center md:text-left">
-                            <div className="lp-logo mb-2">THE REAL STANDARD</div>
+                            <Logo className="mb-2" />
                             <p className="text-sm text-gray-500">Meat Intelligence Operating System</p>
                         </div>
 

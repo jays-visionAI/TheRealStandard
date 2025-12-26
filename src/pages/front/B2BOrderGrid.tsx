@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ClipboardListIcon } from '../../components/Icons'
+import { useOrderStore } from '../../stores/orderStore'
 import './B2BOrderGrid.css'
 
 // ============================================
@@ -98,25 +99,55 @@ export default function B2BOrderGrid() {
     const { token } = useParams()
     const navigate = useNavigate()
 
-    // 주문 정보
-    const orderInfo = {
-        customerName: '한우명가',
-        shipDate: '2024-01-16',
-        cutOff: '2024-01-15 18:00',
-    }
+    const { getOrderSheetByToken, getOrderItems, updateOrderSheet, updateOrderItems } = useOrderStore()
 
     // 상태
-    const [rows, setRows] = useState<OrderRow[]>([createEmptyRow()])
+    const [orderInfo, setOrderInfo] = useState<any>(null)
+    const [rows, setRows] = useState<OrderRow[]>([])
     const [status, setStatus] = useState<OrderStatus>('DRAFT')
     const [activeRowId, setActiveRowId] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [showDropdown, setShowDropdown] = useState(false)
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
     const [highlightIndex, setHighlightIndex] = useState(0)
+    const [loading, setLoading] = useState(true)
 
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
     const dropdownRef = useRef<HTMLDivElement>(null)
+
+    // 데이터 로드
+    useEffect(() => {
+        if (token) {
+            const order = getOrderSheetByToken(token)
+            if (order) {
+                setOrderInfo(order)
+                if (order.status === 'SUBMITTED') {
+                    setStatus('PENDING_APPROVAL')
+                } else if (order.status === 'CONFIRMED') {
+                    setStatus('APPROVED')
+                }
+
+                const items = getOrderItems(order.id)
+                if (items && items.length > 0) {
+                    const mappedRows: OrderRow[] = items.map(item => ({
+                        id: item.id,
+                        productId: item.productId,
+                        productName: item.productName || '',
+                        unitPrice: item.unitPrice,
+                        quantity: (item.inputType === 'KG' ? item.qtyKg : item.qtyBox) || 0,
+                        unit: item.inputType.toLowerCase() as 'kg' | 'box',
+                        estimatedWeight: item.estimatedKg,
+                        totalAmount: item.amount
+                    }))
+                    setRows(mappedRows)
+                } else {
+                    setRows([createEmptyRow()])
+                }
+            }
+        }
+        setLoading(false)
+    }, [token, getOrderSheetByToken, getOrderItems])
 
     // 빈 행 생성
     function createEmptyRow(): OrderRow {
@@ -132,22 +163,14 @@ export default function B2BOrderGrid() {
         }
     }
 
-    // 상품 검색 로직: "삼" 입력 시 → "삼"으로 시작하는 상품 우선, 그 다음 "삼" 포함 상품
+    // 상품 검색 로직
     const searchProducts = useCallback((query: string): Product[] => {
         if (!query.trim()) return []
-
         const q = query.toLowerCase()
-
-        // 1. 시작 단어로 검색
-        const startsWithProducts = PRODUCT_MASTER.filter(p =>
-            p.name.toLowerCase().startsWith(q)
-        )
-
-        // 2. 포함 단어로 검색 (시작 단어 제외)
+        const startsWithProducts = PRODUCT_MASTER.filter(p => p.name.toLowerCase().startsWith(q))
         const containsProducts = PRODUCT_MASTER.filter(p =>
             p.name.toLowerCase().includes(q) && !p.name.toLowerCase().startsWith(q)
         )
-
         return [...startsWithProducts, ...containsProducts]
     }, [])
 
@@ -202,14 +225,10 @@ export default function B2BOrderGrid() {
         setRows(prev => prev.map(row => {
             if (row.id === rowId) {
                 const product = PRODUCT_MASTER.find(p => p.id === row.productId)
-                let estimatedWeight = 0
+                let estimatedWeight = quantity
 
-                if (product) {
-                    if (product.unit === 'kg') {
-                        estimatedWeight = quantity
-                    } else if (product.unit === 'box' && product.boxWeight) {
-                        estimatedWeight = quantity * product.boxWeight
-                    }
+                if (product && product.unit === 'box' && product.boxWeight) {
+                    estimatedWeight = quantity * product.boxWeight
                 }
 
                 const totalAmount = row.unitPrice * estimatedWeight
@@ -230,12 +249,9 @@ export default function B2BOrderGrid() {
         const newRow = createEmptyRow()
         setRows(prev => [...prev, newRow])
 
-        // 새 행의 상품명 입력란으로 포커스
         setTimeout(() => {
             const nameInput = inputRefs.current.get(`name-${newRow.id}`)
-            if (nameInput) {
-                nameInput.focus()
-            }
+            if (nameInput) nameInput.focus()
         }, 50)
     }
 
@@ -267,20 +283,15 @@ export default function B2BOrderGrid() {
             }
         } else if (field === 'qty' && e.key === 'Enter') {
             e.preventDefault()
-            // 현재 행에 상품이 선택되어 있고 수량이 입력되어 있으면 다음 행 추가
             const currentRow = rows.find(r => r.id === rowId)
             if (currentRow && currentRow.productId && currentRow.quantity > 0) {
-                // 마지막 행이면 새 행 추가
                 const currentIndex = rows.findIndex(r => r.id === rowId)
                 if (currentIndex === rows.length - 1) {
                     addRow()
                 } else {
-                    // 다음 행의 상품명으로 포커스
                     const nextRow = rows[currentIndex + 1]
                     const nameInput = inputRefs.current.get(`name-${nextRow.id}`)
-                    if (nameInput) {
-                        nameInput.focus()
-                    }
+                    if (nameInput) nameInput.focus()
                 }
             }
         } else if (field === 'qty' && e.key === 'Tab' && !e.shiftKey) {
@@ -300,29 +311,60 @@ export default function B2BOrderGrid() {
             return
         }
 
-        setStatus('PENDING_APPROVAL')
-        alert('✅ 주문이 제출되었습니다.\n\n관리자 승인을 대기합니다.')
+        if (orderInfo) {
+            // 스토어 업데이트
+            updateOrderSheet(orderInfo.id, {
+                status: 'SUBMITTED',
+                lastSubmittedAt: new Date(),
+                updatedAt: new Date()
+            })
+
+            const updatedItems = validRows.map(row => ({
+                id: row.id,
+                orderSheetId: orderInfo.id,
+                productId: row.productId || '',
+                productName: row.productName,
+                inputType: row.unit.toUpperCase() as any,
+                qtyKg: row.unit === 'kg' ? row.quantity : undefined,
+                qtyBox: row.unit === 'box' ? row.quantity : undefined,
+                estimatedKg: row.estimatedWeight,
+                unitPrice: row.unitPrice,
+                amount: row.totalAmount
+            }))
+
+            updateOrderItems(orderInfo.id, updatedItems)
+
+            setStatus('PENDING_APPROVAL')
+            alert('✅ 주문이 제출되었습니다.\n\n관리자 승인을 대기합니다.')
+        }
     }
 
     // 통계 계산
-    const validRows = rows.filter(r => r.productId && r.quantity > 0)
-    const totalItems = validRows.length
-    const totalWeight = validRows.reduce((sum, r) => sum + r.estimatedWeight, 0)
-    const totalAmount = validRows.reduce((sum, r) => sum + r.totalAmount, 0)
+    const vRows = rows.filter(r => r.productId && r.quantity > 0)
+    const totalItems = vRows.length
+    const totalWeight = vRows.reduce((sum, r) => sum + r.estimatedWeight, 0)
+    const totalAmount = vRows.reduce((sum, r) => sum + r.totalAmount, 0)
 
     // 통화 포맷
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('ko-KR').format(value)
+    const formatCurrency = (value: number) => new Intl.NumberFormat('ko-KR').format(value)
+
+    if (loading) {
+        return <div className="p-10 text-center">불러오는 중...</div>
+    }
+
+    if (!orderInfo) {
+        return <div className="p-10 text-center">주문 정보를 찾을 수 없습니다.</div>
     }
 
     // 상태별 렌더링
     if (status === 'PENDING_APPROVAL') {
+        const submittedDate = orderInfo.lastSubmittedAt ? new Date(orderInfo.lastSubmittedAt).toLocaleString() : '방금 전'
         return (
             <div className="b2b-order-grid">
                 <div className="pending-approval-view glass-card">
                     <div className="pending-icon">⏳</div>
                     <h2>관리자 승인 대기 중</h2>
-                    <p>주문이 제출되었습니다. 관리자 검토 후 확정됩니다.</p>
+                    <p>주문이 {submittedDate}에 제출되었습니다. 관리자 검토 후 확정됩니다.</p>
 
                     <div className="order-summary-card">
                         <div className="summary-row">
@@ -351,7 +393,7 @@ export default function B2BOrderGrid() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {validRows.map(row => (
+                                {vRows.map(row => (
                                     <tr key={row.id}>
                                         <td>{row.productName}</td>
                                         <td>{row.quantity} {row.unit.toUpperCase()}</td>
@@ -383,11 +425,11 @@ export default function B2BOrderGrid() {
                     <div className="order-meta">
                         <span className="meta-item">
                             <span className="meta-icon">📅</span>
-                            배송: {orderInfo.shipDate}
+                            배송: {new Date(orderInfo.shipDate).toLocaleDateString()}
                         </span>
                         <span className="meta-item warning">
                             <span className="meta-icon">⏰</span>
-                            마감: {orderInfo.cutOff}
+                            마감: {new Date(orderInfo.cutOffAt).toLocaleString()}
                         </span>
                     </div>
                 </div>
