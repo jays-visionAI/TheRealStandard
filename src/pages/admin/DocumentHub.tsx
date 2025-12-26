@@ -254,17 +254,17 @@ export default function DocumentHub() {
                             <button className="close-btn" onClick={() => setShowEditor(false)}><XIcon size={24} /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="modal-body">
-                            <div className="form-group">
-                                <label>제목</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.title}
-                                    onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                    placeholder="문서 제목을 입력하세요"
-                                />
-                            </div>
-                            <div className="form-row">
+                            <div className="form-row editor-top-row">
+                                <div className="form-group flex-2">
+                                    <label>제목</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.title}
+                                        onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                        placeholder="문서 제목을 입력하세요"
+                                    />
+                                </div>
                                 <div className="form-group flex-1">
                                     <label>카테고리</label>
                                     <select
