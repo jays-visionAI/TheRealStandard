@@ -7,19 +7,14 @@ import './B2BOrderGrid.css'
 // ============================================
 // 상품 마스터 데이터 (실제로는 API에서 로드)
 // ============================================
-interface Product {
-    id: string
-    name: string
-    category: string      // 대분류 (냉장, 냉동, 부산물)
-    subCategory?: string  // 소분류
-    unitPrice: number     // kg당 기준 유통단가 (원)
-    retailPrice?: number  // 직판장 판매가
-    unit: 'kg' | 'box'
-    boxWeight?: number    // box당 예상 중량 (kg)
-    taxFree: boolean      // 면세 여부
+import { useProductStore, type Product as StoreProduct } from '../../stores/productStore'
+import { useMemo } from 'react'
+
+interface Product extends StoreProduct {
+    unitPrice: number
 }
 
-const PRODUCT_MASTER: Product[] = []
+// PRODUCT_MASTER defined via store
 
 // ============================================
 // 주문 행 인터페이스
@@ -48,6 +43,18 @@ export default function B2BOrderGrid() {
     const navigate = useNavigate()
 
     const { getOrderSheetByToken, getOrderItems, updateOrderSheet, updateOrderItems } = useOrderStore()
+    const { products, initializeStore } = useProductStore()
+
+    // 초기화
+    useEffect(() => {
+        initializeStore()
+    }, [initializeStore])
+
+    // 로컬에서 사용하기 편하도록 도매가를 unitPrice로 매핑
+    const PRODUCT_MASTER = useMemo(() => products.map(p => ({
+        ...p,
+        unitPrice: p.wholesalePrice
+    })), [products])
 
     // 상태
     const [orderInfo, setOrderInfo] = useState<any>(null)

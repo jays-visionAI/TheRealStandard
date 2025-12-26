@@ -4,20 +4,13 @@ import { useCustomerStore, type Customer } from '../../stores/customerStore'
 import { useOrderStore } from '../../stores/orderStore'
 import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon } from '../../components/Icons'
 import './OrderSheetCreate.css'
+import { useProductStore, type Product as StoreProduct } from '../../stores/productStore'
 
-// ============================================
-// 상품 마스터 데이터 (실제로는 API에서 로드)
-// ============================================
-interface Product {
-    id: string
-    name: string
-    category: '냉장' | '냉동' | '부산물'
-    unitPrice: number  // 도매가/B2B 공급가 (원/kg)
-    unit: 'kg' | 'box'
-    boxWeight?: number
+interface Product extends StoreProduct {
+    unitPrice: number
 }
 
-const PRODUCT_MASTER: Product[] = []
+// PRODUCT_MASTER defined via store
 
 // Mock 이전 주문 데이터
 interface PastOrder {
@@ -49,9 +42,21 @@ interface OrderRow {
 export default function OrderSheetCreate() {
     const navigate = useNavigate()
 
-    // 공유 스토어에서 고객 데이터 가져오기
+    // 공유 스토어에서 고객/상품 데이터 가져오기
     const { customers } = useCustomerStore()
     const { addOrderSheet } = useOrderStore()
+    const { products, initializeStore } = useProductStore()
+
+    // 초기화 (저장된 데이터가 없을 경우)
+    useEffect(() => {
+        initializeStore()
+    }, [initializeStore])
+
+    // 로컬에서 사용하기 편하도록 도매가를 unitPrice로 매핑
+    const PRODUCT_MASTER = useMemo(() => products.map(p => ({
+        ...p,
+        unitPrice: p.wholesalePrice
+    })), [products])
 
     // Step 관리
     const [step, setStep] = useState(1)
