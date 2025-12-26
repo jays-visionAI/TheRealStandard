@@ -128,11 +128,9 @@ function App() {
                         <Route index element={<Dashboard />} />
                         <Route path="documents" element={<DocumentHub />} />
                         <Route path="users" element={<UserList />} />
+                        <Route path="users/staff" element={<UserList />} />
                         <Route path="users/customers" element={<OrganizationMaster />} />
                         <Route path="users/suppliers" element={<SupplierMaster />} />
-                        <Route path="users/accounting" element={<Navigate to="/admin/users?role=ACCOUNTING" replace />} />
-                        <Route path="users/warehouse" element={<Navigate to="/admin/users?role=WAREHOUSE" replace />} />
-                        <Route path="users/sales" element={<Navigate to="/admin/users?role=OPS" replace />} />
                         {/* Products */}
                         <Route path="products" element={<ProductMaster />} />
                         {/* Order Book */}

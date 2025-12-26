@@ -37,12 +37,9 @@ const navigation = [
         label: 'Users',
         iconKey: 'users',
         children: [
-            { label: '전체 사용자 리스트', path: '/admin/users' },
-            { label: '고객사 (구매처)', path: '/admin/users/customers' },
-            { label: '공급거래처', path: '/admin/users/suppliers' },
-            { label: '회계팀 계정', path: '/admin/users/accounting' },
-            { label: '물류팀 계정', path: '/admin/users/warehouse' },
-            { label: '영업팀 계정', path: '/admin/users/sales' },
+            { label: 'Staff Setting (임직원)', path: '/admin/users/staff' },
+            { label: '고객사 (구매처) 관리', path: '/admin/users/customers' },
+            { label: '공급 거래처 관리', path: '/admin/users/suppliers' },
         ],
     },
     {
@@ -185,12 +182,9 @@ function getPageTitle(pathname: string): string {
         '/admin': '대시보드',
         '/admin/documents': 'Document Hub (지식 창고)',
         // Users
-        '/admin/users': '전체 사용자 계정 관리',
+        '/admin/users/staff': '임직원 계정 및 권한 관리',
         '/admin/users/customers': '고객사 (구매처) 마스터',
         '/admin/users/suppliers': '공급거래처 마스터',
-        '/admin/users/accounting': '회계팀 사용자 관리',
-        '/admin/users/warehouse': '물류팀 사용자 관리',
-        '/admin/users/sales': '영업팀 사용자 관리',
         // Products
         '/admin/products': '상품 마스터',
         // Order Book

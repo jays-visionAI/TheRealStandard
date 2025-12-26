@@ -9,7 +9,7 @@ import './UserList.css'
 const ROLE_LABELS: Record<string, string> = {
     ADMIN: '관리자',
     OPS: '영업/운영',
-    WAREHOUSE: '물류/창고',
+    WAREHOUSE: '물류/물류센터',
     ACCOUNTING: '회계/경리',
     CUSTOMER: '고객사',
     SUPPLIER: '공급사'
@@ -103,8 +103,8 @@ export default function UserList() {
         <div className="user-list-page">
             <div className="page-header">
                 <div className="header-left">
-                    <h1><UsersIcon size={24} /> 전체 사용자 관리</h1>
-                    <p className="text-secondary">시스템에 접속 가능한 모든 계정을 통합 관리합니다</p>
+                    <h1><UsersIcon size={24} /> Staff Setting (임직원 설정)</h1>
+                    <p className="text-secondary">사내 임직원의 계정 권한 및 카카오 연동 상태를 관리합니다</p>
                 </div>
                 <button className="btn btn-primary" onClick={handleOpenCreate}>
                     <PlusIcon size={18} /> 신규 계정 추가

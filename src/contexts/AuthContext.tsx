@@ -81,17 +81,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const loginWithKakao = async (kakaoUser: any) => {
-        // 실제 운영 환경에서는 카카오 ID로 DB 연동이 필요하지만, 
-        // 데모 환경에서는 카카오에서 가져온 정보를 기반으로 고객 계정을 시뮬레이션합니다.
-        const mappedUser: User = {
-            id: `kakao-${kakaoUser.id}`,
-            email: kakaoUser.kakao_account?.email || `${kakaoUser.id}@kakao.com`,
-            name: kakaoUser.properties?.nickname || '카카오 사용자',
-            role: 'CUSTOMER', // 기본적으로 고객사 역할을 부여
+        const email = kakaoUser.kakao_account?.email || `${kakaoUser.id}@kakao.com`
+
+        // 1. 사내 직원 목록(userStore)에서 이메일 매칭 확인
+        const { useUserStore } = await import('../stores/userStore')
+        const { users } = useUserStore.getState()
+        const internalUser = users.find(u => u.email === email && u.status === 'ACTIVE')
+
+        if (internalUser) {
+            // 사내 직원으로 로그인 (ADMIN, WAREHOUSE, ACCOUNTING 등)
+            const mappedUser: User = {
+                id: internalUser.id,
+                email: internalUser.email,
+                name: internalUser.name,
+                role: internalUser.role,
+                orgId: internalUser.orgId
+            }
+            localStorage.setItem('trs_user', JSON.stringify(mappedUser))
+            setUser(mappedUser)
+            return
         }
 
-        localStorage.setItem('trs_user', JSON.stringify(mappedUser))
-        setUser(mappedUser)
+        // 2. 고객사 DB에서도 확인 (기존 가입 고객인지)
+        const { useCustomerStore } = await import('../stores/customerStore')
+        const { customers } = useCustomerStore.getState()
+        const existingCustomer = customers.find(c => c.email === email && c.status === 'ACTIVE')
+
+        if (existingCustomer) {
+            const mappedUser: User = {
+                id: existingCustomer.id,
+                email: existingCustomer.email,
+                name: existingCustomer.ceoName,
+                role: 'CUSTOMER',
+                orgId: existingCustomer.id
+            }
+            localStorage.setItem('trs_user', JSON.stringify(mappedUser))
+            setUser(mappedUser)
+            return
+        }
+
+        // 3. 신규 사용자라면 기본 '고객'으로 처리 (데모용 자동 가입)
+        const newUser: User = {
+            id: `kakao-${kakaoUser.id}`,
+            email: email,
+            name: kakaoUser.properties?.nickname || '카카오 사용자',
+            role: 'CUSTOMER',
+        }
+
+        localStorage.setItem('trs_user', JSON.stringify(newUser))
+        setUser(newUser)
     }
 
     const logout = () => {
