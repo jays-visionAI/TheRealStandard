@@ -50,7 +50,7 @@ interface DocStore {
     updateCategory: (id: string, data: Partial<DocCategory>) => void
 
     // Document Actions
-    addDocument: (doc: Omit<TRS_Document, 'id' | 'createdAt' | 'updatedAt' | 'comments' | 'attachments'>) => void
+    addDocument: (doc: Omit<TRS_Document, 'id' | 'createdAt' | 'updatedAt' | 'comments'>) => void
     updateDocument: (id: string, data: Partial<TRS_Document>) => void
     deleteDocument: (id: string) => void
 
@@ -96,7 +96,7 @@ export const useDocStore = create<DocStore>()(
                         createdAt: new Date(),
                         updatedAt: new Date(),
                         comments: [],
-                        attachments: []
+                        attachments: doc.attachments || []
                     }
                 ]
             })),

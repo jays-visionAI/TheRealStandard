@@ -59,7 +59,8 @@ export default function DocumentHub() {
         content: '',
         type: 'MARKDOWN',
         categoryId: 'cat-all',
-        url: ''
+        url: '',
+        attachments: []
     })
 
     // Filter categories based on user role
@@ -101,7 +102,8 @@ export default function DocumentHub() {
             content: '',
             type: 'MARKDOWN',
             categoryId: activeTab === 'cat-all' ? 'cat-manual' : activeTab,
-            url: ''
+            url: '',
+            attachments: []
         })
         setShowEditor(true)
     }
@@ -124,10 +126,34 @@ export default function DocumentHub() {
                 categoryId: formData.categoryId || 'cat-all',
                 url: formData.url,
                 author: user?.name || '익명',
-                authorId: user?.id || 'anon'
+                authorId: user?.id || 'anon',
+                attachments: formData.attachments || []
             })
         }
         setShowEditor(false)
+    }
+
+    const handleEditorFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0]) return
+        const file = e.target.files[0]
+        const newAttachment = {
+            id: `att-${Date.now()}`,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: URL.createObjectURL(file)
+        }
+        setFormData(prev => ({
+            ...prev,
+            attachments: [...(prev.attachments || []), newAttachment]
+        }))
+    }
+
+    const removeEditorAttachment = (id: string) => {
+        setFormData(prev => ({
+            ...prev,
+            attachments: (prev.attachments || []).filter(a => a.id !== id)
+        }))
     }
 
     const handleAddComment = (e: React.FormEvent) => {
@@ -313,6 +339,33 @@ export default function DocumentHub() {
                                         modules={quillModules}
                                         placeholder="문서 내용을 입력하세요 (HTML 서식, 링크, 이미지 삽입 가능)"
                                     />
+                                </div>
+                            </div>
+
+                            <div className="form-group attachment-editor-section">
+                                <label className="label flex items-center justify-between">
+                                    <span><PaperclipIcon size={16} className="inline mr-1" /> 첨부 파일 ({formData.attachments?.length || 0})</span>
+                                    <label className="btn btn-xs btn-ghost cursor-pointer">
+                                        + 파일 추가
+                                        <input type="file" hidden onChange={handleEditorFileUpload} />
+                                    </label>
+                                </label>
+                                <div className="attachment-list-editor mt-2">
+                                    {formData.attachments?.map(att => (
+                                        <div key={att.id} className="attachment-item-small glass-card">
+                                            <span className="att-name truncate">{att.name}</span>
+                                            <button
+                                                type="button"
+                                                className="text-error ml-2"
+                                                onClick={() => removeEditorAttachment(att.id)}
+                                            >✕</button>
+                                        </div>
+                                    ))}
+                                    {formData.attachments?.length === 0 && (
+                                        <div className="text-muted text-xs p-2 text-center border border-dashed border-gray-200 rounded-lg">
+                                            첨부된 파일이 없습니다.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
