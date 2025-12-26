@@ -9,19 +9,31 @@ import {
     TrashIcon,
     EditIcon,
     XIcon,
-    ArrowLeftIcon
+    ArrowLeftIcon,
+    PaperclipIcon,
+    SendIcon,
+    LockIcon,
+    UserIcon,
+    MessageSquareIcon
 } from '../../components/Icons'
 import { useDocStore, TRS_Document } from '../../stores/docStore'
+import { useAuth } from '../../contexts/AuthContext'
 import './DocumentHub.css'
 
 export default function DocumentHub() {
-    const { categories, documents, addCategory, deleteCategory, addDocument, updateDocument, deleteDocument } = useDocStore()
+    const { user } = useAuth()
+    const {
+        categories, documents, addCategory, deleteCategory, updateCategory,
+        addDocument, updateDocument, deleteDocument,
+        addComment, deleteComment, addAttachment, deleteAttachment
+    } = useDocStore()
 
     const [activeTab, setActiveTab] = useState('cat-all')
     const [searchQuery, setSearchQuery] = useState('')
     const [showEditor, setShowEditor] = useState(false)
     const [editingDoc, setEditingDoc] = useState<TRS_Document | null>(null)
     const [viewingDoc, setViewingDoc] = useState<TRS_Document | null>(null)
+    const [newComment, setNewComment] = useState('')
 
     const [formData, setFormData] = useState<Partial<TRS_Document>>({
         title: '',
@@ -31,18 +43,34 @@ export default function DocumentHub() {
         url: ''
     })
 
+    // Filter categories based on user role
+    const visibleCategories = useMemo(() => {
+        return categories.filter(cat => {
+            if (!cat.allowedRoles) return true
+            return cat.allowedRoles.includes(user?.role as any)
+        })
+    }, [categories, user])
+
+    // Filter documents based on visibility permissions and tab
     const filteredDocuments = useMemo(() => {
         return documents.filter(doc => {
+            const category = categories.find(c => c.id === doc.categoryId)
+            const hasPermission = !category?.allowedRoles || category.allowedRoles.includes(user?.role as any)
+            if (!hasPermission) return false
+
             const matchesTab = activeTab === 'cat-all' || doc.categoryId === activeTab
             const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 doc.content.toLowerCase().includes(searchQuery.toLowerCase())
             return matchesTab && matchesSearch
         }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    }, [documents, activeTab, searchQuery])
+    }, [documents, activeTab, searchQuery, user, categories])
 
     const handleAddCategory = () => {
         const name = prompt('새 카테고리명을 입력하세요:')
-        if (name) addCategory(name)
+        if (name) {
+            const isAdminOnly = window.confirm('관리자 전용 카테고리로 설정할까요?')
+            addCategory(name, isAdminOnly ? ['ADMIN'] : undefined)
+        }
     }
 
     const handleOpenCreate = () => {
@@ -74,13 +102,32 @@ export default function DocumentHub() {
                 type: formData.type || 'MARKDOWN',
                 categoryId: formData.categoryId || 'cat-all',
                 url: formData.url,
-                author: '관리자'
+                author: user?.name || '익명',
+                authorId: user?.id || 'anon'
             })
         }
         setShowEditor(false)
     }
 
-    // Embed URL Helper
+    const handleAddComment = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!viewingDoc || !newComment.trim()) return
+        addComment(viewingDoc.id, user?.name || '익명', user?.id || 'anon', newComment)
+        setNewComment('')
+    }
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0] || !viewingDoc) return
+        const file = e.target.files[0]
+        // Mock add attachment
+        addAttachment(viewingDoc.id, {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: URL.createObjectURL(file) // temporary local url
+        })
+    }
+
     const getEmbedUrl = (url: string, type: string) => {
         if (!url) return ''
         if (type === 'YOUTUBE') {
@@ -96,30 +143,33 @@ export default function DocumentHub() {
             <div className="page-header">
                 <div className="header-left">
                     <h1><BookOpenIcon size={24} /> Document Hub</h1>
-                    <p className="text-secondary">사내 지식 및 교육 자료를 관리합니다</p>
+                    <p className="text-secondary">사내 지식 및 교육 자료를 관리하며 의견을 나눕니다</p>
                 </div>
-                <button className="btn btn-primary" onClick={handleOpenCreate}>
-                    <PlusIcon size={18} /> 새 문서 작성
-                </button>
+                {user?.role === 'ADMIN' && (
+                    <button className="btn btn-primary" onClick={handleOpenCreate}>
+                        <PlusIcon size={18} /> 새 문서 작성
+                    </button>
+                )}
             </div>
 
             {/* Category Tabs */}
             <div className="tabs-container glass-card">
                 <div className="tabs">
-                    {categories.map(cat => (
+                    {visibleCategories.map(cat => (
                         <div key={cat.id} className="tab-wrapper">
                             <button
                                 className={`tab-item ${activeTab === cat.id ? 'active' : ''}`}
                                 onClick={() => setActiveTab(cat.id)}
                             >
+                                {cat.allowedRoles?.includes('ADMIN') && <LockIcon size={12} className="mr-1" />}
                                 {cat.name}
                             </button>
-                            {cat.id !== 'cat-all' && (
+                            {cat.id !== 'cat-all' && user?.role === 'ADMIN' && (
                                 <button className="cat-delete" onClick={() => deleteCategory(cat.id)}>✕</button>
                             )}
                         </div>
                     ))}
-                    <button className="add-cat-btn" onClick={handleAddCategory}>+</button>
+                    {user?.role === 'ADMIN' && <button className="add-cat-btn" onClick={handleAddCategory}>+</button>}
                 </div>
                 <div className="search-bar">
                     <SearchIcon size={18} />
@@ -138,6 +188,11 @@ export default function DocumentHub() {
                     <div className="doc-grid">
                         {filteredDocuments.map(doc => (
                             <div key={doc.id} className="doc-card glass-card" onClick={() => setViewingDoc(doc)}>
+                                <div className="doc-tags">
+                                    {categories.find(c => c.id === doc.categoryId)?.allowedRoles?.includes('ADMIN') && (
+                                        <span className="badge badge-error text-xs"><LockIcon size={10} /> 비공개</span>
+                                    )}
+                                </div>
                                 <div className="doc-icon">
                                     {doc.type === 'YOUTUBE' ? <YoutubeIcon size={32} className="text-error" /> :
                                         doc.type === 'EMBED' ? <ExternalLinkIcon size={32} className="text-primary" /> :
@@ -149,20 +204,22 @@ export default function DocumentHub() {
                                     <div className="doc-meta">
                                         <span>{new Date(doc.updatedAt).toLocaleDateString()}</span>
                                         <span className="dot"></span>
-                                        <span>{doc.author}</span>
+                                        <span>{doc.comments?.length || 0} 댓글</span>
                                     </div>
                                 </div>
-                                <div className="doc-actions" onClick={e => e.stopPropagation()}>
-                                    <button className="icon-btn" onClick={() => handleEdit(doc)}><EditIcon size={16} /></button>
-                                    <button className="icon-btn danger" onClick={() => deleteDocument(doc.id)}><TrashIcon size={16} /></button>
-                                </div>
+                                {user?.role === 'ADMIN' && (
+                                    <div className="doc-actions" onClick={e => e.stopPropagation()}>
+                                        <button className="icon-btn" onClick={() => handleEdit(doc)}><EditIcon size={16} /></button>
+                                        <button className="icon-btn danger" onClick={() => deleteDocument(doc.id)}><TrashIcon size={16} /></button>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
                 ) : (
                     <div className="empty-state glass-card">
                         <BookOpenIcon size={48} className="text-muted" />
-                        <p>등록된 문서가 없습니다. 새로운 지식을 공유해 보세요!</p>
+                        <p>조회 가능한 문서가 없습니다. 새로운 지식을 공유해 보세요!</p>
                     </div>
                 )}
             </div>
@@ -220,7 +277,7 @@ export default function DocumentHub() {
                                         placeholder="https://..."
                                     />
                                     <p className="help-text">
-                                        {formData.type === 'EMBED' ? '구글 문서의 경우 [파일 > 공유 > 웹에 게시] 후 링크를 사용하세요.' : '유튜브 영상 페이지 URL을 그대로 복사해 붙여넣으세요.'}
+                                        {formData.type === 'EMBED' ? '공개된 웹 URL을 사용하세요.' : '유튜브 영상 주소를 복사해 붙여넣으세요.'}
                                     </p>
                                 </div>
                             )}
@@ -231,7 +288,7 @@ export default function DocumentHub() {
                                     rows={10}
                                     value={formData.content}
                                     onChange={e => setFormData({ ...formData, content: e.target.value })}
-                                    placeholder="문서의 주요 내용이나 설명을 입력하세요..."
+                                    placeholder="문서 내용을 입력하세요..."
                                 ></textarea>
                             </div>
 
@@ -244,46 +301,108 @@ export default function DocumentHub() {
                 </div>
             )}
 
-            {/* Viewer Perspective */}
+            {/* Viewer Perspective with Comments and Attachments */}
             {viewingDoc && (
                 <div className="viewer-overlay">
-                    <div className="viewer-container glass-card scale-in">
-                        <div className="viewer-header">
-                            <button className="back-btn" onClick={() => setViewingDoc(null)}>
-                                <ArrowLeftIcon size={20} /> 목록으로
-                            </button>
-                            <div className="viewer-actions">
-                                <button className="icon-btn" onClick={() => { handleEdit(viewingDoc); setViewingDoc(null); }}><EditIcon size={18} /></button>
-                                <button className="icon-btn danger" onClick={() => { deleteDocument(viewingDoc.id); setViewingDoc(null); }}><TrashIcon size={18} /></button>
-                                <button className="icon-btn" onClick={() => setViewingDoc(null)}><XIcon size={20} /></button>
-                            </div>
-                        </div>
-                        <div className="viewer-content">
-                            <div className="doc-header">
-                                <div className="doc-badge">{categories.find(c => c.id === viewingDoc.categoryId)?.name}</div>
-                                <h1>{viewingDoc.title}</h1>
-                                <div className="doc-meta">
-                                    <span>작성자: {viewingDoc.author}</span>
-                                    <span>업데이트: {new Date(viewingDoc.updatedAt).toLocaleString()}</span>
+                    <div className="viewer-layout glass-card scale-in">
+                        <div className="viewer-main">
+                            <div className="viewer-header">
+                                <button className="back-btn" onClick={() => setViewingDoc(null)}>
+                                    <ArrowLeftIcon size={20} /> 목록으로
+                                </button>
+                                <div className="viewer-actions">
+                                    {user?.role === 'ADMIN' && (
+                                        <>
+                                            <button className="icon-btn" onClick={() => { handleEdit(viewingDoc); setViewingDoc(null); }}><EditIcon size={18} /></button>
+                                            <button className="icon-btn danger" onClick={() => { deleteDocument(viewingDoc.id); setViewingDoc(null); }}><TrashIcon size={18} /></button>
+                                        </>
+                                    )}
+                                    <button className="icon-btn" onClick={() => setViewingDoc(null)}><XIcon size={20} /></button>
                                 </div>
                             </div>
-
-                            <div className="doc-body">
-                                {viewingDoc.type !== 'MARKDOWN' && viewingDoc.url && (
-                                    <div className="embed-container">
-                                        <iframe
-                                            src={getEmbedUrl(viewingDoc.url, viewingDoc.type)}
-                                            frameBorder="0"
-                                            allowFullScreen
-                                            title={viewingDoc.title}
-                                        ></iframe>
+                            <div className="viewer-content">
+                                <div className="doc-header">
+                                    <div className="doc-badge">{categories.find(c => c.id === viewingDoc.categoryId)?.name}</div>
+                                    <h1>{viewingDoc.title}</h1>
+                                    <div className="doc-meta">
+                                        <span><UserIcon size={14} /> {viewingDoc.author}</span>
+                                        <span>업데이트: {new Date(viewingDoc.updatedAt).toLocaleString()}</span>
                                     </div>
-                                )}
-                                <div className="text-content">
-                                    {viewingDoc.content.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+                                </div>
+
+                                <div className="doc-body">
+                                    {viewingDoc.type !== 'MARKDOWN' && viewingDoc.url && (
+                                        <div className="embed-container">
+                                            <iframe
+                                                src={getEmbedUrl(viewingDoc.url, viewingDoc.type)}
+                                                frameBorder="0"
+                                                allowFullScreen
+                                                title={viewingDoc.title}
+                                            ></iframe>
+                                        </div>
+                                    )}
+                                    <div className="text-content">
+                                        {viewingDoc.content.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+                                    </div>
+
+                                    {/* Attachments Section */}
+                                    <div className="viewer-section attachments-section">
+                                        <h3><PaperclipIcon size={18} /> 첨부 파일 ({viewingDoc.attachments?.length || 0})</h3>
+                                        <div className="attachment-list">
+                                            {viewingDoc.attachments?.map(att => (
+                                                <div key={att.id} className="attachment-item">
+                                                    <div className="att-info">
+                                                        <span className="att-name">{att.name}</span>
+                                                        <span className="att-size">({(att.size / 1024).toFixed(1)} KB)</span>
+                                                    </div>
+                                                    <div className="att-actions">
+                                                        <a href={att.url} download={att.name} className="btn btn-xs btn-ghost">다운로드</a>
+                                                        {user?.role === 'ADMIN' && <button className="text-error" onClick={() => deleteAttachment(viewingDoc.id, att.id)}>✕</button>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            <label className="add-att-manual">
+                                                <PlusIcon size={14} /> 파일 추가
+                                                <input type="file" hidden onChange={handleFileUpload} />
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Sidebar: Comments */}
+                        <aside className="viewer-side">
+                            <div className="side-header">
+                                <h3><MessageSquareIcon size={18} /> 댓글 ({viewingDoc.comments?.length || 0})</h3>
+                            </div>
+                            <div className="comment-list">
+                                {viewingDoc.comments?.map(cmt => (
+                                    <div key={cmt.id} className="comment-item">
+                                        <div className="cmt-header">
+                                            <span className="cmt-author">{cmt.author}</span>
+                                            <span className="cmt-date">{new Date(cmt.createdAt).toLocaleDateString()}</span>
+                                            {(user?.id === cmt.authorId || user?.role === 'ADMIN') && (
+                                                <button className="cmt-del" onClick={() => deleteComment(viewingDoc.id, cmt.id)}>✕</button>
+                                            )}
+                                        </div>
+                                        <div className="cmt-text">{cmt.text}</div>
+                                    </div>
+                                ))}
+                                {viewingDoc.comments?.length === 0 && (
+                                    <div className="empty-comments">첫 번째 댓글을 남겨보세요!</div>
+                                )}
+                            </div>
+                            <form className="comment-form" onSubmit={handleAddComment}>
+                                <input
+                                    type="text"
+                                    placeholder="의견을 남겨주세요..."
+                                    value={newComment}
+                                    onChange={e => setNewComment(e.target.value)}
+                                />
+                                <button type="submit" disabled={!newComment.trim()}><SendIcon size={18} /></button>
+                            </form>
+                        </aside>
                     </div>
                 </div>
             )}
