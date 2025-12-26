@@ -14,8 +14,10 @@ import {
     SendIcon,
     LockIcon,
     UserIcon,
-    MessageSquareIcon
+    MessageSquareIcon,
+    KakaoIcon
 } from '../../components/Icons'
+import { shareDocument } from '../../lib/kakaoService'
 import { useDocStore, TRS_Document } from '../../stores/docStore'
 import { useAuth } from '../../contexts/AuthContext'
 import ReactQuill from 'react-quill-new'
@@ -333,6 +335,13 @@ export default function DocumentHub() {
                                     <ArrowLeftIcon size={20} /> 목록으로
                                 </button>
                                 <div className="viewer-actions">
+                                    <button
+                                        className="btn btn-kakao btn-sm"
+                                        onClick={() => shareDocument(viewingDoc.title, stripHtml(viewingDoc.content || '').substring(0, 50), viewingDoc.id)}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', padding: '6px 12px' }}
+                                    >
+                                        <KakaoIcon size={16} /> 카카오톡 공유
+                                    </button>
                                     {user?.role === 'ADMIN' && (
                                         <>
                                             <button className="icon-btn" onClick={() => { handleEdit(viewingDoc); setViewingDoc(null); }}><EditIcon size={18} /></button>

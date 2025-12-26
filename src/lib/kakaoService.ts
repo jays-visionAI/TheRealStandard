@@ -116,3 +116,33 @@ export const kakaoLogin = (): Promise<any> => {
         });
     });
 };
+/**
+ * 사내 문서/지식 공유 메시지 전송
+ */
+export const shareDocument = (title: string, excerpt: string, docId: string) => {
+    if (!window.Kakao) return;
+
+    const docUrl = `${window.location.origin}/admin/documents?id=${docId}`;
+
+    window.Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+            title: `[TRS 지식창고] ${title}`,
+            description: excerpt || '상세 내용을 문서에서 확인하세요.',
+            imageUrl: 'https://images.unsplash.com/photo-1456324504439-367cef3bafc3?q=80&w=1000&auto=format&fit=crop',
+            link: {
+                mobileWebUrl: docUrl,
+                webUrl: docUrl,
+            },
+        },
+        buttons: [
+            {
+                title: '문서 읽기',
+                link: {
+                    mobileWebUrl: docUrl,
+                    webUrl: docUrl,
+                },
+            },
+        ],
+    });
+};
