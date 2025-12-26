@@ -438,12 +438,13 @@
 .quill-editor-container {
     display: flex;
     flex-direction: column;
-    height: 600px;
-    /* 늘어난 높이 */
+    height: 700px;
+    /* 고정 높이를 주어야 내부 스크롤이 작동함 */
     background: white;
     border-radius: 12px;
     border: 1px solid #ddd;
     overflow: hidden;
+    position: relative;
 }
 
 .quill-editor-container .ql-toolbar {
@@ -455,18 +456,39 @@
 .quill-editor-container .ql-container {
     border: none;
     flex: 1;
-    overflow-y: auto !important;
-    /* 스크롤 강제 활성화 */
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
     font-family: 'Pretendard', sans-serif;
     font-size: 1rem;
-    min-height: 0;
 }
 
 .quill-editor-container .ql-editor {
-    min-height: 100%;
-    /* 컨테이너 전체를 채우도록 설정 */
-    padding: 2rem;
-    line-height: 1.6;
+    flex: 1;
+    overflow-y: auto !important;
+    /* 에디터 자체에 스크롤 부여 */
+    padding: 2.5rem;
+    line-height: 1.7;
+    height: 100%;
+}
+
+/* 스크롤바 디자인 강화 (무한 입력 느낌 강조) */
+.quill-editor-container .ql-editor::-webkit-scrollbar {
+    width: 10px;
+}
+
+.quill-editor-container .ql-editor::-webkit-scrollbar-track {
+    background: #f9f9f9;
+}
+
+.quill-editor-container .ql-editor::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 5px;
+    border: 2px solid #f9f9f9;
+}
+
+.quill-editor-container .ql-editor::-webkit-scrollbar-thumb:hover {
+    background: #7c4dff;
 }
 
 .ql-editor.ql-blank::before {
