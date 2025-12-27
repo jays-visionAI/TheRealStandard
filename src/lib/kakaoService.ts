@@ -155,11 +155,19 @@ export const shareDocument = (title: string, excerpt: string, docId: string) => 
  * @param channelId 채널 공개 ID (예: _zeXxjG)
  */
 export const addKakaoChannel = (channelId?: string) => {
-    if (!window.Kakao) return;
+    console.log('카카오 채널 버튼 클릭됨');
+
+    if (!window.Kakao) {
+        console.error('카카오 SDK가 아직 로드되지 않았습니다.');
+        return;
+    }
+
     if (!window.Kakao.isInitialized()) initKakao();
 
     const { settings } = useSystemStore.getState();
     const finalChannelId = channelId || settings.kakaoChannelId || '_zeXxjG';
+
+    console.log('채널 연결 시도:', finalChannelId);
 
     window.Kakao.Channel.addChannel({
         channelPublicId: finalChannelId,
