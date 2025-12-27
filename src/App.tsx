@@ -24,6 +24,8 @@ import WarehouseRelease from './pages/warehouse/WarehouseRelease'
 import AccountingDashboard from './pages/accounting/AccountingDashboard'
 import SalesRecords from './pages/accounting/SalesRecords'
 import PurchaseRecords from './pages/accounting/PurchaseRecords'
+import InvoiceList from './pages/accounting/InvoiceList'
+import CertificateList from './pages/accounting/CertificateList'
 
 // Legacy Admin Pages (설정용)
 import AdminLayout from './layouts/AdminLayout'
@@ -116,8 +118,8 @@ function App() {
                         <Route path="completed" element={<AccountingDashboard />} />
                         <Route path="sales" element={<SalesRecords />} />
                         <Route path="purchases" element={<PurchaseRecords />} />
-                        <Route path="invoices" element={<AccountingDashboard />} />
-                        <Route path="certificates" element={<AccountingDashboard />} />
+                        <Route path="invoices" element={<InvoiceList />} />
+                        <Route path="certificates" element={<CertificateList />} />
                     </Route>
 
                     {/* ========================================

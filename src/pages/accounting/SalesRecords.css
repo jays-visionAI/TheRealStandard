@@ -187,6 +187,11 @@
     color: #dc2626;
 }
 
+.badge-info {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+
 /* Button sizes */
 .btn-xs {
     padding: 0.25rem 0.75rem;
@@ -239,6 +244,21 @@
     gap: 1rem;
     justify-content: flex-end;
     margin-top: 1.5rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.btn-danger-outline {
+    border-color: #ef4444 !important;
+    color: #ef4444 !important;
+}
+
+.btn-danger-outline:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
 }
 
 /* Responsive */
