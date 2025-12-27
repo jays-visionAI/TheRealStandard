@@ -61,7 +61,7 @@ export default function Login() {
                     navigate('/accounting')
                     break
                 case 'CUSTOMER':
-                    navigate('/order/my-orders')
+                    navigate('/')
                     break
                 default:
                     navigate('/admin/workflow')
