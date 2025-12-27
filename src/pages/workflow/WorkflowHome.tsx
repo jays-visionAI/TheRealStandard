@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileEditIcon, PencilIcon, CheckCircleIcon, TruckDeliveryIcon, FactoryIcon, InboxIcon, PartyPopperIcon, ZapIcon, CalendarIcon } from '../../components/Icons'
+import { FileEditIcon, PencilIcon, CheckCircleIcon, TruckDeliveryIcon, FactoryIcon } from '../../components/Icons'
 import { useOrderStore } from '../../stores/orderStore'
 import './WorkflowHome.css'
 import type { ReactNode } from 'react'
@@ -8,11 +8,11 @@ import type { ReactNode } from 'react'
 // 파이프라인 단계 정의 (v1.0 단순화)
 const PIPELINE_STEPS: { id: string; label: string; icon: ReactNode; description: string }[] = [
     { id: 'create', label: '주문장 생성', icon: <FileEditIcon size={20} />, description: '고객별 주문장을 생성하고 링크를 발송합니다' },
-    { id: 'submit', label: '고객 제출', icon: <InboxIcon size={20} />, description: '고객이 주문을 작성하고 제출합니다' },
+    { id: 'submit', label: '고객 제출', icon: '📬', description: '고객이 주문을 작성하고 제출합니다' },
     { id: 'finalize', label: '확정 입력', icon: <PencilIcon size={20} />, description: '최종 수량/배차 정보를 입력합니다' },
     { id: 'confirm', label: '고객 컨펌', icon: <CheckCircleIcon size={20} />, description: '고객이 최종안을 확인합니다' },
     { id: 'dispatch', label: '출고 준비', icon: <TruckDeliveryIcon size={20} />, description: '출고 및 배송을 준비합니다' },
-    { id: 'complete', label: '배송 완료', icon: <PartyPopperIcon size={20} />, description: '고객에게 배송 완료' },
+    { id: 'complete', label: '배송 완료', icon: '🎉', description: '고객에게 배송 완료' },
 ]
 
 interface PipelineItem {
@@ -279,7 +279,7 @@ export default function WorkflowHome() {
             <section className="summary-section">
                 <div className="summary-grid">
                     <div className="summary-card glass-card" onClick={() => setSelectedStep('review')}>
-                        <div className="summary-icon urgent"><ZapIcon size={24} /></div>
+                        <div className="summary-icon urgent">⚡</div>
                         <div className="summary-content">
                             <span className="summary-value">{getStepItems('review').filter(i => i.urgent).length}</span>
                             <span className="summary-label">긴급 검토 필요</span>
@@ -315,7 +315,7 @@ export default function WorkflowHome() {
             </section>
             {/* Today's Timeline */}
             <section className="timeline-section glass-card">
-                <h3><CalendarIcon size={20} /> 오늘의 출고 일정</h3>
+                <h3>📅 오늘의 출고 일정</h3>
                 <div className="timeline">
                     {shipments.filter(s => s.status === 'PREPARING' || s.status === 'IN_TRANSIT').length === 0 ? (
                         <div className="empty-timeline">

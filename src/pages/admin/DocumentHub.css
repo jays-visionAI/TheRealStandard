@@ -476,8 +476,7 @@
     background: white;
     border-radius: 12px;
     border: 1px solid #ddd;
-    overflow-y: auto;
-    /* Enable scrolling in container for sticky toolbar */
+    overflow: hidden;
     position: relative;
 }
 
@@ -485,9 +484,6 @@
     border: none;
     border-bottom: 1px solid #eee;
     background: #fdfdfd;
-    position: sticky;
-    top: 0;
-    z-index: 10;
 }
 
 .quill-editor-container .ql-container {

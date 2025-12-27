@@ -36,30 +36,7 @@ const quillModules = {
 }
 
 const stripHtml = (html: string) => {
-    // 1. HTML 태그 제거
-    let text = html.replace(/<[^>]*>?/gm, '')
-    // 2. HTML 엔티티 변환
-    const entities: Record<string, string> = {
-        '&nbsp;': ' ',
-        '&quot;': '"',
-        '&apos;': "'",
-        '&#39;': "'",
-        '&amp;': '&',
-        '&lt;': '<',
-        '&gt;': '>',
-        '&ldquo;': '"',
-        '&rdquo;': '"',
-        '&lsquo;': "'",
-        '&rsquo;': "'",
-        '&ndash;': '–',
-        '&mdash;': '—',
-    }
-    Object.entries(entities).forEach(([entity, char]) => {
-        text = text.replace(new RegExp(entity, 'g'), char)
-    })
-    // 3. 남은 숫자 엔티티 처리 (&#123; 형태)
-    text = text.replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
-    return text.trim()
+    return html.replace(/<[^>]*>?/gm, '')
 }
 
 export default function DocumentHub() {

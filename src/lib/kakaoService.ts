@@ -87,46 +87,34 @@ export const sendOrderMessage = (customerName: string, orderId: string, vehicleN
 };
 
 /**
- * 카카오 로그인 실행 (SDK v2.x)
- * 주의: 카카오 로그인은 리다이렉트 방식으로만 동작합니다.
- * 로그인 후 redirectUri로 돌아오면 AuthContext에서 처리해야 합니다.
+ * 카카오 로그인 실행
  */
-export const kakaoLogin = (): void => {
-    if (!window.Kakao) {
-        console.error('Kakao SDK not loaded');
-        return;
-    }
-
-    if (!window.Kakao.isInitialized()) {
-        initKakao();
-    }
-
-    // SDK v2.x에서는 authorize를 사용 (리다이렉트 방식)
-    window.Kakao.Auth.authorize({
-        redirectUri: `${window.location.origin}/login`,
-        scope: 'profile_nickname,profile_image,account_email'
-    });
-};
-
-/**
- * 카카오 인증 후 Access Token으로 사용자 정보 가져오기
- */
-export const getKakaoUserInfo = (): Promise<any> => {
+export const kakaoLogin = (): Promise<any> => {
     return new Promise((resolve, reject) => {
         if (!window.Kakao) {
             reject('Kakao SDK not loaded');
             return;
         }
 
-        window.Kakao.API.request({
-            url: '/v2/user/me',
-            success: function (res: any) {
-                console.log('Kakao User Info:', res);
-                resolve(res);
+        window.Kakao.Auth.login({
+            success: function (authObj: any) {
+                console.log('Kakao Login Success:', authObj);
+                // 사용자 정보 가져오기
+                window.Kakao.API.request({
+                    url: '/v2/user/me',
+                    success: function (res: any) {
+                        console.log('Kakao User Info:', res);
+                        resolve({ auth: authObj, user: res });
+                    },
+                    fail: function (error: any) {
+                        console.error('Kakao User Info Fail:', error);
+                        reject(error);
+                    },
+                });
             },
-            fail: function (error: any) {
-                console.error('Kakao User Info Fail:', error);
-                reject(error);
+            fail: function (err: any) {
+                console.error('Kakao Login Fail:', err);
+                reject(err);
             },
         });
     });
@@ -167,19 +155,11 @@ export const shareDocument = (title: string, excerpt: string, docId: string) => 
  * @param channelId 채널 공개 ID (예: _zeXxjG)
  */
 export const addKakaoChannel = (channelId?: string) => {
-    console.log('카카오 채널 버튼 클릭됨');
-
-    if (!window.Kakao) {
-        console.error('카카오 SDK가 아직 로드되지 않았습니다.');
-        return;
-    }
-
+    if (!window.Kakao) return;
     if (!window.Kakao.isInitialized()) initKakao();
 
     const { settings } = useSystemStore.getState();
     const finalChannelId = channelId || settings.kakaoChannelId || '_zeXxjG';
-
-    console.log('채널 연결 시도:', finalChannelId);
 
     window.Kakao.Channel.addChannel({
         channelPublicId: finalChannelId,

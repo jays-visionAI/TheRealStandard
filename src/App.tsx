@@ -22,17 +22,9 @@ import WarehouseRelease from './pages/warehouse/WarehouseRelease'
 
 // Accounting Pages (ACCOUNTANT 등급)
 import AccountingDashboard from './pages/accounting/AccountingDashboard'
-import SalesRecords from './pages/accounting/SalesRecords'
-import PurchaseRecords from './pages/accounting/PurchaseRecords'
-import InvoiceList from './pages/accounting/InvoiceList'
-import CertificateList from './pages/accounting/CertificateList'
-import PendingSettlements from './pages/accounting/PendingSettlements'
-import CompletedSettlements from './pages/accounting/CompletedSettlements'
 
 // Legacy Admin Pages (설정용)
 import AdminLayout from './layouts/AdminLayout'
-import WarehouseLayout from './layouts/WarehouseLayout'
-import AccountingLayout from './layouts/AccountingLayout'
 import Dashboard from './pages/admin/Dashboard'
 import OrderSheetList from './pages/admin/OrderSheetList'
 import OrderSheetCreate from './pages/admin/OrderSheetCreate'
@@ -90,19 +82,26 @@ function App() {
                         path="/warehouse"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'WAREHOUSE']}>
-                                <WarehouseLayout />
+                                <WarehouseDashboard />
                             </ProtectedRoute>
                         }
-                    >
-                        <Route index element={<WarehouseDashboard />} />
-                        <Route path="receive" element={<WarehouseReceive />} />
-                        <Route path="receive/:id" element={<WarehouseReceive />} />
-                        <Route path="receive/history" element={<WarehouseReceive />} />
-                        <Route path="release" element={<WarehouseRelease />} />
-                        <Route path="release/:id" element={<WarehouseRelease />} />
-                        <Route path="release/history" element={<WarehouseRelease />} />
-                        <Route path="shipments" element={<WarehouseDashboard />} />
-                    </Route>
+                    />
+                    <Route
+                        path="/warehouse/receive/:id"
+                        element={
+                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'WAREHOUSE']}>
+                                <WarehouseReceive />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/warehouse/release/:id"
+                        element={
+                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'WAREHOUSE']}>
+                                <WarehouseRelease />
+                            </ProtectedRoute>
+                        }
+                    />
 
                     {/* ========================================
                           ACCOUNTANT (경리직원) - 정산
@@ -111,18 +110,10 @@ function App() {
                         path="/accounting"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'ACCOUNTING']}>
-                                <AccountingLayout />
+                                <AccountingDashboard />
                             </ProtectedRoute>
                         }
-                    >
-                        <Route index element={<AccountingDashboard />} />
-                        <Route path="pending" element={<PendingSettlements />} />
-                        <Route path="completed" element={<CompletedSettlements />} />
-                        <Route path="sales" element={<SalesRecords />} />
-                        <Route path="purchases" element={<PurchaseRecords />} />
-                        <Route path="invoices" element={<InvoiceList />} />
-                        <Route path="certificates" element={<CertificateList />} />
-                    </Route>
+                    />
 
                     {/* ========================================
                           ADMIN (관리자) - 사이드바 레이아웃

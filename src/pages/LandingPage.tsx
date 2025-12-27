@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
     ChartIcon,
     TrashIcon,
@@ -9,24 +9,23 @@ import {
     KakaoIcon
 } from '../components/Icons'
 import { LogoSmall, Logo } from '../components/Logo'
+import { useAuth } from '../contexts/AuthContext'
 import { kakaoLogin } from '../lib/kakaoService'
 import './LandingPage.css'
 
 export default function LandingPage() {
-    const [isScrolled, setIsScrolled] = useState(false)
+    const navigate = useNavigate()
+    const { loginWithKakao } = useAuth()
 
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 50)
+    const handleKakaoLogin = async () => {
+        try {
+            const result = await kakaoLogin()
+            await loginWithKakao(result.user)
+            navigate('/order/my-orders') // 고객 대시보드로 이동
+        } catch (error) {
+            console.error('Kakao login failed:', error)
+            alert('카카오 로그인에 실패했습니다. 다시 시도해 주세요.')
         }
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [])
-
-    const handleKakaoLogin = () => {
-        // 카카오 로그인은 리다이렉트 방식
-        // 로그인 후 /login 페이지로 돌아와서 AuthContext에서 처리
-        kakaoLogin()
     }
 
     const scrollToSection = (id: string) => {
@@ -37,7 +36,7 @@ export default function LandingPage() {
     return (
         <div className="landing-page">
             {/* Navbar */}
-            <header className={`lp-header ${isScrolled ? 'scrolled' : ''}`}>
+            <header className="lp-header">
                 <div className="container header-inner">
                     <div className="lp-logo">
                         <LogoSmall />
@@ -50,7 +49,7 @@ export default function LandingPage() {
                         </ul>
                     </nav>
                     <div className="flex gap-4 items-center">
-                        <a href="/login" className="btn btn-secondary">로그인</a>
+                        <button className="btn btn-secondary" onClick={() => navigate('/login')}>Login</button>
                         <button className="btn btn-kakao flex items-center gap-2" onClick={handleKakaoLogin}>
                             <KakaoIcon size={18} /> 카카오 로그인
                         </button>
