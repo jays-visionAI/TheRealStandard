@@ -43,6 +43,7 @@ import OrganizationMaster from './pages/admin/OrganizationMaster'
 import SupplierMaster from './pages/admin/SupplierMaster'
 import UserList from './pages/admin/UserList'
 import DocumentHub from './pages/admin/DocumentHub'
+import SystemSettings from './pages/admin/SystemSettings'
 
 // Front (Customer) Pages
 import FrontLayout from './layouts/FrontLayout'
@@ -149,6 +150,7 @@ function App() {
                         <Route path="settings/vehicles" element={<VehicleTypeSettings />} />
                         <Route path="settings/documents" element={<DocumentInbox />} />
                         <Route path="settings/warehouse" element={<WarehouseGate />} />
+                        <Route path="settings/system" element={<SystemSettings />} />
                         {/* Legacy: workflow */}
                         <Route path="workflow" element={<WorkflowHome />} />
                         <Route path="workflow/finalize/:id" element={<StepReview />} />

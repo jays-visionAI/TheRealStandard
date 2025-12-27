@@ -556,3 +556,19 @@ export const KakaoIcon: FC<IconProps> = ({ size = 20, className = '', color = 'c
         <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.558 1.712 4.8 4.37 6.04-.19.645-.685 2.32-.783 2.684-.123.45.153.444.323.33.132-.088 2.11-1.43 2.955-2.006.37.052.75.078 1.135.078 4.97 0 9-3.186 9-7.115S16.97 3 12 3z" />
     </svg>
 )
+
+// Save
+export const SaveIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+        <polyline points="17 21 17 13 7 13 7 21" />
+        <polyline points="7 3 7 8 15 8" />
+    </svg>
+)
+
+// Shield
+export const ShieldIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+)

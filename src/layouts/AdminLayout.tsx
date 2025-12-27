@@ -75,6 +75,7 @@ const navigation = [
             { label: '차량 타입', path: '/admin/settings/vehicles' },
             { label: '문서 관리', path: '/admin/settings/documents' },
             { label: '물류 게이트', path: '/admin/settings/warehouse' },
+            { label: 'API 설정', path: '/admin/settings/system' },
         ],
     },
 ]
@@ -221,7 +222,8 @@ function getPageTitle(pathname: string): string {
         '/admin/settings/catalogs': '카탈로그 관리',
         '/admin/settings/vehicles': '차량 타입 설정',
         '/admin/settings/documents': '문서 관리',
-        '/admin/settings/warehouse': '물류 게이트',
+        '/admin/settings/warehouse': '물류 게이트 세팅',
+        '/admin/settings/system': '시스템 API 설정',
     }
     return titles[pathname] || 'TRS 물류관리'
 }

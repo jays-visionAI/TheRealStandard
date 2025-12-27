@@ -9,12 +9,15 @@ declare global {
     }
 }
 
-const KAKAO_JS_KEY = '673898687a7442cae2d24608c0f5f7f3'; // 실제 키로 변경해야 합니다.
+import { useSystemStore } from '../stores/systemStore';
 
 export const initKakao = () => {
-    if (window.Kakao && !window.Kakao.isInitialized()) {
-        window.Kakao.init(KAKAO_JS_KEY);
-        console.log('Kakao SDK Initialized');
+    const { settings } = useSystemStore.getState();
+    const key = settings.kakaoJsKey;
+
+    if (window.Kakao && !window.Kakao.isInitialized() && key) {
+        window.Kakao.init(key);
+        console.log('Kakao SDK Initialized with key:', key.substring(0, 5) + '...');
     }
 };
 
@@ -151,11 +154,14 @@ export const shareDocument = (title: string, excerpt: string, docId: string) => 
  * 카카오톡 채널 추가
  * @param channelId 채널 공개 ID (예: _zeXxjG)
  */
-export const addKakaoChannel = (channelId: string = '_zeXxjG') => {
+export const addKakaoChannel = (channelId?: string) => {
     if (!window.Kakao) return;
     if (!window.Kakao.isInitialized()) initKakao();
 
+    const { settings } = useSystemStore.getState();
+    const finalChannelId = channelId || settings.kakaoChannelId || '_zeXxjG';
+
     window.Kakao.Channel.addChannel({
-        channelPublicId: channelId,
+        channelPublicId: finalChannelId,
     });
 };
