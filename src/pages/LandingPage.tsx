@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import {
     ChartIcon,
     TrashIcon,
@@ -13,7 +12,6 @@ import { kakaoLogin } from '../lib/kakaoService'
 import './LandingPage.css'
 
 export default function LandingPage() {
-    const navigate = useNavigate()
 
     const handleKakaoLogin = () => {
         // 카카오 로그인은 리다이렉트 방식
@@ -42,7 +40,7 @@ export default function LandingPage() {
                         </ul>
                     </nav>
                     <div className="flex gap-4 items-center">
-                        <button className="btn btn-secondary" onClick={() => navigate('/login')}>Login</button>
+                        <a href="/login" className="btn btn-secondary">로그인</a>
                         <button className="btn btn-kakao flex items-center gap-2" onClick={handleKakaoLogin}>
                             <KakaoIcon size={18} /> 카카오 로그인
                         </button>

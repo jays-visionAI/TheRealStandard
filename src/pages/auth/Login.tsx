@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIcon, KakaoIcon, CheckCircleIcon } from '../../components/Icons'
+import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIcon, KakaoIcon } from '../../components/Icons'
 import { kakaoLogin } from '../../lib/kakaoService'
 import './Login.css'
 
@@ -90,10 +90,10 @@ export default function Login() {
             {/* Left Side - Branding (PC Only) */}
             <div className="login-branding">
                 <div className="branding-content">
-                    <div className="branding-logo">
+                    <a href="/" className="branding-logo">
                         <PackageIcon size={56} />
                         <span className="branding-logo-text">TRS</span>
-                    </div>
+                    </a>
                     <h1 className="branding-title">지능형 육류유통혁신 플랫폼</h1>
                     <p className="branding-subtitle">The Real Standard</p>
 
@@ -120,10 +120,10 @@ export default function Login() {
                 <div className="login-container">
                     {/* Mobile Logo */}
                     <div className="login-header mobile-only">
-                        <div className="logo">
+                        <a href="/" className="logo">
                             <span className="logo-icon"><PackageIcon size={40} /></span>
                             <span className="logo-text">TRS</span>
-                        </div>
+                        </a>
                         <h1>지능형 육류유통혁신 플랫폼</h1>
                         <p className="tagline">The Real Standard</p>
                     </div>
