@@ -146,3 +146,16 @@ export const shareDocument = (title: string, excerpt: string, docId: string) => 
         ],
     });
 };
+
+/**
+ * 카카오톡 채널 추가
+ * @param channelId 채널 공개 ID (예: _zeXxjG)
+ */
+export const addKakaoChannel = (channelId: string = '_zeXxjG') => {
+    if (!window.Kakao) return;
+    if (!window.Kakao.isInitialized()) initKakao();
+
+    window.Kakao.Channel.addChannel({
+        channelPublicId: channelId,
+    });
+};

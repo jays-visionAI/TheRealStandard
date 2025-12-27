@@ -7,6 +7,7 @@ interface User {
     name: string
     role: UserRole
     orgId?: string
+    avatar?: string
 }
 
 interface AuthContextType {
@@ -95,7 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email: internalUser.email,
                 name: internalUser.name,
                 role: internalUser.role,
-                orgId: internalUser.orgId
+                orgId: internalUser.orgId,
+                avatar: kakaoUser.properties?.profile_image
             }
             localStorage.setItem('trs_user', JSON.stringify(mappedUser))
             setUser(mappedUser)
@@ -113,7 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email: existingCustomer.email,
                 name: existingCustomer.ceoName,
                 role: 'CUSTOMER',
-                orgId: existingCustomer.id
+                orgId: existingCustomer.id,
+                avatar: kakaoUser.properties?.profile_image
             }
             localStorage.setItem('trs_user', JSON.stringify(mappedUser))
             setUser(mappedUser)
@@ -126,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: email,
             name: kakaoUser.properties?.nickname || '카카오 사용자',
             role: 'CUSTOMER',
+            avatar: kakaoUser.properties?.profile_image
         }
 
         localStorage.setItem('trs_user', JSON.stringify(newUser))

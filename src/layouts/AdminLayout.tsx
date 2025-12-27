@@ -8,7 +8,9 @@ import {
     WalletIcon,
     SettingsIcon,
     BookOpenIcon,
+    MessageCircleIcon
 } from '../components/Icons'
+import { addKakaoChannel } from '../lib/kakaoService'
 import './AdminLayout.css'
 
 // 아이콘 매핑
@@ -139,9 +141,29 @@ export default function AdminLayout() {
                 </nav>
 
                 <div className="sidebar-footer">
+                    <div className="kakao-channel-section mb-4 px-3">
+                        <button
+                            className="btn btn-kakao btn-sm w-full"
+                            onClick={() => addKakaoChannel()}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                borderRadius: '8px',
+                                padding: '10px'
+                            }}
+                        >
+                            <MessageCircleIcon size={16} /> 24시 관제 채널
+                        </button>
+                    </div>
                     <div className="user-info">
-                        <div className="user-avatar">
-                            {user?.name?.charAt(0) || 'A'}
+                        <div className="user-avatar overflow-hidden">
+                            {user?.avatar ? (
+                                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                            ) : (
+                                user?.name?.charAt(0) || 'A'
+                            )}
                         </div>
                         <div className="user-details">
                             <span className="user-name">{user?.name || '관리자'}</span>
