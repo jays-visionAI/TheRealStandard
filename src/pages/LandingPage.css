@@ -77,7 +77,7 @@ p {
     background-clip: text;
 }
 
-/* Header */
+/* Header - Light Glassmorphism */
 .lp-header {
     position: fixed;
     top: 0;
@@ -86,8 +86,10 @@ p {
     height: 64px;
     z-index: 50;
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    background: rgba(5, 5, 5, 0.6);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .header-inner {
@@ -111,7 +113,7 @@ p {
 }
 
 .lp-nav a {
-    color: var(--lp-text-gray);
+    color: #64748B;
     text-decoration: none;
     font-size: 0.875rem;
     font-weight: 500;
@@ -119,7 +121,7 @@ p {
 }
 
 .lp-nav a:hover {
-    color: var(--lp-text-white);
+    color: #1E293B;
 }
 
 /* Buttons */
@@ -148,14 +150,14 @@ p {
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--lp-text-white);
-    border: 1px solid var(--lp-border);
+    background: transparent;
+    color: #374151;
+    border: 1px solid #D1D5DB;
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--lp-border-hover);
+    background: #F3F4F6;
+    border-color: #9CA3AF;
 }
 
 .btn-accent {
