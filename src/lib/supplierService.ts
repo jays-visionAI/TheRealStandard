@@ -2,7 +2,7 @@ import {
     collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc,
     serverTimestamp, Timestamp
 } from 'firebase/firestore'
-import { db } from './firebase'
+import { db, cleanData } from './firebase'
 
 // ============ SUPPLIER SERVICE ============
 export interface FirestoreSupplier {
@@ -44,7 +44,7 @@ export async function getSupplierById(id: string): Promise<FirestoreSupplier | n
 export async function createSupplier(data: Omit<FirestoreSupplier, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreSupplier> {
     const newDocRef = doc(suppliersRef)
     const now = serverTimestamp()
-    await setDoc(newDocRef, { ...data, createdAt: now, updatedAt: now })
+    await setDoc(newDocRef, { ...cleanData(data), createdAt: now, updatedAt: now })
     const created = await getDoc(newDocRef)
     return { id: created.id, ...created.data() } as FirestoreSupplier
 }
@@ -52,14 +52,14 @@ export async function createSupplier(data: Omit<FirestoreSupplier, 'id' | 'creat
 export async function createSupplierWithId(id: string, data: Omit<FirestoreSupplier, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreSupplier> {
     const docRef = doc(db, SUPPLIERS_COLLECTION, id)
     const now = serverTimestamp()
-    await setDoc(docRef, { ...data, createdAt: now, updatedAt: now })
+    await setDoc(docRef, { ...cleanData(data), createdAt: now, updatedAt: now })
     const created = await getDoc(docRef)
     return { id: created.id, ...created.data() } as FirestoreSupplier
 }
 
 export async function updateSupplier(id: string, data: Partial<FirestoreSupplier>): Promise<void> {
     const docRef = doc(db, SUPPLIERS_COLLECTION, id)
-    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() })
+    await updateDoc(docRef, { ...cleanData(data), updatedAt: serverTimestamp() })
 }
 
 export async function deleteSupplier(id: string): Promise<void> {
