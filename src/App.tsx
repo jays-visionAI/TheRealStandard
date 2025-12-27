@@ -55,10 +55,28 @@ function App() {
     useEffect(() => {
         initKakao();
 
-        // Firebase에 초기 사용자 데이터 시드 (없을 경우에만)
-        import('./lib/userService').then(({ seedInitialUsers }) => {
-            seedInitialUsers().catch(console.error)
-        })
+        // Firebase에 초기 데이터 시드 (없을 경우에만)
+        const seedAllData = async () => {
+            try {
+                const { seedInitialUsers } = await import('./lib/userService')
+                const { seedInitialCustomers } = await import('./lib/customerService')
+                const { seedInitialSuppliers } = await import('./lib/supplierService')
+                const { seedInitialProducts } = await import('./lib/productService')
+                const { seedInitialVehicleTypes } = await import('./lib/vehicleService')
+
+                await Promise.all([
+                    seedInitialUsers(),
+                    seedInitialCustomers(),
+                    seedInitialSuppliers(),
+                    seedInitialProducts(),
+                    seedInitialVehicleTypes(),
+                ])
+                console.log('All Firebase seed data initialized')
+            } catch (error) {
+                console.error('Firebase seed error:', error)
+            }
+        }
+        seedAllData()
     }, []);
 
     return (
