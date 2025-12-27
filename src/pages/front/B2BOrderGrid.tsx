@@ -1,20 +1,25 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ClipboardListIcon } from '../../components/Icons'
-import { useOrderStore } from '../../stores/orderStore'
+import {
+    getOrderSheetByToken,
+    getOrderSheetItems,
+    updateOrderSheet,
+    setOrderSheetItems,
+    type FirestoreOrderSheet,
+
+} from '../../lib/orderService'
+import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import './B2BOrderGrid.css'
 
 // ============================================
-// 상품 마스터 데이터 (실제로는 API에서 로드)
+// 상품 인터페이스
 // ============================================
-import { useProductStore, type Product as StoreProduct } from '../../stores/productStore'
-import { useMemo } from 'react'
-
-interface Product extends StoreProduct {
+interface Product extends Omit<FirestoreProduct, 'createdAt' | 'updatedAt'> {
     unitPrice: number
+    createdAt?: Date
+    updatedAt?: Date
 }
-
-// PRODUCT_MASTER defined via store
 
 // ============================================
 // 주문 행 인터페이스
@@ -42,24 +47,17 @@ export default function B2BOrderGrid() {
     const { token } = useParams()
     const navigate = useNavigate()
 
-    const { getOrderItems, updateOrderSheet, updateOrderItems, orderSheets } = useOrderStore()
-    const { products, initializeStore } = useProductStore()
-
-    // 초기화
-    useEffect(() => {
-        initializeStore()
-    }, [initializeStore])
-
-    // Reactive Order Information
-    const orderInfo = useMemo(() => {
-        return orderSheets.find(o => o.inviteTokenId === token)
-    }, [orderSheets, token])
-
-    // 로컬에서 사용하기 편하도록 도매가를 unitPrice로 매핑
-    const PRODUCT_MASTER = useMemo(() => products.map(p => ({
-        ...p,
-        unitPrice: p.wholesalePrice
-    })), [products])
+    // Firebase에서 직접 로드되는 데이터
+    const [orderInfo, setOrderInfo] = useState<(Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate'> & {
+        createdAt?: Date
+        updatedAt?: Date
+        shipDate?: Date
+        cutOffAt?: Date
+        lastSubmittedAt?: Date
+    }) | null>(null)
+    const [products, setProducts] = useState<Product[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     // 상태
     const [rows, setRows] = useState<OrderRow[]>([])
@@ -69,43 +67,79 @@ export default function B2BOrderGrid() {
     const [showDropdown, setShowDropdown] = useState(false)
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
     const [highlightIndex, setHighlightIndex] = useState(0)
-    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
 
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-    // 데이터 로드 및 초기화
-    useEffect(() => {
-        if (orderInfo) {
-            if (orderInfo.status === 'SUBMITTED') {
-                setStatus('PENDING_APPROVAL')
-            } else if (orderInfo.status === 'CONFIRMED') {
-                setStatus('APPROVED')
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        if (!token) return
+
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [osData, productsData] = await Promise.all([
+                getOrderSheetByToken(token),
+                getAllProducts()
+            ])
+
+            if (osData) {
+                const orderSheet = {
+                    ...osData,
+                    createdAt: osData.createdAt?.toDate?.() || new Date(),
+                    updatedAt: osData.updatedAt?.toDate?.() || new Date(),
+                    shipDate: osData.shipDate?.toDate?.() || undefined,
+                }
+                setOrderInfo(orderSheet)
+
+                // 주문 상태 설정
+                if (osData.status === 'SUBMITTED') {
+                    setStatus('PENDING_APPROVAL')
+                } else if (osData.status === 'CONFIRMED') {
+                    setStatus('APPROVED')
+                }
+
+                // 기존 아이템 로드
+                const items = await getOrderSheetItems(osData.id)
+                if (items && items.length > 0) {
+                    const mappedRows: OrderRow[] = items.map(item => ({
+                        id: item.id,
+                        productId: item.productId,
+                        productName: item.productName || '',
+                        unitPrice: item.unitPrice,
+                        quantity: item.qtyRequested || 0,
+                        unit: item.unit as 'kg' | 'box' || 'kg',
+                        estimatedWeight: item.estimatedKg || 0,
+                        totalAmount: item.amount || 0
+                    }))
+                    setRows(mappedRows)
+                } else {
+                    setRows([createEmptyRow()])
+                }
             }
 
-            const items = getOrderItems(orderInfo.id)
-            if (items && items.length > 0 && rows.length === 0) {
-                const mappedRows: OrderRow[] = items.map(item => ({
-                    id: item.id,
-                    productId: item.productId,
-                    productName: item.productName || '',
-                    unitPrice: item.unitPrice,
-                    quantity: (item.inputType === 'KG' ? item.qtyKg : item.qtyBox) || 0,
-                    unit: item.inputType.toLowerCase() as 'kg' | 'box',
-                    estimatedWeight: item.estimatedKg,
-                    totalAmount: item.amount
-                }))
-                setRows(mappedRows)
-            } else if (rows.length === 0) {
-                setRows([createEmptyRow()])
-            }
-            setLoading(false)
-        } else if (!loading) {
-            // orderInfo가 없는데 로딩이 끝난 경우 (잘못된 토큰 등)
+            // 상품 마스터 로드
+            setProducts(productsData.map(p => ({
+                ...p,
+                unitPrice: p.wholesalePrice,
+                createdAt: p.createdAt?.toDate?.() || new Date(),
+                updatedAt: p.updatedAt?.toDate?.() || new Date(),
+            })))
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
             setLoading(false)
         }
-    }, [orderInfo, getOrderItems])
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadData()
+    }, [token])
 
     // 빈 행 생성
     function createEmptyRow(): OrderRow {
@@ -125,12 +159,12 @@ export default function B2BOrderGrid() {
     const searchProducts = useCallback((query: string): Product[] => {
         if (!query.trim()) return []
         const q = query.toLowerCase()
-        const startsWithProducts = PRODUCT_MASTER.filter(p => p.name.toLowerCase().startsWith(q))
-        const containsProducts = PRODUCT_MASTER.filter(p =>
+        const startsWithProducts = products.filter(p => p.name.toLowerCase().startsWith(q))
+        const containsProducts = products.filter(p =>
             p.name.toLowerCase().includes(q) && !p.name.toLowerCase().startsWith(q)
         )
         return [...startsWithProducts, ...containsProducts]
-    }, [PRODUCT_MASTER])
+    }, [products])
 
     // 검색어 변경 시 필터링
     useEffect(() => {
@@ -159,7 +193,7 @@ export default function B2BOrderGrid() {
                     productId: product.id,
                     productName: product.name,
                     unitPrice: product.unitPrice,
-                    unit: product.unit,
+                    unit: product.unit as 'kg' | 'box',
                 }
             }
             return row
@@ -182,7 +216,7 @@ export default function B2BOrderGrid() {
     const updateQuantity = (rowId: string, quantity: number) => {
         setRows(prev => prev.map(row => {
             if (row.id === rowId) {
-                const product = PRODUCT_MASTER.find(p => p.id === row.productId)
+                const product = products.find(p => p.id === row.productId)
                 let estimatedWeight = quantity
 
                 if (product && product.unit === 'box' && product.boxWeight) {
@@ -262,38 +296,43 @@ export default function B2BOrderGrid() {
     }
 
     // 주문 제출
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const validRows = rows.filter(r => r.productId && r.quantity > 0)
         if (validRows.length === 0) {
             alert('최소 1개 이상의 품목을 주문해주세요.')
             return
         }
 
-        if (orderInfo) {
-            // 스토어 업데이트
-            updateOrderSheet(orderInfo.id, {
+        if (!orderInfo) return
+
+        try {
+            setSaving(true)
+
+            // 주문장 상태 업데이트
+            await updateOrderSheet(orderInfo.id, {
                 status: 'SUBMITTED',
-                lastSubmittedAt: new Date(),
-                updatedAt: new Date()
             })
 
+            // 주문 아이템 업데이트
             const updatedItems = validRows.map(row => ({
-                id: row.id,
-                orderSheetId: orderInfo.id,
                 productId: row.productId || '',
                 productName: row.productName,
-                inputType: row.unit.toUpperCase() as any,
-                qtyKg: row.unit === 'kg' ? row.quantity : undefined,
-                qtyBox: row.unit === 'box' ? row.quantity : undefined,
-                estimatedKg: row.estimatedWeight,
+                unit: row.unit,
                 unitPrice: row.unitPrice,
+                qtyRequested: row.quantity,
+                estimatedKg: row.estimatedWeight,
                 amount: row.totalAmount
             }))
 
-            updateOrderItems(orderInfo.id, updatedItems)
+            await setOrderSheetItems(orderInfo.id, updatedItems)
 
             setStatus('PENDING_APPROVAL')
             alert('✅ 주문이 제출되었습니다.\n\n관리자 승인을 대기합니다.')
+        } catch (err) {
+            console.error('Submit failed:', err)
+            alert('주문 제출에 실패했습니다.')
+        } finally {
+            setSaving(false)
         }
     }
 
@@ -307,7 +346,27 @@ export default function B2BOrderGrid() {
     const formatCurrency = (value: number) => new Intl.NumberFormat('ko-KR').format(value)
 
     if (loading) {
-        return <div className="p-10 text-center">불러오는 중...</div>
+        return (
+            <div className="b2b-order-grid">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>주문서를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="b2b-order-grid">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     if (!orderInfo) {
@@ -316,13 +375,12 @@ export default function B2BOrderGrid() {
 
     // 상태별 렌더링
     if (status === 'PENDING_APPROVAL') {
-        const submittedDate = orderInfo.lastSubmittedAt ? new Date(orderInfo.lastSubmittedAt).toLocaleString() : '방금 전'
         return (
             <div className="b2b-order-grid">
                 <div className="pending-approval-view glass-card">
                     <div className="pending-icon">⏳</div>
                     <h2>고객 컨펌 완료</h2>
-                    <p>주문이 {submittedDate}에 제출되었습니다. 관리자 승인을 대기합니다.</p>
+                    <p>주문이 제출되었습니다. 관리자 승인을 대기합니다.</p>
 
                     <div className="order-summary-card">
                         <div className="summary-row">
@@ -383,11 +441,11 @@ export default function B2BOrderGrid() {
                     <div className="order-meta">
                         <span className="meta-item">
                             <span className="meta-icon">📅</span>
-                            배송: {new Date(orderInfo.shipDate).toLocaleDateString()}
+                            배송: {orderInfo.shipDate?.toLocaleDateString() || '-'}
                         </span>
                         <span className="meta-item warning">
                             <span className="meta-icon">⏰</span>
-                            마감: {new Date(orderInfo.cutOffAt).toLocaleString()}
+                            마감: {orderInfo.cutOffAt?.toLocaleString() || '-'}
                         </span>
                     </div>
                 </div>
@@ -448,9 +506,9 @@ export default function B2BOrderGrid() {
                                             <button
                                                 className="clear-product-btn"
                                                 onClick={() => {
-                                                    setRows(prev => prev.map(r =>
-                                                        r.id === row.id ? createEmptyRow() : r
-                                                    ).map((r, i) => i === index ? { ...r, id: row.id } : r))
+                                                    setRows(prev => prev.map((r) =>
+                                                        r.id === row.id ? { ...createEmptyRow(), id: row.id } : r
+                                                    ))
                                                     const nameInput = inputRefs.current.get(`name-${row.id}`)
                                                     if (nameInput) nameInput.focus()
                                                 }}
@@ -553,9 +611,9 @@ export default function B2BOrderGrid() {
                 <button
                     className="btn btn-primary btn-lg"
                     onClick={handleSubmit}
-                    disabled={totalItems === 0}
+                    disabled={totalItems === 0 || saving}
                 >
-                    주문 컨펌 및 승인 요청 📨
+                    {saving ? '제출 중...' : '주문 컨펌 및 승인 요청 📨'}
                 </button>
             </footer>
         </div>

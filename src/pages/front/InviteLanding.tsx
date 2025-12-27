@@ -1,30 +1,48 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { XIcon, ClipboardListIcon } from '../../components/Icons'
-import { useOrderStore } from '../../stores/orderStore'
+import { getOrderSheetByToken, type FirestoreOrderSheet } from '../../lib/orderService'
+
+// 로컬 타입
+type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate'> & {
+  createdAt?: Date
+  updatedAt?: Date
+  shipDate?: Date
+  cutOffAt?: Date
+}
 
 export default function InviteLanding() {
   const { token } = useParams()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
-  const [orderInfo, setOrderInfo] = useState<any>(null)
-
-  const { getOrderSheetByToken } = useOrderStore()
+  const [orderInfo, setOrderInfo] = useState<LocalOrderSheet | null>(null)
 
   useEffect(() => {
-    // Simulate slight delay for validation
-    const timer = setTimeout(() => {
-      if (token) {
-        const order = getOrderSheetByToken(token)
-        if (order) {
-          setOrderInfo(order)
-        }
+    const loadOrder = async () => {
+      if (!token) {
+        setLoading(false)
+        return
       }
-      setLoading(false)
-    }, 800)
 
-    return () => clearTimeout(timer)
-  }, [token, getOrderSheetByToken])
+      try {
+        const order = await getOrderSheetByToken(token)
+        if (order) {
+          setOrderInfo({
+            ...order,
+            createdAt: order.createdAt?.toDate?.() || new Date(),
+            updatedAt: order.updatedAt?.toDate?.() || new Date(),
+            shipDate: order.shipDate?.toDate?.() || undefined,
+          })
+        }
+      } catch (err) {
+        console.error('Failed to load order:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadOrder()
+  }, [token])
 
   if (loading) {
     return (
@@ -81,11 +99,11 @@ export default function InviteLanding() {
           </div>
           <div className="info-row">
             <span className="label">배송예정일</span>
-            <span className="value">{formatDate(orderInfo.shipDate)}</span>
+            <span className="value">{orderInfo.shipDate ? formatDate(orderInfo.shipDate) : '-'}</span>
           </div>
           <div className="info-row">
             <span className="label">주문마감</span>
-            <span className="value highlight">{formatDateTime(orderInfo.cutOffAt)}</span>
+            <span className="value highlight">{orderInfo.cutOffAt ? formatDateTime(orderInfo.cutOffAt) : '-'}</span>
           </div>
         </div>
 

@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useOrderStore } from '../../stores/orderStore'
+import { getSalesOrderById, getSalesOrderItems, type FirestoreSalesOrder, type FirestoreSalesOrderItem } from '../../lib/orderService'
 import {
     CheckCircleIcon,
     ArrowLeftIcon,
@@ -11,26 +12,55 @@ import {
     PlusIcon
 } from '../../components/Icons'
 
+// 로컬 타입
+type LocalSalesOrder = Omit<FirestoreSalesOrder, 'createdAt' | 'confirmedAt'> & {
+    createdAt?: Date
+    confirmedAt?: Date
+}
+
 export default function SalesOrderDetail() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { getSalesOrderById, getSalesOrderItems } = useOrderStore()
 
-    const order = getSalesOrderById(id || '')
-    const items = getSalesOrderItems(id || '')
+    // Firebase에서 직접 로드되는 데이터
+    const [order, setOrder] = useState<LocalSalesOrder | null>(null)
+    const [items, setItems] = useState<FirestoreSalesOrderItem[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
-    if (!order) {
-        return (
-            <div className="page-container">
-                <div className="glass-card p-12 text-center">
-                    <h2 className="text-xl font-bold mb-4">주문을 찾을 수 없습니다</h2>
-                    <button className="btn btn-primary" onClick={() => navigate('/admin/sales-orders')}>
-                        목록으로 돌아가기
-                    </button>
-                </div>
-            </div>
-        )
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        if (!id) return
+
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [soData, itemsData] = await Promise.all([
+                getSalesOrderById(id),
+                getSalesOrderItems(id)
+            ])
+
+            if (soData) {
+                setOrder({
+                    ...soData,
+                    createdAt: soData.createdAt?.toDate?.() || new Date(),
+                    confirmedAt: soData.confirmedAt?.toDate?.() || new Date(),
+                })
+            }
+            setItems(itemsData)
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
     }
+
+    // 초기 로드
+    useEffect(() => {
+        loadData()
+    }, [id])
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
@@ -44,6 +74,45 @@ export default function SalesOrderDetail() {
             hour: '2-digit',
             minute: '2-digit'
         })
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="page-container">
+                <div className="glass-card p-12 text-center">
+                    <div className="spinner"></div>
+                    <p className="mt-4">데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="page-container">
+                <div className="glass-card p-12 text-center">
+                    <p className="text-danger mb-4">❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    if (!order) {
+        return (
+            <div className="page-container">
+                <div className="glass-card p-12 text-center">
+                    <h2 className="text-xl font-bold mb-4">주문을 찾을 수 없습니다</h2>
+                    <button className="btn btn-primary" onClick={() => navigate('/admin/sales-orders')}>
+                        목록으로 돌아가기
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -125,7 +194,7 @@ export default function SalesOrderDetail() {
                             <div className="flex items-center gap-2 text-muted text-sm border-b border-white/5 pb-2 mb-2">
                                 <CalendarIcon size={14} /> 확정 일시
                             </div>
-                            <div className="text-white">{formatDate(order.confirmedAt)}</div>
+                            <div className="text-white">{order.confirmedAt ? formatDate(order.confirmedAt) : '-'}</div>
                         </div>
 
                         <div className="info-row">
@@ -144,7 +213,7 @@ export default function SalesOrderDetail() {
                                 <div className="z-10 bg-success rounded-full p-1 h-fit"><CheckCircleIcon size={12} className="text-white" /></div>
                                 <div>
                                     <div className="text-sm font-medium">SalesOrder 생성 (확정)</div>
-                                    <div className="text-xs text-muted">{formatDate(order.confirmedAt)}</div>
+                                    <div className="text-xs text-muted">{order.confirmedAt ? formatDate(order.confirmedAt) : '-'}</div>
                                 </div>
                             </div>
                             <div className="flex gap-3 opacity-50">

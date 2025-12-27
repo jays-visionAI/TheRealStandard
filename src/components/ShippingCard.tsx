@@ -1,13 +1,24 @@
-import { Shipment } from '../stores/shipmentStore'
 import { TruckDeliveryIcon, BuildingIcon, UserIcon, PhoneIcon, ClockIcon } from './Icons'
 import './ShippingCard.css'
+
+// 로컬 타입 정의
+interface Shipment {
+    id: string
+    status: string
+    customerName: string
+    driverName?: string
+    driverPhone?: string
+    vehicleNumber?: string
+    vehicleType?: string
+    eta: string | Date
+}
 
 interface Props {
     shipment: Shipment
 }
 
 export default function ShippingCard({ shipment }: Props) {
-    const formatDate = (dateStr: string) => {
+    const formatDate = (dateStr: string | Date) => {
         const date = new Date(dateStr)
         return date.toLocaleString('ko-KR', {
             month: 'long',
@@ -46,19 +57,19 @@ export default function ShippingCard({ shipment }: Props) {
             <div className="vehicle-info">
                 <div className="info-item">
                     <span className="info-label">기사님</span>
-                    <span className="info-value"><UserIcon size={12} className="mr-1" />{shipment.driverName}</span>
+                    <span className="info-value"><UserIcon size={12} className="mr-1" />{shipment.driverName || '-'}</span>
                 </div>
                 <div className="info-item">
                     <span className="info-label">연락처</span>
-                    <span className="info-value"><PhoneIcon size={12} className="mr-1" />{shipment.driverPhone}</span>
+                    <span className="info-value"><PhoneIcon size={12} className="mr-1" />{shipment.driverPhone || '-'}</span>
                 </div>
                 <div className="info-item">
                     <span className="info-label">차량번호</span>
-                    <span className="info-value">{shipment.vehicleNumber}</span>
+                    <span className="info-value">{shipment.vehicleNumber || '-'}</span>
                 </div>
                 <div className="info-item">
                     <span className="info-label">차량타입</span>
-                    <span className="info-value">{shipment.vehicleType}</span>
+                    <span className="info-value">{shipment.vehicleType || '-'}</span>
                 </div>
             </div>
 

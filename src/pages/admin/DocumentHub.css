@@ -471,19 +471,21 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-    min-height: 0;
-    /* Critical for flex child scrolling */
+    min-height: 400px;
+    /* 고정 최소 높이 부여 */
     background: white;
     border-radius: 12px;
     border: 1px solid #ddd;
     overflow: hidden;
     position: relative;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .quill-editor-container .ql-toolbar {
     border: none;
     border-bottom: 1px solid #eee;
     background: #fdfdfd;
+    flex-shrink: 0;
 }
 
 .quill-editor-container .ql-container {
@@ -492,8 +494,7 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    /* Prevents container from expanding beyond parent */
-    font-family: 'Pretendard', sans-serif;
+    font-family: inherit;
     font-size: 1rem;
     overflow: hidden;
 }
@@ -501,24 +502,23 @@
 .quill-editor-container .ql-editor {
     flex: 1;
     overflow-y: auto !important;
-    padding: 2rem;
+    padding: 1.5rem 2rem;
     line-height: 1.7;
     height: 100%;
 }
 
-/* 스크롤바 디자인 강화 (무한 입력 느낌 강조) */
+/* 스크롤바 디자인 강화 */
 .quill-editor-container .ql-editor::-webkit-scrollbar {
-    width: 10px;
+    width: 8px;
 }
 
 .quill-editor-container .ql-editor::-webkit-scrollbar-track {
-    background: #f9f9f9;
+    background: #f1f1f1;
 }
 
 .quill-editor-container .ql-editor::-webkit-scrollbar-thumb {
     background: #ccc;
-    border-radius: 5px;
-    border: 2px solid #f9f9f9;
+    border-radius: 10px;
 }
 
 .quill-editor-container .ql-editor::-webkit-scrollbar-thumb:hover {

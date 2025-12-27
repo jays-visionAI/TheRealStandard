@@ -1,12 +1,51 @@
-import { useState } from 'react'
-import { useVehicleStore, type VehicleType } from '../../stores/vehicleStore'
+import { useState, useEffect } from 'react'
+import {
+    getAllVehicleTypes,
+    createVehicleType,
+    updateVehicleType as updateVehicleTypeFirebase,
+    type FirestoreVehicleType
+} from '../../lib/vehicleService'
+
+// VehicleType 타입 정의
+type VehicleType = Omit<FirestoreVehicleType, 'createdAt' | 'updatedAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
+}
 
 export default function VehicleTypeSettings() {
-    const { vehicleTypes, addVehicleType, updateVehicleType, toggleVehicleEnabled } = useVehicleStore()
+    const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
     const [showModal, setShowModal] = useState(false)
     const [editingType, setEditingType] = useState<VehicleType | null>(null)
     const [name, setName] = useState('')
     const [capacityKg, setCapacityKg] = useState('')
+    const [saving, setSaving] = useState(false)
+
+    // Firebase에서 차량 타입 목록 로드
+    const loadVehicleTypes = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+            const data = await getAllVehicleTypes()
+            setVehicleTypes(data.map(v => ({
+                ...v,
+                createdAt: v.createdAt?.toDate?.() || new Date(),
+                updatedAt: v.updatedAt?.toDate?.() || new Date(),
+            })))
+        } catch (err) {
+            console.error('Failed to load vehicle types:', err)
+            setError('차량 타입 목록을 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadVehicleTypes()
+    }, [])
 
     const openAddModal = () => {
         setEditingType(null)
@@ -22,19 +61,75 @@ export default function VehicleTypeSettings() {
         setShowModal(true)
     }
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!name || !capacityKg) {
             alert('모든 필드를 입력해주세요.')
             return
         }
 
-        if (editingType) {
-            updateVehicleType(editingType.id, name, parseInt(capacityKg))
-        } else {
-            addVehicleType(name, parseInt(capacityKg))
-        }
+        try {
+            setSaving(true)
 
-        setShowModal(false)
+            if (editingType) {
+                await updateVehicleTypeFirebase(editingType.id, {
+                    name,
+                    capacityKg: parseInt(capacityKg)
+                })
+            } else {
+                await createVehicleType({
+                    name,
+                    capacityKg: parseInt(capacityKg),
+                    enabled: true
+                })
+            }
+
+            await loadVehicleTypes()
+            setShowModal(false)
+        } catch (err) {
+            console.error('Save failed:', err)
+            alert('저장에 실패했습니다.')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const toggleVehicleEnabled = async (id: string) => {
+        const vt = vehicleTypes.find(v => v.id === id)
+        if (!vt) return
+
+        try {
+            await updateVehicleTypeFirebase(id, { enabled: !vt.enabled })
+            await loadVehicleTypes()
+        } catch (err) {
+            console.error('Toggle failed:', err)
+            alert('상태 변경에 실패했습니다.')
+        }
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="page-container">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>차량 타입 목록을 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="page-container">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadVehicleTypes}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -114,8 +209,10 @@ export default function VehicleTypeSettings() {
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowModal(false)}>취소</button>
-                            <button className="btn btn-primary" onClick={handleSave}>저장</button>
+                            <button className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={saving}>취소</button>
+                            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                                {saving ? '저장 중...' : '저장'}
+                            </button>
                         </div>
                     </div>
                 </div>

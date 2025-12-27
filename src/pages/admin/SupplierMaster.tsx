@@ -1,7 +1,19 @@
 import { useState, useMemo, useEffect } from 'react'
 import { FactoryIcon, SearchIcon, CheckCircleIcon, PauseCircleIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon } from '../../components/Icons'
 import './OrganizationMaster.css'  // 같은 스타일 공유
-import { useSupplierStore, type Supplier } from '../../stores/supplierStore'
+import {
+    getAllSuppliers,
+    createSupplier,
+    updateSupplier as updateSupplierFirebase,
+    deleteSupplier as deleteSupplierFirebase,
+    type FirestoreSupplier
+} from '../../lib/supplierService'
+
+// Supplier 타입 정의
+type Supplier = Omit<FirestoreSupplier, 'createdAt' | 'updatedAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
+}
 
 const CATEGORY_LABELS: Record<Supplier['supplyCategory'], string> = {
     meat: '육류',
@@ -11,12 +23,10 @@ const CATEGORY_LABELS: Record<Supplier['supplyCategory'], string> = {
 }
 
 export default function SupplierMaster() {
-    const { suppliers, addSupplier, updateSupplier, deleteSupplier, initializeStore } = useSupplierStore()
-
-    // 초기화
-    useEffect(() => {
-        initializeStore()
-    }, [initializeStore])
+    // Firebase에서 직접 로드되는 공급업체 목록
+    const [suppliers, setSuppliers] = useState<Supplier[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     const [searchQuery, setSearchQuery] = useState('')
     const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all')
@@ -24,6 +34,30 @@ export default function SupplierMaster() {
     const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
     const [formData, setFormData] = useState<Partial<Supplier>>({})
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Firebase에서 공급업체 목록 로드
+    const loadSuppliers = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+            const data = await getAllSuppliers()
+            setSuppliers(data.map(s => ({
+                ...s,
+                createdAt: s.createdAt?.toDate?.() || new Date(),
+                updatedAt: s.updatedAt?.toDate?.() || new Date(),
+            })))
+        } catch (err) {
+            console.error('Failed to load suppliers:', err)
+            setError('공급업체 목록을 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadSuppliers()
+    }, [])
 
     // 필터링된 공급업체 목록
     const filteredSuppliers = useMemo(() => {
@@ -81,19 +115,48 @@ export default function SupplierMaster() {
 
         try {
             if (editingSupplier) {
-                updateSupplier(editingSupplier.id, formData)
+                // 수정 - Firebase에 직접
+                await updateSupplierFirebase(editingSupplier.id, {
+                    companyName: formData.companyName,
+                    bizRegNo: formData.bizRegNo,
+                    ceoName: formData.ceoName,
+                    phone: formData.phone,
+                    fax: formData.fax,
+                    email: formData.email,
+                    address: formData.address,
+                    contactPerson: formData.contactPerson,
+                    contactPhone: formData.contactPhone,
+                    supplyCategory: formData.supplyCategory,
+                    paymentTerms: formData.paymentTerms,
+                    bankName: formData.bankName,
+                    bankAccount: formData.bankAccount,
+                    memo: formData.memo,
+                    isActive: formData.isActive,
+                })
                 alert('✅ 공급업체 정보가 수정되었습니다.')
             } else {
-                const newSupplier: Supplier = {
-                    id: `supp-${Date.now()}`,
-                    ...formData,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                } as Supplier
-                addSupplier(newSupplier)
+                // 신규 등록 - Firebase에 직접
+                await createSupplier({
+                    companyName: formData.companyName || '',
+                    bizRegNo: formData.bizRegNo || '',
+                    ceoName: formData.ceoName || '',
+                    phone: formData.phone || '',
+                    email: formData.email || '',
+                    address: formData.address || '',
+                    fax: formData.fax,
+                    contactPerson: formData.contactPerson,
+                    contactPhone: formData.contactPhone,
+                    supplyCategory: formData.supplyCategory || 'meat',
+                    paymentTerms: formData.paymentTerms,
+                    bankName: formData.bankName,
+                    bankAccount: formData.bankAccount,
+                    memo: formData.memo,
+                    isActive: formData.isActive ?? true,
+                })
                 alert('✅ 새 공급업체가 등록되었습니다.')
             }
 
+            await loadSuppliers()
             setShowModal(false)
             setFormData({})
         } catch (error) {
@@ -107,13 +170,51 @@ export default function SupplierMaster() {
     // 삭제
     const handleDelete = async (supplier: Supplier) => {
         if (!confirm(`"${supplier.companyName}" 공급업체를 정말 삭제하시겠습니까?`)) return
-        deleteSupplier(supplier.id)
-        alert('삭제되었습니다.')
+        try {
+            await deleteSupplierFirebase(supplier.id)
+            await loadSuppliers()
+            alert('삭제되었습니다.')
+        } catch (err) {
+            console.error('Delete failed:', err)
+            alert('삭제에 실패했습니다.')
+        }
     }
 
     // 활성/비활성 토글
-    const toggleActive = (supplier: Supplier) => {
-        updateSupplier(supplier.id, { isActive: !supplier.isActive })
+    const toggleActive = async (supplier: Supplier) => {
+        try {
+            await updateSupplierFirebase(supplier.id, { isActive: !supplier.isActive })
+            await loadSuppliers()
+        } catch (err) {
+            console.error('Toggle failed:', err)
+            alert('상태 변경에 실패했습니다.')
+        }
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="organization-master">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>공급업체 목록을 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="organization-master">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadSuppliers}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (

@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ClipboardListIcon, FactoryIcon, DashboardIcon, CheckCircleIcon, PackageIcon } from '../../components/Icons'
-import { useOrderStore } from '../../stores/orderStore'
+import { getSalesOrderById, getSalesOrderItems, type FirestoreSalesOrder, type FirestoreSalesOrderItem } from '../../lib/orderService'
+import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
 import './StepPO.css'
 import type { ReactNode } from 'react'
 
@@ -10,13 +11,6 @@ const PO_STEPS: { id: number; label: string; icon: ReactNode }[] = [
     { id: 2, label: '매입처 선택', icon: <FactoryIcon size={20} /> },
     { id: 3, label: '수량 배분', icon: <DashboardIcon size={20} /> },
     { id: 4, label: '발주 완료', icon: <CheckCircleIcon size={20} /> },
-]
-
-// 매입처 목록 (우리에게 공급하는 업체들)
-const suppliers = [
-    { id: 's1', name: '우경인터내셔널', specialty: '한우 등심/안심', minOrder: 50 },
-    { id: 's2', name: '다한식품', specialty: '한우 갈비/목심', minOrder: 30 },
-    { id: 's3', name: '에이플러스', specialty: '수입육 전품목', minOrder: 20 },
 ]
 
 interface OrderItem {
@@ -29,33 +23,95 @@ interface OrderItem {
     allocations: Record<string, number>  // supplierId -> qty
 }
 
+// 로컬 타입
+type LocalSalesOrder = Omit<FirestoreSalesOrder, 'createdAt' | 'confirmedAt'> & {
+    createdAt?: Date
+    confirmedAt?: Date
+}
+
+type LocalSupplier = Omit<FirestoreSupplier, 'createdAt' | 'updatedAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
+    specialty?: string
+    minOrder?: number
+}
+
 export default function StepPO() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { getSalesOrderById, getSalesOrderItems } = useOrderStore()
     const [currentStep, setCurrentStep] = useState(1)
     const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([])
 
-    // 스토어에서 데이터 가져오기
-    const salesOrder = getSalesOrderById(id || '')
-    const salesOrderItems = getSalesOrderItems(id || '')
+    // Firebase에서 직접 로드되는 데이터
+    const [salesOrder, setSalesOrder] = useState<LocalSalesOrder | null>(null)
+    const [salesOrderItems, setSalesOrderItems] = useState<FirestoreSalesOrderItem[]>([])
+    const [suppliers, setSuppliers] = useState<LocalSupplier[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
-    const [items, setItems] = useState<OrderItem[]>(
-        salesOrderItems.map(i => ({
-            id: i.id,
-            name: i.productName || '상품명 없음',
-            spec: '-',
-            qty: i.qtyKg,
-            unit: 'kg',
-            salePrice: i.unitPrice,
-            allocations: {}
-        }))
-    )
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        if (!id) return
+
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [soData, itemsData, suppliersData] = await Promise.all([
+                getSalesOrderById(id),
+                getSalesOrderItems(id),
+                getAllSuppliers()
+            ])
+
+            if (soData) {
+                setSalesOrder({
+                    ...soData,
+                    createdAt: soData.createdAt?.toDate?.() || new Date(),
+                    confirmedAt: soData.confirmedAt?.toDate?.() || new Date(),
+                })
+            }
+            setSalesOrderItems(itemsData)
+            setSuppliers(suppliersData.map(s => ({
+                ...s,
+                createdAt: s.createdAt?.toDate?.() || new Date(),
+                updatedAt: s.updatedAt?.toDate?.() || new Date(),
+                specialty: '전품목',
+                minOrder: 20,
+            })))
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadData()
+    }, [id])
+
+    const [items, setItems] = useState<OrderItem[]>([])
+
+    // salesOrderItems가 로드되면 items 초기화
+    useEffect(() => {
+        if (salesOrderItems.length > 0 && items.length === 0) {
+            setItems(salesOrderItems.map(i => ({
+                id: i.id,
+                name: i.productName || '상품명 없음',
+                spec: '-',
+                qty: i.qtyKg,
+                unit: 'kg',
+                salePrice: i.unitPrice,
+                allocations: {}
+            })))
+        }
+    }, [salesOrderItems])
 
     const order = {
         id: salesOrder?.id || 'NO-DATA',
         customerName: salesOrder?.customerName || '알 수 없음',
-        confirmedAt: salesOrder?.confirmedAt ? new Date(salesOrder.confirmedAt).toLocaleString('ko-KR') : '-',
+        confirmedAt: salesOrder?.confirmedAt ? salesOrder.confirmedAt.toLocaleString('ko-KR') : '-',
         shipDate: '-',
         totalAmount: salesOrder?.totalsAmount || 0,
     }
@@ -103,11 +159,37 @@ export default function StepPO() {
     const handleComplete = () => {
         const poList = selectedSuppliers.map(sId => {
             const supplier = suppliers.find(s => s.id === sId)
-            return `${supplier?.name}: ${items.map(i => i.allocations[sId] ? `${i.name} ${i.allocations[sId]}${i.unit}` : '').filter(Boolean).join(', ')}`
+            return `${supplier?.companyName || '알 수 없음'}: ${items.map(i => i.allocations[sId] ? `${i.name} ${i.allocations[sId]}${i.unit}` : '').filter(Boolean).join(', ')}`
         }).join('\n')
 
         alert(`✅ 발주가 생성되었습니다!\n\n${poList}`)
         navigate('/admin/workflow')
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="step-po">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="step-po">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -203,9 +285,9 @@ export default function StepPO() {
                                         {selectedSuppliers.includes(supplier.id) ? '✓' : ''}
                                     </div>
                                     <div className="supplier-info">
-                                        <span className="supplier-name">{supplier.name}</span>
-                                        <span className="supplier-specialty">{supplier.specialty}</span>
-                                        <span className="supplier-min">최소주문: {supplier.minOrder}kg</span>
+                                        <span className="supplier-name">{supplier.companyName}</span>
+                                        <span className="supplier-specialty">{supplier.specialty || '전품목'}</span>
+                                        <span className="supplier-min">최소주문: {supplier.minOrder || 20}kg</span>
                                     </div>
                                 </div>
                             ))}
@@ -237,7 +319,7 @@ export default function StepPO() {
                                         const supplier = suppliers.find(s => s.id === sId)
                                         return (
                                             <div key={sId} className="allocation-row">
-                                                <span className="supplier-label">{supplier?.name}</span>
+                                                <span className="supplier-label">{supplier?.companyName || '알 수 없음'}</span>
                                                 <div className="qty-input-group">
                                                     <input
                                                         type="number"
@@ -272,7 +354,7 @@ export default function StepPO() {
                             return (
                                 <div key={sId} className="po-summary-card">
                                     <div className="po-supplier-header">
-                                        <span className="supplier-name"><PackageIcon size={16} /> {supplier?.name}</span>
+                                        <span className="supplier-name"><PackageIcon size={16} /> {supplier?.companyName || '알 수 없음'}</span>
                                         <span className="po-number">PO-2024-{Math.floor(Math.random() * 1000).toString().padStart(3, '0')}</span>
                                     </div>
                                     <div className="po-items">

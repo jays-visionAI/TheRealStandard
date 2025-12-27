@@ -1,6 +1,13 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { TrendingUpIcon, PackageIcon, TruckIcon, ClockIcon } from '../../components/Icons'
-import { useOrderStore } from '../../stores/orderStore'
+import {
+    getAllOrderSheets,
+    getAllSalesOrders,
+    getAllShipments,
+    type FirestoreOrderSheet,
+    type FirestoreSalesOrder,
+    type FirestoreShipment
+} from '../../lib/orderService'
 import './Dashboard.css'
 
 // Helper for currency and numbers
@@ -8,15 +15,80 @@ const formatKRW = (v: number) => new Intl.NumberFormat('ko-KR', { style: 'curren
 const formatNum = (v: number) => new Intl.NumberFormat('ko-KR').format(v)
 const formatPercent = (v: number) => `${v.toFixed(1)}%`
 
+// 타입 정의
+type OrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate'> & {
+    createdAt?: Date
+    updatedAt?: Date
+    shipDate?: Date
+}
+
+type SalesOrder = Omit<FirestoreSalesOrder, 'createdAt' | 'confirmedAt'> & {
+    createdAt?: Date
+    confirmedAt?: Date
+}
+
+type Shipment = Omit<FirestoreShipment, 'createdAt' | 'updatedAt' | 'etaAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
+    etaAt?: Date
+}
+
 export default function Dashboard() {
-    const { salesOrders, orderSheets, shipments } = useOrderStore()
+    // Firebase에서 직접 로드되는 데이터
+    const [orderSheets, setOrderSheets] = useState<OrderSheet[]>([])
+    const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([])
+    const [shipments, setShipments] = useState<Shipment[]>([])
+    const [loading, setLoading] = useState(true)
+
     const [timeframe, setTimeframe] = useState<'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('WEEKLY')
+
+    // Firebase에서 모든 데이터 로드
+    const loadData = async () => {
+        try {
+            setLoading(true)
+
+            const [osData, soData, shipData] = await Promise.all([
+                getAllOrderSheets(),
+                getAllSalesOrders(),
+                getAllShipments()
+            ])
+
+            setOrderSheets(osData.map(os => ({
+                ...os,
+                createdAt: os.createdAt?.toDate?.() || new Date(),
+                updatedAt: os.updatedAt?.toDate?.() || new Date(),
+                shipDate: os.shipDate?.toDate?.() || undefined,
+            })))
+
+            setSalesOrders(soData.map(so => ({
+                ...so,
+                createdAt: so.createdAt?.toDate?.() || new Date(),
+                confirmedAt: so.confirmedAt?.toDate?.() || new Date(),
+            })))
+
+            setShipments(shipData.map(s => ({
+                ...s,
+                createdAt: s.createdAt?.toDate?.() || new Date(),
+                updatedAt: s.updatedAt?.toDate?.() || new Date(),
+                etaAt: s.etaAt?.toDate?.() || undefined,
+            })))
+        } catch (err) {
+            console.error('Failed to load dashboard data:', err)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadData()
+    }, [])
 
     // 계산된 지표들
     const todaySales = useMemo(() => {
         const today = new Date().toDateString()
         return salesOrders
-            .filter(so => new Date(so.createdAt).toDateString() === today)
+            .filter(so => so.createdAt && so.createdAt.toDateString() === today)
             .reduce((sum, so) => sum + so.totalsAmount, 0)
     }, [salesOrders])
 
@@ -55,6 +127,18 @@ export default function Dashboard() {
         { label: '배송(Del)', value: shipments.filter(s => s.status === 'IN_TRANSIT' || s.status === 'DELIVERED').length, color: '#00e676' },
         { label: '완료(Done)', value: shipments.filter(s => s.status === 'DELIVERED').length, color: '#ff9d00' },
     ]
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="dashboard-v2">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>대시보드 데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="dashboard-v2">
@@ -177,7 +261,7 @@ export default function Dashboard() {
                                         />
                                     )
                                     return acc
-                                }, [] as any)}
+                                }, [] as React.ReactElement[])}
                             </svg>
                             <div className="donut-center-text">
                                 <div className="donut-center-label">총 매출</div>

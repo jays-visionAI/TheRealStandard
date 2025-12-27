@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ClipboardListIcon, PencilIcon, FilePlusIcon, MapPinIcon, PhoneIcon, PackageIcon, TruckDeliveryIcon, FileTextIcon } from '../../components/Icons'
-import { useOrderStore } from '../../stores/orderStore'
+import { getOrderSheetById, getOrderSheetItems, type FirestoreOrderSheet, type FirestoreOrderSheetItem } from '../../lib/orderService'
 import './StepReview.css'
 import type { ReactNode } from 'react'
 
@@ -28,43 +28,80 @@ interface FinalizedItem {
     note: string
 }
 
+// 로컬 타입
+type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate'> & {
+    createdAt?: Date
+    updatedAt?: Date
+    shipDate?: Date
+    lastSubmittedAt?: Date
+    shipTo?: string
+}
+
 export default function StepReview() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { getOrderSheetById, getOrderItems } = useOrderStore()
     const [currentStep, setCurrentStep] = useState(1)
 
-    // 스토어에서 주문 데이터 가져오기
-    const orderRecord = getOrderSheetById(id || '')
-    const itemsRecord = getOrderItems(id || '')
+    // Firebase에서 직접 로드되는 데이터
+    const [orderRecord, setOrderRecord] = useState<LocalOrderSheet | null>(null)
+    const [itemsRecord, setItemsRecord] = useState<FirestoreOrderSheetItem[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        if (!id) return
+
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [osData, itemsData] = await Promise.all([
+                getOrderSheetById(id),
+                getOrderSheetItems(id)
+            ])
+
+            if (osData) {
+                setOrderRecord({
+                    ...osData,
+                    createdAt: osData.createdAt?.toDate?.() || new Date(),
+                    updatedAt: osData.updatedAt?.toDate?.() || new Date(),
+                    shipDate: osData.shipDate?.toDate?.() || undefined,
+                })
+            }
+            setItemsRecord(itemsData)
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadData()
+    }, [id])
 
     // 원본 주문 데이터 매핑
     const order = {
         id: orderRecord?.id || 'NO-DATA',
         customerName: orderRecord?.customerName || '알 수 없음',
         customerContact: '-', // 현재 Organization 정보가 필요함
-        shipDate: orderRecord?.shipDate ? new Date(orderRecord.shipDate).toLocaleDateString('ko-KR') : '-',
+        shipDate: orderRecord?.shipDate ? orderRecord.shipDate.toLocaleDateString('ko-KR') : '-',
         shipTo: orderRecord?.shipTo || '-',
-        submittedAt: orderRecord?.lastSubmittedAt ? new Date(orderRecord.lastSubmittedAt).toLocaleString('ko-KR') : '-',
+        submittedAt: orderRecord?.lastSubmittedAt ? orderRecord.lastSubmittedAt.toLocaleString('ko-KR') : '-',
         items: itemsRecord.map(i => ({
             name: i.productName || '상품명 없음',
-            qtyKg: i.estimatedKg,
-            unitPrice: i.unitPrice
+            qtyKg: i.estimatedKg || 0,
+            unitPrice: i.unitPrice || 0
         })),
-        totalKg: itemsRecord.reduce((sum, i) => sum + i.estimatedKg, 0),
+        totalKg: itemsRecord.reduce((sum, i) => sum + (i.estimatedKg || 0), 0),
     }
 
     // 최종 확정 입력 상태
-    const [finalizedItems, setFinalizedItems] = useState<FinalizedItem[]>(
-        order.items.map(item => ({
-            productName: item.name,
-            originalQty: item.qtyKg,
-            finalQty: item.qtyKg,
-            unit: 'kg',
-            note: '',
-        }))
-    )
-    const [finalEstimatedTotalKg, setFinalEstimatedTotalKg] = useState(order.totalKg)
+    const [finalizedItems, setFinalizedItems] = useState<FinalizedItem[]>([])
+    const [finalEstimatedTotalKg, setFinalEstimatedTotalKg] = useState(0)
     const [selectedVehicleType, setSelectedVehicleType] = useState('')
     const [dispatchInfo, setDispatchInfo] = useState({
         carrierName: '',
@@ -74,6 +111,21 @@ export default function StepReview() {
         etaAt: '',
     })
     const [adminNote, setAdminNote] = useState('')
+
+    // itemsRecord가 로드되면 finalizedItems 초기화
+    useEffect(() => {
+        if (itemsRecord.length > 0 && finalizedItems.length === 0) {
+            const items = itemsRecord.map(i => ({
+                productName: i.productName || '상품명 없음',
+                originalQty: i.estimatedKg || 0,
+                finalQty: i.estimatedKg || 0,
+                unit: 'kg',
+                note: '',
+            }))
+            setFinalizedItems(items)
+            setFinalEstimatedTotalKg(items.reduce((sum, i) => sum + i.finalQty, 0))
+        }
+    }, [itemsRecord])
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
@@ -133,6 +185,32 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
             alert('✅ 최종안이 고객에게 발송되었습니다!\n\n고객 확인 대기 상태로 변경됩니다.')
             navigate('/admin/workflow')
         }
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="step-review">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="step-review">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (

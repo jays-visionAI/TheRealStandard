@@ -1,7 +1,13 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useOrderStore } from '../../stores/orderStore'
-import { useShipmentStore } from '../../stores/shipmentStore'
+import {
+    getAllPurchaseOrders,
+    getAllSalesOrders,
+    getAllShipments,
+    type FirestorePurchaseOrder,
+    type FirestoreSalesOrder,
+    type FirestoreShipment
+} from '../../lib/orderService'
 import { FactoryIcon, CheckCircleIcon, PackageIcon, TruckDeliveryIcon, PhoneIcon } from '../../components/Icons'
 import './WarehouseDashboard.css'
 
@@ -21,9 +27,42 @@ interface PendingItem {
 
 export default function WarehouseDashboard() {
     const navigate = useNavigate()
-    const { purchaseOrders, salesOrders } = useOrderStore()
-    const { shipments } = useShipmentStore()
+
+    // Firebase에서 직접 로드되는 데이터
+    const [purchaseOrders, setPurchaseOrders] = useState<FirestorePurchaseOrder[]>([])
+    const [salesOrders, setSalesOrders] = useState<FirestoreSalesOrder[]>([])
+    const [shipments, setShipments] = useState<FirestoreShipment[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
     const [activeTab, setActiveTab] = useState<'receive' | 'release'>('receive')
+
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [poData, soData, shipmentsData] = await Promise.all([
+                getAllPurchaseOrders(),
+                getAllSalesOrders(),
+                getAllShipments()
+            ])
+
+            setPurchaseOrders(poData)
+            setSalesOrders(soData)
+            setShipments(shipmentsData)
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        loadData()
+    }, [])
 
     // 매입 발주 데이터를 반입 대기로 매핑
     const receiveItems: PendingItem[] = useMemo(() => {
@@ -45,7 +84,8 @@ export default function WarehouseDashboard() {
     // 확정 주문 데이터를 출고 대기로 매핑 (배송 정보 동기화)
     const releaseItems: PendingItem[] = useMemo(() => {
         return salesOrders.map(so => {
-            const shipment = shipments.find(s => s.orderId === so.id)
+            const shipment = shipments.find(s => s.sourceSalesOrderId === so.id || s.orderId === so.id)
+            const etaValue = shipment?.eta || shipment?.etaAt
             return {
                 id: so.id,
                 orderId: so.id,
@@ -55,7 +95,7 @@ export default function WarehouseDashboard() {
                 vehicleNo: shipment?.vehicleNumber || '배차대기',
                 driverName: shipment?.driverName || '기사 미정',
                 driverPhone: shipment?.driverPhone || '',
-                expectedTime: shipment ? new Date(shipment.eta).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '오늘',
+                expectedTime: etaValue ? new Date(etaValue instanceof Date ? etaValue : (etaValue as any).toDate?.() || etaValue).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '오늘',
                 status: 'PENDING',
                 type: 'RELEASE',
             }
@@ -70,6 +110,30 @@ export default function WarehouseDashboard() {
         } else {
             navigate(`/warehouse/release/${item.id}`)
         }
+    }
+
+    if (loading) {
+        return (
+            <div className="warehouse-dashboard">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="warehouse-dashboard">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (

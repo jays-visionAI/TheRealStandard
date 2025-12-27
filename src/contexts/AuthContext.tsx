@@ -1,5 +1,15 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import {
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    User as FirebaseUser
+} from 'firebase/auth'
+import { auth } from '../lib/firebase'
 import type { UserRole } from '../types'
+import { getUserByEmail, createUser } from '../lib/userService'
+import { getAllCustomers } from '../lib/customerService'
 
 interface User {
     id: string
@@ -8,15 +18,17 @@ interface User {
     role: UserRole
     orgId?: string
     avatar?: string
+    firebaseUid?: string
 }
 
 interface AuthContextType {
     user: User | null
+    firebaseUser: FirebaseUser | null
     loading: boolean
     login: (email: string, password: string) => Promise<void>
     loginWithKakao: (kakaoUser: any) => Promise<void>
     loginWithGoogle: () => Promise<void>
-    logout: () => void
+    logout: () => Promise<void>
     isAdmin: boolean
     isCustomer: boolean
     isWarehouse: boolean
@@ -25,165 +37,188 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// 데모 계정 정의 (Firebase Auth에 등록된 계정)
+const DEMO_ACCOUNTS: Record<string, { email: string; password: string; name: string; role: UserRole }> = {
+    'ADMIN': { email: 'admin@trs.com', password: 'admin123', name: '관리자', role: 'ADMIN' },
+    'CUSTOMER': { email: 'customer@trs.com', password: 'customer123', name: '고객사', role: 'CUSTOMER' },
+    'WAREHOUSE': { email: 'warehouse@trs.com', password: 'warehouse123', name: '물류담당', role: 'WAREHOUSE' },
+    'ACCOUNTING': { email: 'accounting@trs.com', password: 'accounting123', name: '정산담당', role: 'ACCOUNTING' },
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
+    const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
     const [loading, setLoading] = useState(true)
 
-    // 초기 로드시 localStorage에서 사용자 정보 확인
+    // Firebase Auth 상태 감지
     useEffect(() => {
-        const savedUser = localStorage.getItem('trs_user')
-        if (savedUser) {
-            try {
-                const parsedUser = JSON.parse(savedUser)
-                setUser(parsedUser)
-            } catch {
-                localStorage.removeItem('trs_user')
+        const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+            setFirebaseUser(fbUser)
+
+            if (fbUser && fbUser.email) {
+                try {
+                    // Firestore에서 사용자 정보 가져오기
+                    const firestoreUser = await getUserByEmail(fbUser.email)
+
+                    if (firestoreUser) {
+                        setUser({
+                            id: firestoreUser.id,
+                            email: firestoreUser.email,
+                            name: firestoreUser.name,
+                            role: firestoreUser.role,
+                            orgId: firestoreUser.orgId,
+                            firebaseUid: fbUser.uid
+                        })
+                    } else {
+                        // 고객 DB에서 확인
+                        const customers = await getAllCustomers()
+                        const foundCustomer = customers.find(c => c.email === fbUser.email)
+
+                        if (foundCustomer) {
+                            setUser({
+                                id: foundCustomer.id,
+                                email: foundCustomer.email,
+                                name: foundCustomer.ceoName,
+                                role: 'CUSTOMER',
+                                orgId: foundCustomer.id,
+                                firebaseUid: fbUser.uid
+                            })
+                        } else {
+                            // 설정되지 않은 사용자 - 기본 고객으로 처리
+                            setUser({
+                                id: fbUser.uid,
+                                email: fbUser.email,
+                                name: fbUser.displayName || '사용자',
+                                role: 'CUSTOMER',
+                                firebaseUid: fbUser.uid
+                            })
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch user data:', error)
+                    // Firebase Auth는 성공했지만 Firestore 조회 실패 시
+                    // 기본 정보로 설정
+                    setUser({
+                        id: fbUser.uid,
+                        email: fbUser.email,
+                        name: fbUser.displayName || '사용자',
+                        role: 'CUSTOMER',
+                        firebaseUid: fbUser.uid
+                    })
+                }
+            } else {
+                setUser(null)
             }
-        }
-        setLoading(false)
+
+            setLoading(false)
+        })
+
+        return () => unsubscribe()
     }, [])
 
     const login = async (email: string, password: string) => {
-        // Firebase Firestore에서 사용자 검증
-        const { validateLogin } = await import('../lib/userService')
+        try {
+            console.log('Attempting login for:', email)
+            // Firebase Auth로 로그인
+            await signInWithEmailAndPassword(auth, email, password)
+            console.log('Login successful')
+        } catch (error: any) {
+            console.error('Firebase Login Error Object:', error)
 
-        const foundUser = await validateLogin(email, password)
+            // Firebase Auth 계정이 없으면 자동 생성 시도 (데모용)
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
+                try {
+                    console.log('Account not found, attempting to create demo account:', email)
+                    // 새 Firebase Auth 계정 생성
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+                    console.log('Auth account created:', userCredential.user.uid)
 
-        if (!foundUser) {
-            // 고객 초대 프로세스로 가입된 고객 계정 백업 체크 (추후 customers 컬렉션도 Firebase로 마이그레이션 예정)
-            const { useCustomerStore } = await import('../stores/customerStore')
-            const { customers } = useCustomerStore.getState()
-            const foundCustomer = customers.find(c => c.email === email && c.password === password && c.status === 'ACTIVE')
+                    // Firestore에 사용자 정보 저장 (데모 계정 확인)
+                    const demoAccount = Object.values(DEMO_ACCOUNTS).find(d => d.email === email)
 
-            if (foundCustomer) {
-                const mappedUser: User = {
-                    id: foundCustomer.id,
-                    email: foundCustomer.email,
-                    name: foundCustomer.ceoName,
-                    role: 'CUSTOMER',
-                    orgId: foundCustomer.id
+                    await createUser({
+                        email: email,
+                        name: demoAccount?.name || '신규 사용자',
+                        role: demoAccount?.role || 'CUSTOMER',
+                        status: 'ACTIVE',
+                    })
+                    console.log('Firestore user identity created')
+                } catch (createError: any) {
+                    console.error('Account Creation Error:', createError)
+                    if (createError.code === 'auth/email-already-in-use') {
+                        throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.')
+                    }
+                    throw new Error(`계정 생성 실패: ${createError.message}`)
                 }
-                localStorage.setItem('trs_user', JSON.stringify(mappedUser))
-                setUser(mappedUser)
-                return
+            } else if (error.code === 'auth/wrong-password') {
+                throw new Error('비밀번호가 올바르지 않습니다.')
+            } else if (error.code === 'auth/invalid-email') {
+                throw new Error('유효하지 않은 이메일 형식입니다.')
+            } else {
+                throw new Error(`로그인 오류 (${error.code}): ${error.message}`)
             }
-            throw new Error('이메일 또는 비밀번호가 일치하지 않거나 유효하지 않은 계정입니다.')
         }
-
-        const mappedUser: User = {
-            id: foundUser.id,
-            email: foundUser.email,
-            name: foundUser.name,
-            role: foundUser.role,
-            orgId: foundUser.orgId
-        }
-
-        localStorage.setItem('trs_user', JSON.stringify(mappedUser))
-        setUser(mappedUser)
     }
 
     const loginWithKakao = async (kakaoUser: any) => {
         const email = kakaoUser.kakao_account?.email || `${kakaoUser.id}@kakao.com`
+        const tempPassword = `kakao_${kakaoUser.id}_temp`
 
-        // 1. 사내 직원 목록(userStore)에서 이메일 매칭 확인
-        const { useUserStore } = await import('../stores/userStore')
-        const { users } = useUserStore.getState()
-        const internalUser = users.find(u => u.email === email && u.status === 'ACTIVE')
+        try {
+            // 먼저 로그인 시도
+            await signInWithEmailAndPassword(auth, email, tempPassword)
+        } catch (error: any) {
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                // 계정이 없으면 생성
+                try {
+                    await createUserWithEmailAndPassword(auth, email, tempPassword)
 
-        if (internalUser) {
-            // 사내 직원으로 로그인 (ADMIN, WAREHOUSE, ACCOUNTING 등)
-            const mappedUser: User = {
-                id: internalUser.id,
-                email: internalUser.email,
-                name: internalUser.name,
-                role: internalUser.role,
-                orgId: internalUser.orgId,
-                avatar: kakaoUser.properties?.profile_image
+                    // Firestore에 사용자 정보 저장
+                    await createUser({
+                        email: email,
+                        name: kakaoUser.properties?.nickname || '카카오 사용자',
+                        role: 'CUSTOMER',
+                        status: 'ACTIVE',
+                    })
+                } catch (createError) {
+                    console.error('Kakao login error:', createError)
+                    throw new Error('카카오 로그인에 실패했습니다.')
+                }
+            } else {
+                throw error
             }
-            localStorage.setItem('trs_user', JSON.stringify(mappedUser))
-            setUser(mappedUser)
-            return
         }
-
-        // 2. 고객사 DB에서도 확인 (기존 가입 고객인지)
-        const { useCustomerStore } = await import('../stores/customerStore')
-        const { customers } = useCustomerStore.getState()
-        const existingCustomer = customers.find(c => c.email === email && c.status === 'ACTIVE')
-
-        if (existingCustomer) {
-            const mappedUser: User = {
-                id: existingCustomer.id,
-                email: existingCustomer.email,
-                name: existingCustomer.ceoName,
-                role: 'CUSTOMER',
-                orgId: existingCustomer.id,
-                avatar: kakaoUser.properties?.profile_image
-            }
-            localStorage.setItem('trs_user', JSON.stringify(mappedUser))
-            setUser(mappedUser)
-            return
-        }
-
-        // 3. 신규 사용자라면 기본 '고객'으로 처리 (데모용 자동 가입)
-        const newUser: User = {
-            id: `kakao-${kakaoUser.id}`,
-            email: email,
-            name: kakaoUser.properties?.nickname || '카카오 사용자',
-            role: 'CUSTOMER',
-            avatar: kakaoUser.properties?.profile_image
-        }
-
-        localStorage.setItem('trs_user', JSON.stringify(newUser))
-        setUser(newUser)
     }
 
     const loginWithGoogle = async () => {
         const { signInWithGoogle } = await import('../lib/googleService')
-        const { getUserByEmail, createUser } = await import('../lib/userService')
 
         const googleUser = await signInWithGoogle()
         if (!googleUser.email) throw new Error('구글 계정에 이메일이 없습니다.')
 
-        // 1. 사내 직원 목록(users)에서 이메일 매칭
-        let existingUser = await getUserByEmail(googleUser.email)
+        // Google Sign-in은 이미 Firebase Auth를 사용하므로
+        // onAuthStateChanged가 자동으로 처리
 
-        if (existingUser) {
-            const mappedUser: User = {
-                id: existingUser.id,
-                email: existingUser.email,
-                name: existingUser.name,
-                role: existingUser.role,
-                orgId: existingUser.orgId,
-                avatar: googleUser.photoURL || undefined
-            }
-            localStorage.setItem('trs_user', JSON.stringify(mappedUser))
-            setUser(mappedUser)
-            return
+        // Firestore에 사용자 정보가 없으면 생성
+        const existingUser = await getUserByEmail(googleUser.email)
+        if (!existingUser) {
+            await createUser({
+                email: googleUser.email,
+                name: googleUser.displayName || '구글 사용자',
+                role: 'CUSTOMER',
+                status: 'ACTIVE',
+            })
         }
-
-        // 2. 신규 사용자라면 기본 'CUSTOMER'로 자동 등록
-        const newFirestoreUser = await createUser({
-            email: googleUser.email,
-            name: googleUser.displayName || '구글 사용자',
-            role: 'CUSTOMER',
-            status: 'ACTIVE',
-        })
-
-        const newUser: User = {
-            id: newFirestoreUser.id,
-            email: newFirestoreUser.email,
-            name: newFirestoreUser.name,
-            role: 'CUSTOMER',
-            avatar: googleUser.photoURL || undefined
-        }
-
-        localStorage.setItem('trs_user', JSON.stringify(newUser))
-        setUser(newUser)
     }
 
-    const logout = () => {
-        localStorage.removeItem('trs_user')
-        setUser(null)
+    const logout = async () => {
+        try {
+            await signOut(auth)
+            setUser(null)
+            setFirebaseUser(null)
+        } catch (error) {
+            console.error('Logout error:', error)
+        }
     }
 
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'OPS'
@@ -195,6 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         <AuthContext.Provider
             value={{
                 user,
+                firebaseUser,
                 loading,
                 login,
                 loginWithKakao,

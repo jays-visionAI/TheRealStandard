@@ -1,9 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ClipboardListIcon, TruckDeliveryIcon, UserIcon, CheckCircleIcon, MapPinIcon } from '../../components/Icons'
-import { useOrderStore } from '../../stores/orderStore'
+import {
+    getSalesOrderById,
+    getSalesOrderItems,
+    createShipment,
+    type FirestoreSalesOrder,
+    type FirestoreSalesOrderItem
+} from '../../lib/orderService'
 import './StepDispatch.css'
 import type { ReactNode } from 'react'
+import { Timestamp } from 'firebase/firestore'
 
 // 배차 프로세스의 단계
 const DISPATCH_STEPS: { id: number; label: string; icon: ReactNode }[] = [
@@ -33,24 +40,69 @@ const drivers = [
     { id: 'd3', name: '박기사', phone: '010-3456-7890', vehicleNo: '서울56다1234' },
 ]
 
+// 타입 정의
+type LocalSalesOrder = Omit<FirestoreSalesOrder, 'createdAt' | 'confirmedAt'> & {
+    createdAt?: Date
+    confirmedAt?: Date
+}
+
+type LocalSalesOrderItem = FirestoreSalesOrderItem
+
 export default function StepDispatch() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { getSalesOrderById, getSalesOrderItems } = useOrderStore()
+
+    // Firebase에서 직접 로드되는 데이터
+    const [salesOrder, setSalesOrder] = useState<LocalSalesOrder | null>(null)
+    const [salesOrderItems, setSalesOrderItems] = useState<LocalSalesOrderItem[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
     const [currentStep, setCurrentStep] = useState(1)
     const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null)
     const [selectedDriver, setSelectedDriver] = useState<string | null>(null)
     const [carrierName, setCarrierName] = useState('한국물류')
     const [etaTime, setEtaTime] = useState('14:00')
+    const [saving, setSaving] = useState(false)
 
-    // 스토어에서 데이터 가져오기
-    const salesOrder = getSalesOrderById(id || '')
-    const salesOrderItems = getSalesOrderItems(id || '')
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        if (!id) return
+
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [soData, itemsData] = await Promise.all([
+                getSalesOrderById(id),
+                getSalesOrderItems(id)
+            ])
+
+            if (soData) {
+                setSalesOrder({
+                    ...soData,
+                    createdAt: soData.createdAt?.toDate?.() || new Date(),
+                    confirmedAt: soData.confirmedAt?.toDate?.() || new Date(),
+                })
+            }
+            setSalesOrderItems(itemsData)
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadData()
+    }, [id])
 
     const order = {
         id: salesOrder?.id || 'NO-DATA',
         customerName: salesOrder?.customerName || '알 수 없음',
-        shipDate: salesOrder?.confirmedAt ? new Date(salesOrder.confirmedAt).toLocaleDateString('ko-KR') : '-',
+        shipDate: salesOrder?.confirmedAt ? salesOrder.confirmedAt.toLocaleDateString('ko-KR') : '-',
         shipTo: '-', // 실제로는 Organization 정보에서 가져와야 함
         totalKg: salesOrder?.totalsKg || 0,
         items: salesOrderItems.map(i => ({
@@ -75,12 +127,63 @@ export default function StepDispatch() {
         }
     }
 
-    const handleComplete = () => {
+    const handleComplete = async () => {
         const driver = drivers.find(d => d.id === selectedDriver)
         const vehicle = vehicleTypes.find(v => v.id === selectedVehicle)
 
-        alert(`✅ 배차가 완료되었습니다!\n\n차량: ${vehicle?.name}\n기사: ${driver?.name}\n차량번호: ${driver?.vehicleNo}\n도착예정: ${etaTime}`)
-        navigate('/admin/workflow')
+        if (!salesOrder) return
+
+        try {
+            setSaving(true)
+
+            // 오늘 날짜에 ETA 시간 추가
+            const [hours, minutes] = etaTime.split(':').map(Number)
+            const etaDate = new Date()
+            etaDate.setHours(hours, minutes, 0, 0)
+
+            await createShipment({
+                sourceSalesOrderId: salesOrder.id,
+                vehicleTypeId: vehicle?.id,
+                driverName: driver?.name,
+                driverPhone: driver?.phone,
+                status: 'PREPARING',
+                etaAt: Timestamp.fromDate(etaDate),
+            })
+
+            alert(`✅ 배차가 완료되었습니다!\n\n차량: ${vehicle?.name}\n기사: ${driver?.name}\n차량번호: ${driver?.vehicleNo}\n도착예정: ${etaTime}`)
+            navigate('/admin/workflow')
+        } catch (err) {
+            console.error('Dispatch failed:', err)
+            alert('배차 등록에 실패했습니다.')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="step-dispatch">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="step-dispatch">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -285,8 +388,12 @@ export default function StepDispatch() {
                             </div>
                         </div>
 
-                        <button className="btn btn-primary btn-lg w-full mt-6" onClick={handleComplete}>
-                            <TruckDeliveryIcon size={18} /> 배차 완료하기
+                        <button
+                            className="btn btn-primary btn-lg w-full mt-6"
+                            onClick={handleComplete}
+                            disabled={saving}
+                        >
+                            <TruckDeliveryIcon size={18} /> {saving ? '처리 중...' : '배차 완료하기'}
                         </button>
                     </section>
                 )}

@@ -1,16 +1,23 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCustomerStore, type Customer } from '../../stores/customerStore'
-import { useOrderStore } from '../../stores/orderStore'
 import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon } from '../../components/Icons'
+import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
+import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
+import { createOrderSheet, setOrderSheetItems } from '../../lib/orderService'
 import './OrderSheetCreate.css'
-import { useProductStore, type Product as StoreProduct } from '../../stores/productStore'
+import { Timestamp } from 'firebase/firestore'
 
-interface Product extends StoreProduct {
-    unitPrice: number
+// 로컬 타입
+type Customer = Omit<FirestoreCustomer, 'createdAt' | 'updatedAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
 }
 
-// PRODUCT_MASTER defined via store
+interface Product extends Omit<FirestoreProduct, 'createdAt' | 'updatedAt'> {
+    unitPrice: number
+    createdAt?: Date
+    updatedAt?: Date
+}
 
 // Mock 이전 주문 데이터
 interface PastOrder {
@@ -42,22 +49,12 @@ interface OrderRow {
 export default function OrderSheetCreate() {
     const navigate = useNavigate()
 
-    // 공유 스토어에서 고객/상품 데이터 가져오기
-    const { customers, initializeStore: initCustomers } = useCustomerStore()
-    const { addOrderSheet } = useOrderStore()
-    const { products, initializeStore } = useProductStore()
-
-    // 초기화 (저장된 데이터가 없을 경우)
-    useEffect(() => {
-        initializeStore()
-        initCustomers()
-    }, [initializeStore, initCustomers])
-
-    // 로컬에서 사용하기 편하도록 도매가를 unitPrice로 매핑
-    const PRODUCT_MASTER = useMemo(() => products.map(p => ({
-        ...p,
-        unitPrice: p.wholesalePrice
-    })), [products])
+    // Firebase에서 직접 로드되는 데이터
+    const [customers, setCustomers] = useState<Customer[]>([])
+    const [products, setProducts] = useState<Product[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [saving, setSaving] = useState(false)
 
     // Step 관리
     const [step, setStep] = useState(1)
@@ -86,6 +83,42 @@ export default function OrderSheetCreate() {
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
     const dropdownRef = useRef<HTMLDivElement>(null)
+
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [customersData, productsData] = await Promise.all([
+                getAllCustomers(),
+                getAllProducts()
+            ])
+
+            setCustomers(customersData.map(c => ({
+                ...c,
+                createdAt: c.createdAt?.toDate?.() || new Date(),
+                updatedAt: c.updatedAt?.toDate?.() || new Date(),
+            })))
+
+            setProducts(productsData.map(p => ({
+                ...p,
+                unitPrice: p.wholesalePrice,
+                createdAt: p.createdAt?.toDate?.() || new Date(),
+                updatedAt: p.updatedAt?.toDate?.() || new Date(),
+            })))
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadData()
+    }, [])
 
     // 빈 행 생성
     function createEmptyRow(): OrderRow {
@@ -119,12 +152,12 @@ export default function OrderSheetCreate() {
     const searchProducts = useCallback((query: string): Product[] => {
         if (!query.trim()) return []
         const q = query.toLowerCase()
-        const startsWithProducts = PRODUCT_MASTER.filter(p => p.name.toLowerCase().startsWith(q))
-        const containsProducts = PRODUCT_MASTER.filter(p =>
+        const startsWithProducts = products.filter(p => p.name.toLowerCase().startsWith(q))
+        const containsProducts = products.filter(p =>
             p.name.toLowerCase().includes(q) && !p.name.toLowerCase().startsWith(q)
         )
         return [...startsWithProducts, ...containsProducts]
-    }, [PRODUCT_MASTER])
+    }, [products])
 
     // 검색어 변경 시 필터링
     useEffect(() => {
@@ -153,7 +186,7 @@ export default function OrderSheetCreate() {
                     productId: product.id,
                     productName: product.name,
                     unitPrice: product.unitPrice,
-                    unit: product.unit,
+                    unit: product.unit as 'kg' | 'box',
                 }
             }
             return row
@@ -176,7 +209,7 @@ export default function OrderSheetCreate() {
     const updateQuantity = (rowId: string, quantity: number) => {
         setRows(prev => prev.map(row => {
             if (row.id === rowId) {
-                const product = PRODUCT_MASTER.find(p => p.id === row.productId)
+                const product = products.find(p => p.id === row.productId)
                 let estimatedWeight = quantity
 
                 if (product && product.unit === 'box' && product.boxWeight) {
@@ -216,14 +249,14 @@ export default function OrderSheetCreate() {
     // 이전 주문에서 품목 불러오기
     const loadFromPastOrder = (pastOrder: PastOrder) => {
         const newRows: OrderRow[] = pastOrder.items.map(item => {
-            const product = PRODUCT_MASTER.find(p => p.id === item.productId)
+            const product = products.find(p => p.id === item.productId)
             return {
                 id: `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 productId: item.productId,
                 productName: item.productName,
                 unitPrice: product?.unitPrice || 0,
                 quantity: item.qty,
-                unit: product?.unit || 'kg',
+                unit: product?.unit as 'kg' | 'box' || 'kg',
                 estimatedWeight: item.qty,
                 totalAmount: (product?.unitPrice || 0) * item.qty,
             }
@@ -284,57 +317,59 @@ export default function OrderSheetCreate() {
 
     // 고객 필터링 - 활성 고객만 표시
     const filteredCustomers = useMemo(() => {
-        const activeCustomers = customers.filter((c: Customer) => c.isActive)
+        const activeCustomers = customers.filter(c => c.isActive)
         if (!customerSearch) return activeCustomers
         const q = customerSearch.toLowerCase()
-        return activeCustomers.filter((c: Customer) =>
+        return activeCustomers.filter(c =>
             c.companyName.toLowerCase().includes(q) ||
             c.bizRegNo.includes(q)
         )
     }, [customerSearch, customers])
 
     // 주문장 발송
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!selectedCustomer || validRows.length === 0 || !shipDate || !cutOffAt) {
             alert('모든 필수 정보를 입력해주세요.')
             return
         }
 
-        const orderId = 'OS-' + Date.now()
-        const token = 'token-' + Math.random().toString(36).substr(2, 9)
-        const link = `${window.location.origin}/order/${token}`
+        try {
+            setSaving(true)
 
-        const newOrder = {
-            id: orderId,
-            customerOrgId: selectedCustomer.id,
-            customerName: selectedCustomer.companyName,
-            shipDate: new Date(shipDate),
-            cutOffAt: new Date(cutOffAt),
-            shipTo: shipTo,
-            status: 'SENT' as const,
-            inviteTokenId: token,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            const token = 'token-' + Math.random().toString(36).substr(2, 9)
+
+            // Firebase에 주문장 생성
+            const newOrderSheet = await createOrderSheet({
+                customerOrgId: selectedCustomer.id,
+                customerName: selectedCustomer.companyName,
+                shipDate: Timestamp.fromDate(new Date(shipDate)),
+                status: 'SENT',
+                inviteTokenId: token,
+            })
+
+            // 주문 아이템 저장
+            const items = validRows.map(row => ({
+                productId: row.productId || '',
+                productName: row.productName,
+                unit: row.unit,
+                unitPrice: row.unitPrice,
+                qtyRequested: row.quantity,
+                estimatedKg: row.estimatedWeight,
+                amount: row.totalAmount,
+            }))
+
+            await setOrderSheetItems(newOrderSheet.id, items)
+
+            const link = `${window.location.origin}/order/${token}`
+            navigator.clipboard.writeText(link)
+            alert(`✅ 주문장이 생성되었습니다!\n\n고객 링크가 클립보드에 복사되었습니다.\n\n${link}`)
+            navigate('/admin/order-sheets')
+        } catch (err) {
+            console.error('Failed to create order sheet:', err)
+            alert('주문장 생성에 실패했습니다.')
+        } finally {
+            setSaving(false)
         }
-
-        const items = validRows.map((row, idx) => ({
-            id: `item-${orderId}-${idx}`,
-            orderSheetId: orderId,
-            productId: row.productId || '',
-            productName: row.productName,
-            inputType: row.unit.toUpperCase() as any,
-            qtyKg: row.unit === 'kg' ? row.quantity : undefined,
-            qtyBox: row.unit === 'box' ? row.quantity : undefined,
-            estimatedKg: row.estimatedWeight,
-            unitPrice: row.unitPrice,
-            amount: row.totalAmount,
-        }))
-
-        addOrderSheet(newOrder, items)
-
-        navigator.clipboard.writeText(link)
-        alert(`✅ 주문장이 생성되었습니다!\n\n고객 링크가 클립보드에 복사되었습니다.\n\n${link}`)
-        navigate('/admin/order-sheets')
     }
 
     // 상품 선택 해제
@@ -344,6 +379,32 @@ export default function OrderSheetCreate() {
         ))
         const nameInput = inputRefs.current.get(`name-${rowId}`)
         if (nameInput) nameInput.focus()
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="order-sheet-create">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="order-sheet-create">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -745,10 +806,10 @@ export default function OrderSheetCreate() {
                                 </button>
                                 <button
                                     className="btn btn-primary btn-lg"
-                                    disabled={!shipDate || !cutOffAt}
+                                    disabled={!shipDate || !cutOffAt || saving}
                                     onClick={handleSubmit}
                                 >
-                                    주문장 발송 🔗
+                                    {saving ? '생성 중...' : '주문장 발송 🔗'}
                                 </button>
                             </div>
                         </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIcon, KakaoIcon, GoogleIcon } from '../../components/Icons'
@@ -7,44 +7,26 @@ import './Login.css'
 
 // Mock 사용자 목록 (데모용)
 const DEMO_USERS = [
-    { id: 'admin-001', email: 'admin@trs.co.kr', password: '1234', name: '김관리', role: 'ADMIN' as const },
-    { id: 'warehouse-001', email: 'warehouse@trs.co.kr', password: '1234', name: '박창고', role: 'WAREHOUSE' as const },
-    { id: 'accounting-001', email: 'accounting@trs.co.kr', password: '1234', name: '이경리', role: 'ACCOUNTING' as const },
-    { id: 'customer-001', email: 'customer@example.com', password: '1234', name: '최고객', role: 'CUSTOMER' as const },
+    { email: 'admin@trs.com', password: 'admin123', label: '관리자', role: 'ADMIN' as const },
+    { email: 'warehouse@trs.com', password: 'warehouse123', label: '창고직원', role: 'WAREHOUSE' as const },
+    { email: 'accounting@trs.com', password: 'accounting123', label: '경리직원', role: 'ACCOUNTING' as const },
+    { email: 'customer@trs.com', password: 'customer123', label: '고객', role: 'CUSTOMER' as const },
 ]
 
 export default function Login() {
     const navigate = useNavigate()
-    const { login, loginWithKakao, loginWithGoogle } = useAuth()
+    const { user, login, loginWithKakao, loginWithGoogle, loading } = useAuth()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [isLoading, setIsLoading] = useState(false)
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setError('')
-        setIsLoading(true)
-
-        try {
-            // Mock 로그인
-            const user = DEMO_USERS.find(u => u.email === email && u.password === password)
-
-            if (!user) {
-                setError('이메일 또는 비밀번호가 올바르지 않습니다.')
-                setIsLoading(false)
-                return
-            }
-
-            // localStorage에 사용자 정보 저장 (데모용)
-            localStorage.setItem('trs_user', JSON.stringify(user))
-
-            // login 함수 호출
-            await login(email, password)
-
-            // 역할별 리다이렉트
+    // 이미 로그인된 상태라면 리다이렉트
+    useEffect(() => {
+        if (!loading && user) {
             switch (user.role) {
                 case 'ADMIN':
+                case 'OPS':
                     navigate('/admin/workflow')
                     break
                 case 'WAREHOUSE':
@@ -54,14 +36,26 @@ export default function Login() {
                     navigate('/accounting')
                     break
                 case 'CUSTOMER':
-                    navigate('/')  // 고객용 페이지 미구현
+                    // 고객은 보통 링크(토큰)를 통해 들어오지만, 직접 로그인 시 메인으로
+                    navigate('/')
                     break
                 default:
                     navigate('/admin/workflow')
             }
-        } catch {
-            setError('로그인 중 오류가 발생했습니다.')
-        } finally {
+        }
+    }, [user, loading, navigate])
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setError('')
+        setIsLoading(true)
+
+        try {
+            await login(email, password)
+            // useEffect가 리다이렉트를 처리함
+        } catch (err: any) {
+            console.error(err)
+            setError(err.message || '로그인 중 오류가 발생했습니다.')
             setIsLoading(false)
         }
     }
@@ -72,11 +66,10 @@ export default function Login() {
         try {
             const result = await kakaoLogin()
             await loginWithKakao(result.user)
-            navigate('/')  // 고객용 페이지 미구현
+            // useEffect가 리다이렉트를 처리함
         } catch (err) {
             console.error(err)
             setError('카카오 로그인에 실패했습니다.')
-        } finally {
             setIsLoading(false)
         }
     }
@@ -86,20 +79,19 @@ export default function Login() {
         setIsLoading(true)
         try {
             await loginWithGoogle()
-            navigate('/')  // 고객용 페이지 미구현
+            // useEffect가 리다이렉트를 처리함
         } catch (err: any) {
             console.error(err)
             setError(err.message || '구글 로그인에 실패했습니다.')
-        } finally {
             setIsLoading(false)
         }
     }
 
     const handleQuickLogin = (userEmail: string) => {
-        const user = DEMO_USERS.find(u => u.email === userEmail)
-        if (user) {
-            setEmail(user.email)
-            setPassword(user.password)
+        const demoUser = DEMO_USERS.find(u => u.email === userEmail)
+        if (demoUser) {
+            setEmail(demoUser.email)
+            setPassword(demoUser.password)
         }
     }
 
@@ -187,25 +179,25 @@ export default function Login() {
                     <div className="demo-buttons">
                         <button
                             className="demo-btn admin"
-                            onClick={() => handleQuickLogin('admin@trs.co.kr')}
+                            onClick={() => handleQuickLogin('admin@trs.com')}
                         >
                             <UserIcon size={16} /> 관리자
                         </button>
                         <button
                             className="demo-btn warehouse"
-                            onClick={() => handleQuickLogin('warehouse@trs.co.kr')}
+                            onClick={() => handleQuickLogin('warehouse@trs.com')}
                         >
                             <FactoryIcon size={16} /> 창고직원
                         </button>
                         <button
                             className="demo-btn accounting"
-                            onClick={() => handleQuickLogin('accounting@trs.co.kr')}
+                            onClick={() => handleQuickLogin('accounting@trs.com')}
                         >
                             <FilesIcon size={16} /> 경리직원
                         </button>
                         <button
                             className="demo-btn customer"
-                            onClick={() => handleQuickLogin('customer@example.com')}
+                            onClick={() => handleQuickLogin('customer@trs.com')}
                         >
                             <ShoppingCartIcon size={16} /> 고객
                         </button>

@@ -1,30 +1,103 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useOrderStore } from '../../stores/orderStore'
-import { useShipmentStore } from '../../stores/shipmentStore'
-import { useVehicleStore } from '../../stores/vehicleStore'
-import { type SalesOrder } from '../../types'
+import {
+    getAllSalesOrders,
+    getAllShipments,
+    createShipment,
+    type FirestoreSalesOrder,
+    type FirestoreShipment
+} from '../../lib/orderService'
+import { getAllVehicleTypes, type FirestoreVehicleType } from '../../lib/vehicleService'
+
 import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon, KakaoIcon } from '../../components/Icons'
 import { sendOrderMessage } from '../../lib/kakaoService'
 import ShippingCard from '../../components/ShippingCard'
 import './SalesOrderList.css'
+import { Timestamp } from 'firebase/firestore'
+
+// 타입 정의
+type LocalSalesOrder = Omit<FirestoreSalesOrder, 'createdAt' | 'confirmedAt'> & {
+    createdAt?: Date
+    confirmedAt?: Date
+}
+
+type LocalShipment = Omit<FirestoreShipment, 'createdAt' | 'updatedAt' | 'etaAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
+    etaAt?: Date
+}
+
+type LocalVehicleType = Omit<FirestoreVehicleType, 'createdAt' | 'updatedAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
+}
 
 export default function SalesOrderList() {
-    const { salesOrders } = useOrderStore()
-    const { addShipment, getShipmentByOrderId } = useShipmentStore()
-    const { vehicleTypes } = useVehicleStore()
+    // Firebase에서 직접 로드되는 데이터
+    const [salesOrders, setSalesOrders] = useState<LocalSalesOrder[]>([])
+    const [shipments, setShipments] = useState<LocalShipment[]>([])
+    const [vehicleTypes, setVehicleTypes] = useState<LocalVehicleType[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     const [searchTerm, setSearchTerm] = useState('')
     const [showDispatchModal, setShowDispatchModal] = useState(false)
-    const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null)
+    const [selectedOrder, setSelectedOrder] = useState<LocalSalesOrder | null>(null)
 
     const navigate = useNavigate()
+
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [soData, shipData, vtData] = await Promise.all([
+                getAllSalesOrders(),
+                getAllShipments(),
+                getAllVehicleTypes()
+            ])
+
+            setSalesOrders(soData.map(so => ({
+                ...so,
+                createdAt: so.createdAt?.toDate?.() || new Date(),
+                confirmedAt: so.confirmedAt?.toDate?.() || new Date(),
+            })))
+
+            setShipments(shipData.map(s => ({
+                ...s,
+                createdAt: s.createdAt?.toDate?.() || new Date(),
+                updatedAt: s.updatedAt?.toDate?.() || new Date(),
+                etaAt: s.etaAt?.toDate?.() || undefined,
+            })))
+
+            setVehicleTypes(vtData.map(v => ({
+                ...v,
+                createdAt: v.createdAt?.toDate?.() || new Date(),
+                updatedAt: v.updatedAt?.toDate?.() || new Date(),
+            })))
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadData()
+    }, [])
+
+    const getShipmentByOrderId = (orderId: string) => {
+        return shipments.find(s => s.sourceSalesOrderId === orderId)
+    }
 
     const filteredOrders = useMemo(() => {
         return salesOrders.filter(so =>
             so.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (so.customerName || '').toLowerCase().includes(searchTerm.toLowerCase())
-        ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        ).sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
     }, [salesOrders, searchTerm])
 
     // --- Dispatch Logic ---
@@ -37,7 +110,7 @@ export default function SalesOrderList() {
         eta: ''
     })
 
-    const handleOpenDispatch = (so: SalesOrder) => {
+    const handleOpenDispatch = (so: LocalSalesOrder) => {
         const existing = getShipmentByOrderId(so.id)
         if (existing) {
             alert('이미 배차 정보가 등록된 주문입니다.')
@@ -55,33 +128,64 @@ export default function SalesOrderList() {
         setShowDispatchModal(true)
     }
 
-    const handleDispatchSubmit = (e: React.FormEvent) => {
+    const handleDispatchSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!selectedOrder) return
 
-        const shipmentId = `SH-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+        try {
+            await createShipment({
+                sourceSalesOrderId: selectedOrder.id,
+                vehicleTypeId: vehicleTypes.find(v => v.name === dispatchForm.vehicleType)?.id,
+                driverName: dispatchForm.driverName,
+                driverPhone: dispatchForm.driverPhone,
+                status: 'PREPARING',
+                etaAt: Timestamp.fromDate(new Date(dispatchForm.eta)),
+            })
 
-        addShipment({
-            id: shipmentId,
-            orderId: selectedOrder.id,
-            customerName: selectedOrder.customerName || '알 수 없는 고객',
-            ...dispatchForm,
-            status: 'READY',
-            createdAt: new Date().toISOString()
-        })
-
-        setShowDispatchModal(false)
-        alert(`배송 지시가 완료되었습니다. [${shipmentId}]`)
+            await loadData()
+            setShowDispatchModal(false)
+            alert('배송 지시가 완료되었습니다.')
+        } catch (err) {
+            console.error('Dispatch failed:', err)
+            alert('배송 지시에 실패했습니다.')
+        }
     }
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
     }
 
-    const formatDate = (date: Date | string) => {
+    const formatDate = (date?: Date | string) => {
+        if (!date) return '-'
         return new Date(date).toLocaleDateString('ko-KR', {
             month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         })
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="page-container">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>확정주문 목록을 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="page-container">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -156,7 +260,7 @@ export default function SalesOrderList() {
                                                     ) : (
                                                         <button
                                                             className="btn btn-sm btn-kakao"
-                                                            onClick={() => sendOrderMessage(so.customerName || '고객', so.id, shipment.vehicleNumber, shipment.eta)}
+                                                            onClick={() => sendOrderMessage(so.customerName || '고객', so.id, '', shipment.etaAt?.toISOString() || '')}
                                                         >
                                                             <KakaoIcon size={14} /> 주문서 전송
                                                         </button>
@@ -185,7 +289,7 @@ export default function SalesOrderList() {
                         <div className="modal-form-side">
                             <div className="modal-header">
                                 <h2><TruckDeliveryIcon size={24} /> 출고 및 차량 배정</h2>
-                                <p className="text-secondary">주문 [{selectedOrder.id}] 에 대한 배송 정보를력하세요</p>
+                                <p className="text-secondary">주문 [{selectedOrder.id}] 에 대한 배송 정보를 입력하세요</p>
                             </div>
                             <form onSubmit={handleDispatchSubmit} className="modal-body">
                                 <div className="form-group mb-4">
@@ -231,11 +335,9 @@ export default function SalesOrderList() {
                             <h3 className="mb-4 text-secondary text-sm font-bold">배송 정보 카드 미리보기</h3>
                             <ShippingCard shipment={{
                                 id: 'SH-AUTO-GENERATED',
-                                orderId: selectedOrder.id,
                                 customerName: selectedOrder.customerName || '알 수 없는 고객',
                                 ...dispatchForm,
                                 status: 'READY',
-                                createdAt: new Date().toISOString()
                             }} />
                             <div className="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/10">
                                 <p className="text-xs text-primary leading-relaxed">

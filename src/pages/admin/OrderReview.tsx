@@ -1,30 +1,74 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { XIcon } from '../../components/Icons'
-import { useOrderStore } from '../../stores/orderStore'
-import { OrderSheet, OrderSheetItem } from '../../types'
+import {
+    getOrderSheetById,
+    getOrderSheetItems,
+    updateOrderSheet,
+    deleteOrderSheet,
+    createSalesOrderFromSheet,
+    type FirestoreOrderSheet,
+    type FirestoreOrderSheetItem
+} from '../../lib/orderService'
+
+// 로컬 타입
+type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate'> & {
+    createdAt?: Date
+    updatedAt?: Date
+    shipDate?: Date
+    lastSubmittedAt?: Date
+    shipTo?: string
+    revisionComment?: string
+}
 
 export default function OrderReview() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { getOrderSheetById, getOrderItems, updateOrderSheet, deleteOrderSheet, createSalesOrder } = useOrderStore()
 
-    const [orderSheet, setOrderSheet] = useState<OrderSheet | null>(null)
-    const [items, setItems] = useState<OrderSheetItem[]>([])
+    const [orderSheet, setOrderSheet] = useState<LocalOrderSheet | null>(null)
+    const [items, setItems] = useState<FirestoreOrderSheetItem[]>([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [revisionComment, setRevisionComment] = useState('')
     const [showRevisionModal, setShowRevisionModal] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
-    useEffect(() => {
-        if (id) {
-            const order = getOrderSheetById(id)
-            if (order) {
-                setOrderSheet(order)
-                setItems(getOrderItems(order.id))
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        if (!id) {
+            setLoading(false)
+            return
+        }
+
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [osData, itemsData] = await Promise.all([
+                getOrderSheetById(id),
+                getOrderSheetItems(id)
+            ])
+
+            if (osData) {
+                setOrderSheet({
+                    ...osData,
+                    createdAt: osData.createdAt?.toDate?.() || new Date(),
+                    updatedAt: osData.updatedAt?.toDate?.() || new Date(),
+                    shipDate: osData.shipDate?.toDate?.() || undefined,
+                })
             }
+            setItems(itemsData)
+        } catch (err) {
+            console.error('Failed to load order:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
             setLoading(false)
         }
-    }, [id, getOrderSheetById, getOrderItems])
+    }
+
+    useEffect(() => {
+        loadData()
+    }, [id])
 
     const totalKg = items.reduce((sum, item) => sum + (item.estimatedKg || 0), 0)
     const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0)
@@ -33,56 +77,86 @@ export default function OrderReview() {
         return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
     }
 
-    const formatDateOnly = (date: Date | string) => {
+    const formatDateOnly = (date: Date | string | undefined) => {
         if (!date) return '-'
         return new Date(date).toLocaleDateString('ko-KR')
     }
 
-    const formatDateTime = (date: Date | string) => {
+    const formatDateTime = (date: Date | string | undefined) => {
         if (!date) return '-'
         return new Date(date).toLocaleString('ko-KR')
     }
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (!orderSheet) return
-        if (confirm('주문을 확정하시겠습니까? 확정 후에는 수정이 불가합니다.')) {
-            updateOrderSheet(orderSheet.id, {
+        if (!confirm('주문을 확정하시겠습니까? 확정 후에는 수정이 불가합니다.')) return
+
+        try {
+            setIsSubmitting(true)
+
+            await updateOrderSheet(orderSheet.id, {
                 status: 'CONFIRMED',
-                updatedAt: new Date()
             })
+
             // SalesOrder 생성
-            createSalesOrder(orderSheet, items)
+            await createSalesOrderFromSheet(orderSheet, items)
+
             alert('주문이 확정되었습니다. 확정주문(SalesOrder)이 생성되었습니다.')
             navigate('/admin/order-sheets')
+        } catch (err) {
+            console.error('Failed to confirm order:', err)
+            alert('주문 확정에 실패했습니다.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
-    const handleRevisionRequest = () => {
+    const handleRevisionRequest = async () => {
         if (!orderSheet) return
         if (!revisionComment.trim()) {
             alert('수정 요청 사유를 입력해주세요.')
             return
         }
-        updateOrderSheet(orderSheet.id, {
-            status: 'REVISION',
-            revisionComment: revisionComment,
-            updatedAt: new Date()
-        })
-        alert('수정 요청이 전송되었습니다.')
-        setShowRevisionModal(false)
-        navigate('/admin/order-sheets')
+
+        try {
+            setIsSubmitting(true)
+
+            await updateOrderSheet(orderSheet.id, {
+                status: 'REVISION',
+            })
+
+            alert('수정 요청이 전송되었습니다.')
+            setShowRevisionModal(false)
+            navigate('/admin/order-sheets')
+        } catch (err) {
+            console.error('Failed to request revision:', err)
+            alert('수정 요청에 실패했습니다.')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (!orderSheet) return
-        if (confirm('정말로 이 주문장을 삭제하시겠습니까? 삭제된 주문장은 복구할 수 없습니다.')) {
-            deleteOrderSheet(orderSheet.id)
+        if (!confirm('정말로 이 주문장을 삭제하시겠습니까? 삭제된 주문장은 복구할 수 없습니다.')) return
+
+        try {
+            setIsSubmitting(true)
+
+            await deleteOrderSheet(orderSheet.id)
+
             alert('주문장이 삭제되었습니다.')
             navigate('/admin/order-sheets')
+        } catch (err) {
+            console.error('Failed to delete order:', err)
+            alert('주문 삭제에 실패했습니다.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
     if (loading) return <div className="p-8 text-center text-white">불러오는 중...</div>
+    if (error) return <div className="p-8 text-center text-white">❌ {error}</div>
     if (!orderSheet) return <div className="p-8 text-center text-white">주문을 찾을 수 없습니다.</div>
 
     return (
@@ -117,11 +191,11 @@ export default function OrderReview() {
                     </div>
                     <div className="info-item">
                         <span className="info-label">제출시간</span>
-                        <span className="info-value">{formatDateTime(orderSheet.lastSubmittedAt || '')}</span>
+                        <span className="info-value">{formatDateTime(orderSheet.lastSubmittedAt)}</span>
                     </div>
                     <div className="info-item full-width">
                         <span className="info-label">배송지</span>
-                        <span className="info-value">{orderSheet.shipTo}</span>
+                        <span className="info-value">{orderSheet.shipTo || '-'}</span>
                     </div>
                 </div>
             </div>
@@ -143,9 +217,9 @@ export default function OrderReview() {
                             {items.map((item, index) => (
                                 <tr key={index}>
                                     <td className="font-medium">{item.productName}</td>
-                                    <td className="text-right">{item.estimatedKg.toFixed(1)}</td>
+                                    <td className="text-right">{(item.estimatedKg || 0).toFixed(1)}</td>
                                     <td className="text-right">{formatCurrency(item.unitPrice)}</td>
-                                    <td className="text-right font-semibold">{formatCurrency(item.amount)}</td>
+                                    <td className="text-right font-semibold">{formatCurrency(item.amount || 0)}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -169,20 +243,23 @@ export default function OrderReview() {
                     <button
                         className="btn btn-ghost danger"
                         onClick={handleDelete}
+                        disabled={isSubmitting}
                     >
                         삭제하기
                     </button>
                     <button
                         className="btn btn-secondary btn-lg"
                         onClick={() => setShowRevisionModal(true)}
+                        disabled={isSubmitting}
                     >
                         <XIcon size={18} /> 수정 요청
                     </button>
                     <button
                         className="btn btn-primary btn-lg"
                         onClick={handleConfirm}
+                        disabled={isSubmitting}
                     >
-                        ✓ 확정하기
+                        {isSubmitting ? '처리 중...' : '✓ 확정하기'}
                     </button>
                 </div>
             </div>
@@ -214,6 +291,7 @@ export default function OrderReview() {
                             <button
                                 className="btn btn-primary"
                                 onClick={handleRevisionRequest}
+                                disabled={isSubmitting}
                             >
                                 요청 전송
                             </button>

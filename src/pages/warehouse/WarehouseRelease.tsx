@@ -1,6 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useOrderStore } from '../../stores/orderStore'
+import {
+    getSalesOrderById,
+    getSalesOrderItems,
+    type FirestoreSalesOrder,
+    type FirestoreSalesOrderItem
+} from '../../lib/orderService'
 import { MapPinIcon, TruckDeliveryIcon, PackageIcon, CheckCircleIcon, ClipboardListIcon } from '../../components/Icons'
 import './WarehouseRelease.css'
 
@@ -14,16 +19,59 @@ interface ReleaseItem {
     note: string
 }
 
+// 타입 정의
+type LocalSalesOrder = Omit<FirestoreSalesOrder, 'createdAt' | 'confirmedAt'> & {
+    createdAt?: Date
+    confirmedAt?: Date
+}
+
+type LocalSalesOrderItem = FirestoreSalesOrderItem
+
 export default function WarehouseRelease() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { getSalesOrderById, getSalesOrderItems } = useOrderStore()
+
+    // Firebase에서 직접 로드되는 데이터
+    const [so, setSo] = useState<LocalSalesOrder | null>(null)
+    const [soItems, setSoItems] = useState<LocalSalesOrderItem[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1)
 
-    // 실데이터 연동
-    const so = useMemo(() => getSalesOrderById(id || ''), [id, getSalesOrderById])
-    const soItems = useMemo(() => getSalesOrderItems(id || ''), [id, getSalesOrderItems])
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        if (!id) return
+
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [soData, itemsData] = await Promise.all([
+                getSalesOrderById(id),
+                getSalesOrderItems(id)
+            ])
+
+            if (soData) {
+                setSo({
+                    ...soData,
+                    createdAt: soData.createdAt?.toDate?.() || new Date(),
+                    confirmedAt: soData.confirmedAt?.toDate?.() || new Date(),
+                })
+            }
+            setSoItems(itemsData)
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadData()
+    }, [id])
 
     const releaseInfo = useMemo(() => ({
         id: id || '',
@@ -37,9 +85,12 @@ export default function WarehouseRelease() {
         adminMemo: '특별 요청사항 없음',
     }), [so, id])
 
-    const [items, setItems] = useState<ReleaseItem[]>(() => {
+    const [items, setItems] = useState<ReleaseItem[]>([])
+
+    // soItems가 로드되면 items 초기화
+    useEffect(() => {
         if (soItems.length > 0) {
-            return soItems.map(item => ({
+            setItems(soItems.map(item => ({
                 productName: item.productName || '알 수 없는 상품',
                 spec: '기본규격',
                 orderedKg: item.qtyKg,
@@ -47,10 +98,9 @@ export default function WarehouseRelease() {
                 boxCount: Math.ceil(item.qtyKg / 10),
                 status: 'PENDING',
                 note: ''
-            }))
+            })))
         }
-        return []
-    })
+    }, [soItems])
 
     const [requestConfirmed, setRequestConfirmed] = useState(false)
 
@@ -87,6 +137,32 @@ export default function WarehouseRelease() {
         }
         alert('✅ 출고 처리가 완료되었습니다!\n\n배송이 시작됩니다.')
         navigate('/warehouse')
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="warehouse-release">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="warehouse-release">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -295,7 +371,7 @@ export default function WarehouseRelease() {
 
                         <div className="driver-confirm-card">
                             <div className="driver-info">
-                                <span className="driver-name"><TruckDeliveryIcon size={16} /> {releaseInfo.driverName}</span>
+                                <span className="driver-name"><TruckDeliveryIcon size={16} /> {releaseInfo.driverName || '미배정'}</span>
                                 <span className="vehicle-no">{releaseInfo.vehicleNo}</span>
                             </div>
 
@@ -335,12 +411,12 @@ export default function WarehouseRelease() {
                         </div>
 
                         <div className="step-footer">
-                            <button className="btn btn-secondary" onClick={() => setCurrentStep(1)}>
+                            <button className="btn btn-secondary" onClick={() => setCurrentStep(2)}>
                                 ← 이전
                             </button>
                             <button
                                 className="btn btn-primary"
-                                onClick={() => setCurrentStep(3)}
+                                onClick={() => setCurrentStep(4)}
                                 disabled={!driverConfirmation.confirmed}
                             >
                                 다음 → 출고 완료
@@ -349,8 +425,8 @@ export default function WarehouseRelease() {
                     </section>
                 )}
 
-                {/* Step 3: 출고 완료 */}
-                {currentStep === 3 && (
+                {/* Step 4: 출고 완료 */}
+                {currentStep === 4 && (
                     <section className="step-section glass-card animate-fade-in">
                         <h2><ClipboardListIcon size={20} /> 출고 완료 확인</h2>
                         <p className="section-desc">최종 내역을 확인하고 출고를 완료해주세요.</p>
@@ -373,7 +449,7 @@ export default function WarehouseRelease() {
                                 </div>
                                 <div className="info-row">
                                     <span className="label">기사</span>
-                                    <span className="value">{releaseInfo.driverName} ({releaseInfo.driverPhone})</span>
+                                    <span className="value">{releaseInfo.driverName || '미배정'} ({releaseInfo.driverPhone})</span>
                                 </div>
                             </div>
 
@@ -398,7 +474,7 @@ export default function WarehouseRelease() {
                         </button>
 
                         <div className="step-footer">
-                            <button className="btn btn-secondary" onClick={() => setCurrentStep(2)}>
+                            <button className="btn btn-secondary" onClick={() => setCurrentStep(3)}>
                                 ← 이전
                             </button>
                             <div />

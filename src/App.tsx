@@ -55,28 +55,10 @@ function App() {
     useEffect(() => {
         initKakao();
 
-        // Firebase에 초기 데이터 시드 (없을 경우에만)
-        const seedAllData = async () => {
-            try {
-                const { seedInitialUsers } = await import('./lib/userService')
-                const { seedInitialCustomers } = await import('./lib/customerService')
-                const { seedInitialSuppliers } = await import('./lib/supplierService')
-                const { seedInitialProducts } = await import('./lib/productService')
-                const { seedInitialVehicleTypes } = await import('./lib/vehicleService')
-
-                await Promise.all([
-                    seedInitialUsers(),
-                    seedInitialCustomers(),
-                    seedInitialSuppliers(),
-                    seedInitialProducts(),
-                    seedInitialVehicleTypes(),
-                ])
-                console.log('All Firebase seed data initialized')
-            } catch (error) {
-                console.error('Firebase seed error:', error)
-            }
-        }
-        seedAllData()
+        // Note: Firebase seed 데이터는 Firebase Console에서 직접 추가하거나
+        // 관리자 로그인 후 수동으로 실행해야 합니다.
+        // 자동 시드는 보안 규칙으로 인해 비활성화됨
+        console.log('TRS App initialized')
     }, []);
 
     return (

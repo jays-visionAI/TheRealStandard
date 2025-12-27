@@ -1,12 +1,55 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useOrderStore } from '../../stores/orderStore'
+import {
+    getAllOrderSheets,
+    deleteOrderSheet as deleteOrderSheetFirebase,
+    type FirestoreOrderSheet
+} from '../../lib/orderService'
 import type { OrderSheetStatus } from '../../types'
 
+// OrderSheet 타입 정의
+type OrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate'> & {
+    createdAt?: Date
+    updatedAt?: Date
+    shipDate?: Date
+    inviteTokenId?: string
+    cutOffAt?: Date
+    lastSubmittedAt?: Date
+}
+
 export default function OrderSheetList() {
-    const { orderSheets, deleteOrderSheet } = useOrderStore()
+    // Firebase에서 직접 로드되는 데이터
+    const [orderSheets, setOrderSheets] = useState<OrderSheet[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
     const [filterStatus, setFilterStatus] = useState<OrderSheetStatus | 'ALL'>('ALL')
     const [searchTerm, setSearchTerm] = useState('')
+
+    // Firebase에서 주문장 목록 로드
+    const loadOrderSheets = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+            const data = await getAllOrderSheets()
+            setOrderSheets(data.map(os => ({
+                ...os,
+                createdAt: os.createdAt?.toDate?.() || new Date(),
+                updatedAt: os.updatedAt?.toDate?.() || new Date(),
+                shipDate: os.shipDate?.toDate?.() || undefined,
+            })))
+        } catch (err) {
+            console.error('Failed to load order sheets:', err)
+            setError('주문장 목록을 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadOrderSheets()
+    }, [])
 
     const filteredOrders = useMemo(() => {
         return orderSheets.filter((order) => {
@@ -18,19 +61,20 @@ export default function OrderSheetList() {
         })
     }, [orderSheets, filterStatus, searchTerm])
 
-    const getStatusBadge = (status: OrderSheetStatus) => {
-        const statusConfig: Record<OrderSheetStatus, { label: string; class: string }> = {
+    const getStatusBadge = (status: string) => {
+        const statusConfig: Record<string, { label: string; class: string }> = {
             DRAFT: { label: '초안', class: 'badge-secondary' },
             SENT: { label: '발송됨', class: 'badge-primary' },
             SUBMITTED: { label: '고객 컨펌', class: 'badge-warning' },
             REVISION: { label: '수정요청', class: 'badge-error' },
             CONFIRMED: { label: '승인됨', class: 'badge-success' },
+            CLOSED: { label: '마감', class: 'badge-secondary' },
         }
-        const { label, class: className } = statusConfig[status]
-        return <span className={`badge ${className}`}>{label}</span>
+        const config = statusConfig[status] || { label: status, class: 'badge-secondary' }
+        return <span className={`badge ${config.class}`}>{config.label}</span>
     }
 
-    const formatDate = (date: Date | string) => {
+    const formatDate = (date?: Date | string) => {
         if (!date) return '-'
         return new Date(date).toLocaleDateString('ko-KR', {
             month: 'short',
@@ -40,17 +84,53 @@ export default function OrderSheetList() {
         })
     }
 
-    const copyInviteLink = async (token: string) => {
+    const copyInviteLink = async (token?: string) => {
+        if (!token) {
+            alert('초대 토큰이 없습니다.')
+            return
+        }
         const link = `${window.location.origin}/order/${token}`
         await navigator.clipboard.writeText(link)
         alert('주문 링크가 복사되었습니다!')
     }
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (confirm('정말로 이 주문장을 삭제하시겠습니까?')) {
-            deleteOrderSheet(id)
-            alert('삭제되었습니다.')
+            try {
+                await deleteOrderSheetFirebase(id)
+                await loadOrderSheets()
+                alert('삭제되었습니다.')
+            } catch (err) {
+                console.error('Delete failed:', err)
+                alert('삭제에 실패했습니다.')
+            }
         }
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="page-container">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>주문장 목록을 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="page-container">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadOrderSheets}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -114,7 +194,7 @@ export default function OrderSheetList() {
                                     <tr key={order.id}>
                                         <td className="font-semibold text-primary">{order.id}</td>
                                         <td>{order.customerName}</td>
-                                        <td>{new Date(order.shipDate).toLocaleDateString('ko-KR')}</td>
+                                        <td>{order.shipDate ? order.shipDate.toLocaleDateString('ko-KR') : '-'}</td>
                                         <td>{formatDate(order.cutOffAt)}</td>
                                         <td>{getStatusBadge(order.status)}</td>
                                         <td>
@@ -133,7 +213,7 @@ export default function OrderSheetList() {
                                                         검토
                                                     </Link>
                                                 )}
-                                                {(order.status === 'SENT' || order.status === 'REVISION') && (
+                                                {(order.status === 'SENT') && (
                                                     <button
                                                         className="btn btn-secondary btn-sm"
                                                         onClick={() => copyInviteLink(order.inviteTokenId)}

@@ -11,7 +11,7 @@ export interface FirestoreOrderSheet {
     customerOrgId: string
     customerName: string
     shipDate?: Timestamp
-    status: 'DRAFT' | 'SENT' | 'SUBMITTED' | 'CONFIRMED' | 'CLOSED'
+    status: 'DRAFT' | 'SENT' | 'SUBMITTED' | 'CONFIRMED' | 'REVISION' | 'CLOSED'
     createdAt: Timestamp
     updatedAt: Timestamp
 }
@@ -164,11 +164,14 @@ export async function setSalesOrderItems(salesOrderId: string, items: Omit<Fires
 export interface FirestoreShipment {
     id: string
     sourceSalesOrderId: string
+    orderId?: string // for backward compatibility
     vehicleTypeId?: string
+    vehicleNumber?: string
     driverName?: string
     driverPhone?: string
-    status: 'PREPARING' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED'
+    eta?: Timestamp
     etaAt?: Timestamp
+    status: 'PREPARING' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED'
     createdAt: Timestamp
     updatedAt: Timestamp
 }
@@ -204,3 +207,98 @@ export async function deleteShipment(id: string): Promise<void> {
     const docRef = doc(db, SHIPMENTS_COLLECTION, id)
     await deleteDoc(docRef)
 }
+
+// ============ PURCHASE ORDER (매입발주) ============
+export interface FirestorePurchaseOrder {
+    id: string
+    supplierOrgId: string
+    supplierName: string
+    status: 'DRAFT' | 'SENT' | 'RECEIVED' | 'COMPLETED'
+    totalsKg: number
+    totalsAmount: number
+    createdAt: Timestamp
+    updatedAt: Timestamp
+}
+
+export interface FirestorePurchaseOrderItem {
+    id: string
+    purchaseOrderId: string
+    productId: string
+    productName: string
+    qtyKg: number
+    unitPrice: number
+    amount: number
+}
+
+const PURCHASE_ORDERS_COLLECTION = 'purchaseOrders'
+const PURCHASE_ORDER_ITEMS_COLLECTION = 'purchaseOrderItems'
+
+export async function getAllPurchaseOrders(): Promise<FirestorePurchaseOrder[]> {
+    const snapshot = await getDocs(collection(db, PURCHASE_ORDERS_COLLECTION))
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FirestorePurchaseOrder))
+}
+
+export async function getPurchaseOrderById(id: string): Promise<FirestorePurchaseOrder | null> {
+    const docRef = doc(db, PURCHASE_ORDERS_COLLECTION, id)
+    const snapshot = await getDoc(docRef)
+    if (!snapshot.exists()) return null
+    return { id: snapshot.id, ...snapshot.data() } as FirestorePurchaseOrder
+}
+
+export async function getPurchaseOrderItems(purchaseOrderId: string): Promise<FirestorePurchaseOrderItem[]> {
+    const q = query(collection(db, PURCHASE_ORDER_ITEMS_COLLECTION), where('purchaseOrderId', '==', purchaseOrderId))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FirestorePurchaseOrderItem))
+}
+
+export async function createPurchaseOrder(data: Omit<FirestorePurchaseOrder, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestorePurchaseOrder> {
+    const newDocRef = doc(collection(db, PURCHASE_ORDERS_COLLECTION))
+    const now = serverTimestamp()
+    await setDoc(newDocRef, { ...data, createdAt: now, updatedAt: now })
+    const created = await getDoc(newDocRef)
+    return { id: created.id, ...created.data() } as FirestorePurchaseOrder
+}
+
+export async function updatePurchaseOrder(id: string, data: Partial<FirestorePurchaseOrder>): Promise<void> {
+    const docRef = doc(db, PURCHASE_ORDERS_COLLECTION, id)
+    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() })
+}
+
+// ============ CREATE SALES ORDER FROM ORDER SHEET ============
+export async function createSalesOrderFromSheet(
+    orderSheet: { id: string; customerOrgId: string; customerName: string },
+    items: { productId?: string; productName?: string; estimatedKg?: number; unitPrice?: number; amount?: number }[]
+): Promise<FirestoreSalesOrder> {
+    const totalsKg = items.reduce((sum, i) => sum + (i.estimatedKg || 0), 0)
+    const totalsAmount = items.reduce((sum, i) => sum + (i.amount || 0), 0)
+
+    const salesOrder = await createSalesOrder({
+        sourceOrderSheetId: orderSheet.id,
+        customerOrgId: orderSheet.customerOrgId,
+        customerName: orderSheet.customerName,
+        status: 'CREATED',
+        totalsKg,
+        totalsAmount,
+        confirmedAt: Timestamp.now(),
+    })
+
+    // Create sales order items
+    const soItems = items.map(i => ({
+        productId: i.productId || '',
+        productName: i.productName || '',
+        qtyKg: i.estimatedKg || 0,
+        unitPrice: i.unitPrice || 0,
+        amount: i.amount || 0,
+    }))
+
+    await setSalesOrderItems(salesOrder.id, soItems)
+
+    return salesOrder
+}
+
+// ============ SEEDING ============
+export async function seedInitialOrders(): Promise<void> {
+    // Orders are created dynamically, no initial seed needed
+    console.log('Order service initialized')
+}
+

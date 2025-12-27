@@ -1,10 +1,33 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useUserStore, type UserAccount } from '../../stores/userStore'
-import { useCustomerStore } from '../../stores/customerStore'
-import { useSupplierStore } from '../../stores/supplierStore'
+import {
+    getAllUsers,
+    createUser,
+    updateUser as updateUserFirebase,
+    deleteUser as deleteUserFirebase,
+    type FirestoreUser
+} from '../../lib/userService'
+import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
+import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
 import { UsersIcon, SearchIcon, MailIcon, CheckCircleIcon, BuildingIcon, PlusIcon, TrashIcon as Trash2Icon } from '../../components/Icons'
 import './UserList.css'
+
+// UserAccount 타입 정의
+type UserAccount = Omit<FirestoreUser, 'createdAt' | 'updatedAt' | 'lastLogin'> & {
+    createdAt?: Date
+    updatedAt?: Date
+    lastLogin?: Date
+}
+
+type Customer = Omit<FirestoreCustomer, 'createdAt' | 'updatedAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
+}
+
+type Supplier = Omit<FirestoreSupplier, 'createdAt' | 'updatedAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
+}
 
 const ROLE_LABELS: Record<string, string> = {
     ADMIN: '관리자',
@@ -16,27 +39,70 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 export default function UserList() {
-    const { users, addUser, updateUser, deleteUser, initializeStore } = useUserStore()
-    const { customers } = useCustomerStore()
-    const { suppliers } = useSupplierStore()
+    // Firebase에서 직접 로드되는 데이터
+    const [users, setUsers] = useState<UserAccount[]>([])
+    const [customers, setCustomers] = useState<Customer[]>([])
+    const [suppliers, setSuppliers] = useState<Supplier[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
     const [searchParams, setSearchParams] = useSearchParams()
-
-    useEffect(() => {
-        initializeStore()
-    }, [initializeStore])
-
     const [searchQuery, setSearchQuery] = useState('')
     const [filterRole, setFilterRole] = useState<string>(searchParams.get('role') || 'ALL')
+
+    const [showModal, setShowModal] = useState(false)
+    const [editingUser, setEditingUser] = useState<UserAccount | null>(null)
+    const [formData, setFormData] = useState<Partial<UserAccount>>({})
+    const [saving, setSaving] = useState(false)
+
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [usersData, customersData, suppliersData] = await Promise.all([
+                getAllUsers(),
+                getAllCustomers(),
+                getAllSuppliers()
+            ])
+
+            setUsers(usersData.map(u => ({
+                ...u,
+                createdAt: u.createdAt?.toDate?.() || new Date(),
+                updatedAt: u.updatedAt?.toDate?.() || new Date(),
+                lastLogin: u.lastLogin?.toDate?.() || undefined,
+            })))
+
+            setCustomers(customersData.map(c => ({
+                ...c,
+                createdAt: c.createdAt?.toDate?.() || new Date(),
+                updatedAt: c.updatedAt?.toDate?.() || new Date(),
+            })))
+
+            setSuppliers(suppliersData.map(s => ({
+                ...s,
+                createdAt: s.createdAt?.toDate?.() || new Date(),
+                updatedAt: s.updatedAt?.toDate?.() || new Date(),
+            })))
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadData()
+    }, [])
 
     // URL 파라미터 변경 시 필터 업데이트
     useEffect(() => {
         const role = searchParams.get('role') || 'ALL'
         setFilterRole(role)
     }, [searchParams])
-
-    const [showModal, setShowModal] = useState(false)
-    const [editingUser, setEditingUser] = useState<UserAccount | null>(null)
-    const [formData, setFormData] = useState<Partial<UserAccount>>({})
 
     const handleRoleChange = (role: string) => {
         const newParams = new URLSearchParams(searchParams)
@@ -62,7 +128,7 @@ export default function UserList() {
 
     const handleOpenCreate = () => {
         setEditingUser(null)
-        setFormData({ role: 'OPS', status: 'ACTIVE' })
+        setFormData({ role: 'OPS' as any, status: 'ACTIVE' })
         setShowModal(true)
     }
 
@@ -72,31 +138,76 @@ export default function UserList() {
         setShowModal(true)
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (editingUser) {
-            updateUser(editingUser.id, formData)
-        } else {
-            const newUser: UserAccount = {
-                id: `user-${Date.now()}`,
-                email: formData.email || '',
-                name: formData.name || '',
-                role: (formData.role as any) || 'OPS',
-                orgId: formData.orgId,
-                status: (formData.status as any) || 'ACTIVE',
-                password: formData.password || '1234',
-                createdAt: new Date(),
-                updatedAt: new Date()
+        setSaving(true)
+
+        try {
+            if (editingUser) {
+                await updateUserFirebase(editingUser.id, {
+                    email: formData.email,
+                    name: formData.name,
+                    role: formData.role as any,
+                    orgId: formData.orgId,
+                    status: formData.status as any,
+                    password: formData.password,
+                })
+            } else {
+                await createUser({
+                    email: formData.email || '',
+                    name: formData.name || '',
+                    role: (formData.role as any) || 'OPS',
+                    orgId: formData.orgId,
+                    status: (formData.status as any) || 'ACTIVE',
+                    password: formData.password || '1234',
+                })
             }
-            addUser(newUser)
+            await loadData()
+            setShowModal(false)
+        } catch (err) {
+            console.error('Save failed:', err)
+            alert('저장에 실패했습니다.')
+        } finally {
+            setSaving(false)
         }
-        setShowModal(false)
     }
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (confirm('이 계정을 삭제하시겠습니까?')) {
-            deleteUser(id)
+            try {
+                await deleteUserFirebase(id)
+                await loadData()
+            } catch (err) {
+                console.error('Delete failed:', err)
+                alert('삭제에 실패했습니다.')
+            }
         }
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="user-list-page">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>사용자 목록을 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="user-list-page">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -154,7 +265,7 @@ export default function UserList() {
                                 <p className="user-org">
                                     <BuildingIcon size={14} />
                                     {customers.find(c => c.id === user.orgId)?.companyName ||
-                                        suppliers.find((s: any) => s.id === user.orgId)?.companyName || '소속 정보 없음'}
+                                        suppliers.find(s => s.id === user.orgId)?.companyName || '소속 정보 없음'}
                                 </p>
                             )}
                         </div>
@@ -262,8 +373,10 @@ export default function UserList() {
                             </div>
 
                             <div className="modal-footer">
-                                <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>취소</button>
-                                <button type="submit" className="btn btn-primary">저장하기</button>
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)} disabled={saving}>취소</button>
+                                <button type="submit" className="btn btn-primary" disabled={saving}>
+                                    {saving ? '저장 중...' : '저장하기'}
+                                </button>
                             </div>
                         </form>
                     </div>

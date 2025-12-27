@@ -1,17 +1,26 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useCustomerStore, type Customer } from '../../stores/customerStore'
+import {
+    getAllCustomers,
+    createCustomer,
+    updateCustomer as updateCustomerFirebase,
+    deleteCustomer as deleteCustomerFirebase,
+    type FirestoreCustomer
+} from '../../lib/customerService'
 import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon, KakaoIcon } from '../../components/Icons'
 import { sendInviteMessage } from '../../lib/kakaoService'
 import './OrganizationMaster.css'
 
-export default function OrganizationMaster() {
-    // 공유 스토어에서 데이터 가져오기
-    const { customers, addCustomer, updateCustomer, deleteCustomer, toggleActive, initializeStore } = useCustomerStore()
+// Customer 타입 정의
+type Customer = Omit<FirestoreCustomer, 'createdAt' | 'updatedAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
+}
 
-    // 초기화
-    useEffect(() => {
-        initializeStore()
-    }, [initializeStore])
+export default function OrganizationMaster() {
+    // Firebase에서 직접 로드되는 거래처 목록
+    const [customers, setCustomers] = useState<Customer[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     const [searchQuery, setSearchQuery] = useState('')
     const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all')
@@ -19,6 +28,30 @@ export default function OrganizationMaster() {
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
     const [formData, setFormData] = useState<Partial<Customer>>({})
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Firebase에서 거래처 목록 로드
+    const loadCustomers = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+            const data = await getAllCustomers()
+            setCustomers(data.map(c => ({
+                ...c,
+                createdAt: c.createdAt?.toDate?.() || new Date(),
+                updatedAt: c.updatedAt?.toDate?.() || new Date(),
+            })))
+        } catch (err) {
+            console.error('Failed to load customers:', err)
+            setError('거래처 목록을 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadCustomers()
+    }, [])
 
     // 필터링된 거래처 목록
     const filteredCustomers = useMemo(() => {
@@ -82,13 +115,30 @@ export default function OrganizationMaster() {
 
         try {
             if (editingCustomer) {
-                // 수정 - 스토어 메서드 사용
-                updateCustomer(editingCustomer.id, formData)
+                // 수정 - Firebase에 직접
+                await updateCustomerFirebase(editingCustomer.id, {
+                    companyName: formData.companyName,
+                    bizRegNo: formData.bizRegNo,
+                    ceoName: formData.ceoName,
+                    phone: formData.phone,
+                    fax: formData.fax,
+                    email: formData.email,
+                    address: formData.address,
+                    shipAddress1: formData.shipAddress1,
+                    shipAddress2: formData.shipAddress2,
+                    contactPerson: formData.contactPerson,
+                    contactPhone: formData.contactPhone,
+                    priceType: formData.priceType,
+                    paymentTerms: formData.paymentTerms,
+                    creditLimit: formData.creditLimit,
+                    memo: formData.memo,
+                    isActive: formData.isActive,
+                    isKeyAccount: formData.isKeyAccount,
+                })
                 alert('✅ 거래처 정보가 수정되었습니다.')
             } else {
-                // 신규 등록
-                const newCustomer: Customer = {
-                    id: `cust-${Date.now()}`,
+                // 신규 등록 - Firebase에 직접
+                await createCustomer({
                     companyName: formData.companyName || '',
                     bizRegNo: formData.bizRegNo || '',
                     ceoName: formData.ceoName || '',
@@ -106,14 +156,12 @@ export default function OrganizationMaster() {
                     memo: formData.memo,
                     isActive: formData.isActive ?? true,
                     isKeyAccount: formData.isKeyAccount ?? false,
-                    status: 'PENDING', // 신규 등록 시 대기 상태
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                }
-                addCustomer(newCustomer)
+                    status: 'PENDING',
+                })
                 alert('✅ 새 거래처가 등록되었습니다. 초대장을 발송할 수 있습니다.')
             }
 
+            await loadCustomers()
             setShowModal(false)
             setFormData({})
         } catch (error) {
@@ -125,41 +173,86 @@ export default function OrganizationMaster() {
     }
 
     // 초대장 생성 및 링크 복사
-    const handleGenerateInvite = (customer: Customer) => {
-        const { generateInviteToken } = useCustomerStore.getState()
-        const token = generateInviteToken(customer.id)
-        const inviteUrl = `${window.location.origin}/invite/${token}`
-
-        // 실제 환경에서는 이메일 발송 API 등을 호출하겠지만, 여기서는 클립보드 복사로 갈음
-        navigator.clipboard.writeText(inviteUrl).then(() => {
+    const handleGenerateInvite = async (customer: Customer) => {
+        const token = `invite-${Math.random().toString(36).substr(2, 9)}`
+        try {
+            await updateCustomerFirebase(customer.id, { inviteToken: token })
+            const inviteUrl = `${window.location.origin}/invite/${token}`
+            await navigator.clipboard.writeText(inviteUrl)
+            await loadCustomers()
             alert(`✅ 초대 링크가 복사되었습니다!\n고객님께 전달해주세요.\n\n${inviteUrl}`)
-        })
+        } catch (err) {
+            console.error('Failed to generate invite:', err)
+            alert('초대장 생성에 실패했습니다.')
+        }
     }
 
     // 카카오톡 초대 메시지 전송
-    const handleKakaoInvite = (customer: Customer) => {
-        const { generateInviteToken } = useCustomerStore.getState()
-        const token = generateInviteToken(customer.id)
-        const inviteUrl = `${window.location.origin}/invite/${token}`
-
-        sendInviteMessage(customer.companyName, inviteUrl)
+    const handleKakaoInvite = async (customer: Customer) => {
+        const token = `invite-${Math.random().toString(36).substr(2, 9)}`
+        try {
+            await updateCustomerFirebase(customer.id, { inviteToken: token })
+            const inviteUrl = `${window.location.origin}/invite/${token}`
+            await loadCustomers()
+            sendInviteMessage(customer.companyName, inviteUrl)
+        } catch (err) {
+            console.error('Failed to send Kakao invite:', err)
+            alert('카카오 초대장 발송에 실패했습니다.')
+        }
     }
 
     // 삭제
-    const handleDelete = (customer: Customer) => {
+    const handleDelete = async (customer: Customer) => {
         if (!confirm(`"${customer.companyName}" 거래처를 정말 삭제하시겠습니까?`)) return
-        deleteCustomer(customer.id)
-        alert('삭제되었습니다.')
+        try {
+            await deleteCustomerFirebase(customer.id)
+            await loadCustomers()
+            alert('삭제되었습니다.')
+        } catch (err) {
+            console.error('Delete failed:', err)
+            alert('삭제에 실패했습니다.')
+        }
     }
 
     // 활성/비활성 토글
-    const handleToggleActive = (customer: Customer) => {
-        toggleActive(customer.id)
+    const handleToggleActive = async (customer: Customer) => {
+        try {
+            await updateCustomerFirebase(customer.id, {
+                isActive: !customer.isActive,
+                status: !customer.isActive ? (customer.status === 'INACTIVE' ? 'PENDING' : customer.status) : 'INACTIVE',
+            })
+            await loadCustomers()
+        } catch (err) {
+            console.error('Toggle failed:', err)
+            alert('상태 변경에 실패했습니다.')
+        }
     }
 
-    // 숫자 포맷 (향후 신용한도 표시에 사용)
-    // const formatCurrency = (value?: number) =>
-    //     value ? new Intl.NumberFormat('ko-KR').format(value) : '-'
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="organization-master">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>거래처 목록을 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="organization-master">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadCustomers}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="organization-master">

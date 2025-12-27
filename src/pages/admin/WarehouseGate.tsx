@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import { useOrderStore } from '../../stores/orderStore'
+import { useState, useRef, useEffect } from 'react'
+import { getAllSalesOrders, getAllShipments, updateShipment, type FirestoreSalesOrder, type FirestoreShipment } from '../../lib/orderService'
 import { FilesIcon } from '../../components/Icons'
 import type { GateStage } from '../../types'
 
@@ -24,12 +24,43 @@ const checklistItems = [
 ]
 
 export default function WarehouseGate() {
-    const { shipments, salesOrders } = useOrderStore()
+    // Firebase에서 직접 로드되는 데이터
+    const [salesOrders, setSalesOrders] = useState<FirestoreSalesOrder[]>([])
+    const [shipments, setShipments] = useState<FirestoreShipment[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
     const [filterStage, setFilterStage] = useState<GateStage | 'ALL'>('ALL')
     const [selectedItem, setSelectedItem] = useState<GateItem | null>(null)
     const [showGateModal, setShowGateModal] = useState(false)
     const [checklist, setChecklist] = useState<Record<string, boolean>>({})
     const [signatureData, setSignatureData] = useState('')
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [soData, shipmentsData] = await Promise.all([
+                getAllSalesOrders(),
+                getAllShipments()
+            ])
+
+            setSalesOrders(soData)
+            setShipments(shipmentsData)
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        loadData()
+    }, [])
 
     // shipments를 GateItem으로 실시간 매핑
     const gateItems: GateItem[] = shipments.map(s => {
@@ -120,7 +151,7 @@ export default function WarehouseGate() {
         setSignatureData('')
     }
 
-    const handleCompleteGate = () => {
+    const handleCompleteGate = async () => {
         if (!selectedItem) return
         if (!allChecklistCompleted) {
             alert('모든 체크리스트 항목을 완료해주세요.')
@@ -131,13 +162,50 @@ export default function WarehouseGate() {
             return
         }
 
-        // 스토어 상태 업데이트
-        useOrderStore.getState().updateShipment(selectedItem.id, {
-            status: 'DELIVERED'
-        })
+        try {
+            setIsSubmitting(true)
 
-        setShowGateModal(false)
-        alert('출고 검수가 완료되었습니다.')
+            await updateShipment(selectedItem.id, {
+                status: 'DELIVERED'
+            })
+
+            // 로컬 상태 업데이트
+            setShipments(prev => prev.map(s =>
+                s.id === selectedItem.id ? { ...s, status: 'DELIVERED' as const } : s
+            ))
+
+            setShowGateModal(false)
+            alert('출고 검수가 완료되었습니다.')
+        } catch (err) {
+            console.error('Failed to complete gate:', err)
+            alert('검수 완료에 실패했습니다.')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    if (loading) {
+        return (
+            <div className="page-container">
+                <div className="glass-card p-12 text-center">
+                    <div className="spinner"></div>
+                    <p className="mt-4">데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="page-container">
+                <div className="glass-card p-12 text-center">
+                    <p className="text-danger mb-4">❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -267,9 +335,9 @@ export default function WarehouseGate() {
                             <button
                                 className="btn btn-primary"
                                 onClick={handleCompleteGate}
-                                disabled={!allChecklistCompleted || !signatureData}
+                                disabled={!allChecklistCompleted || !signatureData || isSubmitting}
                             >
-                                검수 완료
+                                {isSubmitting ? '처리 중...' : '검수 완료'}
                             </button>
                         </div>
                     </div>

@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FileEditIcon, PencilIcon, CheckCircleIcon, TruckDeliveryIcon, FactoryIcon } from '../../components/Icons'
-import { useOrderStore } from '../../stores/orderStore'
+import {
+    getAllOrderSheets,
+    getAllSalesOrders,
+    getAllShipments,
+    type FirestoreOrderSheet,
+    type FirestoreSalesOrder,
+    type FirestoreShipment
+} from '../../lib/orderService'
 import './WorkflowHome.css'
 import type { ReactNode } from 'react'
 
@@ -26,18 +33,86 @@ interface PipelineItem {
     waitingAction?: string
 }
 
+// 타입 정의
+type OrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate'> & {
+    createdAt?: Date
+    updatedAt?: Date
+    shipDate?: Date
+}
+
+type SalesOrder = Omit<FirestoreSalesOrder, 'createdAt' | 'confirmedAt'> & {
+    createdAt?: Date
+    confirmedAt?: Date
+}
+
+type Shipment = Omit<FirestoreShipment, 'createdAt' | 'updatedAt' | 'etaAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
+    etaAt?: Date
+}
+
 export default function WorkflowHome() {
     const navigate = useNavigate()
-    const { orderSheets, salesOrders, shipments } = useOrderStore()
+
+    // Firebase에서 직접 로드되는 데이터
+    const [orderSheets, setOrderSheets] = useState<OrderSheet[]>([])
+    const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([])
+    const [shipments, setShipments] = useState<Shipment[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
     const [selectedStep, setSelectedStep] = useState<string | null>(null)
     const [pipelineItems, setPipelineItems] = useState<PipelineItem[]>([])
 
+    // Firebase에서 모든 데이터 로드
+    const loadData = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const [osData, soData, shipData] = await Promise.all([
+                getAllOrderSheets(),
+                getAllSalesOrders(),
+                getAllShipments()
+            ])
+
+            setOrderSheets(osData.map(os => ({
+                ...os,
+                createdAt: os.createdAt?.toDate?.() || new Date(),
+                updatedAt: os.updatedAt?.toDate?.() || new Date(),
+                shipDate: os.shipDate?.toDate?.() || undefined,
+            })))
+
+            setSalesOrders(soData.map(so => ({
+                ...so,
+                createdAt: so.createdAt?.toDate?.() || new Date(),
+                confirmedAt: so.confirmedAt?.toDate?.() || new Date(),
+            })))
+
+            setShipments(shipData.map(s => ({
+                ...s,
+                createdAt: s.createdAt?.toDate?.() || new Date(),
+                updatedAt: s.updatedAt?.toDate?.() || new Date(),
+                etaAt: s.etaAt?.toDate?.() || undefined,
+            })))
+        } catch (err) {
+            console.error('Failed to load workflow data:', err)
+            setError('워크플로우 데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
     useEffect(() => {
-        // 실시간 스토어 데이터로부터 파이프라인 아이템 생성
+        loadData()
+    }, [])
+
+    // 파이프라인 아이템 생성
+    useEffect(() => {
         const items: PipelineItem[] = []
 
-        // 1. 주문장 생성 단계 (임시 데이터 대신 스토어 연동)
-        // 실제로는 orderSheets 중 상태가 'DRAFT'인 것들
+        // 1. 주문장 생성 단계
         orderSheets.forEach(os => {
             if (os.status === 'DRAFT') {
                 items.push({
@@ -46,7 +121,7 @@ export default function WorkflowHome() {
                     orderId: os.id,
                     currentStep: 'create',
                     amount: 0,
-                    shipDate: os.shipDate ? new Date(os.shipDate).toISOString().split('T')[0] : '-',
+                    shipDate: os.shipDate ? os.shipDate.toISOString().split('T')[0] : '-',
                     waitingAction: '주문장 발송'
                 })
             } else if (os.status === 'SENT') {
@@ -56,7 +131,7 @@ export default function WorkflowHome() {
                     orderId: os.id,
                     currentStep: 'submit',
                     amount: 0,
-                    shipDate: os.shipDate ? new Date(os.shipDate).toISOString().split('T')[0] : '-',
+                    shipDate: os.shipDate ? os.shipDate.toISOString().split('T')[0] : '-',
                     waitingAction: '고객 제출 대기'
                 })
             }
@@ -99,7 +174,7 @@ export default function WorkflowHome() {
                     orderId: s.id,
                     currentStep: 'dispatch',
                     amount: 0,
-                    shipDate: s.etaAt ? new Date(s.etaAt).toISOString().split('T')[0] : '-',
+                    shipDate: s.etaAt ? s.etaAt.toISOString().split('T')[0] : '-',
                     waitingAction: '출고 준비'
                 })
             } else if (s.status === 'DELIVERED') {
@@ -109,7 +184,7 @@ export default function WorkflowHome() {
                     orderId: s.id,
                     currentStep: 'complete',
                     amount: 0,
-                    shipDate: s.updatedAt ? new Date(s.updatedAt).toISOString().split('T')[0] : '-',
+                    shipDate: s.updatedAt ? s.updatedAt.toISOString().split('T')[0] : '-',
                     waitingAction: '완료'
                 })
             }
@@ -162,6 +237,32 @@ export default function WorkflowHome() {
             default:
                 return { label: '상세', variant: 'secondary' }
         }
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="workflow-home">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>워크플로우 데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="workflow-home">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -329,7 +430,7 @@ export default function WorkflowHome() {
                                 return (
                                     <div key={s.id} className={`timeline-item ${s.status === 'IN_TRANSIT' ? 'in-progress' : 'pending'}`}>
                                         <div className="timeline-time">
-                                            {s.etaAt ? new Date(s.etaAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}
+                                            {s.etaAt ? s.etaAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}
                                         </div>
                                         <div className="timeline-content">
                                             <span className="timeline-customer">{sourceSO?.customerName || '고객사'}</span>

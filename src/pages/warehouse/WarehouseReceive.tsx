@@ -1,7 +1,12 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useOrderStore } from '../../stores/orderStore'
 import { TruckDeliveryIcon, SearchIcon, CheckCircleIcon, ClipboardListIcon, AlertTriangleIcon, FilesIcon } from '../../components/Icons'
+import {
+    getPurchaseOrderById,
+    getPurchaseOrderItems,
+    updatePurchaseOrder,
+    type FirestorePurchaseOrder
+} from '../../lib/orderService'
 import './WarehouseReceive.css'
 
 interface ReceiveItem {
@@ -17,28 +22,32 @@ interface ReceiveItem {
 export default function WarehouseReceive() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { getPurchaseOrderById, getPurchaseOrderItems } = useOrderStore()
 
     const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
-    // 실데이터 연동 (Fallback 포함)
-    const po = useMemo(() => getPurchaseOrderById(id || ''), [id, getPurchaseOrderById])
-    const poItems = useMemo(() => getPurchaseOrderItems(id || ''), [id, getPurchaseOrderItems])
+    const [poData, setPoData] = useState<FirestorePurchaseOrder | null>(null)
+    const [items, setItems] = useState<ReceiveItem[]>([])
 
-    const receiveInfo = useMemo(() => ({
-        id: id || '',
-        orderId: po?.id || '',
-        customerName: 'Internal',
-        supplier: po?.supplierName || '',
-        vehicleNo: '배정대기',
-        driverName: po?.supplierName ? '직배송기사' : '',
-        driverPhone: '010-0000-0000',
-        expectedTime: '미정',
-    }), [po, id])
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        if (!id) return
+        try {
+            setLoading(true)
+            setError(null)
 
-    const [items, setItems] = useState<ReceiveItem[]>(() => {
-        if (poItems.length > 0) {
-            return poItems.map(item => ({
+            const po = await getPurchaseOrderById(id)
+            if (!po) {
+                setError('발주 정보를 찾을 수 없습니다.')
+                return
+            }
+
+            const itemsData = await getPurchaseOrderItems(id)
+            setPoData(po)
+
+            // UI용 아이템 상태 초기화
+            setItems(itemsData.map(item => ({
                 productName: item.productName || '알 수 없는 상품',
                 spec: '기본규격',
                 expectedKg: item.qtyKg,
@@ -46,10 +55,29 @@ export default function WarehouseReceive() {
                 boxCount: Math.ceil(item.qtyKg / 10),
                 status: 'PENDING',
                 note: ''
-            }))
+            })))
+        } catch (err) {
+            console.error('Failed to load data:', err)
+            setError('데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
         }
-        return []
-    })
+    }
+
+    useEffect(() => {
+        loadData()
+    }, [id])
+
+    const receiveInfo = useMemo(() => ({
+        id: id || '',
+        orderId: poData?.id || '',
+        customerName: 'Internal',
+        supplier: poData?.supplierName || '공급사 확인 중',
+        vehicleNo: '배정대기',
+        driverName: poData?.supplierName ? '직배송기사' : '',
+        driverPhone: '010-0000-0000',
+        expectedTime: '미정',
+    }), [poData, id])
 
     const [docsVerified, setDocsVerified] = useState({
         statement: false,
@@ -74,17 +102,58 @@ export default function WarehouseReceive() {
         setItems(updated)
     }
 
-    const allItemsChecked = items.every(item => item.status !== 'PENDING')
+    const allItemsChecked = items.length === 0 || items.every(item => item.status !== 'PENDING')
     const hasIssues = items.some(item => item.status === 'ISSUE')
 
-    const handleComplete = () => {
+    const handleComplete = async () => {
+        if (!poData) return
+
         if (hasIssues) {
             if (!confirm('이상 항목이 있습니다. 그래도 반입 처리를 완료하시겠습니까?')) {
                 return
             }
         }
-        alert('✅ 반입 처리가 완료되었습니다!')
-        navigate('/warehouse')
+
+        try {
+            setLoading(true)
+            // 발주 상태를 RECEIVED로 업데이트
+            await updatePurchaseOrder(poData.id, {
+                status: 'RECEIVED',
+                totalsKg: items.reduce((sum, i) => sum + i.actualKg, 0)
+            })
+
+            alert('✅ 반입 처리가 완료되었습니다!')
+            navigate('/warehouse')
+        } catch (err) {
+            console.error('Failed to complete receive:', err)
+            alert('반입 처리 중 오류가 발생했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    if (loading && !poData) {
+        return (
+            <div className="warehouse-receive">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="warehouse-receive">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadData}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -101,7 +170,7 @@ export default function WarehouseReceive() {
                 <div className="header-main">
                     <div className="receive-info">
                         <h1>{receiveInfo.supplier}</h1>
-                        <p className="order-id">주문: {receiveInfo.orderId} · 고객: {receiveInfo.customerName}</p>
+                        <p className="order-id">발주번호: {receiveInfo.orderId}</p>
                     </div>
                 </div>
 
@@ -131,7 +200,6 @@ export default function WarehouseReceive() {
 
             {/* Content */}
             <main className="receive-content">
-                {/* Step 1: 서류 확인 */}
                 {currentStep === 1 && (
                     <section className="step-section glass-card animate-fade-in">
                         <h2><ClipboardListIcon size={20} /> 서류 일치 확인</h2>
@@ -183,7 +251,6 @@ export default function WarehouseReceive() {
                     </section>
                 )}
 
-                {/* Step 2: 차량 확인 */}
                 {currentStep === 2 && (
                     <section className="step-section glass-card animate-fade-in">
                         <h2><TruckDeliveryIcon size={20} /> 차량 확인</h2>
@@ -206,10 +273,6 @@ export default function WarehouseReceive() {
                                 <span className="label">공급사</span>
                                 <span className="value">{receiveInfo.supplier}</span>
                             </div>
-                            <div className="confirm-row">
-                                <span className="label">예상 도착</span>
-                                <span className="value">{receiveInfo.expectedTime}</span>
-                            </div>
                         </div>
 
                         <div className="confirm-actions">
@@ -225,103 +288,108 @@ export default function WarehouseReceive() {
                     </section>
                 )}
 
-                {/* Step 3: 품목 검수 */}
                 {currentStep === 3 && (
                     <section className="step-section glass-card animate-fade-in">
                         <h2><SearchIcon size={20} /> 품목 검수</h2>
                         <p className="section-desc">각 품목을 확인하고 실제 수량을 입력해주세요.</p>
 
                         <div className="items-checklist">
-                            {items.map((item, idx) => (
-                                <div
-                                    key={idx}
-                                    className={`check-item ${item.status.toLowerCase()}`}
-                                >
-                                    <div className="item-header">
-                                        <div className="item-info">
-                                            <h4>{item.productName}</h4>
-                                            <span className="spec">{item.spec}</span>
-                                        </div>
-                                        <div className={`status-badge ${item.status.toLowerCase()}`}>
-                                            {item.status === 'PENDING' && '⏳ 대기'}
-                                            {item.status === 'CHECKED' && <><CheckCircleIcon size={14} /> 확인</>}
-                                            {item.status === 'ISSUE' && '⚠️ 이상'}
-                                        </div>
-                                    </div>
-
-                                    <div className="item-body">
-                                        <div className="qty-row">
-                                            <div className="qty-field">
-                                                <label>예상 수량</label>
-                                                <span className="expected">{item.expectedKg}kg</span>
+                            {items.length === 0 ? (
+                                <div className="empty-items">
+                                    <p>검수할 품목이 없습니다.</p>
+                                </div>
+                            ) : (
+                                items.map((item, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`check-item ${item.status.toLowerCase()}`}
+                                    >
+                                        <div className="item-header">
+                                            <div className="item-info">
+                                                <h4>{item.productName}</h4>
+                                                <span className="spec">{item.spec}</span>
                                             </div>
-                                            <div className="qty-field">
-                                                <label>실제 수량</label>
-                                                <div className="input-group">
-                                                    <input
-                                                        type="number"
-                                                        className="input"
-                                                        value={item.actualKg}
-                                                        onChange={(e) => updateItem(idx, 'actualKg', parseInt(e.target.value) || 0)}
-                                                    />
-                                                    <span className="unit">kg</span>
-                                                </div>
-                                            </div>
-                                            <div className="qty-field">
-                                                <label>박스 수</label>
-                                                <div className="input-group">
-                                                    <input
-                                                        type="number"
-                                                        className="input"
-                                                        value={item.boxCount}
-                                                        onChange={(e) => updateItem(idx, 'boxCount', parseInt(e.target.value) || 0)}
-                                                    />
-                                                    <span className="unit">박스</span>
-                                                </div>
+                                            <div className={`status-badge ${item.status.toLowerCase()}`}>
+                                                {item.status === 'PENDING' && '⏳ 대기'}
+                                                {item.status === 'CHECKED' && <><CheckCircleIcon size={14} /> 확인</>}
+                                                {item.status === 'ISSUE' && '⚠️ 이상'}
                                             </div>
                                         </div>
 
-                                        {item.status === 'ISSUE' && (
-                                            <div className="issue-note">
-                                                <label>이상 내용</label>
-                                                <input
-                                                    type="text"
-                                                    className="input"
-                                                    placeholder="이상 내용을 입력해주세요"
-                                                    value={item.note}
-                                                    onChange={(e) => updateItem(idx, 'note', e.target.value)}
-                                                />
+                                        <div className="item-body">
+                                            <div className="qty-row">
+                                                <div className="qty-field">
+                                                    <label>예상 수량</label>
+                                                    <span className="expected">{item.expectedKg}kg</span>
+                                                </div>
+                                                <div className="qty-field">
+                                                    <label>실제 수량</label>
+                                                    <div className="input-group">
+                                                        <input
+                                                            type="number"
+                                                            className="input"
+                                                            value={item.actualKg}
+                                                            onChange={(e) => updateItem(idx, 'actualKg', parseInt(e.target.value) || 0)}
+                                                        />
+                                                        <span className="unit">kg</span>
+                                                    </div>
+                                                </div>
+                                                <div className="qty-field">
+                                                    <label>박스 수</label>
+                                                    <div className="input-group">
+                                                        <input
+                                                            type="number"
+                                                            className="input"
+                                                            value={item.boxCount}
+                                                            onChange={(e) => updateItem(idx, 'boxCount', parseInt(e.target.value) || 0)}
+                                                        />
+                                                        <span className="unit">박스</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {item.status === 'ISSUE' && (
+                                                <div className="issue-note">
+                                                    <label>이상 내용</label>
+                                                    <input
+                                                        type="text"
+                                                        className="input"
+                                                        placeholder="이상 내용을 입력해주세요"
+                                                        value={item.note}
+                                                        onChange={(e) => updateItem(idx, 'note', e.target.value)}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {item.status === 'PENDING' && (
+                                            <div className="item-actions">
+                                                <button
+                                                    className="btn btn-success"
+                                                    onClick={() => markItemChecked(idx)}
+                                                >
+                                                    <CheckCircleIcon size={16} /> 정상
+                                                </button>
+                                                <button
+                                                    className="btn btn-danger"
+                                                    onClick={() => markItemIssue(idx)}
+                                                >
+                                                    ⚠️ 이상
+                                                </button>
                                             </div>
                                         )}
                                     </div>
-
-                                    {item.status === 'PENDING' && (
-                                        <div className="item-actions">
-                                            <button
-                                                className="btn btn-success"
-                                                onClick={() => markItemChecked(idx)}
-                                            >
-                                                <CheckCircleIcon size={16} /> 정상
-                                            </button>
-                                            <button
-                                                className="btn btn-danger"
-                                                onClick={() => markItemIssue(idx)}
-                                            >
-                                                ⚠️ 이상
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
 
                         <div className="step-footer">
-                            <button className="btn btn-secondary" onClick={() => setCurrentStep(1)}>
+                            <button className="btn btn-secondary" onClick={() => setCurrentStep(2)}>
                                 ← 이전
                             </button>
                             <button
                                 className="btn btn-primary"
-                                onClick={() => setCurrentStep(3)}
+                                onClick={() => setCurrentStep(4)}
                                 disabled={!allItemsChecked}
                             >
                                 다음 → 반입 완료
@@ -330,8 +398,7 @@ export default function WarehouseReceive() {
                     </section>
                 )}
 
-                {/* Step 3: 반입 완료 */}
-                {currentStep === 3 && (
+                {currentStep === 4 && (
                     <section className="step-section glass-card animate-fade-in">
                         <h2><ClipboardListIcon size={20} /> 반입 완료 확인</h2>
                         <p className="section-desc">검수 내역을 확인하고 반입을 완료해주세요.</p>
@@ -370,16 +437,10 @@ export default function WarehouseReceive() {
                                     {items.reduce((sum, i) => sum + i.actualKg, 0)}kg
                                 </span>
                             </div>
-
-                            {hasIssues && (
-                                <div className="issues-warning">
-                                    ⚠️ {items.filter(i => i.status === 'ISSUE').length}건의 이상 항목이 있습니다.
-                                </div>
-                            )}
                         </div>
 
                         <div className="step-footer">
-                            <button className="btn btn-secondary" onClick={() => setCurrentStep(2)}>
+                            <button className="btn btn-secondary" onClick={() => setCurrentStep(3)}>
                                 ← 이전
                             </button>
                             <button className="btn btn-primary btn-lg" onClick={handleComplete}>

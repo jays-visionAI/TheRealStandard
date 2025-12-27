@@ -1,24 +1,35 @@
 import { useState, useMemo, useEffect } from 'react'
 import { PackageIcon, SearchIcon, EditIcon, XIcon, WalletIcon, FileTextIcon } from '../../components/Icons'
-import { useProductStore, type Product } from '../../stores/productStore'
+import {
+    getAllProducts,
+    createProduct,
+    updateProduct as updateProductFirebase,
+    deleteProduct as deleteProductFirebase,
+    type FirestoreProduct
+} from '../../lib/productService'
 import './ProductMaster.css'
+
+// Product 타입 정의 (Firebase 타입에서 파생)
+type Product = Omit<FirestoreProduct, 'createdAt' | 'updatedAt'> & {
+    createdAt?: string
+    updatedAt?: string
+}
 
 // ============================================
 // 메인 컴포넌트
 // ============================================
 export default function ProductMaster() {
-    const { products, addProduct, updateProduct, deleteProduct, initializeStore } = useProductStore()
-
-    // 초기화 (저장된 데이터가 없을 경우)
-    useEffect(() => {
-        initializeStore()
-    }, [initializeStore])
+    // Firebase에서 직접 로드되는 상품 목록
+    const [products, setProducts] = useState<Product[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     const [searchQuery, setSearchQuery] = useState('')
     const [categoryFilter, setCategoryFilter] = useState<string>('all')
     const [showModal, setShowModal] = useState(false)
     const [editingProduct, setEditingProduct] = useState<Product | null>(null)
     const [showInactive, setShowInactive] = useState(false)
+    const [saving, setSaving] = useState(false)
 
     // 폼 상태
     const [formData, setFormData] = useState<Partial<Product>>({
@@ -32,6 +43,30 @@ export default function ProductMaster() {
         isActive: true,
         memo: '',
     })
+
+    // Firebase에서 상품 목록 로드
+    const loadProducts = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+            const data = await getAllProducts()
+            setProducts(data.map(p => ({
+                ...p,
+                createdAt: p.createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
+                updatedAt: p.updatedAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
+            })))
+        } catch (err) {
+            console.error('Failed to load products:', err)
+            setError('상품 목록을 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadProducts()
+    }, [])
 
     // 필터링된 상품 목록
     const filteredProducts = useMemo(() => {
@@ -94,61 +129,123 @@ export default function ProductMaster() {
         setEditingProduct(null)
     }
 
-    // 저장
-    const handleSave = () => {
+    // 저장 (Firebase에 직접)
+    const handleSave = async () => {
         if (!formData.name) {
             alert('품목명을 입력해주세요.')
             return
         }
 
-        const now = new Date().toISOString().split('T')[0]
+        try {
+            setSaving(true)
 
-        if (editingProduct) {
-            updateProduct(editingProduct.id, formData)
-            alert('✅ 상품이 수정되었습니다.')
-        } else {
-            const newProduct: Product = {
-                id: `p${Date.now()}`,
-                name: formData.name || '',
-                category: formData.category as '냉장' | '냉동' | '부산물',
-                unit: formData.unit as 'kg' | 'box',
-                boxWeight: formData.boxWeight,
-                taxFree: formData.taxFree ?? true,
-                costPrice: formData.costPrice || 0,
-                wholesalePrice: formData.wholesalePrice || 0,
-                retailPrice: formData.retailPrice || 0,
-                isActive: formData.isActive ?? true,
-                memo: formData.memo,
-                createdAt: now,
-                updatedAt: now,
+            if (editingProduct) {
+                // 수정
+                await updateProductFirebase(editingProduct.id, {
+                    name: formData.name,
+                    category: formData.category,
+                    unit: formData.unit,
+                    boxWeight: formData.boxWeight,
+                    taxFree: formData.taxFree,
+                    costPrice: formData.costPrice,
+                    wholesalePrice: formData.wholesalePrice,
+                    retailPrice: formData.retailPrice,
+                    isActive: formData.isActive,
+                    memo: formData.memo,
+                })
+                alert('✅ 상품이 수정되었습니다.')
+            } else {
+                // 신규 생성
+                await createProduct({
+                    name: formData.name || '',
+                    category: formData.category as '냉장' | '냉동' | '부산물',
+                    unit: formData.unit as 'kg' | 'box',
+                    boxWeight: formData.boxWeight,
+                    taxFree: formData.taxFree ?? true,
+                    costPrice: formData.costPrice || 0,
+                    wholesalePrice: formData.wholesalePrice || 0,
+                    retailPrice: formData.retailPrice || 0,
+                    isActive: formData.isActive ?? true,
+                    memo: formData.memo,
+                })
+                alert('✅ 상품이 추가되었습니다.')
             }
-            addProduct(newProduct)
-            alert('✅ 상품이 추가되었습니다.')
-        }
 
-        closeModal()
+            // 목록 새로고침
+            await loadProducts()
+            closeModal()
+        } catch (err) {
+            console.error('Save failed:', err)
+            alert('저장에 실패했습니다. 다시 시도해주세요.')
+        } finally {
+            setSaving(false)
+        }
     }
 
     // 삭제 (비활성화)
-    const handleDelete = (product: Product) => {
+    const handleDelete = async (product: Product) => {
         if (confirm(`"${product.name}" 상품을 삭제(비활성화)하시겠습니까?`)) {
-            updateProduct(product.id, { isActive: false })
-            alert('상품이 비활성화되었습니다.')
+            try {
+                await updateProductFirebase(product.id, { isActive: false })
+                await loadProducts()
+                alert('상품이 비활성화되었습니다.')
+            } catch (err) {
+                console.error('Delete failed:', err)
+                alert('비활성화에 실패했습니다.')
+            }
         }
     }
 
     // 완전 삭제
-    const handlePermanentDelete = (product: Product) => {
+    const handlePermanentDelete = async (product: Product) => {
         if (confirm(`⚠️ "${product.name}" 상품을 완전히 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
-            deleteProduct(product.id)
-            alert('상품이 완전히 삭제되었습니다.')
+            try {
+                await deleteProductFirebase(product.id)
+                await loadProducts()
+                alert('상품이 완전히 삭제되었습니다.')
+            } catch (err) {
+                console.error('Permanent delete failed:', err)
+                alert('삭제에 실패했습니다.')
+            }
         }
     }
 
     // 복원
-    const handleRestore = (product: Product) => {
-        updateProduct(product.id, { isActive: true })
-        alert('상품이 복원되었습니다.')
+    const handleRestore = async (product: Product) => {
+        try {
+            await updateProductFirebase(product.id, { isActive: true })
+            await loadProducts()
+            alert('상품이 복원되었습니다.')
+        } catch (err) {
+            console.error('Restore failed:', err)
+            alert('복원에 실패했습니다.')
+        }
+    }
+
+    // 로딩 상태
+    if (loading) {
+        return (
+            <div className="product-master">
+                <div className="loading-state">
+                    <div className="spinner"></div>
+                    <p>상품 목록을 불러오는 중...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // 에러 상태
+    if (error) {
+        return (
+            <div className="product-master">
+                <div className="error-state">
+                    <p>❌ {error}</p>
+                    <button className="btn btn-primary" onClick={loadProducts}>
+                        다시 시도
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -335,7 +432,7 @@ export default function ProductMaster() {
                                         <select
                                             className="input select"
                                             value={formData.category || '냉장'}
-                                            onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+                                            onChange={(e) => setFormData({ ...formData, category: e.target.value as '냉장' | '냉동' | '부산물' })}
                                         >
                                             <option value="냉장">🧊 냉장</option>
                                             <option value="냉동">❄️ 냉동</option>
@@ -348,7 +445,7 @@ export default function ProductMaster() {
                                         <select
                                             className="input select"
                                             value={formData.unit || 'kg'}
-                                            onChange={(e) => setFormData({ ...formData, unit: e.target.value as any })}
+                                            onChange={(e) => setFormData({ ...formData, unit: e.target.value as 'kg' | 'box' })}
                                         >
                                             <option value="kg">KG (중량)</option>
                                             <option value="box">BOX (박스)</option>
@@ -457,11 +554,11 @@ export default function ProductMaster() {
                         </div>
 
                         <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={closeModal}>
+                            <button className="btn btn-secondary" onClick={closeModal} disabled={saving}>
                                 취소
                             </button>
-                            <button className="btn btn-primary" onClick={handleSave}>
-                                {editingProduct ? '수정 완료' : '상품 추가'}
+                            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                                {saving ? '저장 중...' : (editingProduct ? '수정 완료' : '상품 추가')}
                             </button>
                         </div>
                     </div>

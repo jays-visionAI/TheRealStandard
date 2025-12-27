@@ -1,21 +1,71 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useCustomerStore } from '../../stores/customerStore'
+import { getCustomerByToken, updateCustomer, type FirestoreCustomer } from '../../lib/customerService'
 import { CheckCircleIcon, KeyIcon, MailIcon, BuildingIcon, UserIcon } from '../../components/Icons'
 import './InviteActivation.css'
+
+// 로컬 타입
+type LocalCustomer = Omit<FirestoreCustomer, 'createdAt' | 'updatedAt'> & {
+    createdAt?: Date
+    updatedAt?: Date
+}
 
 export default function InviteActivation() {
     const { token } = useParams<{ token: string }>()
     const navigate = useNavigate()
-    const { getCustomerByToken, activateCustomer } = useCustomerStore()
 
-    const customer = useMemo(() => getCustomerByToken(token || ''), [token, getCustomerByToken])
+    // Firebase에서 직접 로드되는 데이터
+    const [customer, setCustomer] = useState<LocalCustomer | null>(null)
+    const [loading, setLoading] = useState(true)
 
-    const [email, setEmail] = useState(customer?.email || '')
+    const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSuccess, setIsSuccess] = useState(false)
+
+    // Firebase에서 데이터 로드
+    const loadData = async () => {
+        if (!token) {
+            setLoading(false)
+            return
+        }
+
+        try {
+            setLoading(true)
+
+            const cData = await getCustomerByToken(token)
+
+            if (cData) {
+                setCustomer({
+                    ...cData,
+                    createdAt: cData.createdAt?.toDate?.() || new Date(),
+                    updatedAt: cData.updatedAt?.toDate?.() || new Date(),
+                })
+                setEmail(cData.email || '')
+            }
+        } catch (err) {
+            console.error('Failed to load customer:', err)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 초기 로드
+    useEffect(() => {
+        loadData()
+    }, [token])
+
+    if (loading) {
+        return (
+            <div className="activation-container">
+                <div className="activation-card glass-card">
+                    <div className="loading-spinner"></div>
+                    <p>초대 정보를 확인하고 있습니다...</p>
+                </div>
+            </div>
+        )
+    }
 
     if (!customer) {
         return (
@@ -44,10 +94,15 @@ export default function InviteActivation() {
 
         setIsSubmitting(true)
         try {
-            await activateCustomer(token!, email, password)
+            // Firebase에서 고객 계정 활성화
+            await updateCustomer(customer.id, {
+                email: email,
+                status: 'ACTIVE',
+            })
             setIsSuccess(true)
-        } catch (error) {
-            alert(error instanceof Error ? error.message : '활성화 중 오류가 발생했습니다.')
+        } catch (err) {
+            console.error('Activation failed:', err)
+            alert(err instanceof Error ? err.message : '활성화 중 오류가 발생했습니다.')
         } finally {
             setIsSubmitting(false)
         }
