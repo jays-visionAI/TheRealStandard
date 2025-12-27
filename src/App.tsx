@@ -22,10 +22,13 @@ import WarehouseRelease from './pages/warehouse/WarehouseRelease'
 
 // Accounting Pages (ACCOUNTANT 등급)
 import AccountingDashboard from './pages/accounting/AccountingDashboard'
+import SalesRecords from './pages/accounting/SalesRecords'
+import PurchaseRecords from './pages/accounting/PurchaseRecords'
 
 // Legacy Admin Pages (설정용)
 import AdminLayout from './layouts/AdminLayout'
 import WarehouseLayout from './layouts/WarehouseLayout'
+import AccountingLayout from './layouts/AccountingLayout'
 import Dashboard from './pages/admin/Dashboard'
 import OrderSheetList from './pages/admin/OrderSheetList'
 import OrderSheetCreate from './pages/admin/OrderSheetCreate'
@@ -104,10 +107,18 @@ function App() {
                         path="/accounting"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'ACCOUNTING']}>
-                                <AccountingDashboard />
+                                <AccountingLayout />
                             </ProtectedRoute>
                         }
-                    />
+                    >
+                        <Route index element={<AccountingDashboard />} />
+                        <Route path="pending" element={<AccountingDashboard />} />
+                        <Route path="completed" element={<AccountingDashboard />} />
+                        <Route path="sales" element={<SalesRecords />} />
+                        <Route path="purchases" element={<PurchaseRecords />} />
+                        <Route path="invoices" element={<AccountingDashboard />} />
+                        <Route path="certificates" element={<AccountingDashboard />} />
+                    </Route>
 
                     {/* ========================================
                           ADMIN (관리자) - 사이드바 레이아웃

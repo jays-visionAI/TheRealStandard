@@ -1,0 +1,241 @@
+/* Accounting Layout - For accounting/finance staff */
+.accounting-layout {
+    display: flex;
+    min-height: 100vh;
+    background: var(--bg-primary);
+}
+
+/* Sidebar */
+.accounting-sidebar {
+    width: 260px;
+    background: linear-gradient(180deg, #1a2f1a 0%, #0d1f0d 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: var(--z-sticky);
+}
+
+.accounting-sidebar .sidebar-header {
+    padding: var(--space-6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.accounting-sidebar .logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.accounting-sidebar .logo-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.accounting-sidebar .logo-title {
+    font-size: 1.75rem;
+    font-weight: var(--font-black);
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.accounting-sidebar .logo-subtitle {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+/* Navigation */
+.accounting-sidebar .sidebar-nav {
+    flex: 1;
+    padding: var(--space-4);
+    overflow-y: auto;
+}
+
+.accounting-sidebar .nav-group {
+    margin-bottom: var(--space-4);
+}
+
+.accounting-sidebar .nav-group-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.accounting-sidebar .nav-group-items {
+    margin-left: var(--space-6);
+}
+
+.accounting-sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    border-radius: var(--radius-md);
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.accounting-sidebar .nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.accounting-sidebar .nav-link.active {
+    background: rgba(74, 222, 128, 0.2);
+    color: #4ade80;
+}
+
+.accounting-sidebar .nav-link-single {
+    margin-bottom: var(--space-1);
+}
+
+.accounting-sidebar .nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+}
+
+/* Footer */
+.accounting-sidebar .sidebar-footer {
+    padding: var(--space-4);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.accounting-sidebar .user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.accounting-sidebar .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-bold);
+    font-size: var(--text-lg);
+    color: white;
+}
+
+.accounting-sidebar .user-details {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.accounting-sidebar .user-name {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: white;
+}
+
+.accounting-sidebar .user-role {
+    font-size: var(--text-xs);
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.accounting-sidebar .logout-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.accounting-sidebar .logout-btn:hover {
+    background: rgba(255, 82, 82, 0.2);
+    color: #ff5252;
+}
+
+/* Main Content */
+.accounting-main {
+    flex: 1;
+    margin-left: 260px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.accounting-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-6);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-secondary);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+}
+
+.accounting-header .header-title {
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--text-primary);
+}
+
+.accounting-header .header-time {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.accounting-content {
+    flex: 1;
+    padding: var(--space-6);
+    overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .accounting-sidebar {
+        width: 80px;
+    }
+
+    .accounting-sidebar .logo-text,
+    .accounting-sidebar .nav-group-title span:not(.nav-icon),
+    .accounting-sidebar .nav-link span:not(.nav-icon),
+    .accounting-sidebar .user-details {
+        display: none;
+    }
+
+    .accounting-sidebar .nav-group-items {
+        margin-left: 0;
+    }
+
+    .accounting-main {
+        margin-left: 80px;
+    }
+}

@@ -572,3 +572,19 @@ export const ShieldIcon: FC<IconProps> = ({ size = 20, className = '', color = '
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
 )
+
+// Upload
+export const UploadIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+)
+
+// Filter
+export const FilterIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+)
