@@ -27,4 +27,15 @@ export const db = getFirestore(app)
 // Initialize Auth
 export const auth = getAuth(app)
 
+// Firestore에 저장하기 전에 undefined 필드를 제거하는 유틸리티
+export function cleanData(data: any) {
+    const clean: any = {}
+    Object.keys(data).forEach(key => {
+        if (data[key] !== undefined) {
+            clean[key] = data[key]
+        }
+    })
+    return clean
+}
+
 export default app

@@ -9,7 +9,7 @@ import {
 } from '../../lib/userService'
 import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
 import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
-import { UsersIcon, SearchIcon, MailIcon, CheckCircleIcon, BuildingIcon, PlusIcon, TrashIcon as Trash2Icon } from '../../components/Icons'
+import { UsersIcon, SearchIcon, MailIcon, BuildingIcon, PlusIcon, TrashIcon as Trash2Icon, GridIcon, ListIcon, EditIcon } from '../../components/Icons'
 import './UserList.css'
 
 // UserAccount 타입 정의
@@ -49,6 +49,7 @@ export default function UserList() {
     const [searchParams, setSearchParams] = useSearchParams()
     const [searchQuery, setSearchQuery] = useState('')
     const [filterRole, setFilterRole] = useState<string>(searchParams.get('role') || 'ALL')
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
     const [showModal, setShowModal] = useState(false)
     const [editingUser, setEditingUser] = useState<UserAccount | null>(null)
@@ -240,44 +241,131 @@ export default function UserList() {
                     <button className={`filter-chip ${filterRole === 'WAREHOUSE' ? 'active' : ''}`} onClick={() => handleRoleChange('WAREHOUSE')}>물류</button>
                     <button className={`filter-chip ${filterRole === 'CUSTOMER' ? 'active' : ''}`} onClick={() => handleRoleChange('CUSTOMER')}>고객</button>
                 </div>
+
+                <div className="view-toggle-group">
+                    <button
+                        className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                        onClick={() => setViewMode('grid')}
+                        title="그리드 뷰"
+                    >
+                        <GridIcon size={20} />
+                    </button>
+                    <button
+                        className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                        onClick={() => setViewMode('list')}
+                        title="리스트 뷰"
+                    >
+                        <ListIcon size={20} />
+                    </button>
+                </div>
             </div>
 
-            <div className="user-grid">
-                {filteredUsers.map(user => (
-                    <div key={user.id} className="user-card glass-card">
-                        <div className="user-card-header">
-                            <div className={`role-badge ${(user.role || 'OPS').toLowerCase()}`}>
-                                {ROLE_LABELS[user.role]}
+            {viewMode === 'grid' ? (
+                <div className="user-grid">
+                    {filteredUsers.map(user => (
+                        <div key={user.id} className="user-card glass-card">
+                            <div className="user-card-header">
+                                <div className={`role-badge ${(user.role || 'OPS').toLowerCase()}`}>
+                                    {ROLE_LABELS[user.role]}
+                                </div>
+                                <div className="user-actions">
+                                    <button className="icon-btn" onClick={() => handleOpenEdit(user)}><EditIcon size={16} /></button>
+                                    <button className="icon-btn danger" onClick={() => handleDelete(user.id)}><Trash2Icon size={16} /></button>
+                                </div>
                             </div>
-                            <div className="user-actions">
-                                <button className="icon-btn" onClick={() => handleOpenEdit(user)}><CheckCircleIcon size={16} /></button>
-                                <button className="icon-btn danger" onClick={() => handleDelete(user.id)}><Trash2Icon size={16} /></button>
+                            <div className="user-card-body">
+                                <div className="avatar">
+                                    {(user.name || 'U').charAt(0)}
+                                </div>
+                                <h3 className="user-name">{user.name || '이름 없음'}</h3>
+                                <p className="user-email"><MailIcon size={14} /> {user.email || '이메일 없음'}</p>
+
+                                {user.orgId && (
+                                    <p className="user-org">
+                                        <BuildingIcon size={14} />
+                                        {customers.find(c => c.id === user.orgId)?.companyName ||
+                                            suppliers.find(s => s.id === user.orgId)?.companyName || '소속 정보 없음'}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="user-card-footer">
+                                <span className={`status-pill ${user.status.toLowerCase()}`}>
+                                    {user.status === 'ACTIVE' ? '활성' : '비활성'}
+                                </span>
+                                <span className="last-login">최근 접속: 2일 전</span>
                             </div>
                         </div>
-                        <div className="user-card-body">
-                            <div className="avatar">
-                                {(user.name || 'U').charAt(0)}
-                            </div>
-                            <h3 className="user-name">{user.name || '이름 없음'}</h3>
-                            <p className="user-email"><MailIcon size={14} /> {user.email || '이메일 없음'}</p>
-
-                            {user.orgId && (
-                                <p className="user-org">
-                                    <BuildingIcon size={14} />
-                                    {customers.find(c => c.id === user.orgId)?.companyName ||
-                                        suppliers.find(s => s.id === user.orgId)?.companyName || '소속 정보 없음'}
-                                </p>
+                    ))}
+                </div>
+            ) : (
+                <div className="user-list-container glass-card">
+                    <table className="user-list-table">
+                        <thead>
+                            <tr>
+                                <th>이름 / 이메일</th>
+                                <th>역할</th>
+                                <th>소속</th>
+                                <th>상태</th>
+                                <th>최근 접속</th>
+                                <th className="text-center">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredUsers.map(user => (
+                                <tr key={user.id}>
+                                    <td>
+                                        <div className="user-info-cell">
+                                            <div className="avatar-sm">
+                                                {(user.name || 'U').charAt(0)}
+                                            </div>
+                                            <div className="user-details">
+                                                <div className="name">{user.name || '이름 없음'}</div>
+                                                <div className="email">{user.email}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span className={`role-badge-sm ${(user.role || 'OPS').toLowerCase()}`}>
+                                            {ROLE_LABELS[user.role]}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {user.orgId ? (
+                                            <span className="org-name">
+                                                {customers.find(c => c.id === user.orgId)?.companyName ||
+                                                    suppliers.find(s => s.id === user.orgId)?.companyName || '-'}
+                                            </span>
+                                        ) : '-'}
+                                    </td>
+                                    <td>
+                                        <span className={`status-pill-sm ${user.status.toLowerCase()}`}>
+                                            {user.status === 'ACTIVE' ? '활성' : '비활성'}
+                                        </span>
+                                    </td>
+                                    <td className="last-login-cell">2일 전</td>
+                                    <td>
+                                        <div className="user-actions-cell">
+                                            <button className="icon-btn" onClick={() => handleOpenEdit(user)} title="수정">
+                                                <EditIcon size={16} />
+                                            </button>
+                                            <button className="icon-btn danger" onClick={() => handleDelete(user.id)} title="삭제">
+                                                <Trash2Icon size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredUsers.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="empty-row">
+                                        검색 결과가 없습니다.
+                                    </td>
+                                </tr>
                             )}
-                        </div>
-                        <div className="user-card-footer">
-                            <span className={`status-pill ${user.status.toLowerCase()}`}>
-                                {user.status === 'ACTIVE' ? '활성' : '비활성'}
-                            </span>
-                            <span className="last-login">최근 접속: 2일 전</span>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {showModal && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>

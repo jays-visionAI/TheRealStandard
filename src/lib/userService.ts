@@ -11,7 +11,7 @@ import {
     serverTimestamp,
     Timestamp
 } from 'firebase/firestore'
-import { db } from './firebase'
+import { db, cleanData } from './firebase'
 import type { UserRole } from '../types'
 
 // Firestore에서 사용할 User 인터페이스
@@ -78,7 +78,7 @@ export async function createUser(userData: Omit<FirestoreUser, 'id' | 'createdAt
     const now = serverTimestamp()
 
     const newUser = {
-        ...userData,
+        ...cleanData(userData),
         createdAt: now,
         updatedAt: now
     }
@@ -96,7 +96,7 @@ export async function createUserWithId(id: string, userData: Omit<FirestoreUser,
     const now = serverTimestamp()
 
     const newUser = {
-        ...userData,
+        ...cleanData(userData),
         createdAt: now,
         updatedAt: now
     }
@@ -113,7 +113,7 @@ export async function createUserWithId(id: string, userData: Omit<FirestoreUser,
 export async function updateUser(id: string, data: Partial<FirestoreUser>): Promise<void> {
     const docRef = doc(db, USERS_COLLECTION, id)
     await updateDoc(docRef, {
-        ...data,
+        ...cleanData(data),
         updatedAt: serverTimestamp()
     })
 }
