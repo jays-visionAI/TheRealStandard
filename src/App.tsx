@@ -20,8 +20,7 @@ import WarehouseDashboard from './pages/warehouse/WarehouseDashboard'
 import WarehouseReceive from './pages/warehouse/WarehouseReceive'
 import WarehouseRelease from './pages/warehouse/WarehouseRelease'
 
-// Accounting Pages (ACCOUNTANT 등급)
-import AccountingDashboard from './pages/accounting/AccountingDashboard'
+// Accounting Pages - TBD (placeholder)
 
 // Legacy Admin Pages (설정용)
 import AdminLayout from './layouts/AdminLayout'
@@ -104,13 +103,13 @@ function App() {
                     />
 
                     {/* ========================================
-                          ACCOUNTANT (경리직원) - 정산
+                          ACCOUNTANT (경리직원) - 정산 (TBD - 임시 워크플로우로 리디렉션)
                        ======================================== */}
                     <Route
                         path="/accounting"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'ACCOUNTING']}>
-                                <AccountingDashboard />
+                                <Navigate to="/admin/workflow" replace />
                             </ProtectedRoute>
                         }
                     />
