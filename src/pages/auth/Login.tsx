@@ -33,8 +33,7 @@ export default function Login() {
                     navigate('/accounting')
                     break
                 case 'CUSTOMER':
-                    // 고객은 보통 링크(토큰)를 통해 들어오지만, 직접 로그인 시 메인으로
-                    navigate('/')
+                    navigate('/order/dashboard')
                     break
                 default:
                     navigate('/admin/workflow')

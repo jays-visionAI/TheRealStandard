@@ -50,7 +50,7 @@ export function getDefaultPathForRole(role: UserRole): string {
         case 'ACCOUNTING':
             return '/accounting'
         case 'CUSTOMER':
-            return '/'  // 고객용 페이지 미구현으로 랜딩페이지로 이동
+            return '/order/dashboard'
         default:
             return '/login'
     }
