@@ -54,6 +54,11 @@ import DeliveryTracking from './pages/front/DeliveryTracking'
 function App() {
     useEffect(() => {
         initKakao();
+
+        // Firebase에 초기 사용자 데이터 시드 (없을 경우에만)
+        import('./lib/userService').then(({ seedInitialUsers }) => {
+            seedInitialUsers().catch(console.error)
+        })
     }, []);
 
     return (

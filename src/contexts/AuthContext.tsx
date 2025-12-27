@@ -43,13 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [])
 
     const login = async (email: string, password: string) => {
-        const { useUserStore } = await import('../stores/userStore')
-        const { users } = useUserStore.getState()
+        // Firebase Firestore에서 사용자 검증
+        const { validateLogin } = await import('../lib/userService')
 
-        const foundUser = users.find(u => u.email === email && u.password === password && u.status === 'ACTIVE')
+        const foundUser = await validateLogin(email, password)
 
         if (!foundUser) {
-            // 고객 초대 프로세스로 가입된 고객 계정 백업 체크
+            // 고객 초대 프로세스로 가입된 고객 계정 백업 체크 (추후 customers 컬렉션도 Firebase로 마이그레이션 예정)
             const { useCustomerStore } = await import('../stores/customerStore')
             const { customers } = useCustomerStore.getState()
             const foundCustomer = customers.find(c => c.email === email && c.password === password && c.status === 'ACTIVE')
