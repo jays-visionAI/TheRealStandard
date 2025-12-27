@@ -106,9 +106,11 @@ export interface OrderSheet {
     id: string;
     customerOrgId: string;
     customerName?: string;   // Denormalized
-    shipDate: Date;
+    shipDate?: Date;
     cutOffAt: Date;          // 마감시간
     shipTo: string;          // 배송지
+    adminComment?: string;
+    customerComment?: string;
     status: OrderSheetStatus;
     inviteTokenId: string;
     lastSubmittedAt?: Date;

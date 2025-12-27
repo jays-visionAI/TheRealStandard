@@ -522,3 +522,40 @@
         width: 100%;
     }
 }
+
+/* Comments Styling */
+.admin-comment-box {
+    padding: var(--space-4);
+    background: rgba(37, 99, 235, 0.05);
+    border: 1px solid rgba(37, 99, 235, 0.1);
+}
+
+.admin-comment-box .comment-label {
+    font-size: var(--text-xs);
+    font-weight: var(--font-bold);
+    color: var(--color-primary);
+    text-transform: uppercase;
+    margin-bottom: var(--space-1);
+}
+
+.admin-comment-box .comment-text {
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+.customer-comment-container {
+    padding: var(--space-4);
+}
+
+.customer-comment-container .section-title-sm {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.customer-comment-container .textarea {
+    width: 100%;
+}

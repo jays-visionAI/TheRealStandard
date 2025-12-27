@@ -75,6 +75,7 @@ export default function OrderSheetCreate() {
     const [shipDate, setShipDate] = useState('')
     const [cutOffAt, setCutOffAt] = useState('')
     const [shipTo, setShipTo] = useState('')
+    const [adminComment, setAdminComment] = useState('')
 
     // 이전 주문 패널
     const [showPastOrders, setShowPastOrders] = useState(true)
@@ -134,11 +135,18 @@ export default function OrderSheetCreate() {
         }
     }
 
-    // 초기 행 설정
+    // 초기 행 설정 및 마감시간 기본값 (현재시간 + 48시간)
     useEffect(() => {
         if (rows.length === 0) {
             setRows([createEmptyRow()])
         }
+
+        // 주문 마감시간 기본값 설정 (48시간 뒤)
+        const now = new Date()
+        now.setHours(now.getHours() + 48)
+        // input type="datetime-local" 형식: YYYY-MM-DDTHH:mm
+        const formatted = now.toISOString().slice(0, 16)
+        setCutOffAt(formatted)
     }, [])
 
     // 고객 선택 시 배송지 자동 설정
@@ -328,8 +336,8 @@ export default function OrderSheetCreate() {
 
     // 주문장 발송
     const handleSubmit = async () => {
-        if (!selectedCustomer || validRows.length === 0 || !shipDate || !cutOffAt) {
-            alert('모든 필수 정보를 입력해주세요.')
+        if (!selectedCustomer || validRows.length === 0 || !cutOffAt) {
+            alert('주문 마감시간을 확인해주세요.')
             return
         }
 
@@ -342,7 +350,10 @@ export default function OrderSheetCreate() {
             const newOrderSheet = await createOrderSheet({
                 customerOrgId: selectedCustomer.id,
                 customerName: selectedCustomer.companyName,
-                shipDate: Timestamp.fromDate(new Date(shipDate)),
+                shipDate: shipDate ? Timestamp.fromDate(new Date(shipDate)) : undefined,
+                cutOffAt: Timestamp.fromDate(new Date(cutOffAt)),
+                shipTo: shipTo || selectedCustomer.address,
+                adminComment: adminComment,
                 status: 'SENT',
                 inviteTokenId: token,
             })
@@ -742,7 +753,7 @@ export default function OrderSheetCreate() {
 
                         <div className="form-grid">
                             <div className="form-group">
-                                <label className="label">배송일 *</label>
+                                <label className="label">배송일</label>
                                 <input
                                     type="date"
                                     className="input"
@@ -767,6 +778,16 @@ export default function OrderSheetCreate() {
                                     value={shipTo}
                                     onChange={(e) => setShipTo(e.target.value)}
                                     placeholder="배송지 주소를 입력하세요"
+                                />
+                            </div>
+                            <div className="form-group full-width">
+                                <label className="label">관리자 메모/요청사항</label>
+                                <textarea
+                                    className="input textarea"
+                                    value={adminComment}
+                                    onChange={(e) => setAdminComment(e.target.value)}
+                                    placeholder="고객에게 전달할 메모나 요청사항을 입력하세요 (예: 명절 선물 세트 주문 건입니다.)"
+                                    rows={3}
                                 />
                             </div>
                         </div>

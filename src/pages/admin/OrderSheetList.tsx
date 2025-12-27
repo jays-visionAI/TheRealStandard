@@ -8,7 +8,7 @@ import {
 import type { OrderSheetStatus } from '../../types'
 
 // OrderSheet 타입 정의
-type OrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate'> & {
+type OrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate' | 'cutOffAt'> & {
     createdAt?: Date
     updatedAt?: Date
     shipDate?: Date
@@ -37,6 +37,7 @@ export default function OrderSheetList() {
                 createdAt: os.createdAt?.toDate?.() || new Date(),
                 updatedAt: os.updatedAt?.toDate?.() || new Date(),
                 shipDate: os.shipDate?.toDate?.() || undefined,
+                cutOffAt: os.cutOffAt?.toDate?.() || undefined,
             })))
         } catch (err) {
             console.error('Failed to load order sheets:', err)

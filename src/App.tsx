@@ -50,6 +50,9 @@ import InviteLanding from './pages/front/InviteLanding'
 import B2BOrderGrid from './pages/front/B2BOrderGrid'
 import CustomerConfirm from './pages/front/CustomerConfirm'
 import DeliveryTracking from './pages/front/DeliveryTracking'
+import CustomerDashboard from './pages/front/CustomerDashboard'
+import CustomerOrderList from './pages/front/CustomerOrderList'
+import ProductCatalog from './pages/front/ProductCatalog'
 
 function App() {
     useEffect(() => {
@@ -168,6 +171,25 @@ function App() {
                           (토큰 기반 접근이므로 별도 권한 검사 불필요)
                        ======================================== */}
                     <Route path="/order" element={<FrontLayout />}>
+                        <Route path="dashboard" element={
+                            <ProtectedRoute allowedRoles={['CUSTOMER', 'ADMIN']}>
+                                <CustomerDashboard />
+                            </ProtectedRoute>
+                        } />
+                        <Route path="list" element={
+                            <ProtectedRoute allowedRoles={['CUSTOMER', 'ADMIN']}>
+                                <CustomerOrderList />
+                            </ProtectedRoute>
+                        } />
+                        <Route path="history" element={
+                            <ProtectedRoute allowedRoles={['CUSTOMER', 'ADMIN']}>
+                                <CustomerOrderList />
+                            </ProtectedRoute>
+                        } />
+                        <Route path="catalog" element={<ProductCatalog />} />
+                        <Route path="tracking" element={<DeliveryTracking />} />
+
+                        {/* 토큰 기반 개별 주문서 접근 */}
                         <Route path=":token" element={<InviteLanding />} />
                         <Route path=":token/edit" element={<B2BOrderGrid />} />
                         <Route path=":token/confirm" element={<CustomerConfirm />} />

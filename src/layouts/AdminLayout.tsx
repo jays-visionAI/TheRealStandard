@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
     DashboardIcon,
@@ -8,7 +8,8 @@ import {
     WalletIcon,
     SettingsIcon,
     BookOpenIcon,
-    MessageCircleIcon
+    MessageCircleIcon,
+    LogOutIcon
 } from '../components/Icons'
 import { addKakaoChannel } from '../lib/kakaoService'
 import './AdminLayout.css'
@@ -81,8 +82,16 @@ const navigation = [
 ]
 
 export default function AdminLayout() {
-    const { user } = useAuth()
+    const { user, logout } = useAuth()
     const location = useLocation()
+    const navigate = useNavigate()
+
+    const handleLogout = async () => {
+        if (confirm('로그아웃 하시겠습니까?')) {
+            await logout()
+            navigate('/login')
+        }
+    }
 
     return (
         <div className="admin-layout">
@@ -166,10 +175,13 @@ export default function AdminLayout() {
                                 user?.name?.charAt(0) || 'A'
                             )}
                         </div>
-                        <div className="user-details">
+                        <div className="user-details flex-1">
                             <span className="user-name">{user?.name || '관리자'}</span>
                             <span className="user-role">{user?.role || 'ADMIN'}</span>
                         </div>
+                        <button className="logout-btn" onClick={handleLogout} title="로그아웃">
+                            <LogOutIcon size={18} />
+                        </button>
                     </div>
                 </div>
             </aside>

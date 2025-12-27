@@ -12,12 +12,15 @@ import {
 } from '../../lib/orderService'
 
 // 로컬 타입
-type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate'> & {
+type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate' | 'cutOffAt'> & {
     createdAt?: Date
     updatedAt?: Date
     shipDate?: Date
+    cutOffAt?: Date
     lastSubmittedAt?: Date
     shipTo?: string
+    adminComment?: string
+    customerComment?: string
     revisionComment?: string
 }
 
@@ -55,6 +58,9 @@ export default function OrderReview() {
                     createdAt: osData.createdAt?.toDate?.() || new Date(),
                     updatedAt: osData.updatedAt?.toDate?.() || new Date(),
                     shipDate: osData.shipDate?.toDate?.() || undefined,
+                    cutOffAt: osData.cutOffAt?.toDate?.() || undefined,
+                    adminComment: osData.adminComment,
+                    customerComment: osData.customerComment,
                 })
             }
             setItems(itemsData)
@@ -193,12 +199,36 @@ export default function OrderReview() {
                         <span className="info-label">제출시간</span>
                         <span className="info-value">{formatDateTime(orderSheet.lastSubmittedAt)}</span>
                     </div>
+                    <div className="info-item">
+                        <span className="info-label">주문마감시간</span>
+                        <span className="info-value">{formatDateTime(orderSheet.cutOffAt)}</span>
+                    </div>
                     <div className="info-item full-width">
                         <span className="info-label">배송지</span>
                         <span className="info-value">{orderSheet.shipTo || '-'}</span>
                     </div>
                 </div>
             </div>
+
+            {/* Comments Display */}
+            {(orderSheet.adminComment || orderSheet.customerComment) && (
+                <div className="glass-card mb-4 comments-section">
+                    <div className="comments-grid">
+                        {orderSheet.adminComment && (
+                            <div className="comment-block admin">
+                                <div className="comment-header">관리자 메모</div>
+                                <div className="comment-body">{orderSheet.adminComment}</div>
+                            </div>
+                        )}
+                        {orderSheet.customerComment && (
+                            <div className="comment-block customer">
+                                <div className="comment-header">고객 요청사항</div>
+                                <div className="comment-body">{orderSheet.customerComment}</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Items Table */}
             <div className="glass-card mb-4">
@@ -257,7 +287,8 @@ export default function OrderReview() {
                     <button
                         className="btn btn-primary btn-lg"
                         onClick={handleConfirm}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || orderSheet.status !== 'SUBMITTED'}
+                        title={orderSheet.status !== 'SUBMITTED' ? '고객이 컨펌한 후에만 확정 가능합니다.' : ''}
                     >
                         {isSubmitting ? '처리 중...' : '✓ 확정하기'}
                     </button>
@@ -369,6 +400,52 @@ export default function OrderReview() {
           
           .action-panel {
             flex-direction: column;
+          }
+        }
+
+        /* Comments Styling */
+        .comments-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: var(--space-4);
+        }
+
+        .comment-block {
+          padding: var(--space-4);
+          border-radius: var(--radius-md);
+        }
+
+        .comment-block.admin {
+          background: rgba(59, 130, 246, 0.05);
+          border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .comment-block.customer {
+          background: rgba(245, 158, 11, 0.05);
+          border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .comment-header {
+          font-size: var(--text-xs);
+          font-weight: var(--font-bold);
+          text-transform: uppercase;
+          margin-bottom: var(--space-2);
+          letter-spacing: 0.05em;
+        }
+
+        .comment-block.admin .comment-header { color: var(--color-primary); }
+        .comment-block.customer .comment-header { color: var(--color-warning); }
+
+        .comment-body {
+          font-size: var(--text-sm);
+          line-height: 1.5;
+          color: var(--text-primary);
+          white-space: pre-wrap;
+        }
+
+        @media (max-width: 640px) {
+          .comments-grid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>

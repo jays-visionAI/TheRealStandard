@@ -48,7 +48,7 @@ export default function B2BOrderGrid() {
     const navigate = useNavigate()
 
     // Firebase에서 직접 로드되는 데이터
-    const [orderInfo, setOrderInfo] = useState<(Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate'> & {
+    const [orderInfo, setOrderInfo] = useState<(Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate' | 'cutOffAt'> & {
         createdAt?: Date
         updatedAt?: Date
         shipDate?: Date
@@ -68,6 +68,7 @@ export default function B2BOrderGrid() {
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
     const [highlightIndex, setHighlightIndex] = useState(0)
     const [saving, setSaving] = useState(false)
+    const [customerComment, setCustomerComment] = useState('')
 
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
@@ -92,6 +93,7 @@ export default function B2BOrderGrid() {
                     createdAt: osData.createdAt?.toDate?.() || new Date(),
                     updatedAt: osData.updatedAt?.toDate?.() || new Date(),
                     shipDate: osData.shipDate?.toDate?.() || undefined,
+                    cutOffAt: osData.cutOffAt?.toDate?.() || undefined,
                 }
                 setOrderInfo(orderSheet)
 
@@ -104,8 +106,10 @@ export default function B2BOrderGrid() {
 
                 // 기존 아이템 로드
                 const items = await getOrderSheetItems(osData.id)
+                let currentRows: OrderRow[] = []
+
                 if (items && items.length > 0) {
-                    const mappedRows: OrderRow[] = items.map(item => ({
+                    currentRows = items.map(item => ({
                         id: item.id,
                         productId: item.productId,
                         productName: item.productName || '',
@@ -115,9 +119,37 @@ export default function B2BOrderGrid() {
                         estimatedWeight: item.estimatedKg || 0,
                         totalAmount: item.amount || 0
                     }))
-                    setRows(mappedRows)
                 } else {
-                    setRows([createEmptyRow()])
+                    currentRows = [createEmptyRow()]
+                }
+
+                // 2. 카탈로그에서 선택한 품목이 있으면 추가
+                const savedSelection = localStorage.getItem('trs_catalog_selection')
+                if (savedSelection) {
+                    const selection = JSON.parse(savedSelection)
+                    const newRowsFromCatalog: OrderRow[] = selection.filter((sel: any) =>
+                        !currentRows.find((row: OrderRow) => row.productId === sel.productId)
+                    ).map((sel: any) => ({
+                        id: `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        productId: sel.productId,
+                        productName: sel.name,
+                        unitPrice: sel.wholesalePrice,
+                        quantity: 0,
+                        unit: sel.unit as 'kg' | 'box' || 'kg',
+                        estimatedWeight: 0,
+                        totalAmount: 0,
+                    }))
+
+                    if (newRowsFromCatalog.length > 0) {
+                        currentRows = [...currentRows, ...newRowsFromCatalog]
+                    }
+                    localStorage.removeItem('trs_catalog_selection')
+                }
+                setRows(currentRows)
+
+
+                if (osData.customerComment) {
+                    setCustomerComment(osData.customerComment)
                 }
             }
 
@@ -311,6 +343,7 @@ export default function B2BOrderGrid() {
             // 주문장 상태 업데이트
             await updateOrderSheet(orderInfo.id, {
                 status: 'SUBMITTED',
+                customerComment: customerComment,
             })
 
             // 주문 아이템 업데이트
@@ -454,6 +487,14 @@ export default function B2BOrderGrid() {
                 </div>
             </header>
 
+            {/* Admin Comment Section */}
+            {orderInfo.adminComment && (
+                <div className="admin-comment-box glass-card animate-fade-in">
+                    <div className="comment-label">📢 관리자 한마디</div>
+                    <div className="comment-text">{orderInfo.adminComment}</div>
+                </div>
+            )}
+
             {/* Grid 안내 */}
             <div className="grid-guide glass-card">
                 <span className="guide-icon">💡</span>
@@ -593,6 +634,18 @@ export default function B2BOrderGrid() {
                         </tr>
                     </tfoot>
                 </table>
+            </div>
+
+            {/* Customer Comment Section */}
+            <div className="customer-comment-container glass-card mb-4">
+                <div className="section-title-sm">💬 고객 요청사항 / 댓글</div>
+                <textarea
+                    className="input textarea"
+                    value={customerComment}
+                    onChange={(e) => setCustomerComment(e.target.value)}
+                    placeholder="관리자에게 전달할 추가 요청사항이나 문의사항이 있다면 입력해주세요."
+                    rows={3}
+                />
             </div>
 
             {/* Footer Actions */}

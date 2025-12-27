@@ -4,7 +4,7 @@ import { XIcon, ClipboardListIcon } from '../../components/Icons'
 import { getOrderSheetByToken, type FirestoreOrderSheet } from '../../lib/orderService'
 
 // 로컬 타입
-type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate'> & {
+type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate' | 'cutOffAt'> & {
   createdAt?: Date
   updatedAt?: Date
   shipDate?: Date
@@ -32,6 +32,7 @@ export default function InviteLanding() {
             createdAt: order.createdAt?.toDate?.() || new Date(),
             updatedAt: order.updatedAt?.toDate?.() || new Date(),
             shipDate: order.shipDate?.toDate?.() || undefined,
+            cutOffAt: order.cutOffAt?.toDate?.() || undefined,
           })
         }
       } catch (err) {

@@ -11,6 +11,10 @@ export interface FirestoreOrderSheet {
     customerOrgId: string
     customerName: string
     shipDate?: Timestamp
+    cutOffAt: Timestamp
+    shipTo: string
+    adminComment?: string
+    customerComment?: string
     status: 'DRAFT' | 'SENT' | 'SUBMITTED' | 'CONFIRMED' | 'REVISION' | 'CLOSED'
     createdAt: Timestamp
     updatedAt: Timestamp
@@ -49,6 +53,12 @@ export async function getOrderSheetByToken(token: string): Promise<FirestoreOrde
     if (snapshot.empty) return null
     const d = snapshot.docs[0]
     return { id: d.id, ...d.data() } as FirestoreOrderSheet
+}
+
+export async function getOrderSheetsByCustomer(customerOrgId: string): Promise<FirestoreOrderSheet[]> {
+    const q = query(collection(db, ORDER_SHEETS_COLLECTION), where('customerOrgId', '==', customerOrgId))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FirestoreOrderSheet))
 }
 
 export async function createOrderSheet(data: Omit<FirestoreOrderSheet, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreOrderSheet> {
@@ -133,6 +143,12 @@ export async function getSalesOrderById(id: string): Promise<FirestoreSalesOrder
     return { id: snapshot.id, ...snapshot.data() } as FirestoreSalesOrder
 }
 
+export async function getSalesOrdersByCustomer(customerOrgId: string): Promise<FirestoreSalesOrder[]> {
+    const q = query(collection(db, SALES_ORDERS_COLLECTION), where('customerOrgId', '==', customerOrgId))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FirestoreSalesOrder))
+}
+
 export async function createSalesOrder(data: Omit<FirestoreSalesOrder, 'id' | 'createdAt'>): Promise<FirestoreSalesOrder> {
     const newDocRef = doc(collection(db, SALES_ORDERS_COLLECTION))
     const now = serverTimestamp()
@@ -188,6 +204,12 @@ export async function getShipmentById(id: string): Promise<FirestoreShipment | n
     const snapshot = await getDoc(docRef)
     if (!snapshot.exists()) return null
     return { id: snapshot.id, ...snapshot.data() } as FirestoreShipment
+}
+
+export async function getShipmentsBySalesOrder(salesOrderId: string): Promise<FirestoreShipment[]> {
+    const q = query(collection(db, SHIPMENTS_COLLECTION), where('sourceSalesOrderId', '==', salesOrderId))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FirestoreShipment))
 }
 
 export async function createShipment(data: Omit<FirestoreShipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreShipment> {

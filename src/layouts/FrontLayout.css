@@ -1,101 +1,236 @@
-/* Front Layout Styles */
+/* Front Layout V2 - Sidebar Layout */
 
-.front-layout {
-    min-height: 100vh;
+.front-layout-v2 {
     display: flex;
-    flex-direction: column;
+    min-height: 100vh;
     background: var(--gradient-mesh), var(--bg-primary);
     background-attachment: fixed;
+    color: var(--text-primary);
 }
 
-/* Header */
-.front-header {
-    padding: var(--space-4) var(--space-6);
-    background: var(--bg-glass);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border-secondary);
+/* Sidebar */
+.front-sidebar {
+    width: 260px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0;
+    border-left: none;
+    border-top: none;
+    border-bottom: none;
+    padding: var(--space-6) 0;
+    z-index: var(--z-sticky);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 0 var(--space-6);
+    margin-bottom: var(--space-8);
+}
+
+.sidebar-header .logo-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header .logo-title {
+    font-size: 1.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.sidebar-header .logo-subtitle {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+}
+
+.sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: 0 var(--space-3);
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.nav-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.nav-item.active {
+    background: var(--color-primary-glow);
+    color: var(--color-primary);
+    font-weight: var(--font-semibold);
+}
+
+.nav-item .nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-footer {
+    padding: var(--space-4);
+    border-top: 1px solid var(--border-secondary);
+    margin: 0 var(--space-3);
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.user-info {
+    overflow: hidden;
+}
+
+.user-name {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.user-email {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.logout-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.logout-btn:hover {
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--color-error);
+}
+
+.login-prompt {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-primary);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+}
+
+/* Main Container */
+.front-main-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.front-top-header {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-6);
+    border-radius: 0;
+    border-top: none;
+    border-left: none;
+    border-right: none;
     position: sticky;
     top: 0;
     z-index: var(--z-sticky);
 }
 
-.front-logo {
+.header-breadcrumbs {
     display: flex;
     align-items: center;
-    justify-content: center;
-}
-
-.front-logo .logo-text {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.front-logo .logo-title {
-    font-size: 2rem;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 50%, #a93226 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    position: relative;
-}
-
-.front-logo .logo-title::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #e74c3c, #c0392b, transparent);
-    border-radius: 2px;
-}
-
-.front-logo .logo-subtitle {
-    font-size: 0.5rem;
-    font-weight: 600;
-    color: var(--text-tertiary);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    margin-top: 4px;
-}
-
-/* Main */
-.front-main {
-    flex: 1;
-    padding: var(--space-6);
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-}
-
-/* Footer */
-.front-footer {
-    padding: var(--space-6);
-    text-align: center;
-    border-top: 1px solid var(--border-secondary);
-}
-
-.front-footer p {
+    gap: var(--space-2);
     font-size: var(--text-sm);
     color: var(--text-muted);
 }
 
-.footer-contact {
-    margin-top: var(--space-2);
-    font-size: var(--text-xs) !important;
+.header-breadcrumbs .separator {
+    color: var(--text-tertiary);
+}
+
+.header-breadcrumbs .current {
+    color: var(--text-primary);
+    font-weight: var(--font-medium);
+}
+
+.header-user-badge .org-name {
+    font-size: var(--text-xs);
+    padding: var(--space-1) var(--space-3);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+}
+
+.front-content {
+    flex: 1;
+    padding: var(--space-6);
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.front-footer-v2 {
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    border-top: 1px solid var(--border-secondary);
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-    .front-header {
-        padding: var(--space-3) var(--space-4);
+@media (max-width: 1024px) {
+    .front-sidebar {
+        width: 80px;
     }
 
-    .front-main {
-        padding: var(--space-4);
+    .sidebar-header .logo-text,
+    .nav-label,
+    .user-info {
+        display: none;
+    }
+
+    .sidebar-header {
+        justify-content: center;
+        padding: 0;
+    }
+
+    .nav-item {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .front-sidebar {
+        display: none;
+        /* Mobile navigation should be a drawer, TBD */
     }
 }
