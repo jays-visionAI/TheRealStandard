@@ -21,7 +21,7 @@ export default function LandingPage() {
         try {
             const result = await kakaoLogin()
             await loginWithKakao(result.user)
-            navigate('/order/my-orders') // 고객 대시보드로 이동
+            navigate('/')  // 고객용 페이지 미구현으로 랜딩페이지 유지
         } catch (error) {
             console.error('Kakao login failed:', error)
             alert('카카오 로그인에 실패했습니다. 다시 시도해 주세요.')

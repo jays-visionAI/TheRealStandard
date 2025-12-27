@@ -54,7 +54,7 @@ export default function Login() {
                     navigate('/accounting')
                     break
                 case 'CUSTOMER':
-                    navigate('/order/my-orders')
+                    navigate('/')  // 고객용 페이지 미구현
                     break
                 default:
                     navigate('/admin/workflow')
@@ -72,7 +72,7 @@ export default function Login() {
         try {
             const result = await kakaoLogin()
             await loginWithKakao(result.user)
-            navigate('/order/my-orders')
+            navigate('/')  // 고객용 페이지 미구현
         } catch (err) {
             console.error(err)
             setError('카카오 로그인에 실패했습니다.')
