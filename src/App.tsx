@@ -25,6 +25,7 @@ import AccountingDashboard from './pages/accounting/AccountingDashboard'
 
 // Legacy Admin Pages (설정용)
 import AdminLayout from './layouts/AdminLayout'
+import WarehouseLayout from './layouts/WarehouseLayout'
 import Dashboard from './pages/admin/Dashboard'
 import OrderSheetList from './pages/admin/OrderSheetList'
 import OrderSheetCreate from './pages/admin/OrderSheetCreate'
@@ -82,26 +83,19 @@ function App() {
                         path="/warehouse"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'WAREHOUSE']}>
-                                <WarehouseDashboard />
+                                <WarehouseLayout />
                             </ProtectedRoute>
                         }
-                    />
-                    <Route
-                        path="/warehouse/receive/:id"
-                        element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'WAREHOUSE']}>
-                                <WarehouseReceive />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/warehouse/release/:id"
-                        element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'WAREHOUSE']}>
-                                <WarehouseRelease />
-                            </ProtectedRoute>
-                        }
-                    />
+                    >
+                        <Route index element={<WarehouseDashboard />} />
+                        <Route path="receive" element={<WarehouseReceive />} />
+                        <Route path="receive/:id" element={<WarehouseReceive />} />
+                        <Route path="receive/history" element={<WarehouseReceive />} />
+                        <Route path="release" element={<WarehouseRelease />} />
+                        <Route path="release/:id" element={<WarehouseRelease />} />
+                        <Route path="release/history" element={<WarehouseRelease />} />
+                        <Route path="shipments" element={<WarehouseDashboard />} />
+                    </Route>
 
                     {/* ========================================
                           ACCOUNTANT (경리직원) - 정산
