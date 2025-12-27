@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ClipboardListIcon, PencilIcon, FilePlusIcon, MapPinIcon, PhoneIcon, PackageIcon, TruckDeliveryIcon, FileTextIcon } from '../../components/Icons'
+import { useOrderStore } from '../../stores/orderStore'
 import './StepReview.css'
 import type { ReactNode } from 'react'
 
@@ -30,25 +31,30 @@ interface FinalizedItem {
 export default function StepReview() {
     const { id } = useParams()
     const navigate = useNavigate()
+    const { getOrderSheetById, getOrderItems } = useOrderStore()
     const [currentStep, setCurrentStep] = useState(1)
 
-    // 원본 주문 데이터
+    // 스토어에서 주문 데이터 가져오기
+    const orderRecord = getOrderSheetById(id || '')
+    const itemsRecord = getOrderItems(id || '')
+
+    // 원본 주문 데이터 매핑
     const order = {
-        id: id || 'OS-2024-003',
-        customerName: '태윤유통',
-        customerContact: '02-1234-5678',
-        shipDate: '2024-01-16',
-        shipTo: '서울시 강남구 역삼동 123-45',
-        submittedAt: '2024-01-15 14:30',
-        items: [
-            { name: '한우 등심 1++', qtyKg: 50, unitPrice: 85000 },
-            { name: '한우 안심 1++', qtyKg: 30, unitPrice: 95000 },
-            { name: '한우 채끝 1+', qtyKg: 25, unitPrice: 72000 },
-        ],
-        totalKg: 105,
+        id: orderRecord?.id || 'NO-DATA',
+        customerName: orderRecord?.customerName || '알 수 없음',
+        customerContact: '-', // 현재 Organization 정보가 필요함
+        shipDate: orderRecord?.shipDate ? new Date(orderRecord.shipDate).toLocaleDateString('ko-KR') : '-',
+        shipTo: orderRecord?.shipTo || '-',
+        submittedAt: orderRecord?.lastSubmittedAt ? new Date(orderRecord.lastSubmittedAt).toLocaleString('ko-KR') : '-',
+        items: itemsRecord.map(i => ({
+            name: i.productName || '상품명 없음',
+            qtyKg: i.estimatedKg,
+            unitPrice: i.unitPrice
+        })),
+        totalKg: itemsRecord.reduce((sum, i) => sum + i.estimatedKg, 0),
     }
 
-    // 최종 확정 입력 상태 (관리자 수기 입력)
+    // 최종 확정 입력 상태
     const [finalizedItems, setFinalizedItems] = useState<FinalizedItem[]>(
         order.items.map(item => ({
             productName: item.name,

@@ -332,6 +332,15 @@
     gap: var(--space-3);
 }
 
+.empty-timeline {
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: var(--radius-lg);
+    border: 1px dashed var(--border-primary);
+}
+
 .timeline-item {
     display: flex;
     gap: var(--space-4);

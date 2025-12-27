@@ -24,27 +24,28 @@ const checklistItems = [
 ]
 
 export default function WarehouseGate() {
-    const { shipments } = useOrderStore()
-
-    // shipments를 GateItem으로 매핑
-    const [gateItems, setGateItems] = useState<GateItem[]>(() =>
-        shipments.map(s => ({
-            id: s.id,
-            shipmentId: s.id,
-            customerName: '고객사', // Shipment 타입에 customerName이 없을 수 있으므로 store에서 보정 필요하거나 기본값
-            stage: 'OUTBOUND',
-            documentsRequired: 2,
-            documentsMatched: 2,
-            checklistCompleted: false,
-            signatureCompleted: false,
-            status: 'READY'
-        }))
-    )
+    const { shipments, salesOrders } = useOrderStore()
     const [filterStage, setFilterStage] = useState<GateStage | 'ALL'>('ALL')
     const [selectedItem, setSelectedItem] = useState<GateItem | null>(null)
     const [showGateModal, setShowGateModal] = useState(false)
     const [checklist, setChecklist] = useState<Record<string, boolean>>({})
     const [signatureData, setSignatureData] = useState('')
+
+    // shipments를 GateItem으로 실시간 매핑
+    const gateItems: GateItem[] = shipments.map(s => {
+        const sourceSO = salesOrders.find(so => so.id === s.sourceSalesOrderId);
+        return {
+            id: s.id,
+            shipmentId: s.id,
+            customerName: sourceSO?.customerName || '고객사',
+            stage: 'OUTBOUND',
+            documentsRequired: 2,
+            documentsMatched: 2,
+            checklistCompleted: s.status === 'DELIVERED',
+            signatureCompleted: s.status === 'DELIVERED',
+            status: s.status === 'PREPARING' ? 'READY' : (s.status === 'DELIVERED' ? 'COMPLETED' : 'PENDING')
+        }
+    })
 
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const isDrawing = useRef(false)
@@ -130,12 +131,10 @@ export default function WarehouseGate() {
             return
         }
 
-        setGateItems(gateItems.map(item => {
-            if (item.id === selectedItem.id) {
-                return { ...item, checklistCompleted: true, signatureCompleted: true, status: 'COMPLETED' as const }
-            }
-            return item
-        }))
+        // 스토어 상태 업데이트
+        useOrderStore.getState().updateShipment(selectedItem.id, {
+            status: 'DELIVERED'
+        })
 
         setShowGateModal(false)
         alert('출고 검수가 완료되었습니다.')

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ClipboardListIcon, FactoryIcon, DashboardIcon, CheckCircleIcon, PackageIcon } from '../../components/Icons'
+import { useOrderStore } from '../../stores/orderStore'
 import './StepPO.css'
 import type { ReactNode } from 'react'
 
@@ -31,20 +32,32 @@ interface OrderItem {
 export default function StepPO() {
     const { id } = useParams()
     const navigate = useNavigate()
+    const { getSalesOrderById, getSalesOrderItems } = useOrderStore()
     const [currentStep, setCurrentStep] = useState(1)
     const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([])
-    const [items, setItems] = useState<OrderItem[]>([
-        { id: 'i1', name: '한우 등심', spec: '1++ 냉장', qty: 50, unit: 'kg', salePrice: 85000, allocations: {} },
-        { id: 'i2', name: '한우 안심', spec: '1++ 냉장', qty: 30, unit: 'kg', salePrice: 95000, allocations: {} },
-        { id: 'i3', name: '한우 갈비', spec: '1+ 냉장', qty: 40, unit: 'kg', salePrice: 68000, allocations: {} },
-    ])
+
+    // 스토어에서 데이터 가져오기
+    const salesOrder = getSalesOrderById(id || '')
+    const salesOrderItems = getSalesOrderItems(id || '')
+
+    const [items, setItems] = useState<OrderItem[]>(
+        salesOrderItems.map(i => ({
+            id: i.id,
+            name: i.productName || '상품명 없음',
+            spec: '-',
+            qty: i.qtyKg,
+            unit: 'kg',
+            salePrice: i.unitPrice,
+            allocations: {}
+        }))
+    )
 
     const order = {
-        id: id || 'OS-2024-009',
-        customerName: '정육왕',
-        confirmedAt: '2024-01-15 14:30',
-        shipDate: '2024-01-16',
-        totalAmount: 3200000,
+        id: salesOrder?.id || 'NO-DATA',
+        customerName: salesOrder?.customerName || '알 수 없음',
+        confirmedAt: salesOrder?.confirmedAt ? new Date(salesOrder.confirmedAt).toLocaleString('ko-KR') : '-',
+        shipDate: '-',
+        totalAmount: salesOrder?.totalsAmount || 0,
     }
 
     const formatCurrency = (value: number) => {

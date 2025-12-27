@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ClipboardListIcon, TruckDeliveryIcon, UserIcon, CheckCircleIcon, MapPinIcon } from '../../components/Icons'
+import { useOrderStore } from '../../stores/orderStore'
 import './StepDispatch.css'
 import type { ReactNode } from 'react'
 
@@ -35,23 +36,27 @@ const drivers = [
 export default function StepDispatch() {
     const { id } = useParams()
     const navigate = useNavigate()
+    const { getSalesOrderById, getSalesOrderItems } = useOrderStore()
     const [currentStep, setCurrentStep] = useState(1)
     const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null)
     const [selectedDriver, setSelectedDriver] = useState<string | null>(null)
     const [carrierName, setCarrierName] = useState('한국물류')
     const [etaTime, setEtaTime] = useState('14:00')
 
+    // 스토어에서 데이터 가져오기
+    const salesOrder = getSalesOrderById(id || '')
+    const salesOrderItems = getSalesOrderItems(id || '')
+
     const order = {
-        id: id || 'OS-2024-002',
-        customerName: '고기마을',
-        shipDate: '2024-01-16',
-        shipTo: '경기도 성남시 분당구 정자동 123-45',
-        totalKg: 205,
-        items: [
-            { name: '한우 등심 1++', kg: 80 },
-            { name: '한우 안심 1++', kg: 50 },
-            { name: '한우 갈비 1+', kg: 75 },
-        ],
+        id: salesOrder?.id || 'NO-DATA',
+        customerName: salesOrder?.customerName || '알 수 없음',
+        shipDate: salesOrder?.confirmedAt ? new Date(salesOrder.confirmedAt).toLocaleDateString('ko-KR') : '-',
+        shipTo: '-', // 실제로는 Organization 정보에서 가져와야 함
+        totalKg: salesOrder?.totalsKg || 0,
+        items: salesOrderItems.map(i => ({
+            name: i.productName || '상품명 없음',
+            kg: i.qtyKg
+        }))
     }
 
     const recommendedVehicle = vehicleTypes.find(v => v.capacityKg >= order.totalKg) || vehicleTypes[vehicleTypes.length - 1]

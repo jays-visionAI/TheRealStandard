@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FileEditIcon, PencilIcon, CheckCircleIcon, TruckDeliveryIcon, FactoryIcon } from '../../components/Icons'
+import { useOrderStore } from '../../stores/orderStore'
 import './WorkflowHome.css'
 import type { ReactNode } from 'react'
 
@@ -27,34 +28,95 @@ interface PipelineItem {
 
 export default function WorkflowHome() {
     const navigate = useNavigate()
+    const { orderSheets, salesOrders, shipments } = useOrderStore()
     const [selectedStep, setSelectedStep] = useState<string | null>(null)
     const [pipelineItems, setPipelineItems] = useState<PipelineItem[]>([])
 
     useEffect(() => {
-        // Mock 데이터 - 각 단계별 주문 현황 (v1.0 상태 플로우)
-        setPipelineItems([
-            // Step: create (주문장 발송 대기)
-            { id: 'OS-007', customerName: '미트박스', orderId: 'OS-2024-007', currentStep: 'create', amount: 0, shipDate: '2024-01-18', waitingAction: '주문장 발송' },
-            { id: 'OS-008', customerName: '프리미엄정육', orderId: 'OS-2024-008', currentStep: 'create', amount: 0, shipDate: '2024-01-18', waitingAction: '주문장 발송' },
+        // 실시간 스토어 데이터로부터 파이프라인 아이템 생성
+        const items: PipelineItem[] = []
 
-            // Step: submit (고객 제출 대기)
-            { id: 'OS-005', customerName: '고기나라', orderId: 'OS-2024-005', currentStep: 'submit', amount: 0, shipDate: '2024-01-17', waitingAction: '고객 제출 대기' },
-            { id: 'OS-006', customerName: '한우천국', orderId: 'OS-2024-006', currentStep: 'submit', amount: 0, shipDate: '2024-01-17', waitingAction: '고객 제출 대기' },
+        // 1. 주문장 생성 단계 (임시 데이터 대신 스토어 연동)
+        // 실제로는 orderSheets 중 상태가 'DRAFT'인 것들
+        orderSheets.forEach(os => {
+            if (os.status === 'DRAFT') {
+                items.push({
+                    id: os.id,
+                    customerName: os.customerName || '고객사',
+                    orderId: os.id,
+                    currentStep: 'create',
+                    amount: 0,
+                    shipDate: os.shipDate ? new Date(os.shipDate).toISOString().split('T')[0] : '-',
+                    waitingAction: '주문장 발송'
+                })
+            } else if (os.status === 'SENT') {
+                items.push({
+                    id: os.id,
+                    customerName: os.customerName || '고객사',
+                    orderId: os.id,
+                    currentStep: 'submit',
+                    amount: 0,
+                    shipDate: os.shipDate ? new Date(os.shipDate).toISOString().split('T')[0] : '-',
+                    waitingAction: '고객 제출 대기'
+                })
+            }
+        })
 
-            // Step: finalize (관리자 확정 입력 필요)
-            { id: 'OS-003', customerName: '태윤유통', orderId: 'OS-2024-003', currentStep: 'finalize', amount: 4250000, shipDate: '2024-01-16', urgent: true, waitingAction: '확정 입력' },
-            { id: 'OS-004', customerName: '한우명가', orderId: 'OS-2024-004', currentStep: 'finalize', amount: 2850000, shipDate: '2024-01-16', waitingAction: '확정 입력' },
+        // 2. 확정 입력 및 고객 컨펌 단계 (SalesOrders)
+        salesOrders.forEach(so => {
+            if (so.status === 'CREATED') {
+                items.push({
+                    id: so.id,
+                    customerName: so.customerName || '고객사',
+                    orderId: so.id,
+                    currentStep: 'finalize',
+                    amount: so.totalsAmount || 0,
+                    shipDate: '-',
+                    waitingAction: '확정 입력'
+                })
+            } else if (so.status === 'PO_GENERATED') {
+                items.push({
+                    id: so.id,
+                    customerName: so.customerName || '고객사',
+                    orderId: so.id,
+                    currentStep: 'confirm',
+                    amount: so.totalsAmount || 0,
+                    shipDate: '-',
+                    waitingAction: '고객 컨펌 대기'
+                })
+            }
+        })
 
-            // Step: confirm (고객 컨펌 대기)
-            { id: 'OS-009', customerName: '정육왕', orderId: 'OS-2024-009', currentStep: 'confirm', amount: 3200000, shipDate: '2024-01-16', waitingAction: '고객 컨펌 대기' },
+        // 3. 출고 준비 및 완료 단계 (Shipments)
+        shipments.forEach(s => {
+            const sourceSO = salesOrders.find(so => so.id === s.sourceSalesOrderId);
+            const customerName = sourceSO?.customerName || '고객사';
 
-            // Step: dispatch (출고 준비)
-            { id: 'OS-002', customerName: '고기마을', orderId: 'OS-2024-002', currentStep: 'dispatch', amount: 5100000, shipDate: '2024-01-16', urgent: true, waitingAction: '출고 준비' },
+            if (s.status === 'PREPARING' || s.status === 'IN_TRANSIT') {
+                items.push({
+                    id: s.id,
+                    customerName: customerName,
+                    orderId: s.id,
+                    currentStep: 'dispatch',
+                    amount: 0,
+                    shipDate: s.etaAt ? new Date(s.etaAt).toISOString().split('T')[0] : '-',
+                    waitingAction: '출고 준비'
+                })
+            } else if (s.status === 'DELIVERED') {
+                items.push({
+                    id: s.id,
+                    customerName: customerName,
+                    orderId: s.id,
+                    currentStep: 'complete',
+                    amount: 0,
+                    shipDate: s.updatedAt ? new Date(s.updatedAt).toISOString().split('T')[0] : '-',
+                    waitingAction: '완료'
+                })
+            }
+        })
 
-            // Step: complete (배송 완료)
-            { id: 'OS-001', customerName: '프라임미트', orderId: 'OS-2024-001', currentStep: 'complete', amount: 3500000, shipDate: '2024-01-16', waitingAction: '완료' },
-        ])
-    }, [])
+        setPipelineItems(items)
+    }, [orderSheets, salesOrders, shipments])
 
     const getStepItems = (stepId: string) => {
         return pipelineItems.filter(item => item.currentStep === stepId)
@@ -243,45 +305,42 @@ export default function WorkflowHome() {
                     <div className="summary-card glass-card success">
                         <div className="summary-icon success"><CheckCircleIcon size={24} /></div>
                         <div className="summary-content">
-                            <span className="summary-value">12</span>
+                            <span className="summary-value">
+                                {shipments.filter(s => s.status === 'DELIVERED').length}
+                            </span>
                             <span className="summary-label">오늘 완료</span>
                         </div>
                     </div>
                 </div>
             </section>
-
             {/* Today's Timeline */}
             <section className="timeline-section glass-card">
                 <h3>📅 오늘의 출고 일정</h3>
                 <div className="timeline">
-                    <div className="timeline-item completed">
-                        <div className="timeline-time">09:00</div>
-                        <div className="timeline-content">
-                            <span className="timeline-customer">한우명가</span>
-                            <span className="timeline-status">배송완료</span>
+                    {shipments.filter(s => s.status === 'PREPARING' || s.status === 'IN_TRANSIT').length === 0 ? (
+                        <div className="empty-timeline">
+                            <p>오늘 예정된 출고 일정이 없습니다.</p>
                         </div>
-                    </div>
-                    <div className="timeline-item in-progress">
-                        <div className="timeline-time">11:00</div>
-                        <div className="timeline-content">
-                            <span className="timeline-customer">정육왕</span>
-                            <span className="timeline-status">배송중</span>
-                        </div>
-                    </div>
-                    <div className="timeline-item pending">
-                        <div className="timeline-time">14:00</div>
-                        <div className="timeline-content">
-                            <span className="timeline-customer">고기마을</span>
-                            <span className="timeline-status">출고 대기</span>
-                        </div>
-                    </div>
-                    <div className="timeline-item pending">
-                        <div className="timeline-time">16:00</div>
-                        <div className="timeline-content">
-                            <span className="timeline-customer">프라임미트</span>
-                            <span className="timeline-status">검수 예정</span>
-                        </div>
-                    </div>
+                    ) : (
+                        shipments
+                            .filter(s => s.status === 'PREPARING' || s.status === 'IN_TRANSIT')
+                            .map(s => {
+                                const sourceSO = salesOrders.find(so => so.id === s.sourceSalesOrderId);
+                                return (
+                                    <div key={s.id} className={`timeline-item ${s.status === 'IN_TRANSIT' ? 'in-progress' : 'pending'}`}>
+                                        <div className="timeline-time">
+                                            {s.etaAt ? new Date(s.etaAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}
+                                        </div>
+                                        <div className="timeline-content">
+                                            <span className="timeline-customer">{sourceSO?.customerName || '고객사'}</span>
+                                            <span className="timeline-status">
+                                                {s.status === 'IN_TRANSIT' ? '배송중' : '출고 대기'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )
+                            })
+                    )}
                 </div>
             </section>
         </div>

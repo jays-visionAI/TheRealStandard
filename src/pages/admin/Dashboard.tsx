@@ -1,27 +1,40 @@
 import { useState, useMemo } from 'react'
-import {
-    TrendingUpIcon,
-    PackageIcon,
-    TruckIcon,
-    ClockIcon,
-    ChevronUpIcon,
-    ChevronDownIcon
-} from '../../components/Icons'
+import { TrendingUpIcon, PackageIcon, TruckIcon, ClockIcon } from '../../components/Icons'
+import { useOrderStore } from '../../stores/orderStore'
 import './Dashboard.css'
 
 // Helper for currency and numbers
 const formatKRW = (v: number) => new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(v)
 const formatNum = (v: number) => new Intl.NumberFormat('ko-KR').format(v)
+const formatPercent = (v: number) => `${v.toFixed(1)}%`
 
 export default function Dashboard() {
+    const { salesOrders, orderSheets, shipments } = useOrderStore()
     const [timeframe, setTimeframe] = useState<'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('WEEKLY')
 
-    // Mock Data for Charts (Usually from a store or API)
+    // 계산된 지표들
+    const todaySales = useMemo(() => {
+        const today = new Date().toDateString()
+        return salesOrders
+            .filter(so => new Date(so.createdAt).toDateString() === today)
+            .reduce((sum, so) => sum + so.totalsAmount, 0)
+    }, [salesOrders])
+
+    const activeCustomers = useMemo(() => {
+        const uniqueCustomers = new Set(orderSheets.map(os => os.customerOrgId))
+        return uniqueCustomers.size
+    }, [orderSheets])
+
+    const orderCompletionRate = useMemo(() => {
+        if (orderSheets.length === 0) return 0
+        const confirmed = orderSheets.filter(os => os.status === 'CONFIRMED').length
+        return (confirmed / orderSheets.length) * 100
+    }, [orderSheets])
+
+    // 차트용 데이터 (실제 데이터 축적 전까지 0으로 초기화된 배열 제공)
     const salesData = useMemo(() => {
-        const base = timeframe === 'WEEKLY' ? [45, 52, 48, 70, 61, 85, 80] :
-            timeframe === 'MONTHLY' ? [450, 520, 480, 700, 610, 850, 800, 950, 1100, 1050, 1200, 1150] :
-                [1200, 1500, 1800, 2100] // Quarterly/Yearly
-        return base
+        const count = timeframe === 'WEEKLY' ? 7 : timeframe === 'MONTHLY' ? 12 : 4
+        return new Array(count).fill(0)
     }, [timeframe])
 
     const labels = useMemo(() => {
@@ -32,18 +45,15 @@ export default function Dashboard() {
 
     // Donut Data
     const productMix = [
-        { name: '한우/돈육', value: 45, color: '#7c4dff' },
-        { name: '수입육', value: 25, color: '#00d2ff' },
-        { name: '가공품', value: 15, color: '#ff9d00' },
-        { name: '부속/기타', value: 15, color: '#ff5252' },
+        { name: '대기 중', value: 100, color: '#f0f0f0' }
     ]
 
     // Logistics Data
     const logisticsStatus = [
-        { label: '입고(In)', value: 88, color: '#7c4dff' },
-        { label: '출고(Out)', value: 72, color: '#00d2ff' },
-        { label: '배송(Del)', value: 95, color: '#00e676' },
-        { label: '재고(Inv)', value: 64, color: '#ff9d00' },
+        { label: '입고(In)', value: 0, color: '#7c4dff' },
+        { label: '출고(Out)', value: shipments.filter(s => s.status === 'PREPARING').length, color: '#00d2ff' },
+        { label: '배송(Del)', value: shipments.filter(s => s.status === 'IN_TRANSIT' || s.status === 'DELIVERED').length, color: '#00e676' },
+        { label: '완료(Done)', value: shipments.filter(s => s.status === 'DELIVERED').length, color: '#ff9d00' },
     ]
 
     return (
@@ -63,30 +73,30 @@ export default function Dashboard() {
             <div className="stats-v2-grid">
                 <div className="premium-card stat-v2-card">
                     <span className="stat-v2-label">오늘의 매출</span>
-                    <div className="stat-v2-value">{formatKRW(12450000)}</div>
-                    <div className="stat-v2-trend up">
-                        <TrendingUpIcon size={14} /> 12.5% vs Yesterday
+                    <div className="stat-v2-value">{formatKRW(todaySales)}</div>
+                    <div className="stat-v2-trend">
+                        실시간 업데이트 중
                     </div>
                 </div>
                 <div className="premium-card stat-v2-card">
                     <span className="stat-v2-label">활성 거래처 (Active)</span>
-                    <div className="stat-v2-value">{formatNum(128)}</div>
-                    <div className="stat-v2-trend up">
-                        <ChevronUpIcon size={14} /> 4 신규 가입
+                    <div className="stat-v2-value">{formatNum(activeCustomers)}</div>
+                    <div className="stat-v2-trend">
+                        운영 중인 고객사 수
                     </div>
                 </div>
                 <div className="premium-card stat-v2-card">
-                    <span className="stat-v2-label">주문 처리율</span>
-                    <div className="stat-v2-value">94.2%</div>
-                    <div className="stat-v2-trend up">
-                        <TrendingUpIcon size={14} /> 2.1% 목표 달성
+                    <span className="stat-v2-label">주문 완료율</span>
+                    <div className="stat-v2-value">{formatPercent(orderCompletionRate)}</div>
+                    <div className="stat-v2-trend">
+                        전체 대비 승인 완료 비중
                     </div>
                 </div>
                 <div className="premium-card stat-v2-card">
-                    <span className="stat-v2-label">평균 리드타임</span>
-                    <div className="stat-v2-value">28.4시간</div>
-                    <div className="stat-v2-trend down">
-                        <ChevronDownIcon size={14} /> 1.2시간 단축
+                    <span className="stat-v2-label">미처리 주문</span>
+                    <div className="stat-v2-value">{orderSheets.filter(os => os.status !== 'CONFIRMED').length}건</div>
+                    <div className="stat-v2-trend warning">
+                        검토가 필요한 주문장
                     </div>
                 </div>
             </div>
@@ -111,23 +121,28 @@ export default function Dashboard() {
                     </div>
 
                     <div className="chart-container">
-                        <svg width="100%" height="100%" viewBox="0 0 1000 300" preserveAspectRatio="none">
-                            <defs>
-                                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#7c4dff" stopOpacity="0.4" />
-                                    <stop offset="100%" stopColor="#7c4dff" stopOpacity="0" />
-                                </linearGradient>
-                            </defs>
-                            {/* Simple Line Chart logic */}
-                            <polyline
-                                className="chart-line"
-                                points={salesData.map((d, i) => `${(i / (salesData.length - 1)) * 1000},${300 - (d / Math.max(...salesData)) * 250}`).join(' ')}
-                            />
-                            <path
-                                className="chart-area"
-                                d={`M0,300 ${salesData.map((d, i) => `${(i / (salesData.length - 1)) * 1000},${300 - (d / Math.max(...salesData)) * 250}`).join(' ')} L1000,300 Z`}
-                            />
-                        </svg>
+                        {salesData.every(v => v === 0) ? (
+                            <div className="empty-chart-overlay">
+                                <p>데이터를 축적 중입니다...</p>
+                            </div>
+                        ) : (
+                            <svg width="100%" height="100%" viewBox="0 0 1000 300" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#7c4dff" stopOpacity="0.4" />
+                                        <stop offset="100%" stopColor="#7c4dff" stopOpacity="0" />
+                                    </linearGradient>
+                                </defs>
+                                <polyline
+                                    className="chart-line"
+                                    points={salesData.map((d, i) => `${(i / (salesData.length - 1)) * 1000},${300 - (d / Math.max(1, ...salesData)) * 250}`).join(' ')}
+                                />
+                                <path
+                                    className="chart-area"
+                                    d={`M0,300 ${salesData.map((d, i) => `${(i / (salesData.length - 1)) * 1000},${300 - (d / Math.max(1, ...salesData)) * 250}`).join(' ')} L1000,300 Z`}
+                                />
+                            </svg>
+                        )}
 
                         {/* Labels Overlay */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem', padding: '0 10px' }}>
