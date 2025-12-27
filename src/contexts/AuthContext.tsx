@@ -52,6 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Firebase Auth 상태 감지
     useEffect(() => {
+        const checkRedirect = async () => {
+            try {
+                const { handleGoogleRedirectResult } = await import('../lib/googleService')
+                await handleGoogleRedirectResult()
+            } catch (err) {
+                console.error('Redirect result check failed:', err)
+            }
+        }
+        checkRedirect()
+
         const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
             setFirebaseUser(fbUser)
 
@@ -191,23 +201,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const loginWithGoogle = async () => {
-        const { signInWithGoogle } = await import('../lib/googleService')
+        const { signInWithGoogle, signInWithGoogleRedirect } = await import('../lib/googleService')
 
-        const googleUser = await signInWithGoogle()
-        if (!googleUser.email) throw new Error('구글 계정에 이메일이 없습니다.')
+        try {
+            const googleUser = await signInWithGoogle()
+            if (!googleUser.email) throw new Error('구글 계정에 이메일이 없습니다.')
 
-        // Google Sign-in은 이미 Firebase Auth를 사용하므로
-        // onAuthStateChanged가 자동으로 처리
+            console.log('Google login (popup) success:', googleUser.email)
 
-        // Firestore에 사용자 정보가 없으면 생성
-        const existingUser = await getUserByEmail(googleUser.email)
-        if (!existingUser) {
-            await createUser({
-                email: googleUser.email,
-                name: googleUser.displayName || '구글 사용자',
-                role: 'CUSTOMER',
-                status: 'ACTIVE',
-            })
+            // Firestore에 사용자 정보가 없으면 생성
+            const existingUser = await getUserByEmail(googleUser.email)
+            if (!existingUser) {
+                await createUser({
+                    email: googleUser.email,
+                    name: googleUser.displayName || '구글 사용자',
+                    role: 'CUSTOMER',
+                    status: 'ACTIVE',
+                })
+            }
+        } catch (error: any) {
+            console.warn('Google Popup Login failed, checking for popup-blocked error:', error)
+
+            // 팝업 차단 에러 발생 시 리다이렉트 방식으로 자동 전환
+            if (error.message.includes('팝업이 차단되었습니다') || error.code?.includes('popup-blocked')) {
+                console.log('Redirecting to Google login due to popup block...')
+                await signInWithGoogleRedirect()
+            } else {
+                throw error
+            }
         }
     }
 

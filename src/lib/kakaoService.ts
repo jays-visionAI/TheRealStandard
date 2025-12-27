@@ -86,13 +86,28 @@ export const sendOrderMessage = (customerName: string, orderId: string, vehicleN
     });
 };
 
-/**
- * 카카오 로그인 실행
- */
 export const kakaoLogin = (): Promise<any> => {
     return new Promise((resolve, reject) => {
         if (!window.Kakao) {
             reject('Kakao SDK not loaded');
+            return;
+        }
+
+        console.log('Kakao SDK Structure:', window.Kakao);
+        console.log('Kakao.Auth exists:', !!window.Kakao.Auth);
+
+        if (!window.Kakao.Auth || typeof window.Kakao.Auth.login !== 'function') {
+            const errorMsg = 'Kakao.Auth.login is not available. Using authorize as fallback.';
+            console.warn(errorMsg);
+
+            // Redirect based login as fallback if popup login is missing
+            try {
+                window.Kakao.Auth.authorize({
+                    redirectUri: window.location.origin + '/login'
+                });
+            } catch (err) {
+                reject('Kakao Auth failed completely');
+            }
             return;
         }
 

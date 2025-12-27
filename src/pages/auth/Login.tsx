@@ -5,15 +5,10 @@ import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIc
 import { kakaoLogin } from '../../lib/kakaoService'
 import './Login.css'
 
-// Mock 사용자 목록 (데모용)
-const DEMO_USERS = [
-    { email: 'admin@trs.com', password: 'admin123', label: '관리자', role: 'ADMIN' as const },
-    { email: 'warehouse@trs.com', password: 'warehouse123', label: '창고직원', role: 'WAREHOUSE' as const },
-    { email: 'accounting@trs.com', password: 'accounting123', label: '경리직원', role: 'ACCOUNTING' as const },
-    { email: 'customer@trs.com', password: 'customer123', label: '고객', role: 'CUSTOMER' as const },
-]
+
 
 export default function Login() {
+    console.log('Login component mounted')
     const navigate = useNavigate()
     const { user, login, loginWithKakao, loginWithGoogle, loading } = useAuth()
     const [email, setEmail] = useState('')
@@ -23,7 +18,9 @@ export default function Login() {
 
     // 이미 로그인된 상태라면 리다이렉트
     useEffect(() => {
+        console.log('Login useEffect triggered, user:', user?.email, 'loading:', loading)
         if (!loading && user) {
+            console.log('User detected, redirecting to appropriate dashboard')
             switch (user.role) {
                 case 'ADMIN':
                 case 'OPS':
@@ -87,11 +84,18 @@ export default function Login() {
         }
     }
 
-    const handleQuickLogin = (userEmail: string) => {
-        const demoUser = DEMO_USERS.find(u => u.email === userEmail)
-        if (demoUser) {
-            setEmail(demoUser.email)
-            setPassword(demoUser.password)
+    const handleQuickLogin = async (userEmail: string, userPass: string) => {
+        setError('')
+        setIsLoading(true)
+        setEmail(userEmail)
+        setPassword(userPass)
+        try {
+            await login(userEmail, userPass)
+            // Redirect handled by useEffect
+        } catch (err: any) {
+            console.error(err)
+            setError(err.message || '빠른 로그인 중 오류가 발생했습니다.')
+            setIsLoading(false)
         }
     }
 
@@ -179,25 +183,25 @@ export default function Login() {
                     <div className="demo-buttons">
                         <button
                             className="demo-btn admin"
-                            onClick={() => handleQuickLogin('admin@trs.com')}
+                            onClick={() => handleQuickLogin('admin@trs.com', 'admin123')}
                         >
                             <UserIcon size={16} /> 관리자
                         </button>
                         <button
                             className="demo-btn warehouse"
-                            onClick={() => handleQuickLogin('warehouse@trs.com')}
+                            onClick={() => handleQuickLogin('warehouse@trs.com', 'warehouse123')}
                         >
                             <FactoryIcon size={16} /> 창고직원
                         </button>
                         <button
                             className="demo-btn accounting"
-                            onClick={() => handleQuickLogin('accounting@trs.com')}
+                            onClick={() => handleQuickLogin('accounting@trs.com', 'accounting123')}
                         >
                             <FilesIcon size={16} /> 경리직원
                         </button>
                         <button
                             className="demo-btn customer"
-                            onClick={() => handleQuickLogin('customer@trs.com')}
+                            onClick={() => handleQuickLogin('customer@trs.com', 'customer123')}
                         >
                             <ShoppingCartIcon size={16} /> 고객
                         </button>

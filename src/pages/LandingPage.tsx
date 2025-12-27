@@ -18,6 +18,7 @@ export default function LandingPage() {
     const { loginWithKakao } = useAuth()
 
     const handleKakaoLogin = async () => {
+        console.log('Kakao Login button clicked')
         try {
             const result = await kakaoLogin()
             await loginWithKakao(result.user)
@@ -26,6 +27,11 @@ export default function LandingPage() {
             console.error('Kakao login failed:', error)
             alert('카카오 로그인에 실패했습니다. 다시 시도해 주세요.')
         }
+    }
+
+    const handleNavigateLogin = () => {
+        console.log('Navigating to Login page...')
+        navigate('/login')
     }
 
     const scrollToSection = (id: string) => {
@@ -49,7 +55,7 @@ export default function LandingPage() {
                         </ul>
                     </nav>
                     <div className="flex gap-4 items-center">
-                        <button className="btn btn-secondary" onClick={() => navigate('/login')}>Login</button>
+                        <button className="btn btn-secondary" onClick={handleNavigateLogin}>Login</button>
                         <button className="btn btn-kakao flex items-center gap-2" onClick={handleKakaoLogin}>
                             <KakaoIcon size={18} /> 카카오 로그인
                         </button>
@@ -100,7 +106,6 @@ export default function LandingPage() {
             </section>
 
             {/* Problem Section (Bento Grid) */}
-            {/* Problem Section (Bento Grid) */}
             <section id="problems" className="relative z-10">
                 <div className="container">
                     <div className="text-center mb-16 animate-fade-in-up">
@@ -117,9 +122,7 @@ export default function LandingPage() {
                     </div>
 
                     <div className="bento-grid">
-                        {/* Top Row */}
                         <div className="bento-row-top">
-                            {/* 1. Demand Forecasting */}
                             <div className="bento-card bento-card-lg">
                                 <div className="flex justify-between items-start">
                                     <div className="bento-icon-wrapper">
@@ -132,7 +135,6 @@ export default function LandingPage() {
                                     경험과 감에 의존하는 발주로 인해 반복적인 과잉 재고와 품절이 발생합니다.
                                     데이터 기반의 예측 모델 부재가 가장 큰 원인입니다.
                                 </p>
-                                {/* Graph Visualization */}
                                 <div className="graph-container">
                                     <svg width="100%" height="100%" viewBox="0 0 400 120" preserveAspectRatio="none">
                                         <path d="M0 100 C 50 100, 80 20, 150 20 S 250 80, 400 40"
@@ -156,7 +158,6 @@ export default function LandingPage() {
                                 <div className="card-footer">Detail View →</div>
                             </div>
 
-                            {/* 2. Margin Leak */}
                             <div className="bento-card bento-card-lg">
                                 <div className="bento-icon-wrapper bg-red-50 text-red-500">
                                     <AlertTriangleIcon size={24} />
@@ -172,8 +173,6 @@ export default function LandingPage() {
                             </div>
                         </div>
 
-                        {/* Bottom Row */}
-                        {/* 3. Inventory Imbalance */}
                         <div className="bento-card">
                             <div className="bento-icon-wrapper">
                                 <SearchIcon size={24} />
@@ -185,7 +184,6 @@ export default function LandingPage() {
                             <div className="card-footer">Detail View →</div>
                         </div>
 
-                        {/* 4. Manual Ops */}
                         <div className="bento-card">
                             <div className="bento-icon-wrapper">
                                 <PackageIcon size={24} />
@@ -202,7 +200,6 @@ export default function LandingPage() {
                             <div className="card-footer">Detail View →</div>
                         </div>
 
-                        {/* 5. Waste Loss */}
                         <div className="bento-card">
                             <div className="bento-icon-wrapper text-slate-500 bg-slate-100">
                                 <TrashIcon size={24} />
@@ -213,19 +210,15 @@ export default function LandingPage() {
                             </p>
                             <div className="card-footer">Detail View →</div>
                         </div>
-
                     </div>
                 </div>
             </section>
 
-            {/* Solution Section */}
             <section id="solution">
                 <div className="container">
-                    <h2 className="mb-16">How TRS Works</h2>
-
+                    <h2 className="mb-16 text-center text-4xl font-bold">How TRS Works</h2>
                     <div className="process-row">
                         <div className="process-line"></div>
-
                         <div className="process-step">
                             <div className="step-marker active">01</div>
                             <div>
@@ -233,7 +226,6 @@ export default function LandingPage() {
                                 <p className="text-sm">전체 공급망 데이터 표준화 및 실시간 수집</p>
                             </div>
                         </div>
-
                         <div className="process-step">
                             <div className="step-marker">02</div>
                             <div>
@@ -241,7 +233,6 @@ export default function LandingPage() {
                                 <p className="text-sm">AI 엔진 기반 수요 예측 및 물량 배분 최적화</p>
                             </div>
                         </div>
-
                         <div className="process-step">
                             <div className="step-marker">03</div>
                             <div>
@@ -249,7 +240,6 @@ export default function LandingPage() {
                                 <p className="text-sm">발주, 정산, 운영 프로세스 시스템 자동 실행</p>
                             </div>
                         </div>
-
                         <div className="process-step">
                             <div className="step-marker">04</div>
                             <div>
@@ -261,18 +251,16 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Technology / MIOS Section */}
             <section id="technology">
                 <div className="container">
                     <div className="mios-split">
                         <div>
                             <div className="hero-capsule mb-6">Meat Intelligence OS</div>
-                            <h2 className="mb-6">Decision Controls</h2>
+                            <h2 className="mb-6 text-4xl font-bold">Decision Controls</h2>
                             <p className="mb-8 text-lg">
                                 복잡한 육류 비즈니스의 핵심 의사결정을<br />
                                 데이터 기반 알고리즘으로 제어합니다.
                             </p>
-
                             <div className="space-y-4">
                                 {['Production (생산량)', 'Allocation (배분)', 'Pricing (가격)', 'Restock (재구매)'].map((item) => (
                                     <div key={item} className="flex items-center gap-3">
@@ -282,15 +270,12 @@ export default function LandingPage() {
                                 ))}
                             </div>
                         </div>
-
                         <div className="mios-visual">
-                            {/* Abstract Code/Dashboard Visualization */}
                             <div className="flex gap-2 mb-6">
                                 <div className="w-3 h-3 rounded-full bg-red-500 opacity-50"></div>
                                 <div className="w-3 h-3 rounded-full bg-yellow-500 opacity-50"></div>
                                 <div className="w-3 h-3 rounded-full bg-green-500 opacity-50"></div>
                             </div>
-
                             <div className="mios-code">
                                 <div className="code-line"><span className="line-num">01</span><span className="text-purple-400">const</span> <span className="text-yellow-200">optimizeSupplyChain</span> = <span className="text-blue-300">async</span> () ={'>'} {'{'}</div>
                                 <div className="code-line"><span className="line-num">02</span>  <span className="text-purple-400">const</span> demand = <span className="text-blue-300">await</span> ai.predict(<span className="text-green-300">'Q4_2025'</span>)</div>
@@ -308,7 +293,6 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Footer */}
             <footer className="lp-footer">
                 <div className="container">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-8">
@@ -316,13 +300,11 @@ export default function LandingPage() {
                             <Logo className="mb-2" />
                             <p className="text-sm text-gray-500">Meat Intelligence Operating System</p>
                         </div>
-
                         <div className="flex gap-8 text-sm text-gray-400">
                             <a href="#" className="hover:text-white">Privacy</a>
                             <a href="#" className="hover:text-white">Terms</a>
                             <a href="#" className="hover:text-white">Contact</a>
                         </div>
-
                         <div className="text-sm text-gray-600">
                             © 2024 TRS Inc.
                         </div>
