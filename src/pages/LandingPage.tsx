@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
     ChartIcon,
     TrashIcon,
@@ -12,6 +13,15 @@ import { kakaoLogin } from '../lib/kakaoService'
 import './LandingPage.css'
 
 export default function LandingPage() {
+    const [isScrolled, setIsScrolled] = useState(false)
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 50)
+        }
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
 
     const handleKakaoLogin = () => {
         // 카카오 로그인은 리다이렉트 방식
@@ -27,7 +37,7 @@ export default function LandingPage() {
     return (
         <div className="landing-page">
             {/* Navbar */}
-            <header className="lp-header">
+            <header className={`lp-header ${isScrolled ? 'scrolled' : ''}`}>
                 <div className="container header-inner">
                     <div className="lp-logo">
                         <LogoSmall />
