@@ -9,23 +9,16 @@ import {
     KakaoIcon
 } from '../components/Icons'
 import { LogoSmall, Logo } from '../components/Logo'
-import { useAuth } from '../contexts/AuthContext'
 import { kakaoLogin } from '../lib/kakaoService'
 import './LandingPage.css'
 
 export default function LandingPage() {
     const navigate = useNavigate()
-    const { loginWithKakao } = useAuth()
 
-    const handleKakaoLogin = async () => {
-        try {
-            const result = await kakaoLogin()
-            await loginWithKakao(result.user)
-            navigate('/order/my-orders') // 고객 대시보드로 이동
-        } catch (error) {
-            console.error('Kakao login failed:', error)
-            alert('카카오 로그인에 실패했습니다. 다시 시도해 주세요.')
-        }
+    const handleKakaoLogin = () => {
+        // 카카오 로그인은 리다이렉트 방식
+        // 로그인 후 /login 페이지로 돌아와서 AuthContext에서 처리
+        kakaoLogin()
     }
 
     const scrollToSection = (id: string) => {

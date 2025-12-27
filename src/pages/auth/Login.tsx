@@ -15,7 +15,7 @@ const DEMO_USERS = [
 
 export default function Login() {
     const navigate = useNavigate()
-    const { login, loginWithKakao } = useAuth()
+    const { login } = useAuth()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -66,19 +66,10 @@ export default function Login() {
         }
     }
 
-    const handleKakaoLogin = async () => {
-        setError('')
-        setIsLoading(true)
-        try {
-            const result = await kakaoLogin()
-            await loginWithKakao(result.user)
-            navigate('/order/my-orders')
-        } catch (err) {
-            console.error(err)
-            setError('카카오 로그인에 실패했습니다.')
-        } finally {
-            setIsLoading(false)
-        }
+    const handleKakaoLogin = () => {
+        // 카카오 로그인은 리다이렉트 방식으로 동작
+        // 로그인 성공 후 /login 페이지로 돌아와서 URL 파라미터로 처리해야 함
+        kakaoLogin()
     }
 
     const handleQuickLogin = (userEmail: string) => {
