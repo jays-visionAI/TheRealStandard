@@ -1,209 +1,211 @@
-import { useState, useMemo } from 'react'
-import { useOrderStore } from '../../stores/orderStore'
+import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAccountingStore } from '../../stores/accountingStore'
 import {
-    ClipboardListIcon,
-    TruckDeliveryIcon,
-    ShoppingCartIcon
+    WalletIcon,
+    TrendingUpIcon,
+    ClockIcon,
+    CheckCircleIcon,
+    AlertTriangleIcon,
+    ChevronRightIcon
 } from '../../components/Icons'
 import './AccountingDashboard.css'
 
 export default function AccountingDashboard() {
-    const { orderSheets, salesOrders, purchaseOrders, shipments } = useOrderStore()
+    const navigate = useNavigate()
+    const { records, getSalesRecords, getPurchaseRecords, getPendingRecords, getCompletedRecords } = useAccountingStore()
 
-    // 메인 섹션: 'sales' (발주받기), 'purchase' (발주하기), 'delivery' (배송리스트)
-    const [mainSection, setMainSection] = useState<'sales' | 'purchase' | 'delivery'>('sales')
+    const salesRecords = getSalesRecords()
+    const purchaseRecords = getPurchaseRecords()
+    const pendingRecords = getPendingRecords()
+    const completedRecords = getCompletedRecords()
 
-    // 발주받기 서브 탭
-    const [salesTab, setSalesTab] = useState<'waiting' | 'customer' | 'admin'>('waiting')
+    // 통계 계산
+    const stats = useMemo(() => {
+        const totalSales = salesRecords.reduce((sum, r) => sum + r.totalAmount, 0)
+        const totalPurchases = purchaseRecords.reduce((sum, r) => sum + r.totalAmount, 0)
+        const pendingReceivables = salesRecords
+            .filter(r => r.paymentStatus === 'PENDING')
+            .reduce((sum, r) => sum + r.totalAmount, 0)
+        const pendingPayables = purchaseRecords
+            .filter(r => r.paymentStatus === 'PENDING')
+            .reduce((sum, r) => sum + r.totalAmount, 0)
+        const pendingInvoiceSales = salesRecords.filter(r => r.invoiceStatus === 'PENDING').length
+        const pendingInvoicePurchase = purchaseRecords.filter(r => r.invoiceStatus === 'PENDING').length
 
-    // 발주하기 서브 탭
-    const [purchaseTab, setPurchaseTab] = useState<'sent' | 'confirmed'>('sent')
+        return {
+            totalSales,
+            totalPurchases,
+            profit: totalSales - totalPurchases,
+            pendingReceivables,
+            pendingPayables,
+            pendingInvoiceSales,
+            pendingInvoicePurchase,
+            pendingCount: pendingRecords.length,
+            completedCount: completedRecords.length
+        }
+    }, [salesRecords, purchaseRecords, pendingRecords, completedRecords])
 
+    // 최근 거래 내역
+    const recentRecords = useMemo(() => {
+        return [...records]
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 5)
+    }, [records])
 
-    // 데이터 필터링 로직
-    const salesData = useMemo(() => {
-        if (salesTab === 'waiting') return orderSheets.filter(o => o.status === 'SENT')
-        if (salesTab === 'customer') return orderSheets.filter(o => o.status === 'SUBMITTED')
-        return salesOrders // CONFIRMED 상태는 salesOrders로 변환됨
-    }, [orderSheets, salesOrders, salesTab])
-
-    const purchaseData = useMemo(() => {
-        if (purchaseTab === 'sent') return purchaseOrders.filter(p => p.status === 'SENT')
-        return purchaseOrders.filter(p => p.status === 'CONFIRMED')
-    }, [purchaseOrders, purchaseTab])
-
-    const deliveryData = useMemo(() => shipments, [shipments])
-
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('ko-KR').format(amount) + '원'
     }
 
-    const formatDate = (date: Date | string) => {
-        if (!date) return '-'
-        return new Date(date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    const formatDate = (date: string) => {
+        return new Date(date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
     }
 
     return (
-        <div className="accounting-dashboard">
-            {/* Main Navigation */}
-            <nav className="main-nav glass-card">
-                <button
-                    className={`nav-item ${mainSection === 'sales' ? 'active' : ''}`}
-                    onClick={() => setMainSection('sales')}
-                >
-                    <ClipboardListIcon size={20} />
-                    <span>1. 발주받기 (매출)</span>
+        <div className="accounting-dashboard-new">
+            {/* 요약 카드 */}
+            <div className="stats-grid">
+                <div className="stat-card sales">
+                    <div className="stat-icon">
+                        <TrendingUpIcon size={24} />
+                    </div>
+                    <div className="stat-content">
+                        <div className="stat-label">이번 달 매출</div>
+                        <div className="stat-value">{formatCurrency(stats.totalSales)}</div>
+                        <div className="stat-sub">{salesRecords.length}건</div>
+                    </div>
+                </div>
+                <div className="stat-card purchases">
+                    <div className="stat-icon">
+                        <WalletIcon size={24} />
+                    </div>
+                    <div className="stat-content">
+                        <div className="stat-label">이번 달 매입</div>
+                        <div className="stat-value">{formatCurrency(stats.totalPurchases)}</div>
+                        <div className="stat-sub">{purchaseRecords.length}건</div>
+                    </div>
+                </div>
+                <div className="stat-card pending">
+                    <div className="stat-icon">
+                        <ClockIcon size={24} />
+                    </div>
+                    <div className="stat-content">
+                        <div className="stat-label">미정산 건수</div>
+                        <div className="stat-value">{stats.pendingCount}건</div>
+                        <div className="stat-sub clickable" onClick={() => navigate('/accounting/pending')}>
+                            상세보기 <ChevronRightIcon size={14} />
+                        </div>
+                    </div>
+                </div>
+                <div className="stat-card completed">
+                    <div className="stat-icon">
+                        <CheckCircleIcon size={24} />
+                    </div>
+                    <div className="stat-content">
+                        <div className="stat-label">정산 완료</div>
+                        <div className="stat-value">{stats.completedCount}건</div>
+                        <div className="stat-sub clickable" onClick={() => navigate('/accounting/completed')}>
+                            상세보기 <ChevronRightIcon size={14} />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 미수금/미지급 알림 */}
+            <div className="alert-section">
+                {stats.pendingReceivables > 0 && (
+                    <div className="alert-card warning" onClick={() => navigate('/accounting/sales')}>
+                        <AlertTriangleIcon size={20} />
+                        <div className="alert-content">
+                            <span className="alert-title">미수금</span>
+                            <span className="alert-amount">{formatCurrency(stats.pendingReceivables)}</span>
+                        </div>
+                        <ChevronRightIcon size={18} />
+                    </div>
+                )}
+                {stats.pendingPayables > 0 && (
+                    <div className="alert-card danger" onClick={() => navigate('/accounting/purchases')}>
+                        <AlertTriangleIcon size={20} />
+                        <div className="alert-content">
+                            <span className="alert-title">미지급</span>
+                            <span className="alert-amount">{formatCurrency(stats.pendingPayables)}</span>
+                        </div>
+                        <ChevronRightIcon size={18} />
+                    </div>
+                )}
+                {stats.pendingInvoiceSales > 0 && (
+                    <div className="alert-card info" onClick={() => navigate('/accounting/sales')}>
+                        <AlertTriangleIcon size={20} />
+                        <div className="alert-content">
+                            <span className="alert-title">세금계산서 미발행</span>
+                            <span className="alert-amount">{stats.pendingInvoiceSales}건</span>
+                        </div>
+                        <ChevronRightIcon size={18} />
+                    </div>
+                )}
+                {stats.pendingInvoicePurchase > 0 && (
+                    <div className="alert-card info" onClick={() => navigate('/accounting/purchases')}>
+                        <AlertTriangleIcon size={20} />
+                        <div className="alert-content">
+                            <span className="alert-title">세금계산서 미수취</span>
+                            <span className="alert-amount">{stats.pendingInvoicePurchase}건</span>
+                        </div>
+                        <ChevronRightIcon size={18} />
+                    </div>
+                )}
+            </div>
+
+            {/* 최근 거래 내역 */}
+            <div className="recent-section glass-card">
+                <div className="section-header">
+                    <h3>최근 거래 내역</h3>
+                </div>
+                <div className="recent-list">
+                    {recentRecords.length === 0 ? (
+                        <div className="empty-state">거래 내역이 없습니다</div>
+                    ) : (
+                        recentRecords.map(record => (
+                            <div key={record.id} className="recent-item">
+                                <div className="recent-type">
+                                    <span className={`type-badge ${record.type === 'SALES' ? 'sales' : 'purchase'}`}>
+                                        {record.type === 'SALES' ? '매출' : '매입'}
+                                    </span>
+                                </div>
+                                <div className="recent-info">
+                                    <span className="recent-name">{record.counterpartyName}</span>
+                                    <span className="recent-date">{formatDate(record.transactionDate)}</span>
+                                </div>
+                                <div className="recent-amount">
+                                    {formatCurrency(record.totalAmount)}
+                                </div>
+                                <div className="recent-status">
+                                    {record.paymentStatus === 'COMPLETED' ? (
+                                        <span className="status-badge success">완료</span>
+                                    ) : (
+                                        <span className="status-badge pending">대기</span>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* 빠른 메뉴 */}
+            <div className="quick-menu">
+                <button className="quick-btn" onClick={() => navigate('/accounting/sales')}>
+                    매출 내역
                 </button>
-                <button
-                    className={`nav-item ${mainSection === 'purchase' ? 'active' : ''}`}
-                    onClick={() => setMainSection('purchase')}
-                >
-                    <ShoppingCartIcon size={20} />
-                    <span>2. 발주하기 (매입)</span>
+                <button className="quick-btn" onClick={() => navigate('/accounting/purchases')}>
+                    매입 내역
                 </button>
-                <button
-                    className={`nav-item ${mainSection === 'delivery' ? 'active' : ''}`}
-                    onClick={() => setMainSection('delivery')}
-                >
-                    <TruckDeliveryIcon size={20} />
-                    <span>3. 배송리스트</span>
+                <button className="quick-btn" onClick={() => navigate('/accounting/invoices')}>
+                    세금계산서
                 </button>
-            </nav>
-
-            <header className="dashboard-header mt-6">
-                <div className="header-left">
-                    <h1>
-                        {mainSection === 'sales' && '발주받기 관리'}
-                        {mainSection === 'purchase' && '발주하기 관리'}
-                        {mainSection === 'delivery' && '배송 현황 리스트'}
-                    </h1>
-                    <p className="header-date">경리 회계 단계 업무 대시보드</p>
-                </div>
-            </header>
-
-            {/* Sub Tabs based on Main Section */}
-            {mainSection === 'sales' && (
-                <div className="tab-navigation sales-tabs">
-                    <button className={`tab-btn ${salesTab === 'waiting' ? 'active' : ''}`} onClick={() => setSalesTab('waiting')}>
-                        대기주문 ({orderSheets.filter(o => o.status === 'SENT').length})
-                    </button>
-                    <button className={`tab-btn ${salesTab === 'customer' ? 'active' : ''}`} onClick={() => setSalesTab('customer')}>
-                        고객 확정 ({orderSheets.filter(o => o.status === 'SUBMITTED').length})
-                    </button>
-                    <button className={`tab-btn ${salesTab === 'admin' ? 'active' : ''}`} onClick={() => setSalesTab('admin')}>
-                        회사 승인 ({salesOrders.length})
-                    </button>
-                </div>
-            )}
-
-            {mainSection === 'purchase' && (
-                <div className="tab-navigation purchase-tabs">
-                    <button className={`tab-btn ${purchaseTab === 'sent' ? 'active' : ''}`} onClick={() => setPurchaseTab('sent')}>
-                        발주주문 ({purchaseOrders.filter(p => p.status === 'SENT').length})
-                    </button>
-                    <button className={`tab-btn ${purchaseTab === 'confirmed' ? 'active' : ''}`} onClick={() => setPurchaseTab('confirmed')}>
-                        확정/서류완료 ({purchaseOrders.filter(p => p.status === 'CONFIRMED').length})
-                    </button>
-                </div>
-            )}
-
-            {/* Content Table */}
-            <section className="content-section glass-card">
-                <div className="table-container">
-                    <table className="table">
-                        <thead>
-                            {mainSection === 'sales' && (
-                                <tr>
-                                    <th>일시</th>
-                                    <th>주문번호</th>
-                                    <th>고객사</th>
-                                    <th className="text-right">금액</th>
-                                    <th>필요서류</th>
-                                    <th>작업</th>
-                                </tr>
-                            )}
-                            {mainSection === 'purchase' && (
-                                <tr>
-                                    <th>발주일</th>
-                                    <th>발주번호</th>
-                                    <th>공급사</th>
-                                    <th className="text-right">금액</th>
-                                    <th>서류확인</th>
-                                    <th>작업</th>
-                                </tr>
-                            )}
-                            {mainSection === 'delivery' && (
-                                <tr>
-                                    <th>시간</th>
-                                    <th>배송번호</th>
-                                    <th>고객사</th>
-                                    <th>배송업체</th>
-                                    <th>차량/기사</th>
-                                    <th>결제상태</th>
-                                </tr>
-                            )}
-                        </thead>
-                        <tbody>
-                            {mainSection === 'sales' && salesData.length > 0 && salesData.map(item => (
-                                <tr key={item.id}>
-                                    <td>{formatDate(item.createdAt)}</td>
-                                    <td className="font-mono text-primary">{item.id}</td>
-                                    <td>{item.customerName}</td>
-                                    <td className="text-right font-medium">
-                                        {'totalsAmount' in item ? formatCurrency(item.totalsAmount) : '-'}
-                                    </td>
-                                    <td>
-                                        <div className="doc-tags">
-                                            <span className="doc-tag pending">명세서</span>
-                                            <span className="doc-tag pending">등급서</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <button className="btn btn-xs btn-secondary">서류 업로드</button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {mainSection === 'purchase' && purchaseData.length > 0 && purchaseData.map(item => (
-                                <tr key={item.id}>
-                                    <td>{formatDate(item.createdAt)}</td>
-                                    <td className="font-mono text-primary">{item.id}</td>
-                                    <td>{item.supplierName || '공급사 미정'}</td>
-                                    <td className="text-right font-medium">{formatCurrency(item.totalsAmount)}</td>
-                                    <td>
-                                        <span className={`status-pill ${item.status === 'CONFIRMED' ? 'success' : 'warning'}`}>
-                                            {item.status === 'CONFIRMED' ? '확인완료' : '서류대기'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button className="btn btn-xs btn-ghost">상세보기</button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {mainSection === 'delivery' && deliveryData.length > 0 && deliveryData.map(item => (
-                                <tr key={item.id}>
-                                    <td>{formatDate(item.createdAt)}</td>
-                                    <td className="font-mono text-primary">{item.id}</td>
-                                    <td>{item.carrierName || '-'}</td>
-                                    <td>{item.carrierName || '직배'}</td>
-                                    <td>{item.vehicleNo} / {item.driverName}</td>
-                                    <td>
-                                        <span className="status-pill info">지급대기</span>
-                                    </td>
-                                </tr>
-                            ))}
-                            {(mainSection === 'sales' && salesData.length === 0) ||
-                                (mainSection === 'purchase' && purchaseData.length === 0) ||
-                                (mainSection === 'delivery' && deliveryData.length === 0) ? (
-                                <tr>
-                                    <td colSpan={6} className="text-center p-12 text-muted">
-                                        표시할 거래 내역이 없습니다.
-                                    </td>
-                                </tr>
-                            ) : null}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+                <button className="quick-btn" onClick={() => navigate('/accounting/certificates')}>
+                    등급확인서
+                </button>
+            </div>
         </div>
     )
 }

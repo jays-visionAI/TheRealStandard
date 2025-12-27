@@ -26,6 +26,8 @@ import SalesRecords from './pages/accounting/SalesRecords'
 import PurchaseRecords from './pages/accounting/PurchaseRecords'
 import InvoiceList from './pages/accounting/InvoiceList'
 import CertificateList from './pages/accounting/CertificateList'
+import PendingSettlements from './pages/accounting/PendingSettlements'
+import CompletedSettlements from './pages/accounting/CompletedSettlements'
 
 // Legacy Admin Pages (설정용)
 import AdminLayout from './layouts/AdminLayout'
@@ -114,8 +116,8 @@ function App() {
                         }
                     >
                         <Route index element={<AccountingDashboard />} />
-                        <Route path="pending" element={<AccountingDashboard />} />
-                        <Route path="completed" element={<AccountingDashboard />} />
+                        <Route path="pending" element={<PendingSettlements />} />
+                        <Route path="completed" element={<CompletedSettlements />} />
                         <Route path="sales" element={<SalesRecords />} />
                         <Route path="purchases" element={<PurchaseRecords />} />
                         <Route path="invoices" element={<InvoiceList />} />
