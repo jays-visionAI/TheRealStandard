@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIcon, KakaoIcon } from '../../components/Icons'
+import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIcon, KakaoIcon, GoogleIcon } from '../../components/Icons'
 import { kakaoLogin } from '../../lib/kakaoService'
 import './Login.css'
 
@@ -15,7 +15,7 @@ const DEMO_USERS = [
 
 export default function Login() {
     const navigate = useNavigate()
-    const { login, loginWithKakao } = useAuth()
+    const { login, loginWithKakao, loginWithGoogle } = useAuth()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -76,6 +76,20 @@ export default function Login() {
         } catch (err) {
             console.error(err)
             setError('카카오 로그인에 실패했습니다.')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleGoogleLogin = async () => {
+        setError('')
+        setIsLoading(true)
+        try {
+            await loginWithGoogle()
+            navigate('/')  // 고객용 페이지 미구현
+        } catch (err: any) {
+            console.error(err)
+            setError(err.message || '구글 로그인에 실패했습니다.')
         } finally {
             setIsLoading(false)
         }
@@ -155,6 +169,15 @@ export default function Login() {
                         disabled={isLoading}
                     >
                         <KakaoIcon size={20} /> 카카오톡으로 시작하기
+                    </button>
+
+                    <button
+                        type="button"
+                        className="btn btn-google btn-lg w-full flex items-center justify-center gap-2"
+                        onClick={handleGoogleLogin}
+                        disabled={isLoading}
+                    >
+                        <GoogleIcon size={20} /> Google로 시작하기
                     </button>
                 </form>
 

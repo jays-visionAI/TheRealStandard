@@ -15,6 +15,7 @@ interface AuthContextType {
     loading: boolean
     login: (email: string, password: string) => Promise<void>
     loginWithKakao: (kakaoUser: any) => Promise<void>
+    loginWithGoogle: () => Promise<void>
     logout: () => void
     isAdmin: boolean
     isCustomer: boolean
@@ -136,6 +137,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(newUser)
     }
 
+    const loginWithGoogle = async () => {
+        const { signInWithGoogle } = await import('../lib/googleService')
+        const { getUserByEmail, createUser } = await import('../lib/userService')
+
+        const googleUser = await signInWithGoogle()
+        if (!googleUser.email) throw new Error('구글 계정에 이메일이 없습니다.')
+
+        // 1. 사내 직원 목록(users)에서 이메일 매칭
+        let existingUser = await getUserByEmail(googleUser.email)
+
+        if (existingUser) {
+            const mappedUser: User = {
+                id: existingUser.id,
+                email: existingUser.email,
+                name: existingUser.name,
+                role: existingUser.role,
+                orgId: existingUser.orgId,
+                avatar: googleUser.photoURL || undefined
+            }
+            localStorage.setItem('trs_user', JSON.stringify(mappedUser))
+            setUser(mappedUser)
+            return
+        }
+
+        // 2. 신규 사용자라면 기본 'CUSTOMER'로 자동 등록
+        const newFirestoreUser = await createUser({
+            email: googleUser.email,
+            name: googleUser.displayName || '구글 사용자',
+            role: 'CUSTOMER',
+            status: 'ACTIVE',
+        })
+
+        const newUser: User = {
+            id: newFirestoreUser.id,
+            email: newFirestoreUser.email,
+            name: newFirestoreUser.name,
+            role: 'CUSTOMER',
+            avatar: googleUser.photoURL || undefined
+        }
+
+        localStorage.setItem('trs_user', JSON.stringify(newUser))
+        setUser(newUser)
+    }
+
     const logout = () => {
         localStorage.removeItem('trs_user')
         setUser(null)
@@ -153,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 loading,
                 login,
                 loginWithKakao,
+                loginWithGoogle,
                 logout,
                 isAdmin,
                 isCustomer,

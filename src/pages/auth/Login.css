@@ -144,6 +144,17 @@
     background: #FDD835;
 }
 
+.btn-google {
+    background: #fff;
+    color: #1F2937;
+    border: 1px solid #E5E7EB;
+}
+
+.btn-google:hover {
+    background: #F9FAFB;
+    border-color: #D1D5DB;
+}
+
 /* Divider */
 .login-divider {
     display: flex;
