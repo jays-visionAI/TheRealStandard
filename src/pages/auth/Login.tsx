@@ -89,8 +89,8 @@ export default function Login() {
                         <span className="logo-icon"><PackageIcon size={48} /></span>
                         <span className="logo-text">TRS</span>
                     </div>
-                    <h1>물류 주문관리 솔루션</h1>
-                    <p className="tagline">Taeyoon Resource System</p>
+                    <h1>지능형 육류유통혁신 플랫폼</h1>
+                    <p className="tagline">The Real Standard</p>
                 </div>
 
                 {/* Login Form */}
