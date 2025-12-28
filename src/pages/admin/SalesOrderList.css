@@ -79,10 +79,19 @@
 
 @media (max-width: 1024px) {
     .dispatch-modal {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
         max-width: 600px;
         padding: 2.5rem 2rem;
+        padding-bottom: 3rem;
+        /* Extra bottom padding for scroll visibility */
+        max-height: 85vh;
         overflow-y: auto;
+    }
+
+    .modal-form-side {
+        padding-right: 0;
+        flex-shrink: 0;
     }
 
     .modal-preview-side {
@@ -91,8 +100,7 @@
         padding-left: 0 !important;
         padding-top: 2rem;
         margin-top: 1rem;
-        max-height: none !important;
-        overflow-y: visible !important;
+        flex-shrink: 0;
     }
 }
 
