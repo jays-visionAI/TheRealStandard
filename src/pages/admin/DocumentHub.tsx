@@ -36,7 +36,9 @@ const quillModules = {
 }
 
 const stripHtml = (html: string) => {
-    return html.replace(/<[^>]*>?/gm, '')
+    if (!html) return ''
+    const doc = new DOMParser().parseFromString(html, 'text/html')
+    return doc.body.textContent || ""
 }
 
 export default function DocumentHub() {
@@ -112,6 +114,19 @@ export default function DocumentHub() {
         setEditingDoc(doc)
         setFormData({ ...doc })
         setShowEditor(true)
+    }
+
+    const handleDeleteDoc = (docId: string) => {
+        if (window.confirm('이 문서를 삭제하시겠습니까?')) {
+            deleteDocument(docId)
+            if (viewingDoc?.id === docId) setViewingDoc(null)
+        }
+    }
+
+    const handleDeleteCategory = (catId: string, catName: string) => {
+        if (window.confirm(`'${catName}' 카테고리를 삭제하시겠습니까? 해당 카테고리의 문서들도 영향을 받을 수 있습니다.`)) {
+            deleteCategory(catId)
+        }
     }
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -212,7 +227,7 @@ export default function DocumentHub() {
                                 {cat.name}
                             </button>
                             {cat.id !== 'cat-all' && user?.role === 'ADMIN' && (
-                                <button className="cat-delete" onClick={() => deleteCategory(cat.id)}>✕</button>
+                                <button className="cat-delete" onClick={() => handleDeleteCategory(cat.id, cat.name)}>✕</button>
                             )}
                         </div>
                     ))}
@@ -240,13 +255,15 @@ export default function DocumentHub() {
                                         <span className="badge badge-error text-xs"><LockIcon size={10} /> 비공개</span>
                                     )}
                                 </div>
-                                <div className="doc-icon">
-                                    {doc.type === 'YOUTUBE' ? <YoutubeIcon size={32} className="text-error" /> :
-                                        doc.type === 'EMBED' ? <ExternalLinkIcon size={32} className="text-primary" /> :
-                                            <FileTextIcon size={32} className="text-secondary" />}
+                                <div className="doc-card-header">
+                                    <div className="doc-icon">
+                                        {doc.type === 'YOUTUBE' ? <YoutubeIcon size={24} className="text-error" /> :
+                                            doc.type === 'EMBED' ? <ExternalLinkIcon size={24} className="text-primary" /> :
+                                                <FileTextIcon size={24} className="text-secondary" />}
+                                    </div>
+                                    <h3 className="doc-title">{doc.title}</h3>
                                 </div>
                                 <div className="doc-info">
-                                    <h3 className="doc-title">{doc.title}</h3>
                                     <p className="doc-excerpt">{stripHtml(doc.content || '').substring(0, 100)}...</p>
                                     <div className="doc-meta">
                                         <span>{new Date(doc.updatedAt).toLocaleDateString()}</span>
@@ -257,7 +274,7 @@ export default function DocumentHub() {
                                 {user?.role === 'ADMIN' && (
                                     <div className="doc-actions" onClick={e => e.stopPropagation()}>
                                         <button className="icon-btn" onClick={() => handleEdit(doc)}><EditIcon size={16} /></button>
-                                        <button className="icon-btn danger" onClick={() => deleteDocument(doc.id)}><TrashIcon size={16} /></button>
+                                        <button className="icon-btn danger" onClick={() => handleDeleteDoc(doc.id)}><TrashIcon size={16} /></button>
                                     </div>
                                 )}
                             </div>
@@ -398,7 +415,7 @@ export default function DocumentHub() {
                                     {user?.role === 'ADMIN' && (
                                         <>
                                             <button className="icon-btn" onClick={() => { handleEdit(viewingDoc); setViewingDoc(null); }}><EditIcon size={18} /></button>
-                                            <button className="icon-btn danger" onClick={() => { deleteDocument(viewingDoc.id); setViewingDoc(null); }}><TrashIcon size={18} /></button>
+                                            <button className="icon-btn danger" onClick={() => { handleDeleteDoc(viewingDoc.id); }}><TrashIcon size={18} /></button>
                                         </>
                                     )}
                                     <button className="icon-btn" onClick={() => setViewingDoc(null)}><XIcon size={20} /></button>
