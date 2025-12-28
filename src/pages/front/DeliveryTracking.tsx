@@ -102,9 +102,9 @@ export default function DeliveryTracking() {
     })
   }
 
-  const formatTimeOnly = (ts?: Timestamp) => {
+  const formatTimeOnly = (ts?: any) => {
     if (!ts) return '-'
-    const date = ts.toDate()
+    const date = ts instanceof Timestamp ? ts.toDate() : (ts instanceof Date ? ts : new Date(ts))
     return date.toLocaleTimeString('ko-KR', {
       hour: '2-digit', minute: '2-digit', hour12: false
     })
