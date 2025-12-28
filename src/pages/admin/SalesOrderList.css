@@ -11,10 +11,11 @@
     display: grid;
     grid-template-columns: 1fr 450px;
     gap: 3rem;
-    max-height: 95vh;
-    overflow-y: hidden;
-    /* Main modal scroll hidden, sides scroll independently if needed */
+    max-height: 90vh;
+    overflow-y: auto;
+    /* Enable whole modal scroll */
     position: relative;
+    align-items: start;
 }
 
 .modal-close-btn {
@@ -103,8 +104,6 @@
 }
 
 .modal-form-side {
-    overflow-y: auto;
-    max-height: calc(95vh - 6rem);
     padding-right: 1rem;
 }
 
@@ -113,8 +112,6 @@
     padding-left: 2rem;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    max-height: calc(95vh - 6rem);
 }
 
 .badge-primary {

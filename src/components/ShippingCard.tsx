@@ -10,6 +10,7 @@ interface Shipment {
     driverPhone?: string
     vehicleNumber?: string
     vehicleType?: string
+    company?: string
     eta: string | Date
 }
 
@@ -55,6 +56,10 @@ export default function ShippingCard({ shipment }: Props) {
             </div>
 
             <div className="vehicle-info">
+                <div className="info-item">
+                    <span className="info-label">물류사</span>
+                    <span className="info-value">{shipment.company || '-'}</span>
+                </div>
                 <div className="info-item">
                     <span className="info-label">기사님</span>
                     <span className="info-value"><UserIcon size={12} className="mr-1" />{shipment.driverName || '-'}</span>
