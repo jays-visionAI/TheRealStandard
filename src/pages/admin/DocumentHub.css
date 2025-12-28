@@ -471,13 +471,22 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-    min-height: 300px;
+    min-height: 400px;
     background: white;
     border-radius: 12px;
     border: 1px solid #ddd;
     overflow: hidden;
     position: relative;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* Ensure ReactQuill root fills the container */
+.quill-editor-container .quill {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    flex: 1;
 }
 
 .quill-editor-container .ql-toolbar {
@@ -494,8 +503,6 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    height: 0;
-    /* Force flex child to respect container height */
     overflow: hidden;
 }
 
@@ -504,10 +511,9 @@
     overflow-y: auto !important;
     padding: 1.5rem 2rem;
     line-height: 1.8;
-    min-height: 100%;
-    /* Ensure content area fills container */
     scrollbar-width: thin;
     scrollbar-color: #7c4dff #f1f1f1;
+    cursor: text;
 }
 
 /* 스크롤바 디자인 강화 (Webkit) */
