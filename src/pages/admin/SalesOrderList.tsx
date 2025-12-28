@@ -9,7 +9,7 @@ import {
 } from '../../lib/orderService'
 import { getAllVehicleTypes, type FirestoreVehicleType } from '../../lib/vehicleService'
 
-import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon, KakaoIcon } from '../../components/Icons'
+import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon, KakaoIcon, XIcon } from '../../components/Icons'
 import { sendOrderMessage } from '../../lib/kakaoService'
 import ShippingCard from '../../components/ShippingCard'
 import './SalesOrderList.css'
@@ -286,10 +286,17 @@ export default function SalesOrderList() {
             {showDispatchModal && selectedOrder && (
                 <div className="modal-overlay" onClick={() => setShowDispatchModal(false)}>
                     <div className="modal-content glass-card dispatch-modal" onClick={e => e.stopPropagation()}>
+                        <button className="modal-close-btn" onClick={() => setShowDispatchModal(false)}>
+                            <XIcon size={24} />
+                        </button>
                         <div className="modal-form-side">
                             <div className="modal-header">
-                                <h2><TruckDeliveryIcon size={24} /> 출고 및 차량 배정</h2>
-                                <p className="text-secondary">주문 [{selectedOrder.id}] 에 대한 배송 정보를 입력하세요</p>
+                                <div className="title-row">
+                                    <h2><TruckDeliveryIcon size={24} /> 출고 및 차량 배정</h2>
+                                </div>
+                                <div className="desc-row">
+                                    <p className="text-secondary text-sm">주문 [{selectedOrder.id}] 에 대한 배송 정보를 입력하세요</p>
+                                </div>
                             </div>
                             <form onSubmit={handleDispatchSubmit} className="modal-body">
                                 <div className="form-group mb-4">
