@@ -111,28 +111,25 @@
 
 @media (max-width: 1024px) {
     .dispatch-modal {
+        max-width: 600px;
+        padding: 1.5rem;
+    }
+
+    .modal-scroll-container {
         display: flex;
         flex-direction: column;
-        max-width: 600px;
-        padding: 2.5rem 2rem;
-        padding-bottom: 3rem;
-        /* Extra bottom padding for scroll visibility */
-        max-height: 85vh;
-        overflow-y: auto;
+        gap: 1.5rem;
     }
 
     .modal-form-side {
         padding-right: 0;
-        flex-shrink: 0;
     }
 
     .modal-preview-side {
         border-left: none !important;
         border-top: 1px solid rgba(255, 255, 255, 0.1);
         padding-left: 0 !important;
-        padding-top: 2rem;
-        margin-top: 1rem;
-        flex-shrink: 0;
+        padding-top: 1.5rem;
     }
 }
 
