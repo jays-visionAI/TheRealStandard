@@ -180,6 +180,12 @@
     background: rgba(255, 255, 255, 0.08);
 }
 
+/* White calendar icon for datetime-local input */
+.dispatch-modal .modal-body input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
 .modal-form-side {
     padding-right: 1rem;
 }
