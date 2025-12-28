@@ -41,12 +41,12 @@
     margin-bottom: 1rem;
 }
 
-/* Scrollable Content Container */
+/* Scrollable Content Container - Always single column */
 .modal-scroll-container {
     flex: 1;
     overflow-y: auto;
-    display: grid;
-    grid-template-columns: 1fr 400px;
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
     padding-right: 0.5rem;
 }
