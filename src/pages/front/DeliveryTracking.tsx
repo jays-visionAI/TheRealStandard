@@ -94,12 +94,11 @@ export default function DeliveryTracking() {
     return config[status] || config.PENDING_DISPATCH
   }
 
-  const formatTimestamp = (ts?: Timestamp) => {
+  const formatTimestamp = (ts?: any) => {
     if (!ts) return '-'
-    const date = ts.toDate()
+    const date = ts instanceof Timestamp ? ts.toDate() : (ts instanceof Date ? ts : new Date(ts))
     return date.toLocaleDateString('ko-KR', {
-      year: 'numeric', month: 'long', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
+      year: 'numeric', month: 'long', day: 'numeric'
     })
   }
 
@@ -255,9 +254,7 @@ export default function DeliveryTracking() {
           <div className="flex justify-between items-center py-2 border-b border-white/5">
             <span className="text-sm text-muted">배송예정일</span>
             <span className="font-medium">
-              {orderSheet.shipDate instanceof Timestamp
-                ? orderSheet.shipDate.toDate().toLocaleDateString('ko-KR')
-                : orderSheet.shipDate?.toLocaleString() || '-'}
+              {formatTimestamp(orderSheet.shipDate)}
             </span>
           </div>
           <div className="flex justify-between items-center py-2">
