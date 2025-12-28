@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { XIcon, ClipboardListIcon } from '../../components/Icons'
-import { getOrderSheetByToken, type FirestoreOrderSheet } from '../../lib/orderService'
+import { getOrderSheetByToken, getOrderSheetItems, type FirestoreOrderSheet, type FirestoreOrderSheetItem } from '../../lib/orderService'
 
 // 로컬 타입
 type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate' | 'cutOffAt'> & {
@@ -9,6 +9,7 @@ type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'sh
   updatedAt?: Date
   shipDate?: Date
   cutOffAt?: Date
+  items?: FirestoreOrderSheetItem[]
 }
 
 export default function InviteLanding() {
@@ -27,12 +28,14 @@ export default function InviteLanding() {
       try {
         const order = await getOrderSheetByToken(token)
         if (order) {
+          const items = await getOrderSheetItems(order.id)
           setOrderInfo({
             ...order,
             createdAt: order.createdAt?.toDate?.() || new Date(),
             updatedAt: order.updatedAt?.toDate?.() || new Date(),
             shipDate: order.shipDate?.toDate?.() || undefined,
             cutOffAt: order.cutOffAt?.toDate?.() || undefined,
+            items: items || []
           })
         }
       } catch (err) {
@@ -98,6 +101,23 @@ export default function InviteLanding() {
             <span className="label">주문번호</span>
             <span className="value">{orderInfo.id}</span>
           </div>
+          {orderInfo.items && orderInfo.items.length > 0 && (
+            <>
+              <div className="info-row">
+                <span className="label">주문내역</span>
+                <span className="value">
+                  {orderInfo.items[0].productName}
+                  {orderInfo.items.length > 1 ? ` 외 ${orderInfo.items.length - 1}품목` : ''}
+                </span>
+              </div>
+              <div className="info-row">
+                <span className="label">예상주문금액</span>
+                <span className="value">
+                  {orderInfo.items.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString()}원
+                </span>
+              </div>
+            </>
+          )}
           <div className="info-row">
             <span className="label">배송예정일</span>
             <span className="value">{orderInfo.shipDate ? formatDate(orderInfo.shipDate) : '-'}</span>
@@ -107,6 +127,13 @@ export default function InviteLanding() {
             <span className="value highlight">{orderInfo.cutOffAt ? formatDateTime(orderInfo.cutOffAt) : '-'}</span>
           </div>
         </div>
+
+        {orderInfo.adminComment && (
+          <div className="admin-memo">
+            <span className="memo-label">관리자 메모</span>
+            <p className="memo-text">{orderInfo.adminComment}</p>
+          </div>
+        )}
 
         <button
           className="btn btn-primary btn-lg w-full"
@@ -173,6 +200,31 @@ export default function InviteLanding() {
         
         .info-row .value.highlight {
           color: var(--color-warning);
+        }
+
+        .admin-memo {
+          background: #fff8e1;
+          border: 1px solid #ffe082;
+          border-radius: var(--radius-md);
+          padding: var(--space-4);
+          margin-bottom: var(--space-6);
+          text-align: left;
+        }
+
+        .memo-label {
+          display: block;
+          font-size: var(--text-xs);
+          font-weight: var(--font-bold);
+          color: #f57c00;
+          margin-bottom: var(--space-1);
+          text-transform: uppercase;
+        }
+
+        .memo-text {
+          font-size: var(--text-sm);
+          color: #5d4037;
+          line-height: 1.5;
+          margin: 0;
         }
         
         .error .icon {
