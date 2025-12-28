@@ -21,20 +21,52 @@
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 24px;
-    padding: 3rem;
+    padding: 2rem;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     width: 95%;
     max-width: 1100px;
-    /* 좌우폭 확장 */
-    display: grid;
-    grid-template-columns: 1fr 450px;
-    gap: 3rem;
     max-height: 85vh;
-    /* Stay within viewport height */
-    overflow-y: auto;
-    /* Internal scroll */
+    display: flex;
+    flex-direction: column;
     position: relative;
-    align-items: start;
+    overflow: hidden;
+    /* Hide overflow on main modal */
+}
+
+/* Fixed Header */
+.dispatch-modal>.modal-header {
+    flex-shrink: 0;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 1rem;
+}
+
+/* Scrollable Content Container */
+.modal-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+    padding-right: 0.5rem;
+}
+
+/* Custom scrollbar */
+.modal-scroll-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.modal-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+.modal-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
 }
 
 /* Custom scrollbar for better visibility inside the dark modal */

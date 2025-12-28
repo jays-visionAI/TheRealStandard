@@ -289,68 +289,74 @@ export default function SalesOrderList() {
                         <button className="modal-close-btn" onClick={() => setShowDispatchModal(false)}>
                             <XIcon size={24} />
                         </button>
-                        <div className="modal-form-side">
-                            <div className="modal-header">
-                                <div className="title-row">
-                                    <h2><TruckDeliveryIcon size={24} /> 출고 및 차량 배정</h2>
-                                </div>
-                                <div className="desc-row">
-                                    <p className="text-secondary text-sm">주문 [{selectedOrder.id}] 에 대한 배송 정보를 입력하세요</p>
-                                </div>
+
+                        {/* Fixed Header */}
+                        <div className="modal-header">
+                            <div className="title-row">
+                                <h2><TruckDeliveryIcon size={24} /> 출고 및 차량 배정</h2>
                             </div>
-                            <form onSubmit={handleDispatchSubmit} className="modal-body">
-                                <div className="form-group mb-4">
-                                    <label>배송업체</label>
-                                    <input type="text" value={dispatchForm.company} onChange={e => setDispatchForm({ ...dispatchForm, company: e.target.value })} required className="input" />
-                                </div>
-                                <div className="form-row flex gap-4 mb-4">
-                                    <div className="form-group flex-1">
-                                        <label>기사명</label>
-                                        <input type="text" value={dispatchForm.driverName} onChange={e => setDispatchForm({ ...dispatchForm, driverName: e.target.value })} required className="input" />
-                                    </div>
-                                    <div className="form-group flex-1">
-                                        <label>연락처</label>
-                                        <input type="text" value={dispatchForm.driverPhone} onChange={e => setDispatchForm({ ...dispatchForm, driverPhone: e.target.value })} required className="input" placeholder="010-0000-0000" />
-                                    </div>
-                                </div>
-                                <div className="form-row flex gap-4 mb-4">
-                                    <div className="form-group flex-1">
-                                        <label>차량번호</label>
-                                        <input type="text" value={dispatchForm.vehicleNumber} onChange={e => setDispatchForm({ ...dispatchForm, vehicleNumber: e.target.value })} required className="input" placeholder="12가 3456" />
-                                    </div>
-                                    <div className="form-group flex-1">
-                                        <label>차량 타입</label>
-                                        <select value={dispatchForm.vehicleType} onChange={e => setDispatchForm({ ...dispatchForm, vehicleType: e.target.value })} className="input">
-                                            {vehicleTypes.filter(v => v.enabled).map(v => (
-                                                <option key={v.id} value={v.name}>{v.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="form-group mb-6">
-                                    <label>도착 예정 시간 (ETA)</label>
-                                    <input type="datetime-local" value={dispatchForm.eta} onChange={e => setDispatchForm({ ...dispatchForm, eta: e.target.value })} required className="input" />
-                                </div>
-                                <div className="modal-footer flex gap-2">
-                                    <button type="button" className="btn btn-ghost" onClick={() => setShowDispatchModal(false)}>취소</button>
-                                    <button type="submit" className="btn btn-primary">출고 지시 완료</button>
-                                </div>
-                            </form>
+                            <div className="desc-row">
+                                <p className="text-secondary text-sm">주문 [{selectedOrder.id}] 에 대한 배송 정보를 입력하세요</p>
+                            </div>
                         </div>
 
-                        <div className="modal-preview-side">
-                            <h3 className="mb-4 text-secondary text-sm font-bold">배송 정보 카드 미리보기</h3>
-                            <ShippingCard shipment={{
-                                id: 'SH-AUTO-GENERATED',
-                                customerName: selectedOrder.customerName || '알 수 없는 고객',
-                                ...dispatchForm,
-                                status: 'READY',
-                            }} />
-                            <div className="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/10">
-                                <p className="text-xs text-primary leading-relaxed">
-                                    * 지시 완료 시 물류팀 대시보드에 즉시 반영되며,<br />
-                                    고객사에게 카카오 알림톡(시뮬레이션)과 트래킹 링크가 전송됩니다.
-                                </p>
+                        {/* Scrollable Content Area */}
+                        <div className="modal-scroll-container">
+                            <div className="modal-form-side">
+                                <form onSubmit={handleDispatchSubmit} className="modal-body">
+                                    <div className="form-group mb-4">
+                                        <label>배송업체</label>
+                                        <input type="text" value={dispatchForm.company} onChange={e => setDispatchForm({ ...dispatchForm, company: e.target.value })} required className="input" />
+                                    </div>
+                                    <div className="form-row flex gap-4 mb-4">
+                                        <div className="form-group flex-1">
+                                            <label>기사명</label>
+                                            <input type="text" value={dispatchForm.driverName} onChange={e => setDispatchForm({ ...dispatchForm, driverName: e.target.value })} required className="input" />
+                                        </div>
+                                        <div className="form-group flex-1">
+                                            <label>연락처</label>
+                                            <input type="text" value={dispatchForm.driverPhone} onChange={e => setDispatchForm({ ...dispatchForm, driverPhone: e.target.value })} required className="input" placeholder="010-0000-0000" />
+                                        </div>
+                                    </div>
+                                    <div className="form-row flex gap-4 mb-4">
+                                        <div className="form-group flex-1">
+                                            <label>차량번호</label>
+                                            <input type="text" value={dispatchForm.vehicleNumber} onChange={e => setDispatchForm({ ...dispatchForm, vehicleNumber: e.target.value })} required className="input" placeholder="12가 3456" />
+                                        </div>
+                                        <div className="form-group flex-1">
+                                            <label>차량 타입</label>
+                                            <select value={dispatchForm.vehicleType} onChange={e => setDispatchForm({ ...dispatchForm, vehicleType: e.target.value })} className="input">
+                                                {vehicleTypes.filter(v => v.enabled).map(v => (
+                                                    <option key={v.id} value={v.name}>{v.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="form-group mb-6">
+                                        <label>도착 예정 시간 (ETA)</label>
+                                        <input type="datetime-local" value={dispatchForm.eta} onChange={e => setDispatchForm({ ...dispatchForm, eta: e.target.value })} required className="input" />
+                                    </div>
+                                    <div className="modal-footer flex gap-2">
+                                        <button type="button" className="btn btn-ghost" onClick={() => setShowDispatchModal(false)}>취소</button>
+                                        <button type="submit" className="btn btn-primary">출고 지시 완료</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div className="modal-preview-side">
+                                <h3 className="mb-4 text-secondary text-sm font-bold">배송 정보 카드 미리보기</h3>
+                                <ShippingCard shipment={{
+                                    id: 'SH-AUTO-GENERATED',
+                                    customerName: selectedOrder.customerName || '알 수 없는 고객',
+                                    ...dispatchForm,
+                                    status: 'READY',
+                                }} />
+                                <div className="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                                    <p className="text-xs text-primary leading-relaxed">
+                                        * 지시 완료 시 물류팀 대시보드에 즉시 반영되며,<br />
+                                        고객사에게 카카오 알림톡(시뮬레이션)과 트래킹 링크가 전송됩니다.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
