@@ -4,6 +4,7 @@ import {
     getAllSalesOrders,
     getAllShipments,
     createShipment,
+    updateShipment,
     type FirestoreSalesOrder,
     type FirestoreShipment
 } from '../../lib/orderService'
@@ -43,6 +44,7 @@ export default function SalesOrderList() {
     const [searchTerm, setSearchTerm] = useState('')
     const [showDispatchModal, setShowDispatchModal] = useState(false)
     const [selectedOrder, setSelectedOrder] = useState<LocalSalesOrder | null>(null)
+    const [editingShipmentId, setEditingShipmentId] = useState<string | null>(null) // null = new, string = editing
 
     const navigate = useNavigate()
 
@@ -112,19 +114,30 @@ export default function SalesOrderList() {
 
     const handleOpenDispatch = (so: LocalSalesOrder) => {
         const existing = getShipmentByOrderId(so.id)
-        if (existing) {
-            alert('이미 배차 정보가 등록된 주문입니다.')
-            return
-        }
         setSelectedOrder(so)
-        setDispatchForm({
-            company: '대한통운',
-            driverName: '',
-            driverPhone: '',
-            vehicleNumber: '',
-            vehicleType: vehicleTypes.find(v => v.enabled)?.name || '',
-            eta: new Date(Date.now() + 86400000).toISOString().slice(0, 16) // Tomorrow
-        })
+        if (existing) {
+            // 기존 배차 수정 모드
+            setEditingShipmentId(existing.id || null)
+            setDispatchForm({
+                company: (existing as any).company || '대한통운',
+                driverName: existing.driverName || '',
+                driverPhone: existing.driverPhone || '',
+                vehicleNumber: existing.vehicleNumber || '',
+                vehicleType: vehicleTypes.find(v => v.id === existing.vehicleTypeId)?.name || vehicleTypes.find(v => v.enabled)?.name || '',
+                eta: existing.etaAt ? new Date(existing.etaAt).toISOString().slice(0, 16) : new Date(Date.now() + 86400000).toISOString().slice(0, 16)
+            })
+        } else {
+            // 신규 배차
+            setEditingShipmentId(null)
+            setDispatchForm({
+                company: '대한통운',
+                driverName: '',
+                driverPhone: '',
+                vehicleNumber: '',
+                vehicleType: vehicleTypes.find(v => v.enabled)?.name || '',
+                eta: new Date(Date.now() + 86400000).toISOString().slice(0, 16)
+            })
+        }
         setShowDispatchModal(true)
     }
 
@@ -133,18 +146,36 @@ export default function SalesOrderList() {
         if (!selectedOrder) return
 
         try {
-            await createShipment({
-                sourceSalesOrderId: selectedOrder.id,
+            const shipmentData = {
                 vehicleTypeId: vehicleTypes.find(v => v.name === dispatchForm.vehicleType)?.id,
+                vehicleNumber: dispatchForm.vehicleNumber,
                 driverName: dispatchForm.driverName,
                 driverPhone: dispatchForm.driverPhone,
-                status: 'PREPARING',
+                company: dispatchForm.company,
                 etaAt: Timestamp.fromDate(new Date(dispatchForm.eta)),
-            })
+            }
+
+            if (editingShipmentId) {
+                // 수정 모드
+                await updateShipment(editingShipmentId, {
+                    ...shipmentData,
+                    isModified: true,
+                    modifiedAt: Timestamp.now()
+                })
+                alert('배송 정보가 수정되었습니다.')
+            } else {
+                // 신규 생성
+                await createShipment({
+                    sourceSalesOrderId: selectedOrder.id,
+                    ...shipmentData,
+                    status: 'PREPARING',
+                })
+                alert('배송 지시가 완료되었습니다.')
+            }
 
             await loadData()
             setShowDispatchModal(false)
-            alert('배송 지시가 완료되었습니다.')
+            setEditingShipmentId(null)
         } catch (err) {
             console.error('Dispatch failed:', err)
             alert('배송 지시에 실패했습니다.')
@@ -258,12 +289,20 @@ export default function SalesOrderList() {
                                                             <TruckDeliveryIcon size={14} /> 출고지시
                                                         </button>
                                                     ) : (
-                                                        <button
-                                                            className="btn btn-sm btn-kakao"
-                                                            onClick={() => sendOrderMessage(so.customerName || '고객', so.id, '', shipment.etaAt?.toISOString() || '')}
-                                                        >
-                                                            <KakaoIcon size={14} /> 주문서 전송
-                                                        </button>
+                                                        <>
+                                                            <button
+                                                                className="btn btn-sm btn-ghost"
+                                                                onClick={() => handleOpenDispatch(so)}
+                                                            >
+                                                                배차수정
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-sm btn-kakao"
+                                                                onClick={() => sendOrderMessage(so.customerName || '고객', so.id, '', shipment.etaAt?.toISOString() || '')}
+                                                            >
+                                                                <KakaoIcon size={14} /> 전송
+                                                            </button>
+                                                        </>
                                                     )}
                                                 </div>
                                             </td>

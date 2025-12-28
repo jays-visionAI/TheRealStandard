@@ -186,9 +186,12 @@ export interface FirestoreShipment {
     vehicleNumber?: string
     driverName?: string
     driverPhone?: string
+    company?: string // 물류사명
     eta?: Timestamp
     etaAt?: Timestamp
     status: 'PREPARING' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED'
+    isModified?: boolean // 수정 여부
+    modifiedAt?: Timestamp // 마지막 수정 일시
     createdAt: Timestamp
     updatedAt: Timestamp
 }
