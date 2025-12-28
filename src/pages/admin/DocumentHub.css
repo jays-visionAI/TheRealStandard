@@ -485,19 +485,17 @@
     border-bottom: 1px solid #eee !important;
     background: #fdfdfd;
     flex-shrink: 0;
-    position: sticky;
-    top: 0;
     z-index: 10;
 }
 
 .quill-editor-container .ql-container {
-    border: none;
+    border: none !important;
     flex: 1;
     display: flex;
     flex-direction: column;
     min-height: 0;
-    font-family: inherit;
-    font-size: 1rem;
+    height: 0;
+    /* Force flex child to respect container height */
     overflow: hidden;
 }
 
@@ -505,28 +503,34 @@
     flex: 1;
     overflow-y: auto !important;
     padding: 1.5rem 2rem;
-    line-height: 1.7;
-    min-height: 0;
-    height: 100%;
+    line-height: 1.8;
+    min-height: 100%;
+    /* Ensure content area fills container */
+    scrollbar-width: thin;
+    scrollbar-color: #7c4dff #f1f1f1;
 }
 
-/* 스크롤바 디자인 강화 */
+/* 스크롤바 디자인 강화 (Webkit) */
 .quill-editor-container .ql-editor::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
+    /* Wider scrollbar */
+    display: block !important;
 }
 
 .quill-editor-container .ql-editor::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #f8f9fa;
+    border-left: 1px solid #eee;
 }
 
 .quill-editor-container .ql-editor::-webkit-scrollbar-thumb {
-    background: #bbb;
-    border-radius: 10px;
-    border: 2px solid #f1f1f1;
+    background: #7c4dff;
+    /* Theme color */
+    border-radius: 5px;
+    border: 2px solid #f8f9fa;
 }
 
 .quill-editor-container .ql-editor::-webkit-scrollbar-thumb:hover {
-    background: #999;
+    background: #6200ea;
 }
 
 .ql-editor.ql-blank::before {
