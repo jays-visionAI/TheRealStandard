@@ -8,13 +8,12 @@
     backdrop-filter: blur(8px);
     z-index: 1000;
     display: flex;
-    align-items: flex-start;
-    /* Start from top instead of centered */
+    align-items: center;
+    /* Centered */
     justify-content: center;
-    padding: 4rem 2rem;
-    /* Vertical breathing room */
-    overflow-y: auto;
-    /* Definitive scroll target */
+    padding: 2rem;
+    overflow: hidden;
+    /* Prevent background scroll */
 }
 
 .dispatch-modal {
@@ -30,10 +29,33 @@
     display: grid;
     grid-template-columns: 1fr 450px;
     gap: 3rem;
-    height: auto;
-    overflow-y: visible;
+    max-height: 85vh;
+    /* Stay within viewport height */
+    overflow-y: auto;
+    /* Internal scroll */
     position: relative;
     align-items: start;
+}
+
+/* Custom scrollbar for better visibility inside the dark modal */
+.dispatch-modal::-webkit-scrollbar {
+    width: 10px;
+}
+
+.dispatch-modal::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dispatch-modal::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.dispatch-modal::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+    background-clip: padding-box;
 }
 
 .modal-close-btn {
