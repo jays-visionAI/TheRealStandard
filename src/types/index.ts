@@ -111,6 +111,7 @@ export interface OrderSheet {
     shipTo: string;          // 배송지
     adminComment?: string;
     customerComment?: string;
+    discountAmount?: number;
     status: OrderSheetStatus;
     inviteTokenId: string;
     lastSubmittedAt?: Date;

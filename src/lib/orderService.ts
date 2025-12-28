@@ -15,6 +15,7 @@ export interface FirestoreOrderSheet {
     shipTo: string
     adminComment?: string
     customerComment?: string
+    discountAmount?: number
     status: 'DRAFT' | 'SENT' | 'SUBMITTED' | 'CONFIRMED' | 'REVISION' | 'CLOSED'
     createdAt: Timestamp
     updatedAt: Timestamp

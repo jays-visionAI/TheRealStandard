@@ -22,6 +22,7 @@ type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'sh
     adminComment?: string
     customerComment?: string
     revisionComment?: string
+    discountAmount?: number
 }
 
 export default function OrderReview() {
@@ -35,6 +36,7 @@ export default function OrderReview() {
     const [revisionComment, setRevisionComment] = useState('')
     const [showRevisionModal, setShowRevisionModal] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [discountAmount, setDiscountAmount] = useState(0)
 
     // Firebase에서 데이터 로드
     const loadData = async () => {
@@ -61,7 +63,9 @@ export default function OrderReview() {
                     cutOffAt: osData.cutOffAt?.toDate?.() || undefined,
                     adminComment: osData.adminComment,
                     customerComment: osData.customerComment,
+                    discountAmount: osData.discountAmount || 0,
                 })
+                setDiscountAmount(osData.discountAmount || 0)
             }
             setItems(itemsData)
         } catch (err) {
@@ -78,6 +82,7 @@ export default function OrderReview() {
 
     const totalKg = items.reduce((sum, item) => sum + (item.estimatedKg || 0), 0)
     const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0)
+    const finalTotal = Math.max(0, totalAmount - (discountAmount || 0))
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
@@ -102,6 +107,7 @@ export default function OrderReview() {
 
             await updateOrderSheet(orderSheet.id, {
                 status: 'CONFIRMED',
+                discountAmount: discountAmount
             })
 
             // SalesOrder 생성
@@ -255,11 +261,36 @@ export default function OrderReview() {
                         </tbody>
                         <tfoot>
                             <tr className="summary-row">
-                                <td className="font-semibold">합계</td>
+                                <td className="font-semibold">소계</td>
                                 <td className="text-right font-semibold">{totalKg.toFixed(1)} kg</td>
                                 <td></td>
-                                <td className="text-right font-bold gradient-text text-lg">
+                                <td className="text-right font-semibold">
                                     {formatCurrency(totalAmount)}
+                                </td>
+                            </tr>
+                            <tr className="discount-row">
+                                <td className="font-semibold text-warning">할인금액</td>
+                                <td></td>
+                                <td></td>
+                                <td className="text-right">
+                                    <div className="discount-input-wrapper">
+                                        <span className="minus-sign">-</span>
+                                        <input
+                                            type="number"
+                                            className="discount-input"
+                                            value={discountAmount || ''}
+                                            onChange={(e) => setDiscountAmount(Number(e.target.value))}
+                                            placeholder="0"
+                                        />
+                                        <span className="unit">원</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr className="final-total-row">
+                                <td colSpan={2} className="font-bold text-lg">최종 결제금액</td>
+                                <td></td>
+                                <td className="text-right font-bold gradient-text text-xl">
+                                    {formatCurrency(finalTotal)}
                                 </td>
                             </tr>
                         </tfoot>
@@ -441,6 +472,59 @@ export default function OrderReview() {
           line-height: 1.5;
           color: var(--text-primary);
           white-space: pre-wrap;
+        }
+
+        /* Discount Input Styling */
+        .discount-row td {
+          padding: var(--space-2) var(--space-4);
+          border-top: 1px dashed var(--border-primary);
+        }
+
+        .discount-input-wrapper {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--space-2);
+          background: rgba(245, 158, 11, 0.1);
+          padding: 4px 12px;
+          border-radius: var(--radius-sm);
+          border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .minus-sign {
+          color: var(--color-warning);
+          font-weight: var(--font-bold);
+        }
+
+        .discount-input {
+          background: transparent;
+          border: none;
+          color: var(--color-warning);
+          font-weight: var(--font-bold);
+          text-align: right;
+          width: 80px;
+          padding: 0;
+          outline: none;
+          -moz-appearance: textfield;
+        }
+
+        .discount-input::-webkit-outer-spin-button,
+        .discount-input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        .unit {
+          font-size: var(--text-xs);
+          color: var(--text-muted);
+        }
+
+        .final-total-row td {
+          padding: var(--space-4);
+          border-top: 2px solid var(--border-primary);
+        }
+
+        .text-warning {
+          color: var(--color-warning);
         }
 
         @media (max-width: 640px) {
