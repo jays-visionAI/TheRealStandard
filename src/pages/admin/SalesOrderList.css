@@ -1,3 +1,22 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-start;
+    /* Start from top instead of centered */
+    justify-content: center;
+    padding: 4rem 2rem;
+    /* Vertical breathing room */
+    overflow-y: auto;
+    /* Definitive scroll target */
+}
+
 .dispatch-modal {
     background: rgba(20, 20, 25, 0.95) !important;
     backdrop-filter: blur(20px);
@@ -11,9 +30,8 @@
     display: grid;
     grid-template-columns: 1fr 450px;
     gap: 3rem;
-    max-height: 90vh;
-    overflow-y: auto;
-    /* Enable whole modal scroll */
+    height: auto;
+    overflow-y: visible;
     position: relative;
     align-items: start;
 }
