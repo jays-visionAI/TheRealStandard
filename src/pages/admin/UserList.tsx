@@ -9,7 +9,7 @@ import {
 } from '../../lib/userService'
 import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
 import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
-import { UsersIcon, SearchIcon, MailIcon, BuildingIcon, PlusIcon, TrashIcon as Trash2Icon, GridIcon, ListIcon, EditIcon } from '../../components/Icons'
+import { UsersIcon, SearchIcon, MailIcon, BuildingIcon, PlusIcon, TrashIcon as Trash2Icon, GridIcon, ListIcon, EditIcon, AlertTriangleIcon } from '../../components/Icons'
 import './UserList.css'
 
 // UserAccount 타입 정의
@@ -202,7 +202,12 @@ export default function UserList() {
         return (
             <div className="user-list-page">
                 <div className="error-state">
-                    <p>❌ {error}</p>
+                    <p>
+                        <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                            <AlertTriangleIcon size={24} color="#ef4444" />
+                        </span>
+                        {error}
+                    </p>
                     <button className="btn btn-primary" onClick={loadData}>
                         다시 시도
                     </button>

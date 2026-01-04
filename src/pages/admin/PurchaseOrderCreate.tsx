@@ -218,7 +218,7 @@ export default function PurchaseOrderCreate() {
                 })
             }
 
-            alert('✅ 매입 발주서가 생성되었습니다.')
+            alert('매입 발주서가 생성되었습니다.')
             navigate('/admin/purchase-orders')
         } catch (err) {
             console.error('PO creation failed:', err)

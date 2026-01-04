@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { FactoryIcon, SearchIcon, CheckCircleIcon, PauseCircleIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon } from '../../components/Icons'
+import { FactoryIcon, SearchIcon, CheckCircleIcon, PauseCircleIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, AlertTriangleIcon } from '../../components/Icons'
 import './OrganizationMaster.css'  // 같은 스타일 공유
 import {
     getAllSuppliers,
@@ -133,7 +133,7 @@ export default function SupplierMaster() {
                     memo: formData.memo,
                     isActive: formData.isActive,
                 })
-                alert('✅ 공급업체 정보가 수정되었습니다.')
+                alert('공급업체 정보가 수정되었습니다.')
             } else {
                 // 신규 등록 - Firebase에 직접
                 await createSupplier({
@@ -153,7 +153,7 @@ export default function SupplierMaster() {
                     memo: formData.memo,
                     isActive: formData.isActive ?? true,
                 })
-                alert('✅ 새 공급업체가 등록되었습니다.')
+                alert('새 공급업체가 등록되었습니다.')
             }
 
             await loadSuppliers()
@@ -208,7 +208,12 @@ export default function SupplierMaster() {
         return (
             <div className="organization-master">
                 <div className="error-state">
-                    <p>❌ {error}</p>
+                    <p>
+                        <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                            <AlertTriangleIcon size={24} color="#ef4444" />
+                        </span>
+                        {error}
+                    </p>
                     <button className="btn btn-primary" onClick={loadSuppliers}>
                         다시 시도
                     </button>

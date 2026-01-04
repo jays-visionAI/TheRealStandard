@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon } from '../../components/Icons'
+import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon, CheckIcon, XIcon, AlertTriangleIcon } from '../../components/Icons'
 import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import { createOrderSheet, setOrderSheetItems, getAllOrderSheets, getOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
@@ -472,9 +472,14 @@ export default function OrderSheetCreate() {
     if (error) {
         return (
             <div className="order-sheet-create">
-                <div className="error-state">
-                    <p>❌ {error}</p>
-                    <button className="btn btn-primary" onClick={loadData}>
+                <div className="error-state text-center p-20">
+                    <p>
+                        <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                            <AlertTriangleIcon size={24} color="#ef4444" />
+                        </span>
+                        {error}
+                    </p>
+                    <button className="btn btn-primary mt-4" onClick={() => window.location.reload()}>
                         다시 시도
                     </button>
                 </div>

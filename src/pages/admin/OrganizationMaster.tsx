@@ -6,7 +6,7 @@ import {
     deleteCustomer as deleteCustomerFirebase,
     type FirestoreCustomer
 } from '../../lib/customerService'
-import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon, KakaoIcon } from '../../components/Icons'
+import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon, KakaoIcon, AlertTriangleIcon } from '../../components/Icons'
 import { sendInviteMessage } from '../../lib/kakaoService'
 import './OrganizationMaster.css'
 
@@ -135,7 +135,7 @@ export default function OrganizationMaster() {
                     isActive: formData.isActive,
                     isKeyAccount: formData.isKeyAccount,
                 })
-                alert('✅ 거래처 정보가 수정되었습니다.')
+                alert('거래처 정보가 수정되었습니다.')
             } else {
                 // 신규 등록 - Firebase에 직접
                 await createCustomer({
@@ -158,7 +158,7 @@ export default function OrganizationMaster() {
                     isKeyAccount: formData.isKeyAccount ?? false,
                     status: 'PENDING',
                 })
-                alert('✅ 새 거래처가 등록되었습니다. 초대장을 발송할 수 있습니다.')
+                alert('새 거래처가 등록되었습니다. 초대장을 발송할 수 있습니다.')
             }
 
             await loadCustomers()
@@ -180,7 +180,7 @@ export default function OrganizationMaster() {
             const inviteUrl = `${window.location.origin}/invite/${token}`
             await navigator.clipboard.writeText(inviteUrl)
             await loadCustomers()
-            alert(`✅ 초대 링크가 복사되었습니다!\n고객님께 전달해주세요.\n\n${inviteUrl}`)
+            alert(`초대 링크가 복사되었습니다!\n고객님께 전달해주세요.\n\n${inviteUrl}`)
         } catch (err) {
             console.error('Failed to generate invite:', err)
             alert('초대장 생성에 실패했습니다.')
@@ -245,7 +245,12 @@ export default function OrganizationMaster() {
         return (
             <div className="organization-master">
                 <div className="error-state">
-                    <p>❌ {error}</p>
+                    <p>
+                        <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                            <AlertTriangleIcon size={24} color="#ef4444" />
+                        </span>
+                        {error}
+                    </p>
                     <button className="btn btn-primary" onClick={loadCustomers}>
                         다시 시도
                     </button>

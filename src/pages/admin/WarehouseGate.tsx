@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { getAllSalesOrders, getAllShipments, updateShipment, type FirestoreSalesOrder, type FirestoreShipment } from '../../lib/orderService'
-import { FilesIcon } from '../../components/Icons'
+import { FilesIcon, AlertTriangleIcon, FileTextIcon } from '../../components/Icons'
 import type { GateStage } from '../../types'
 
 interface GateItem {
@@ -199,7 +199,12 @@ export default function WarehouseGate() {
         return (
             <div className="page-container">
                 <div className="glass-card p-12 text-center">
-                    <p className="text-danger mb-4">❌ {error}</p>
+                    <p className="text-danger mb-4">
+                        <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                            <AlertTriangleIcon size={24} color="#ef4444" />
+                        </span>
+                        {error}
+                    </p>
                     <button className="btn btn-primary" onClick={loadData}>
                         다시 시도
                     </button>
@@ -268,7 +273,7 @@ export default function WarehouseGate() {
                                 <span>체크리스트</span>
                             </div>
                             <div className="progress-item">
-                                <span className={item.signatureCompleted ? 'done' : 'pending'}>✍️</span>
+                                <span className={item.signatureCompleted ? 'done' : 'pending'}><FileTextIcon size={16} /></span>
                                 <span>서명</span>
                             </div>
                         </div>

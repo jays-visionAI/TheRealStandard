@@ -10,7 +10,7 @@ import {
 } from '../../lib/orderService'
 import { getAllVehicleTypes, type FirestoreVehicleType } from '../../lib/vehicleService'
 
-import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon, KakaoIcon, XIcon } from '../../components/Icons'
+import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon, KakaoIcon, XIcon, AlertTriangleIcon } from '../../components/Icons'
 import { sendOrderMessage } from '../../lib/kakaoService'
 import ShippingCard from '../../components/ShippingCard'
 import './SalesOrderList.css'
@@ -210,7 +210,12 @@ export default function SalesOrderList() {
         return (
             <div className="page-container">
                 <div className="error-state">
-                    <p>❌ {error}</p>
+                    <p>
+                        <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                            <AlertTriangleIcon size={24} color="#ef4444" />
+                        </span>
+                        {error}
+                    </p>
                     <button className="btn btn-primary" onClick={loadData}>
                         다시 시도
                     </button>

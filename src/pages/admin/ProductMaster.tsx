@@ -7,6 +7,7 @@ import {
     deleteProduct as deleteProductFirebase,
     type FirestoreProduct
 } from '../../lib/productService'
+import { AlertTriangleIcon } from '../../components/Icons'
 import './ProductMaster.css'
 
 // Product 타입 정의 (Firebase 타입에서 파생)
@@ -191,11 +192,11 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
             if (editingProduct) {
                 // 수정
                 await updateProductFirebase(editingProduct.id, cleanData)
-                alert('✅ 상품이 수정되었습니다.')
+                alert('상품이 수정되었습니다.')
             } else {
                 // 신규 생성
                 await createProduct(cleanData)
-                alert('✅ 상품이 추가되었습니다.')
+                alert('상품이 추가되었습니다.')
             }
 
             // 목록 새로고침
@@ -237,7 +238,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
             }
 
             if (updateCount > 0) {
-                alert(`✅ ${updateCount}개의 상품 정보가 일괄 업데이트되었습니다.`)
+                alert(`${updateCount}개의 상품 정보가 일괄 업데이트되었습니다.`)
                 await loadProducts()
             }
             setShowBulkModal(false)
@@ -306,7 +307,12 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
         return (
             <div className="product-master">
                 <div className="error-state">
-                    <p>❌ {error}</p>
+                    <p>
+                        <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                            <AlertTriangleIcon size={24} color="#ef4444" />
+                        </span>
+                        {error}
+                    </p>
                     <button className="btn btn-primary" onClick={loadProducts}>
                         다시 시도
                     </button>

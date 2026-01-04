@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { XIcon } from '../../components/Icons'
+import { XIcon, AlertTriangleIcon } from '../../components/Icons'
 import {
     getOrderSheetById,
     getOrderSheetItems,
@@ -168,7 +168,14 @@ export default function OrderReview() {
     }
 
     if (loading) return <div className="p-8 text-center text-white">불러오는 중...</div>
-    if (error) return <div className="p-8 text-center text-white">❌ {error}</div>
+    if (error) return (
+        <div className="p-8 text-center text-white">
+            <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                <AlertTriangleIcon size={24} color="#ef4444" />
+            </span>
+            {error}
+        </div>
+    )
     if (!orderSheet) return <div className="p-8 text-center text-white">발주서를 찾을 수 없습니다.</div>
 
     return (

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { PlusIcon, SearchIcon, FileTextIcon, PencilIcon, TrashIcon, EyeIcon } from '../../components/Icons'
+import { PlusIcon, SearchIcon, FileTextIcon, PencilIcon, TrashIcon, EyeIcon, AlertTriangleIcon } from '../../components/Icons'
 import {
     getAllOrderSheets,
     deleteOrderSheet as deleteOrderSheetFirebase,
@@ -126,7 +126,12 @@ export default function OrderSheetList() {
         return (
             <div className="page-container">
                 <div className="error-state">
-                    <p>❌ {error}</p>
+                    <p>
+                        <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                            <AlertTriangleIcon size={24} color="#ef4444" />
+                        </span>
+                        {error}
+                    </p>
                     <button className="btn btn-primary" onClick={loadOrderSheets}>
                         다시 시도
                     </button>

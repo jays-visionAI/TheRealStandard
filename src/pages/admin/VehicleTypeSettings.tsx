@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { TrashIcon, PlusIcon, EditIcon, CheckIcon, XIcon, CarIcon, AlertTriangleIcon } from '../../components/Icons'
 import {
     getAllVehicleTypes,
     createVehicleType,
@@ -123,7 +124,12 @@ export default function VehicleTypeSettings() {
         return (
             <div className="page-container">
                 <div className="error-state">
-                    <p>❌ {error}</p>
+                    <p>
+                        <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                            <AlertTriangleIcon size={24} color="#ef4444" />
+                        </span>
+                        {error}
+                    </p>
                     <button className="btn btn-primary" onClick={loadVehicleTypes}>
                         다시 시도
                     </button>

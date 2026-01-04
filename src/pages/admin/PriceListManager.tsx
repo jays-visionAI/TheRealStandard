@@ -7,7 +7,10 @@ import {
     EyeIcon,
     XIcon,
     FileTextIcon,
-    TrashIcon
+    TrashIcon,
+    ClipboardListIcon,
+    CheckCircleIcon,
+    AlertTriangleIcon
 } from '../../components/Icons'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import {
@@ -31,7 +34,7 @@ export default function PriceListManager() {
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
 
-    // Form state for creating
+    // Form state for creating/editing
     const [title, setTitle] = useState('')
     const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set())
     const [supplyPrices, setSupplyPrices] = useState<Record<string, number>>({})
@@ -94,7 +97,7 @@ export default function PriceListManager() {
             newPrices[item.productId] = item.supplyPrice
         })
 
-        // Add wholesale price for other products not in the list (just in case)
+        // Add default prices for other products not in the list (just in case)
         products.forEach(p => {
             if (!newPrices[p.id]) {
                 newPrices[p.id] = p.wholesalePrice
@@ -151,13 +154,13 @@ export default function PriceListManager() {
                     title,
                     items
                 })
-                alert('✅ 단가표가 수정되었습니다.')
+                alert('단가표가 수정되었습니다.')
             } else {
                 await createPriceList({
                     title,
                     items
                 })
-                alert('✅ 단가표가 생성되었습니다.')
+                alert('단가표가 생성되었습니다.')
             }
 
             setShowCreateModal(false)
@@ -192,7 +195,12 @@ export default function PriceListManager() {
 
     if (error) return (
         <div className="p-20 text-center text-error">
-            <p className="mb-4">❌ {error}</p>
+            <p className="mb-4">
+                <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                    <AlertTriangleIcon size={24} color="#ef4444" />
+                </span>
+                {error}
+            </p>
             <button className="btn btn-primary" onClick={loadData}>다시 시도</button>
         </div>
     )
@@ -201,7 +209,10 @@ export default function PriceListManager() {
         <div className="product-master">
             <header className="page-header">
                 <div className="header-left">
-                    <h2>📋 단가표 관리</h2>
+                    <h2>
+                        <ClipboardListIcon size={24} color="var(--color-primary)" className="mr-2" />
+                        단가표 관리
+                    </h2>
                     <p className="description">고객사별 맞춤 공급가를 관리하는 단가표 리스트입니다.</p>
                 </div>
                 <div className="header-actions">
@@ -273,7 +284,7 @@ export default function PriceListManager() {
                 )}
             </div>
 
-            {/* Create Modal */}
+            {/* Create / Edit Modal */}
             {showCreateModal && (
                 <div className="modal-backdrop" onClick={() => setShowCreateModal(false)}>
                     <div className="modal product-modal" style={{ maxWidth: '1000px', width: '92vw' }} onClick={e => e.stopPropagation()}>
@@ -294,7 +305,7 @@ export default function PriceListManager() {
                                         autoFocus
                                     />
                                     <p className="description" style={{ marginTop: '8px', fontSize: '13px' }}>
-                                        단가표를 구분할 수 있는 이름을 입력하세요. (생성일: {new Date().toLocaleDateString('ko-KR')})
+                                        단가표를 구분할 수 있는 이름을 입력하세요.
                                     </p>
                                 </div>
                             </div>
@@ -323,9 +334,9 @@ export default function PriceListManager() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {products.map((p, pIdx) => {
+                                        {products.map((p) => {
                                             const isSelected = selectedProductIds.has(p.id)
-                                            const sPrice = supplyPrices[p.id]
+                                            const sPrice = supplyPrices[p.id] || 0
                                             const isBelowCost = isSelected && sPrice < p.costPrice
                                             const diff = sPrice - p.costPrice
 
@@ -335,16 +346,7 @@ export default function PriceListManager() {
                                                         <input
                                                             type="checkbox"
                                                             checked={isSelected}
-                                                            onChange={() => {
-                                                                toggleProductSelection(p.id)
-                                                                // Focus the input if selecting
-                                                                if (!isSelected) {
-                                                                    setTimeout(() => {
-                                                                        const input = document.getElementById(`supply-${p.id}`)
-                                                                        if (input) input.focus()
-                                                                    }, 50)
-                                                                }
-                                                            }}
+                                                            onChange={() => toggleProductSelection(p.id)}
                                                         />
                                                     </td>
                                                     <td className="name-col">
@@ -357,9 +359,7 @@ export default function PriceListManager() {
                                                     <td className="price-col text-muted">₩{formatCurrency(p.wholesalePrice)}</td>
                                                     <td className="price-col">
                                                         <div className="supply-input-wrapper">
-                                                            <span className="currency-prefix">₩</span>
                                                             <input
-                                                                id={`supply-${p.id}`}
                                                                 type="number"
                                                                 className={`cell-edit-input ${isBelowCost ? 'is-danger' : isSelected ? 'is-active' : ''}`}
                                                                 value={sPrice}
@@ -407,7 +407,10 @@ export default function PriceListManager() {
                     <div className="modal product-modal" style={{ maxWidth: '1000px', width: '90vw' }} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <div>
-                                <h3>📜 단가표 상세: {selectedList.title}</h3>
+                                <h3>
+                                    <FileTextIcon size={20} color="var(--color-primary)" className="mr-2" />
+                                    단가표 상세: {selectedList.title}
+                                </h3>
                                 <p className="text-sm text-secondary">생성일: {selectedList.createdAt?.toDate?.()?.toLocaleDateString()}</p>
                             </div>
                             <button className="btn btn-ghost" onClick={() => setShowDetailModal(false)}>✕</button>
@@ -488,11 +491,6 @@ export default function PriceListManager() {
                     flex-direction: column;
                     align-items: flex-end;
                     gap: 4px;
-                }
-                .currency-prefix {
-                    font-size: 11px;
-                    color: var(--text-muted);
-                    margin-right: 4px;
                 }
                 
                 .cell-edit-input {
