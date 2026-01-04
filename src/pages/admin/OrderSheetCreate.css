@@ -267,6 +267,12 @@
     width: 120px;
 }
 
+.order-table .col-weight {
+    width: 120px;
+    text-align: right;
+    font-family: var(--font-mono);
+}
+
 .order-table .col-action {
     width: 50px;
     text-align: center;
@@ -296,7 +302,20 @@
 }
 
 .qty-input {
-    text-align: center;
+    text-align: right;
+}
+
+.qty-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.qty-unit {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    min-width: 30px;
+    text-align: left;
 }
 
 /* Product Input Wrapper */

@@ -27,9 +27,11 @@ export default function ProductMaster() {
     const [searchQuery, setSearchQuery] = useState('')
     const [categoryFilter, setCategoryFilter] = useState<string>('all')
     const [showModal, setShowModal] = useState(false)
+    const [showBulkModal, setShowBulkModal] = useState(false)
     const [editingProduct, setEditingProduct] = useState<Product | null>(null)
     const [showInactive, setShowInactive] = useState(false)
     const [saving, setSaving] = useState(false)
+    const [bulkRows, setBulkRows] = useState<Record<string, number | null | undefined>>({})
 
     // 폼 상태
     const [formData, setFormData] = useState<Partial<Product>>({
@@ -139,44 +141,76 @@ export default function ProductMaster() {
         try {
             setSaving(true)
 
+            // 데이터 정제 (undefined 방지)
+            const cleanData = {
+                name: formData.name,
+                category: formData.category as '냉장' | '냉동' | '부산물',
+                unit: formData.unit as 'kg' | 'box',
+                boxWeight: formData.boxWeight || null, // undefined 대신 null 사용
+                taxFree: !!formData.taxFree,
+                costPrice: Number(formData.costPrice) || 0,
+                wholesalePrice: Number(formData.wholesalePrice) || 0,
+                retailPrice: Number(formData.retailPrice) || 0,
+                isActive: formData.isActive !== false,
+                memo: formData.memo || '',
+            }
+
             if (editingProduct) {
                 // 수정
-                await updateProductFirebase(editingProduct.id, {
-                    name: formData.name,
-                    category: formData.category,
-                    unit: formData.unit,
-                    boxWeight: formData.boxWeight,
-                    taxFree: formData.taxFree,
-                    costPrice: formData.costPrice,
-                    wholesalePrice: formData.wholesalePrice,
-                    retailPrice: formData.retailPrice,
-                    isActive: formData.isActive,
-                    memo: formData.memo,
-                })
+                await updateProductFirebase(editingProduct.id, cleanData)
                 alert('✅ 상품이 수정되었습니다.')
             } else {
                 // 신규 생성
-                await createProduct({
-                    name: formData.name || '',
-                    category: formData.category as '냉장' | '냉동' | '부산물',
-                    unit: formData.unit as 'kg' | 'box',
-                    boxWeight: formData.boxWeight,
-                    taxFree: formData.taxFree ?? true,
-                    costPrice: formData.costPrice || 0,
-                    wholesalePrice: formData.wholesalePrice || 0,
-                    retailPrice: formData.retailPrice || 0,
-                    isActive: formData.isActive ?? true,
-                    memo: formData.memo,
-                })
+                await createProduct(cleanData)
                 alert('✅ 상품이 추가되었습니다.')
             }
 
             // 목록 새로고침
             await loadProducts()
             closeModal()
-        } catch (err) {
-            console.error('Save failed:', err)
-            alert('저장에 실패했습니다. 다시 시도해주세요.')
+        } catch (err: any) {
+            console.error('Save failed details:', err)
+            alert(`저장에 실패했습니다. (${err.message || '알 수 없는 오류'})\n다시 시도해주세요.`)
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    // 일괄 수정 열기
+    const openBulkModal = () => {
+        const initialBulkData: Record<string, number | null | undefined> = {}
+        products.forEach(p => {
+            initialBulkData[p.id] = p.boxWeight
+        })
+        setBulkRows(initialBulkData)
+        setShowBulkModal(true)
+    }
+
+    // 일괄 수정 저장
+    const handleBulkSave = async () => {
+        try {
+            setSaving(true)
+            let updateCount = 0
+
+            // 변경된 항목만 추출하여 업데이트
+            for (const product of products) {
+                const newValue = bulkRows[product.id]
+                if (newValue !== product.boxWeight) {
+                    await updateProductFirebase(product.id, {
+                        boxWeight: newValue || null
+                    })
+                    updateCount++
+                }
+            }
+
+            if (updateCount > 0) {
+                alert(`✅ ${updateCount}개의 상품 정보가 일괄 업데이트되었습니다.`)
+                await loadProducts()
+            }
+            setShowBulkModal(false)
+        } catch (err: any) {
+            console.error('Bulk save failed:', err)
+            alert(`일괄 저장 중 오류가 발생했습니다: ${err.message}`)
         } finally {
             setSaving(false)
         }
@@ -256,9 +290,14 @@ export default function ProductMaster() {
                     <h1><PackageIcon size={24} /> 상품 마스터</h1>
                     <p className="text-secondary">상품 정보 및 가격 관리</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => openModal()}>
-                    + 상품 추가
-                </button>
+                <div className="header-actions">
+                    <button className="btn btn-secondary" onClick={openBulkModal}>
+                        <FileTextIcon size={18} /> 일괄 수정
+                    </button>
+                    <button className="btn btn-primary" onClick={() => openModal()}>
+                        + 상품 추가
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}
@@ -325,6 +364,7 @@ export default function ProductMaster() {
                             <th>품목명</th>
                             <th>카테고리</th>
                             <th>단위</th>
+                            <th>예상중량/Box</th>
                             <th className="price-col">매입가</th>
                             <th className="price-col">도매가(B2B)</th>
                             <th className="price-col">소매가(직판)</th>
@@ -345,6 +385,7 @@ export default function ProductMaster() {
                                     </span>
                                 </td>
                                 <td>{product.unit.toUpperCase()}</td>
+                                <td>{product.boxWeight ? `${product.boxWeight} kg` : '-'}</td>
                                 <td className="price-col">₩{formatCurrency(product.costPrice)}</td>
                                 <td className="price-col">₩{formatCurrency(product.wholesalePrice)}</td>
                                 <td className="price-col">₩{formatCurrency(product.retailPrice)}</td>
@@ -452,18 +493,17 @@ export default function ProductMaster() {
                                         </select>
                                     </div>
 
-                                    {formData.unit === 'box' && (
-                                        <div className="form-group">
-                                            <label className="label">박스당 중량 (kg)</label>
-                                            <input
-                                                type="number"
-                                                className="input"
-                                                value={formData.boxWeight || ''}
-                                                onChange={(e) => setFormData({ ...formData, boxWeight: parseFloat(e.target.value) || undefined })}
-                                                placeholder="20"
-                                            />
-                                        </div>
-                                    )}
+                                    <div className="form-group">
+                                        <label className="label">예상중량/Box (kg)</label>
+                                        <input
+                                            type="number"
+                                            className="input"
+                                            value={formData.boxWeight || ''}
+                                            onChange={(e) => setFormData({ ...formData, boxWeight: parseFloat(e.target.value) || undefined })}
+                                            placeholder="예: 20"
+                                        />
+                                        <span className="help-text">단위가 BOX일 경우 환산 기준으로 사용됩니다.</span>
+                                    </div>
 
                                     <div className="form-group">
                                         <label className="checkbox-label">
@@ -559,6 +599,64 @@ export default function ProductMaster() {
                             </button>
                             <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
                                 {saving ? '저장 중...' : (editingProduct ? '수정 완료' : '상품 추가')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Edit Modal */}
+            {showBulkModal && (
+                <div className="modal-backdrop" onClick={() => setShowBulkModal(false)}>
+                    <div className="modal bulk-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>📦 예상중량 일괄 수정</h3>
+                            <button className="btn btn-ghost" onClick={() => setShowBulkModal(false)}>✕</button>
+                        </div>
+                        <div className="modal-body">
+                            <p className="bulk-guide">모든 품목의 예상중량(kg/Box)을 한 화면에서 빠르게 수정할 수 있습니다.</p>
+                            <div className="bulk-table-container">
+                                <table className="bulk-table">
+                                    <thead>
+                                        <tr>
+                                            <th>카테고리</th>
+                                            <th>품목명</th>
+                                            <th>현재 단위</th>
+                                            <th>예상중량 (kg/Box)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {products.map(p => (
+                                            <tr key={p.id}>
+                                                <td>
+                                                    <span className={`category-badge ${p.category}`}>{p.category}</span>
+                                                </td>
+                                                <td><strong>{p.name}</strong></td>
+                                                <td>{p.unit.toUpperCase()}</td>
+                                                <td>
+                                                    <input
+                                                        type="number"
+                                                        className="input input-sm"
+                                                        value={bulkRows[p.id] ?? ''}
+                                                        onChange={(e) => setBulkRows({
+                                                            ...bulkRows,
+                                                            [p.id]: parseFloat(e.target.value) || undefined
+                                                        })}
+                                                        placeholder="예: 20"
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowBulkModal(false)} disabled={saving}>
+                                취소
+                            </button>
+                            <button className="btn btn-primary" onClick={handleBulkSave} disabled={saving}>
+                                {saving ? '저장 중...' : '전체 저장 (변경된 항목만)'}
                             </button>
                         </div>
                     </div>

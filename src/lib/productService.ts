@@ -11,7 +11,7 @@ export interface FirestoreProduct {
     category: '냉장' | '냉동' | '부산물'
     subCategory?: string
     unit: 'kg' | 'box'
-    boxWeight?: number
+    boxWeight?: number | null
     taxFree: boolean
     costPrice: number
     wholesalePrice: number

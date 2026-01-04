@@ -31,7 +31,7 @@ export interface Product {
     category: ProductCategory;
     subCategory?: string;
     unitType: UnitType;
-    boxToKg?: number;        // BOX→KG 환산 기준
+    boxWeight?: number | null;      // BOX→KG 환산 기준
     tempZone: TempZone;
     taxFree: boolean;        // 면세 여부
 

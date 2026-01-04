@@ -106,6 +106,9 @@ export default function ProductCatalog() {
                             <div className="middle">
                                 <p className="product-memo">{product.memo || '-'}</p>
                                 <p className="product-unit">판매단위: {product.unit.toUpperCase()}</p>
+                                {product.boxWeight && (
+                                    <p className="product-box">📦 중량: {product.boxWeight}kg/Box (예상)</p>
+                                )}
                             </div>
                             <div className="bottom">
                                 <div className="price-info">

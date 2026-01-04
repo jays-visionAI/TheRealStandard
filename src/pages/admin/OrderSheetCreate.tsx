@@ -577,7 +577,8 @@ export default function OrderSheetCreate() {
                                             <th className="col-no">No</th>
                                             <th className="col-product">품목</th>
                                             <th className="col-price">단가(원/kg)</th>
-                                            <th className="col-qty">수량(kg)</th>
+                                            <th className="col-qty">수량</th>
+                                            <th className="col-weight">예상중량(kg)</th>
                                             <th className="col-amount">금액(원)</th>
                                             <th className="col-action"></th>
                                         </tr>
@@ -640,16 +641,24 @@ export default function OrderSheetCreate() {
                                                     {row.unitPrice > 0 ? `₩${formatCurrency(row.unitPrice)}` : '-'}
                                                 </td>
                                                 <td className="col-qty">
-                                                    <input
-                                                        ref={el => { if (el) inputRefs.current.set(`qty-${row.id}`, el) }}
-                                                        type="number"
-                                                        className="cell-input qty-input"
-                                                        value={row.quantity || ''}
-                                                        onChange={(e) => updateQuantity(row.id, parseFloat(e.target.value) || 0)}
-                                                        onKeyDown={(e) => handleKeyDown(e, row.id, 'qty')}
-                                                        placeholder="0"
-                                                        disabled={!row.productId}
-                                                    />
+                                                    <div className="qty-input-wrapper">
+                                                        <input
+                                                            ref={el => { if (el) inputRefs.current.set(`qty-${row.id}`, el) }}
+                                                            type="number"
+                                                            className="cell-input qty-input"
+                                                            value={row.quantity || ''}
+                                                            onChange={(e) => updateQuantity(row.id, parseFloat(e.target.value) || 0)}
+                                                            onKeyDown={(e) => handleKeyDown(e, row.id, 'qty')}
+                                                            placeholder="0"
+                                                            disabled={!row.productId}
+                                                        />
+                                                        {row.productId && (
+                                                            <span className="qty-unit">{row.unit.toUpperCase()}</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="col-weight">
+                                                    {row.estimatedWeight > 0 ? formatCurrency(row.estimatedWeight) : '-'}
                                                 </td>
                                                 <td className="col-amount">
                                                     {row.totalAmount > 0 ? `₩${formatCurrency(row.totalAmount)}` : '-'}
@@ -664,13 +673,14 @@ export default function OrderSheetCreate() {
                                     </tbody>
                                     <tfoot>
                                         <tr className="add-row-tr">
-                                            <td colSpan={6}>
+                                            <td colSpan={7}>
                                                 <button className="add-row-btn" onClick={addRow}>+ 품목 추가</button>
                                             </td>
                                         </tr>
                                         <tr className="total-row">
-                                            <td colSpan={3} className="total-label">합계</td>
-                                            <td className="total-qty">{formatCurrency(totalWeight)} kg</td>
+                                            <td className="total-label" colSpan={3}>합계</td>
+                                            <td className="total-qty">{totalItems} 품목</td>
+                                            <td className="total-weight">{formatCurrency(totalWeight)} kg</td>
                                             <td className="total-amount">₩{formatCurrency(totalAmount)}</td>
                                             <td></td>
                                         </tr>
