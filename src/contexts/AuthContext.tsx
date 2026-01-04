@@ -25,9 +25,9 @@ interface AuthContextType {
     user: User | null
     firebaseUser: FirebaseUser | null
     loading: boolean
-    login: (email: string, password: string) => Promise<void>
-    loginWithKakao: (kakaoUser: any) => Promise<void>
-    loginWithGoogle: () => Promise<void>
+    login: (email: string, password: string) => Promise<User>
+    loginWithKakao: (kakaoUser: any) => Promise<User>
+    loginWithGoogle: () => Promise<User>
     logout: () => Promise<void>
     isAdmin: boolean
     isCustomer: boolean
@@ -132,6 +132,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Firebase Auth로 로그인
             await signInWithEmailAndPassword(auth, email, password)
             console.log('Login successful')
+            const updatedUser = await getUserByEmail(email)
+            if (!updatedUser) throw new Error('사용자 정보를 찾을 수 없습니다.')
+            return {
+                id: updatedUser.id,
+                email: updatedUser.email,
+                name: updatedUser.name,
+                role: updatedUser.role,
+                orgId: updatedUser.orgId,
+                avatar: updatedUser.avatar,
+            }
         } catch (error: any) {
             console.error('Firebase Login Error Object:', error)
 
@@ -198,6 +208,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 throw error
             }
         }
+        const updatedUser = await getUserByEmail(email)
+        if (!updatedUser) throw new Error('사용자 정보를 찾을 수 없습니다.')
+        return {
+            id: updatedUser.id,
+            email: updatedUser.email,
+            name: updatedUser.name,
+            role: updatedUser.role,
+            orgId: updatedUser.orgId,
+        }
     }
 
     const loginWithGoogle = async () => {
@@ -218,6 +237,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     role: 'CUSTOMER',
                     status: 'ACTIVE',
                 })
+            }
+
+            const updatedUser = await getUserByEmail(googleUser.email)
+            if (!updatedUser) throw new Error('사용자 정보를 찾을 수 없습니다.')
+            return {
+                id: updatedUser.id,
+                email: updatedUser.email,
+                name: updatedUser.name,
+                role: updatedUser.role,
+                orgId: updatedUser.orgId,
             }
         } catch (error: any) {
             console.warn('Google Popup Login failed, checking for popup-blocked error:', error)

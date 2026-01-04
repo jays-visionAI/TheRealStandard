@@ -6,23 +6,32 @@ import {
     PackageIcon,
     SearchIcon,
     CheckIcon,
-    KakaoIcon
+    KakaoIcon,
+    LogOutIcon
 } from '../components/Icons'
 import { LogoSmall, Logo } from '../components/Logo'
 import { useAuth } from '../contexts/AuthContext'
 import { kakaoLogin } from '../lib/kakaoService'
+import { getDefaultPathForRole } from '../components/ProtectedRoute'
 import './LandingPage.css'
 
 export default function LandingPage() {
     const navigate = useNavigate()
-    const { user, loginWithKakao } = useAuth()
+    const { user, loading, logout, loginWithKakao } = useAuth()
+
+    const handleLogout = async () => {
+        if (confirm('로그아웃 하시겠습니까?')) {
+            await logout()
+            window.location.reload()
+        }
+    }
 
     const handleKakaoLogin = async () => {
         console.log('Kakao Login button clicked')
         try {
             const result = await kakaoLogin()
-            await loginWithKakao(result.user)
-            navigate('/order/dashboard')
+            const loggedInUser = await loginWithKakao(result.user)
+            navigate(getDefaultPathForRole(loggedInUser.role))
         } catch (error) {
             console.error('Kakao login failed:', error)
             alert('카카오 로그인에 실패했습니다. 다시 시도해 주세요.')
@@ -54,17 +63,28 @@ export default function LandingPage() {
                             <li><a href="#technology" onClick={(e) => { e.preventDefault(); scrollToSection('technology') }}>Technology</a></li>
                         </ul>
                     </nav>
-                    <div className="flex gap-4 items-center">
-                        {user ? (
-                            <button className="btn btn-primary" onClick={() => navigate('/order/dashboard')}>Dashboard</button>
-                        ) : (
-                            <>
-                                <button className="btn btn-secondary" onClick={handleNavigateLogin}>Login</button>
-                                <button className="btn btn-kakao flex items-center gap-2" onClick={handleKakaoLogin}>
-                                    <KakaoIcon size={18} /> 카카오 로그인
-                                </button>
-                            </>
+                    <div className="flex gap-4 items-center min-w-[300px] justify-end">
+                        {!loading && (
+                            user ? (
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm text-slate-500 font-medium hidden md:inline">
+                                        {user.name} ({user.role})
+                                    </span>
+                                    <button className="btn btn-secondary flex items-center gap-2" onClick={handleLogout}>
+                                        <LogOutIcon size={16} /> Logout
+                                    </button>
+                                    <button className="btn btn-primary" onClick={() => navigate(getDefaultPathForRole(user.role))}>Dashboard</button>
+                                </div>
+                            ) : (
+                                <>
+                                    <button className="btn btn-secondary" onClick={handleNavigateLogin}>Login</button>
+                                    <button className="btn btn-kakao flex items-center gap-2" onClick={handleKakaoLogin}>
+                                        <KakaoIcon size={18} /> 카카오 로그인
+                                    </button>
+                                </>
+                            )
                         )}
+                        {loading && <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin"></div>}
                     </div>
                 </div>
             </header>
@@ -88,12 +108,19 @@ export default function LandingPage() {
                         <div className="hero-cta-group flex-wrap">
                             <button className="btn btn-accent h-12 px-8 text-lg" onClick={() => scrollToSection('contact')}>도입 문의하기</button>
                             <button className="btn btn-secondary h-12 px-8 text-lg" onClick={() => scrollToSection('technology')}>기술 로드맵</button>
-                            {user ? (
-                                <button className="btn btn-primary h-12 px-8 text-lg" onClick={() => navigate('/order/dashboard')}>대시보드로 이동</button>
-                            ) : (
-                                <button className="btn btn-kakao h-12 px-8 text-lg flex items-center gap-2 justify-center" onClick={handleKakaoLogin}>
-                                    <KakaoIcon size={20} /> 카카오로 시작하기
-                                </button>
+                            {!loading && (
+                                user ? (
+                                    <div className="flex gap-4 w-full md:w-auto">
+                                        <button className="btn btn-primary h-12 px-8 text-lg flex-1 md:flex-none" onClick={() => navigate(getDefaultPathForRole(user.role))}>대시보드로 이동</button>
+                                        <button className="btn btn-secondary h-12 px-8 text-lg flex-1 md:flex-none flex items-center gap-2" onClick={handleLogout}>
+                                            <LogOutIcon size={20} /> 로그아웃
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button className="btn btn-kakao h-12 px-8 text-lg flex items-center gap-2 justify-center" onClick={handleKakaoLogin}>
+                                        <KakaoIcon size={20} /> 카카오로 시작하기
+                                    </button>
+                                )
                             )}
                         </div>
                     </div>

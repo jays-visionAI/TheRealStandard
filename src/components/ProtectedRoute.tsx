@@ -48,7 +48,7 @@ export function getDefaultPathForRole(role: UserRole): string {
         case 'WAREHOUSE':
             return '/warehouse'
         case 'ACCOUNTING':
-            return '/accounting'
+            return '/admin/workflow'
         case 'CUSTOMER':
             return '/order/dashboard'
         default:
@@ -71,11 +71,8 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
         )
     }
 
-    // 이미 로그인된 경우 역할에 맞는 페이지로 리다이렉트
-    if (user) {
-        const defaultPath = getDefaultPathForRole(user.role)
-        return <Navigate to={defaultPath} replace />
-    }
+    // 이미 로그인된 경우에도 로그인 페이지를 볼 수 있도록 리다이렉트 제거
+    return <>{children}</>
 
     return <>{children}</>
 }

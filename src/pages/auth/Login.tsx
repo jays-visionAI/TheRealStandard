@@ -1,45 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIcon, KakaoIcon, GoogleIcon } from '../../components/Icons'
 import { kakaoLogin } from '../../lib/kakaoService'
+import { getDefaultPathForRole } from '../../components/ProtectedRoute'
 import './Login.css'
 
-
-
 export default function Login() {
-    console.log('Login component mounted')
     const navigate = useNavigate()
-    const { user, login, loginWithKakao, loginWithGoogle, loading } = useAuth()
+    const { user, login, logout, loginWithKakao, loginWithGoogle } = useAuth()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [isLoading, setIsLoading] = useState(false)
-
-    // 이미 로그인된 상태라면 리다이렉트
-    useEffect(() => {
-        console.log('Login useEffect triggered, user:', user?.email, 'loading:', loading)
-        if (!loading && user) {
-            console.log('User detected, redirecting to appropriate dashboard')
-            switch (user.role) {
-                case 'ADMIN':
-                case 'OPS':
-                    navigate('/admin/workflow')
-                    break
-                case 'WAREHOUSE':
-                    navigate('/warehouse')
-                    break
-                case 'ACCOUNTING':
-                    navigate('/accounting')
-                    break
-                case 'CUSTOMER':
-                    navigate('/order/dashboard')
-                    break
-                default:
-                    navigate('/admin/workflow')
-            }
-        }
-    }, [user, loading, navigate])
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -47,8 +20,8 @@ export default function Login() {
         setIsLoading(true)
 
         try {
-            await login(email, password)
-            // useEffect가 리다이렉트를 처리함
+            const loggedInUser = await login(email, password)
+            navigate(getDefaultPathForRole(loggedInUser.role))
         } catch (err: any) {
             console.error(err)
             setError(err.message || '로그인 중 오류가 발생했습니다.')
@@ -61,8 +34,8 @@ export default function Login() {
         setIsLoading(true)
         try {
             const result = await kakaoLogin()
-            await loginWithKakao(result.user)
-            // useEffect가 리다이렉트를 처리함
+            const loggedInUser = await loginWithKakao(result.user)
+            navigate(getDefaultPathForRole(loggedInUser.role))
         } catch (err) {
             console.error(err)
             setError('카카오 로그인에 실패했습니다.')
@@ -74,8 +47,8 @@ export default function Login() {
         setError('')
         setIsLoading(true)
         try {
-            await loginWithGoogle()
-            // useEffect가 리다이렉트를 처리함
+            const loggedInUser = await loginWithGoogle()
+            navigate(getDefaultPathForRole(loggedInUser.role))
         } catch (err: any) {
             console.error(err)
             setError(err.message || '구글 로그인에 실패했습니다.')
@@ -89,8 +62,8 @@ export default function Login() {
         setEmail(userEmail)
         setPassword(userPass)
         try {
-            await login(userEmail, userPass)
-            // Redirect handled by useEffect
+            const loggedInUser = await login(userEmail, userPass)
+            navigate(getDefaultPathForRole(loggedInUser.role))
         } catch (err: any) {
             console.error(err)
             setError(err.message || '빠른 로그인 중 오류가 발생했습니다.')
@@ -98,10 +71,16 @@ export default function Login() {
         }
     }
 
+    const handleLogout = async () => {
+        if (confirm('로그아웃 하시겠습니까?')) {
+            await logout()
+            window.location.reload()
+        }
+    }
+
     return (
         <div className="login-page">
             <div className="login-container">
-                {/* Logo & Title */}
                 <div className="login-header">
                     <div className="logo">
                         <span className="logo-icon"><PackageIcon size={48} /></span>
@@ -111,7 +90,6 @@ export default function Login() {
                     <p className="tagline">Taeyoon Resource System</p>
                 </div>
 
-                {/* Login Form */}
                 <form className="login-form" onSubmit={handleLogin}>
                     <div className="form-group">
                         <label htmlFor="email">이메일</label>
@@ -174,9 +152,20 @@ export default function Login() {
                     >
                         <GoogleIcon size={20} /> Google로 시작하기
                     </button>
+
+                    {user && (
+                        <div style={{ marginTop: '20px' }}>
+                            <button
+                                type="button"
+                                className="btn btn-secondary btn-lg w-full"
+                                onClick={handleLogout}
+                            >
+                                현재 계정 로그아웃 처리
+                            </button>
+                        </div>
+                    )}
                 </form>
 
-                {/* Quick Login (Demo) */}
                 <div className="demo-section">
                     <p className="demo-label"><InfoIcon size={16} /> 데모 빠른 로그인</p>
                     <div className="demo-buttons">
@@ -207,7 +196,6 @@ export default function Login() {
                     </div>
                 </div>
 
-                {/* Footer */}
                 <div className="login-footer">
                     <p>© 2024 The Real Standard. All rights reserved.</p>
                 </div>
