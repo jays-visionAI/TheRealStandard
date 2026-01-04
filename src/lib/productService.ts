@@ -90,7 +90,8 @@ export async function seedInitialProducts(): Promise<void> {
     ]
 
     for (const p of initialProducts) {
-        await createProductWithId(p.id, p)
+        const { id, ...data } = p
+        await createProductWithId(id, data)
     }
     console.log('Initial products seeded')
 }

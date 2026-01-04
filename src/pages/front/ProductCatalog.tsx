@@ -26,7 +26,7 @@ export default function ProductCatalog() {
     const filtered = useMemo(() => {
         return products.filter(p => {
             if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
-            if (categoryFilter !== 'all' && p.category !== categoryFilter) return false
+            if (categoryFilter !== 'all' && p.category1 !== categoryFilter) return false
             return true
         })
     }, [products, searchQuery, categoryFilter])
@@ -41,7 +41,7 @@ export default function ProductCatalog() {
             selection.push({
                 productId: product.id,
                 name: product.name,
-                category: product.category,
+                category: product.category1,
                 unit: product.unit,
                 wholesalePrice: product.wholesalePrice
             })
@@ -95,12 +95,12 @@ export default function ProductCatalog() {
                         className="product-card glass-card animate-fade-in"
                         style={{ animationDelay: `${idx * 0.05}s` }}
                     >
-                        <div className={`product-visual ${product.category}`}>
+                        <div className={`product-visual ${product.category1}`}>
                             <PackageIcon size={40} className="icon" />
                         </div>
                         <div className="product-details">
                             <div className="top">
-                                <span className={`category-tag ${product.category}`}>{product.category}</span>
+                                <span className={`category-tag ${product.category1}`}>{product.category1}</span>
                                 <h4 className="product-name">{product.name}</h4>
                             </div>
                             <div className="middle">

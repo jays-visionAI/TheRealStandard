@@ -629,7 +629,7 @@ export default function OrderSheetCreate() {
                                                                         onMouseEnter={() => setHighlightIndex(idx)}
                                                                     >
                                                                         <span className="product-name">{product.name}</span>
-                                                                        <span className="product-category">{product.category}</span>
+                                                                        <span className="product-category">{product.category1}</span>
                                                                         <span className="product-price">₩{formatCurrency(product.unitPrice)}</span>
                                                                     </div>
                                                                 ))}
