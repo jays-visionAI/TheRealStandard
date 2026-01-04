@@ -208,28 +208,34 @@ export default function PriceListManager() {
             {/* Create Modal */}
             {showCreateModal && (
                 <div className="modal-backdrop" onClick={() => setShowCreateModal(false)}>
-                    <div className="modal product-modal" style={{ maxWidth: '1000px', width: '90vw' }} onClick={e => e.stopPropagation()}>
+                    <div className="modal product-modal" style={{ maxWidth: '1000px', width: '92vw' }} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>📝 새 단가표 생성</h3>
+                            <h3><FileTextIcon size={20} /> 새 단가표 생성</h3>
                             <button className="btn btn-ghost" onClick={() => setShowCreateModal(false)}>✕</button>
                         </div>
                         <div className="modal-body">
-                            <div className="form-group mb-4">
-                                <label className="label">단가표 제목</label>
-                                <input
-                                    className="input"
-                                    placeholder="예: (주)식품유통 2024년 1월 단가표"
-                                    value={title}
-                                    onChange={e => setTitle(e.target.value)}
-                                />
-                                <span className="help-text">단가표를 구분할 수 있는 이름을 입력하세요. (생성일: {new Date().toLocaleDateString()})</span>
+                            <div className="price-list-form-header px-4 py-2">
+                                <div className="form-group mb-4">
+                                    <label className="label">단가표 제목</label>
+                                    <input
+                                        className="input"
+                                        style={{ fontSize: '1.2rem', padding: '12px 16px' }}
+                                        placeholder="단가표 제목을 입력하세요 (예: 거래처명/기간)"
+                                        value={title}
+                                        onChange={e => setTitle(e.target.value)}
+                                        autoFocus
+                                    />
+                                    <p className="description" style={{ marginTop: '8px', fontSize: '13px' }}>
+                                        단가표를 구분할 수 있는 이름을 입력하세요. (생성일: {new Date().toLocaleDateString('ko-KR')})
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="table-container" style={{ maxHeight: '500px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
-                                <table className="product-table">
-                                    <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--bg-card)' }}>
+                            <div className="table-container-scroll" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+                                <table className="product-table price-selection-table">
+                                    <thead>
                                         <tr>
-                                            <th style={{ width: '40px' }}>
+                                            <th className="checkbox-col">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedProductIds.size === products.length && products.length > 0}
@@ -242,47 +248,61 @@ export default function PriceListManager() {
                                                     }}
                                                 />
                                             </th>
-                                            <th>품목명</th>
+                                            <th className="name-col">품목명</th>
                                             <th className="price-col">매입가</th>
-                                            <th className="price-col">도매가(기준)</th>
-                                            <th className="price-col" style={{ width: '150px' }}>공급가 (수정가능)</th>
+                                            <th className="price-col">도매가 (기준)</th>
+                                            <th className="price-col">공급가 (수정가능)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {products.map(p => {
+                                        {products.map((p, pIdx) => {
                                             const isSelected = selectedProductIds.has(p.id)
-                                            const sPrice = supplyPrices[p.id] || 0
-                                            const isBelowCost = sPrice < p.costPrice
+                                            const sPrice = supplyPrices[p.id]
+                                            const isBelowCost = isSelected && sPrice < p.costPrice
                                             const diff = sPrice - p.costPrice
 
                                             return (
                                                 <tr key={p.id} className={isSelected ? 'selected-row' : ''}>
-                                                    <td>
+                                                    <td className="checkbox-col">
                                                         <input
                                                             type="checkbox"
                                                             checked={isSelected}
-                                                            onChange={() => toggleProductSelection(p.id)}
+                                                            onChange={() => {
+                                                                toggleProductSelection(p.id)
+                                                                // Focus the input if selecting
+                                                                if (!isSelected) {
+                                                                    setTimeout(() => {
+                                                                        const input = document.getElementById(`supply-${p.id}`)
+                                                                        if (input) input.focus()
+                                                                    }, 50)
+                                                                }
+                                                            }}
                                                         />
                                                     </td>
-                                                    <td>
+                                                    <td className="name-col">
                                                         <div className="name-cell">
                                                             <span className="name">{p.name}</span>
-                                                            <span className="category-badge plain">{p.category1}</span>
+                                                            <span className="category-tag">{p.category1}</span>
                                                         </div>
                                                     </td>
                                                     <td className="price-col">₩{formatCurrency(p.costPrice)}</td>
-                                                    <td className="price-col">₩{formatCurrency(p.wholesalePrice)}</td>
+                                                    <td className="price-col text-muted">₩{formatCurrency(p.wholesalePrice)}</td>
                                                     <td className="price-col">
-                                                        <div className="supply-price-input">
+                                                        <div className="supply-input-wrapper">
+                                                            <span className="currency-prefix">₩</span>
                                                             <input
+                                                                id={`supply-${p.id}`}
                                                                 type="number"
-                                                                className={`input input-sm ${isBelowCost ? 'text-danger' : ''}`}
+                                                                className={`cell-edit-input ${isBelowCost ? 'is-danger' : isSelected ? 'is-active' : ''}`}
                                                                 value={sPrice}
                                                                 onChange={e => handleSupplyPriceChange(p.id, e.target.value)}
                                                                 disabled={!isSelected}
+                                                                placeholder={p.wholesalePrice.toString()}
                                                             />
-                                                            {isBelowCost && isSelected && (
-                                                                <div className="price-diff">({formatCurrency(diff)})</div>
+                                                            {isBelowCost && (
+                                                                <div className="loss-warning">
+                                                                    손실: {formatCurrency(Math.abs(diff))}
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </td>
@@ -293,11 +313,18 @@ export default function PriceListManager() {
                                 </table>
                             </div>
                         </div>
-                        <div className="modal-footer">
-                            <span className="selected-count">선택됨: {selectedProductIds.size}개</span>
-                            <div className="actions">
-                                <button className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>취소</button>
-                                <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                        <div className="modal-footer" style={{ borderTop: '1px solid var(--border-color)', padding: '20px' }}>
+                            <div className="footer-left">
+                                <span className="selection-badge">선택됨: {selectedProductIds.size}개</span>
+                            </div>
+                            <div className="footer-actions" style={{ display: 'flex', gap: '12px' }}>
+                                <button className="btn btn-secondary" style={{ minWidth: '100px' }} onClick={() => setShowCreateModal(false)}>취소</button>
+                                <button
+                                    className="btn btn-primary"
+                                    style={{ minWidth: '140px' }}
+                                    onClick={handleSave}
+                                    disabled={saving || !title.trim() || selectedProductIds.size === 0}
+                                >
                                     {saving ? '저장 중...' : '단가표 저장하기'}
                                 </button>
                             </div>
@@ -370,18 +397,87 @@ export default function PriceListManager() {
             )}
 
             <style>{`
-                .text-danger { color: #ef4444 !important; }
-                .text-primary { color: #3b82f6 !important; }
-                .price-diff { font-size: 11px; color: #ef4444; margin-top: 2px; }
-                .selected-row { background-color: rgba(59, 130, 246, 0.05); }
-                .selected-count { font-size: 14px; color: var(--text-secondary); }
-                .name-cell { display: flex; flex-direction: column; gap: 2px; }
-                .category-badge.plain { 
+                .price-selection-table th, .price-selection-table td {
+                    padding: 12px 16px;
+                }
+                .checkbox-col { width: 40px; text-align: center; }
+                .name-col { min-width: 200px; }
+                .price-col { width: 150px; text-align: right; }
+                
+                .name-cell { display: flex; flex-direction: column; gap: 4px; }
+                .name-cell .name { font-weight: 600; color: var(--text-primary); }
+                .category-tag { 
                     font-size: 10px; 
-                    padding: 1px 4px; 
-                    background: var(--bg-card-muted);
-                    border-radius: 4px;
+                    background: var(--bg-tertiary); 
+                    color: var(--text-muted); 
+                    padding: 2px 6px; 
+                    border-radius: 4px; 
                     width: fit-content;
+                }
+
+                .supply-input-wrapper {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+                    gap: 4px;
+                }
+                .currency-prefix {
+                    font-size: 11px;
+                    color: var(--text-muted);
+                    margin-right: 4px;
+                }
+                
+                .cell-edit-input {
+                    width: 100%;
+                    max-width: 120px;
+                    padding: 8px 12px;
+                    border: 1px solid var(--border-color);
+                    border-radius: 6px;
+                    text-align: right;
+                    font-family: var(--font-mono);
+                    font-weight: 600;
+                    transition: all 0.2s;
+                    background: var(--bg-card-muted);
+                }
+
+                .cell-edit-input.is-active {
+                    background: white;
+                    border-color: var(--color-primary);
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                }
+
+                .cell-edit-input.is-danger {
+                    color: #ef4444;
+                    border-color: #fca5a5;
+                    background: #fef2f2;
+                }
+
+                .loss-warning {
+                    font-size: 11px;
+                    color: #ef4444;
+                    font-weight: 500;
+                }
+
+                .selected-row {
+                    background-color: rgba(59, 130, 246, 0.03);
+                }
+
+                .selection-badge {
+                    background: rgba(59, 130, 246, 0.1);
+                    color: var(--color-primary);
+                    padding: 6px 14px;
+                    border-radius: 20px;
+                    font-size: 14px;
+                    font-weight: 600;
+                }
+
+                .margin-positive { color: #10b981; font-weight: 600; }
+                .margin-negative { color: #ef4444; font-weight: 600; }
+                
+                .table-container-scroll {
+                    border: 1px solid var(--border-color);
+                    border-radius: 12px;
+                    margin: 0 16px;
                 }
             `}</style>
         </div>
