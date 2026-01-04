@@ -59,6 +59,7 @@ export default function OrderSheetCreate() {
 
     // Step 관리
     const [step, setStep] = useState(1)
+    const [orderUnit, setOrderUnit] = useState<'kg' | 'box'>('kg')
 
     // Step 1: 고객 선택
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
@@ -182,6 +183,30 @@ export default function OrderSheetCreate() {
         setHighlightIndex(0)
     }, [searchQuery, searchProducts])
 
+    // 주문 단위 변경 시 모든 행의 수량 계산 방식 변경
+    useEffect(() => {
+        setRows(prevRows => prevRows.map(row => {
+            if (!row.productId) return { ...row, unit: orderUnit };
+            const product = products.find(p => p.id === row.productId);
+            const weightPerBox = product?.boxWeight || 1;
+
+            let newQuantity = row.quantity;
+            if (orderUnit === 'box') {
+                // Kg -> Box 변환 (기존 예상 중량 기준)
+                newQuantity = row.estimatedWeight / weightPerBox;
+            } else {
+                // Box -> Kg 변환
+                newQuantity = row.estimatedWeight;
+            }
+
+            return {
+                ...row,
+                quantity: newQuantity,
+                unit: orderUnit
+            };
+        }));
+    }, [orderUnit, products]);
+
     // 드롭다운 외부 클릭 시 닫기
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -202,7 +227,7 @@ export default function OrderSheetCreate() {
                     productId: product.id,
                     productName: product.name,
                     unitPrice: product.unitPrice,
-                    unit: product.unit as 'kg' | 'box',
+                    unit: orderUnit,
                 }
             }
             return row
@@ -233,8 +258,8 @@ export default function OrderSheetCreate() {
                 productName: item.name,
                 unitPrice: item.supplyPrice,
                 quantity: 0,
-                unit: item.unit as 'kg' | 'box',
-                estimatedWeight: item.boxWeight || 0,
+                unit: orderUnit,
+                estimatedWeight: 0,
                 totalAmount: 0
             }
         })
@@ -262,7 +287,7 @@ export default function OrderSheetCreate() {
                     productName: item.productName,
                     unitPrice: item.unitPrice,
                     quantity: item.qtyRequested || 0,
-                    unit: item.unit as 'kg' | 'box',
+                    unit: orderUnit,
                     estimatedWeight: item.estimatedKg || 0,
                     totalAmount: item.amount || 0
                 }
@@ -284,8 +309,9 @@ export default function OrderSheetCreate() {
                 const product = products.find(p => p.id === row.productId)
                 let estimatedWeight = quantity
 
-                if (product && product.unit === 'box' && product.boxWeight) {
-                    estimatedWeight = quantity * product.boxWeight
+                if (orderUnit === 'box') {
+                    const weightPerBox = product?.boxWeight || 1
+                    estimatedWeight = quantity * weightPerBox
                 }
 
                 const totalAmount = row.unitPrice * estimatedWeight
@@ -295,6 +321,7 @@ export default function OrderSheetCreate() {
                     quantity,
                     estimatedWeight,
                     totalAmount,
+                    unit: orderUnit
                 }
             }
             return row
@@ -638,6 +665,24 @@ export default function OrderSheetCreate() {
                                 💡 품목명 입력 시 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 행으로 이동합니다.
                             </p>
 
+                            <div className="order-unit-toggle-bar">
+                                <div className="toggle-label">주문 단위 설정</div>
+                                <div className="toggle-group">
+                                    <button
+                                        className={`toggle-btn ${orderUnit === 'kg' ? 'active' : ''}`}
+                                        onClick={() => setOrderUnit('kg')}
+                                    >
+                                        Kg 단위 주문
+                                    </button>
+                                    <button
+                                        className={`toggle-btn ${orderUnit === 'box' ? 'active' : ''}`}
+                                        onClick={() => setOrderUnit('box')}
+                                    >
+                                        박스 단위 주문
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Excel-like Grid */}
                             <div className="grid-container">
                                 <table className="order-table">
@@ -647,7 +692,7 @@ export default function OrderSheetCreate() {
                                             <th className="col-product">품목</th>
                                             <th className="col-unit" style={{ width: '100px', fontSize: '13px' }}>예상중량/Box</th>
                                             <th className="col-price">단가(원/kg)</th>
-                                            <th className="col-qty">수량</th>
+                                            <th className="col-qty">주문수량 ({orderUnit === 'kg' ? 'Kg' : 'Box'})</th>
                                             <th className="col-weight">예상중량(kg)</th>
                                             <th className="col-amount">금액(원)</th>
                                             <th className="col-action"></th>
