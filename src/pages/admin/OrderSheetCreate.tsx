@@ -645,7 +645,7 @@ export default function OrderSheetCreate() {
                                         <tr>
                                             <th className="col-no">No</th>
                                             <th className="col-product">품목</th>
-                                            <th className="col-unit" style={{ width: '80px', fontSize: '13px' }}>Kg/박스</th>
+                                            <th className="col-unit" style={{ width: '100px', fontSize: '13px' }}>예상중량/Box</th>
                                             <th className="col-price">단가(원/kg)</th>
                                             <th className="col-qty">수량</th>
                                             <th className="col-weight">예상중량(kg)</th>
@@ -710,7 +710,7 @@ export default function OrderSheetCreate() {
                                                 <td className="col-unit text-muted" style={{ fontSize: '13px' }}>
                                                     {(() => {
                                                         const p = products.find(prod => prod.id === row.productId);
-                                                        return p ? (p.unit === 'box' ? `${p.boxWeight}kg/박스` : 'kg') : '-';
+                                                        return p ? (p.boxWeight ? `${p.boxWeight}kg/Box` : 'kg') : '-';
                                                     })()}
                                                 </td>
                                                 <td className="col-price">
