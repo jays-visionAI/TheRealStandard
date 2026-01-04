@@ -144,6 +144,12 @@
     font-size: var(--text-sm);
 }
 
+.product-table .unit-col {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+}
+
 .margin-positive {
     color: var(--color-accent);
     font-weight: var(--font-medium);

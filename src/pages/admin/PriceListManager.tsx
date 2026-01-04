@@ -328,6 +328,7 @@ export default function PriceListManager() {
                                                 />
                                             </th>
                                             <th className="name-col">품목명</th>
+                                            <th className="unit-col" style={{ width: '100px' }}>Kg/박스</th>
                                             <th className="price-col">매입가</th>
                                             <th className="price-col">도매가 (기준)</th>
                                             <th className="price-col">공급가 (수정가능)</th>
@@ -354,6 +355,9 @@ export default function PriceListManager() {
                                                             <span className="name">{p.name}</span>
                                                             <span className="category-tag">{p.category1}</span>
                                                         </div>
+                                                    </td>
+                                                    <td className="unit-col">
+                                                        {p.unit === 'box' ? `${p.boxWeight}kg/박스` : 'kg'}
                                                     </td>
                                                     <td className="price-col">₩{formatCurrency(p.costPrice)}</td>
                                                     <td className="price-col text-muted">₩{formatCurrency(p.wholesalePrice)}</td>
@@ -421,7 +425,7 @@ export default function PriceListManager() {
                                     <thead>
                                         <tr>
                                             <th>품목명</th>
-                                            <th>기준</th>
+                                            <th className="unit-col">Kg/박스</th>
                                             <th className="price-col">매입가</th>
                                             <th className="price-col">도매가(기준)</th>
                                             <th className="price-col">공급가</th>
@@ -440,7 +444,9 @@ export default function PriceListManager() {
                                                             <span className="category-badge plain">{item.category1}</span>
                                                         </div>
                                                     </td>
-                                                    <td>{item.boxWeight ? `${item.boxWeight}kg/Box` : '-'}</td>
+                                                    <td className="unit-col">
+                                                        {item.boxWeight ? `${item.boxWeight}kg/박스` : 'kg'}
+                                                    </td>
                                                     <td className="price-col">₩{formatCurrency(item.costPrice)}</td>
                                                     <td className="price-col">₩{formatCurrency(item.wholesalePrice)}</td>
                                                     <td className="price-col">

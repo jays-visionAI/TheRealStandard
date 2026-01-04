@@ -321,6 +321,13 @@ export const ChevronRightIcon: FC<IconProps> = ({ size = 20, className = '', col
     </svg>
 )
 
+// ChevronLeft
+export const ChevronLeftIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="15 18 9 12 15 6" />
+    </svg>
+)
+
 // User
 export const UserIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>

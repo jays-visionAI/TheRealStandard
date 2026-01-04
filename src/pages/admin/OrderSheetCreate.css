@@ -256,6 +256,11 @@
     min-width: 200px;
 }
 
+.order-table .col-unit {
+    width: 100px;
+    text-align: center;
+}
+
 .order-table .col-price,
 .order-table .col-amount {
     width: 140px;
@@ -464,21 +469,29 @@
 
 .sidebar-toggle {
     position: absolute;
-    left: 0;
+    left: -28px;
+    /* Move handle outside the sidebar body */
     top: var(--space-4);
-    width: 24px;
-    height: 40px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-left: none;
-    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    width: 28px;
+    height: 48px;
+    background: var(--color-primary);
+    border: none;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: var(--text-xs);
-    color: var(--text-muted);
-    z-index: 10;
+    color: white;
+    z-index: 100;
+    box-shadow: -4px 0 12px rgba(99, 102, 241, 0.2);
+    transition: all var(--transition-base);
+}
+
+.sidebar-toggle:hover {
+    background: var(--color-primary-dark);
+    width: 32px;
+    left: -32px;
 }
 
 .sidebar-content {

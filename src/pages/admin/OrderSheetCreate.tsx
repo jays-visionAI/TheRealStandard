@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon, CheckIcon, XIcon, AlertTriangleIcon } from '../../components/Icons'
+import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon, CheckIcon, XIcon, AlertTriangleIcon, ChevronLeftIcon, ChevronRightIcon } from '../../components/Icons'
 import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import { createOrderSheet, setOrderSheetItems, getAllOrderSheets, getOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
@@ -645,6 +645,7 @@ export default function OrderSheetCreate() {
                                         <tr>
                                             <th className="col-no">No</th>
                                             <th className="col-product">품목</th>
+                                            <th className="col-unit" style={{ width: '80px', fontSize: '13px' }}>Kg/박스</th>
                                             <th className="col-price">단가(원/kg)</th>
                                             <th className="col-qty">수량</th>
                                             <th className="col-weight">예상중량(kg)</th>
@@ -706,6 +707,12 @@ export default function OrderSheetCreate() {
                                                         )}
                                                     </div>
                                                 </td>
+                                                <td className="col-unit text-muted" style={{ fontSize: '13px' }}>
+                                                    {(() => {
+                                                        const p = products.find(prod => prod.id === row.productId);
+                                                        return p ? (p.unit === 'box' ? `${p.boxWeight}kg/박스` : 'kg') : '-';
+                                                    })()}
+                                                </td>
                                                 <td className="col-price">
                                                     {row.unitPrice > 0 ? `₩${formatCurrency(row.unitPrice)}` : '-'}
                                                 </td>
@@ -742,12 +749,12 @@ export default function OrderSheetCreate() {
                                     </tbody>
                                     <tfoot>
                                         <tr className="add-row-tr">
-                                            <td colSpan={7}>
+                                            <td colSpan={8}>
                                                 <button className="add-row-btn" onClick={addRow}>+ 품목 추가</button>
                                             </td>
                                         </tr>
                                         <tr className="total-row">
-                                            <td className="total-label" colSpan={3}>합계</td>
+                                            <td className="total-label" colSpan={4}>합계</td>
                                             <td className="total-qty">{totalItems} 품목</td>
                                             <td className="total-weight">{formatCurrency(totalWeight)} kg</td>
                                             <td className="total-amount">₩{formatCurrency(totalAmount)}</td>
@@ -777,8 +784,9 @@ export default function OrderSheetCreate() {
                         <button
                             className="sidebar-toggle"
                             onClick={() => setShowSidebar(!showSidebar)}
+                            title={showSidebar ? "접기" : "템플릿 보기"}
                         >
-                            {showSidebar ? '▶' : '◀'}
+                            {showSidebar ? <ChevronRightIcon size={18} /> : <ChevronLeftIcon size={18} />}
                         </button>
 
                         {showSidebar && (
