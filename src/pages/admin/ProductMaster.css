@@ -144,6 +144,16 @@
     font-size: var(--text-sm);
 }
 
+.margin-positive {
+    color: var(--color-accent);
+    font-weight: var(--font-medium);
+}
+
+.margin-negative {
+    color: var(--color-error);
+    font-weight: var(--font-medium);
+}
+
 /* Product Name Cell */
 .product-name {
     display: flex;
@@ -184,6 +194,34 @@
 .category-badge.부산물 {
     background: rgba(245, 158, 11, 0.1);
     color: #d97706;
+}
+
+/* Channel Badge */
+.channel-badge {
+    display: inline-flex;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    font-weight: var(--font-bold);
+    letter-spacing: 0.05em;
+}
+
+.channel-badge.B2B {
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+}
+
+.channel-badge.B2C {
+    background: #fff1f2;
+    color: #be123c;
+    border: 1px solid #fecdd3;
+}
+
+.channel-badge.BOTH {
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
 }
 
 /* Status Badge */

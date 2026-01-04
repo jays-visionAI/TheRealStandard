@@ -23,12 +23,14 @@ export interface Organization {
 // 제품 마스터
 export type UnitType = 'KG' | 'BOX';
 export type TempZone = 'FROZEN' | 'CHILLED' | 'AMBIENT';
-export type ProductCategory = '냉장' | '냉동' | '부산물';
+export type ProductCategory1 = '냉장' | '냉동' | '부산물';
+export type SalesChannel = 'B2B' | 'B2C' | 'BOTH';
 
 export interface Product {
     id: string;
     name: string;
-    category: ProductCategory;
+    category1: ProductCategory1;
+    category2: SalesChannel;
     subCategory?: string;
     unitType: UnitType;
     boxWeight?: number | null;      // BOX→KG 환산 기준
@@ -39,6 +41,8 @@ export interface Product {
     costPrice: number;       // 매입가 - 공급업체로부터 매입하는 가격
     wholesalePrice: number;  // 도매가/B2B 공급가 - 거래처에 공급하는 가격
     retailPrice: number;     // 소매가/직판장(돈우매장)가 - 소비자에게 판매하는 가격
+    wholesaleProfit?: number; // 도매 매출이익
+    wholesaleMargin?: number; // 도매 매출이익률
 
     isActive: boolean;       // 활성화 여부
     memo?: string;           // 비고

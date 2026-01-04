@@ -36,7 +36,8 @@ export default function ProductMaster() {
     // 폼 상태
     const [formData, setFormData] = useState<Partial<Product>>({
         name: '',
-        category: '냉장',
+        category1: '냉장',
+        category2: 'B2B',
         unit: 'kg',
         taxFree: true,
         costPrice: 0,
@@ -52,11 +53,19 @@ export default function ProductMaster() {
             setLoading(true)
             setError(null)
             const data = await getAllProducts()
-            setProducts(data.map(p => ({
-                ...p,
-                createdAt: p.createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
-                updatedAt: p.updatedAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
-            })))
+            setProducts(data.map(p => {
+                // 기존 데이터(category)가 있는 경우 category1으로 매핑
+                const cat1 = p.category1 || (p as any).category || '냉장'
+                const cat2 = p.category2 || 'B2B'
+
+                return {
+                    ...p,
+                    category1: cat1,
+                    category2: cat2,
+                    createdAt: p.createdAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
+                    updatedAt: p.updatedAt?.toDate?.()?.toISOString?.() || new Date().toISOString(),
+                }
+            }))
         } catch (err) {
             console.error('Failed to load products:', err)
             setError('상품 목록을 불러오는데 실패했습니다.')
@@ -78,7 +87,7 @@ export default function ProductMaster() {
                 return false
             }
             // 카테고리 필터
-            if (categoryFilter !== 'all' && p.category !== categoryFilter) {
+            if (categoryFilter !== 'all' && p.category1 !== categoryFilter) {
                 return false
             }
             // 비활성 상품 필터
@@ -93,9 +102,9 @@ export default function ProductMaster() {
     const stats = useMemo(() => ({
         total: products.length,
         active: products.filter(p => p.isActive).length,
-        냉장: products.filter(p => p.category === '냉장').length,
-        냉동: products.filter(p => p.category === '냉동').length,
-        부산물: products.filter(p => p.category === '부산물').length,
+        냉장: products.filter(p => p.category1 === '냉장').length,
+        냉동: products.filter(p => p.category1 === '냉동').length,
+        부산물: products.filter(p => p.category1 === '부산물').length,
     }), [products])
 
     // 통화 포맷
@@ -112,7 +121,8 @@ export default function ProductMaster() {
             setEditingProduct(null)
             setFormData({
                 name: '',
-                category: '냉장',
+                category1: '냉장',
+                category2: 'B2B',
                 unit: 'kg',
                 taxFree: true,
                 costPrice: 0,
@@ -142,15 +152,23 @@ export default function ProductMaster() {
             setSaving(true)
 
             // 데이터 정제 (undefined 방지)
+            const cost = Number(formData.costPrice) || 0
+            const wholesale = Number(formData.wholesalePrice) || 0
+            const profit = wholesale - cost
+            const margin = wholesale > 0 ? (profit / wholesale) * 100 : 0
+
             const cleanData = {
                 name: formData.name,
-                category: formData.category as '냉장' | '냉동' | '부산물',
+                category1: formData.category1 as '냉장' | '냉동' | '부산물',
+                category2: formData.category2 as 'B2B' | 'B2C' | 'BOTH',
                 unit: formData.unit as 'kg' | 'box',
-                boxWeight: formData.boxWeight || null, // undefined 대신 null 사용
+                boxWeight: formData.boxWeight || null,
                 taxFree: !!formData.taxFree,
-                costPrice: Number(formData.costPrice) || 0,
-                wholesalePrice: Number(formData.wholesalePrice) || 0,
+                costPrice: cost,
+                wholesalePrice: wholesale,
                 retailPrice: Number(formData.retailPrice) || 0,
+                wholesaleProfit: profit,
+                wholesaleMargin: margin,
                 isActive: formData.isActive !== false,
                 memo: formData.memo || '',
             }
@@ -362,11 +380,14 @@ export default function ProductMaster() {
                     <thead>
                         <tr>
                             <th>품목명</th>
-                            <th>카테고리</th>
+                            <th>카테고리1(냉장/냉동)</th>
+                            <th>상태(B2B/B2C)</th>
                             <th>단위</th>
                             <th>예상중량/Box</th>
                             <th className="price-col">매입가</th>
                             <th className="price-col">도매가(B2B)</th>
+                            <th className="price-col">이익(도매)</th>
+                            <th className="price-col">이익률(도매)</th>
                             <th className="price-col">소매가(직판)</th>
                             <th>상태</th>
                             <th>관리</th>
@@ -380,14 +401,29 @@ export default function ProductMaster() {
                                     {product.memo && <span className="memo">{product.memo}</span>}
                                 </td>
                                 <td>
-                                    <span className={`category-badge ${product.category}`}>
-                                        {product.category === '냉장' ? '🧊' : product.category === '냉동' ? '❄️' : '🦴'} {product.category}
+                                    <span className={`category-badge ${product.category1}`}>
+                                        {product.category1 === '냉장' ? '🧊' : product.category1 === '냉동' ? '❄️' : '🦴'} {product.category1}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span className={`channel-badge ${product.category2}`}>
+                                        {product.category2}
                                     </span>
                                 </td>
                                 <td>{product.unit.toUpperCase()}</td>
                                 <td>{product.boxWeight ? `${product.boxWeight} kg` : '-'}</td>
                                 <td className="price-col">₩{formatCurrency(product.costPrice)}</td>
                                 <td className="price-col">₩{formatCurrency(product.wholesalePrice)}</td>
+                                <td className="price-col">
+                                    <span className={(product.wholesaleProfit || 0) > 0 ? 'margin-positive' : 'margin-negative'}>
+                                        ₩{formatCurrency(product.wholesaleProfit || 0)}
+                                    </span>
+                                </td>
+                                <td className="price-col">
+                                    <span className={(product.wholesaleMargin || 0) > 0 ? 'margin-positive' : 'margin-negative'}>
+                                        {(product.wholesaleMargin || 0).toFixed(1)}%
+                                    </span>
+                                </td>
                                 <td className="price-col">₩{formatCurrency(product.retailPrice)}</td>
                                 <td>
                                     {product.isActive ? (
@@ -469,15 +505,28 @@ export default function ProductMaster() {
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="label">카테고리</label>
+                                        <label className="label">카테고리1 (냉장/냉동)</label>
                                         <select
                                             className="input select"
-                                            value={formData.category || '냉장'}
-                                            onChange={(e) => setFormData({ ...formData, category: e.target.value as '냉장' | '냉동' | '부산물' })}
+                                            value={formData.category1 || '냉장'}
+                                            onChange={(e) => setFormData({ ...formData, category1: e.target.value as '냉장' | '냉동' | '부산물' })}
                                         >
                                             <option value="냉장">🧊 냉장</option>
                                             <option value="냉동">❄️ 냉동</option>
                                             <option value="부산물">🦴 부산물</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="label">상태 (B2B/B2C)</label>
+                                        <select
+                                            className="input select"
+                                            value={formData.category2 || 'B2B'}
+                                            onChange={(e) => setFormData({ ...formData, category2: e.target.value as 'B2B' | 'B2C' | 'BOTH' })}
+                                        >
+                                            <option value="B2B">🏢 B2B 전용</option>
+                                            <option value="B2C">🏠 B2C 전용</option>
+                                            <option value="BOTH">🏢🏠 B2B/B2C 공용</option>
                                         </select>
                                     </div>
 
@@ -619,7 +668,8 @@ export default function ProductMaster() {
                                 <table className="bulk-table">
                                     <thead>
                                         <tr>
-                                            <th>카테고리</th>
+                                            <th>카테고리1</th>
+                                            <th>상태(B2B/B2C)</th>
                                             <th>품목명</th>
                                             <th>현재 단위</th>
                                             <th>예상중량 (kg/Box)</th>
@@ -629,7 +679,10 @@ export default function ProductMaster() {
                                         {products.map(p => (
                                             <tr key={p.id}>
                                                 <td>
-                                                    <span className={`category-badge ${p.category}`}>{p.category}</span>
+                                                    <span className={`category-badge ${p.category1}`}>{p.category1}</span>
+                                                </td>
+                                                <td>
+                                                    <span className={`channel-badge ${p.category2}`}>{p.category2}</span>
                                                 </td>
                                                 <td><strong>{p.name}</strong></td>
                                                 <td>{p.unit.toUpperCase()}</td>
