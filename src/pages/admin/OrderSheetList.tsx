@@ -26,7 +26,7 @@ export default function OrderSheetList() {
     const [filterStatus, setFilterStatus] = useState<OrderSheetStatus | 'ALL'>('ALL')
     const [searchTerm, setSearchTerm] = useState('')
 
-    // Firebase에서 주문장 목록 로드
+    // Firebase에서 발주서 목록 로드
     const loadOrderSheets = async () => {
         try {
             setLoading(true)
@@ -41,7 +41,7 @@ export default function OrderSheetList() {
             })))
         } catch (err) {
             console.error('Failed to load order sheets:', err)
-            setError('주문장 목록을 불러오는데 실패했습니다.')
+            setError('발주서 목록을 불러오는데 실패했습니다.')
         } finally {
             setLoading(false)
         }
@@ -92,11 +92,11 @@ export default function OrderSheetList() {
         }
         const link = `${window.location.origin}/order/${token}`
         await navigator.clipboard.writeText(link)
-        alert('주문 링크가 복사되었습니다!')
+        alert('발주서 링크가 복사되었습니다!')
     }
 
     const handleDelete = async (id: string) => {
-        if (confirm('정말로 이 주문장을 삭제하시겠습니까?')) {
+        if (confirm('정말로 이 발주서를 삭제하시겠습니까?')) {
             try {
                 await deleteOrderSheetFirebase(id)
                 await loadOrderSheets()
@@ -114,7 +114,7 @@ export default function OrderSheetList() {
             <div className="page-container">
                 <div className="loading-state">
                     <div className="spinner"></div>
-                    <p>주문장 목록을 불러오는 중...</p>
+                    <p>발주서 목록을 불러오는 중...</p>
                 </div>
             </div>
         )
@@ -139,11 +139,11 @@ export default function OrderSheetList() {
             {/* Header */}
             <div className="page-header">
                 <div className="header-left">
-                    <h1>주문장 목록</h1>
-                    <p className="text-secondary">고객별 주문장을 관리합니다</p>
+                    <h1>발주서 목록</h1>
+                    <p className="text-secondary">고객별 발주서를 관리합니다</p>
                 </div>
                 <Link to="/admin/order-sheets/create" className="btn btn-primary btn-lg">
-                    + 주문장 생성
+                    + 발주서 생성
                 </Link>
             </div>
 
@@ -153,7 +153,7 @@ export default function OrderSheetList() {
                     <input
                         type="text"
                         className="input"
-                        placeholder="주문번호 또는 고객명 검색..."
+                        placeholder="발주번호 또는 고객명 검색..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -180,7 +180,7 @@ export default function OrderSheetList() {
                     <table className="table">
                         <thead>
                             <tr>
-                                <th>주문번호</th>
+                                <th>발주번호</th>
                                 <th>고객사</th>
                                 <th>배송일</th>
                                 <th>마감시간</th>
@@ -249,7 +249,7 @@ export default function OrderSheetList() {
                             ) : (
                                 <tr>
                                     <td colSpan={7} className="text-center py-8 text-gray-400">
-                                        기록이 없습니다. 주문장을 생성해주세요.
+                                        기록이 없습니다. 발주서를 생성해주세요.
                                     </td>
                                 </tr>
                             )}

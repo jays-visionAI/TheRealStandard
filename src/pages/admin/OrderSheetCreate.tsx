@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon } from '../../components/Icons'
 import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
-import { createOrderSheet, setOrderSheetItems } from '../../lib/orderService'
+import { createOrderSheet, setOrderSheetItems, getAllOrderSheets, getOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
+import { getAllPriceLists, type FirestorePriceList } from '../../lib/priceListService'
 import './OrderSheetCreate.css'
 import { Timestamp } from 'firebase/firestore'
 
@@ -77,9 +78,11 @@ export default function OrderSheetCreate() {
     const [shipTo, setShipTo] = useState('')
     const [adminComment, setAdminComment] = useState('')
 
-    // 이전 주문 패널
-    const [showPastOrders, setShowPastOrders] = useState(true)
-    const pastOrders = selectedCustomer ? mockPastOrders[selectedCustomer.id] || [] : []
+    // 사이드바 패널 (단가표 / 이전 발주서)
+    const [showSidebar, setShowSidebar] = useState(true)
+    const [sidebarTab, setSidebarTab] = useState<'priceList' | 'pastOrders'>('priceList')
+    const [pastPriceLists, setPastPriceLists] = useState<FirestorePriceList[]>([])
+    const [pastOrderSheets, setPastOrderSheets] = useState<FirestoreOrderSheet[]>([])
 
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
@@ -91,23 +94,28 @@ export default function OrderSheetCreate() {
             setLoading(true)
             setError(null)
 
-            const [customersData, productsData] = await Promise.all([
+            const [customersData, productsData, priceListsData, orderSheetsData] = await Promise.all([
                 getAllCustomers(),
-                getAllProducts()
+                getAllProducts(),
+                getAllPriceLists(),
+                getAllOrderSheets()
             ])
 
             setCustomers(customersData.map(c => ({
                 ...c,
-                createdAt: c.createdAt?.toDate?.() || new Date(),
-                updatedAt: c.updatedAt?.toDate?.() || new Date(),
+                createdAt: c.createdAt?.toDate?.(),
+                updatedAt: c.updatedAt?.toDate?.(),
             })))
 
             setProducts(productsData.map(p => ({
                 ...p,
                 unitPrice: p.wholesalePrice,
-                createdAt: p.createdAt?.toDate?.() || new Date(),
-                updatedAt: p.updatedAt?.toDate?.() || new Date(),
+                createdAt: p.createdAt?.toDate?.(),
+                updatedAt: p.updatedAt?.toDate?.(),
             })))
+
+            setPastPriceLists(priceListsData)
+            setPastOrderSheets(orderSheetsData)
         } catch (err) {
             console.error('Failed to load data:', err)
             setError('데이터를 불러오는데 실패했습니다.')
@@ -213,6 +221,62 @@ export default function OrderSheetCreate() {
         }, 50)
     }
 
+    // 단가표 복사
+    const copyPriceList = (list: FirestorePriceList) => {
+        if (!confirm(`'${list.title}' 단가표의 품목과 단가를 가져오시겠습니까?`)) return
+
+        const newRows: OrderRow[] = list.items.map(item => {
+            const p = products.find(p => p.id === item.productId)
+            return {
+                id: Math.random().toString(36).substr(2, 9),
+                productId: item.productId,
+                productName: item.name,
+                unitPrice: item.supplyPrice,
+                quantity: 0,
+                unit: item.unit as 'kg' | 'box',
+                estimatedWeight: item.boxWeight || 0,
+                totalAmount: 0
+            }
+        })
+        setRows(newRows)
+        alert('단가표 항목이 복사되었습니다. 수량을 입력해주세요.')
+    }
+
+    // 이전 발주서 복사
+    const copyPastOrder = async (order: FirestoreOrderSheet) => {
+        if (!confirm('해당 발주서의 품목을 가져오시겠습니까?')) return
+
+        try {
+            setLoading(true)
+            const items = await getOrderSheetItems(order.id)
+
+            if (!items || items.length === 0) {
+                alert('복사할 항목이 없습니다.')
+                return
+            }
+
+            const newRows: OrderRow[] = items.map(item => {
+                return {
+                    id: Math.random().toString(36).substr(2, 9),
+                    productId: item.productId,
+                    productName: item.productName,
+                    unitPrice: item.unitPrice,
+                    quantity: item.qtyRequested || 0,
+                    unit: item.unit as 'kg' | 'box',
+                    estimatedWeight: item.estimatedKg || 0,
+                    totalAmount: item.amount || 0
+                }
+            })
+            setRows(newRows)
+            alert('발주서 항목이 복사되었습니다.')
+        } catch (err) {
+            console.error(err)
+            alert('발주서 항목을 가져오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     // 수량 변경 시 계산
     const updateQuantity = (rowId: string, quantity: number) => {
         setRows(prev => prev.map(row => {
@@ -314,8 +378,8 @@ export default function OrderSheetCreate() {
         }
     }
 
-    // 통계 계산
-    const validRows = useMemo(() => rows.filter(r => r.productId && r.quantity > 0), [rows])
+    // 통계 계산 (수량이 0인 품목도 포함하여 생성 가능)
+    const validRows = useMemo(() => rows.filter(r => r.productId), [rows])
     const totalItems = validRows.length
     const totalWeight = useMemo(() => validRows.reduce((sum, r) => sum + r.estimatedWeight, 0), [validRows])
     const totalAmount = useMemo(() => validRows.reduce((sum, r) => sum + r.totalAmount, 0), [validRows])
@@ -346,7 +410,7 @@ export default function OrderSheetCreate() {
 
             const token = 'token-' + Math.random().toString(36).substr(2, 9)
 
-            // Firebase에 주문장 생성
+            // Firebase에 발주서 생성
             const newOrderSheet = await createOrderSheet({
                 customerOrgId: selectedCustomer.id,
                 customerName: selectedCustomer.companyName,
@@ -373,11 +437,11 @@ export default function OrderSheetCreate() {
 
             const link = `${window.location.origin}/order/${token}`
             navigator.clipboard.writeText(link)
-            alert(`✅ 주문장이 생성되었습니다!\n\n고객 링크가 클립보드에 복사되었습니다.\n\n${link}`)
+            alert(`✅ 발주서가 생성되었습니다!\n\n고객 링크가 클립보드에 복사되었습니다.\n\n${link}`)
             navigate('/admin/order-sheets')
         } catch (err) {
-            console.error('Failed to create order sheet:', err)
-            alert('주문장 생성에 실패했습니다.')
+            console.error('Failed to create purchase order:', err)
+            alert('발주서 생성에 실패했습니다.')
         } finally {
             setSaving(false)
         }
@@ -421,12 +485,12 @@ export default function OrderSheetCreate() {
     return (
         <div className="order-sheet-create">
             {/* Header */}
-            <div className="page-header">
-                <div>
-                    <h1><FileEditIcon size={24} /> 주문장 생성</h1>
-                    <p className="text-secondary">B2B 거래처 주문장 작성</p>
+            <header className="page-header">
+                <div className="header-left">
+                    <h1>신규 발주서 생성</h1>
+                    <p className="text-secondary">고객사를 선택하고 발주 품목 및 배송 정보를 설정합니다</p>
                 </div>
-            </div>
+            </header>
 
             {/* Progress Steps */}
             <div className="steps-bar glass-card">
@@ -703,52 +767,83 @@ export default function OrderSheetCreate() {
                         </div>
                     </div>
 
-                    {/* 이전 주문 사이드바 */}
-                    <div className={`sidebar ${showPastOrders ? 'open' : 'collapsed'}`}>
+                    {/* 발주서 템플릿 사이드바 (단가표 / 이전 발주서) */}
+                    <div className={`sidebar ${showSidebar ? 'open' : 'collapsed'}`}>
                         <button
                             className="sidebar-toggle"
-                            onClick={() => setShowPastOrders(!showPastOrders)}
+                            onClick={() => setShowSidebar(!showSidebar)}
                         >
-                            {showPastOrders ? '▶' : '◀'}
+                            {showSidebar ? '▶' : '◀'}
                         </button>
 
-                        {showPastOrders && (
+                        {showSidebar && (
                             <div className="sidebar-content glass-card">
-                                <h3 className="sidebar-title"><ClipboardListIcon size={18} /> 이전 주문</h3>
-                                <p className="sidebar-desc">{selectedCustomer?.companyName}의 과거 주문</p>
+                                <h3 className="sidebar-title"><ClipboardListIcon size={18} /> 발주서 템플릿</h3>
 
-                                {pastOrders.length === 0 ? (
-                                    <div className="empty-orders">
-                                        <p>이전 주문 내역이 없습니다.</p>
-                                    </div>
-                                ) : (
-                                    <div className="past-orders-list">
-                                        {pastOrders.map(order => (
-                                            <div key={order.id} className="past-order-card">
-                                                <div className="order-header">
-                                                    <span className="order-id">{order.id}</span>
-                                                    <span className="order-date">{order.date}</span>
-                                                </div>
-                                                <div className="order-items-preview">
-                                                    {order.items.map((item, i) => (
-                                                        <span key={i} className="item-tag">
-                                                            {item.productName} {item.qty}kg
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                                <div className="order-footer">
-                                                    <span className="order-total">₩{formatCurrency(order.totalAmount)}</span>
-                                                    <button
-                                                        className="btn btn-sm btn-secondary"
-                                                        onClick={() => loadFromPastOrder(order)}
-                                                    >
-                                                        불러오기
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                <div className="sidebar-tabs">
+                                    <button
+                                        className={`tab-btn ${sidebarTab === 'priceList' ? 'active' : ''}`}
+                                        onClick={() => setSidebarTab('priceList')}
+                                    >
+                                        단가표
+                                    </button>
+                                    <button
+                                        className={`tab-btn ${sidebarTab === 'pastOrders' ? 'active' : ''}`}
+                                        onClick={() => setSidebarTab('pastOrders')}
+                                    >
+                                        이전 발주서
+                                    </button>
+                                </div>
+
+                                <div className="tab-content">
+                                    {sidebarTab === 'priceList' ? (
+                                        <div className="template-list">
+                                            {pastPriceLists.length === 0 ? (
+                                                <p className="empty-msg">등록된 단가표가 없습니다.</p>
+                                            ) : (
+                                                pastPriceLists.map(list => (
+                                                    <div key={list.id} className="template-card">
+                                                        <div className="card-info">
+                                                            <span className="card-title">{list.title}</span>
+                                                            <span className="card-meta">{list.items.length}개 품목</span>
+                                                        </div>
+                                                        <button
+                                                            className="btn btn-xs btn-outline"
+                                                            onClick={() => copyPriceList(list)}
+                                                        >
+                                                            복사하기
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="template-list">
+                                            {pastOrderSheets.filter(o => o.customerOrgId === selectedCustomer?.id).length === 0 ? (
+                                                <p className="empty-msg">이전 발주 내역이 없습니다.</p>
+                                            ) : (
+                                                pastOrderSheets
+                                                    .filter(o => o.customerOrgId === selectedCustomer?.id)
+                                                    .map(order => (
+                                                        <div key={order.id} className="template-card">
+                                                            <div className="card-info">
+                                                                <span className="card-title">발주 #{order.id.slice(-6)}</span>
+                                                                <span className="card-meta">
+                                                                    {order.createdAt?.toDate?.().toLocaleDateString() || '-'}
+                                                                </span>
+                                                            </div>
+                                                            <button
+                                                                className="btn btn-xs btn-outline"
+                                                                onClick={() => copyPastOrder(order)}
+                                                            >
+                                                                복사하기
+                                                            </button>
+                                                        </div>
+                                                    ))
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>

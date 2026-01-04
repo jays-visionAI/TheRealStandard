@@ -38,6 +38,7 @@ import WarehouseGate from './pages/admin/WarehouseGate'
 import CatalogManager from './pages/admin/CatalogManager'
 import VehicleTypeSettings from './pages/admin/VehicleTypeSettings'
 import ProductMaster from './pages/admin/ProductMaster'
+import PriceListManager from './pages/admin/PriceListManager'
 import OrganizationMaster from './pages/admin/OrganizationMaster'
 import SupplierMaster from './pages/admin/SupplierMaster'
 import UserList from './pages/admin/UserList'
@@ -140,7 +141,9 @@ function App() {
                         <Route path="users/customers" element={<OrganizationMaster />} />
                         <Route path="users/suppliers" element={<SupplierMaster />} />
                         {/* Products */}
-                        <Route path="products" element={<ProductMaster />} />
+                        <Route path="products/b2b" element={<ProductMaster channel="B2B" />} />
+                        <Route path="products/b2c" element={<ProductMaster channel="B2C" />} />
+                        <Route path="products/price-lists" element={<PriceListManager />} />
                         {/* Order Book */}
                         <Route path="order-sheets" element={<OrderSheetList />} />
                         <Route path="order-sheets/create" element={<OrderSheetCreate />} />

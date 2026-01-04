@@ -18,7 +18,7 @@ type Product = Omit<FirestoreProduct, 'createdAt' | 'updatedAt'> & {
 // ============================================
 // 메인 컴포넌트
 // ============================================
-export default function ProductMaster() {
+export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) {
     // Firebase에서 직접 로드되는 상품 목록
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
@@ -82,6 +82,13 @@ export default function ProductMaster() {
     // 필터링된 상품 목록
     const filteredProducts = useMemo(() => {
         return products.filter(p => {
+            // 채널 필터 (B2B / B2C)
+            if (channel === 'B2B') {
+                if (p.category2 !== 'B2B' && p.category2 !== 'BOTH') return false
+            } else if (channel === 'B2C') {
+                if (p.category2 !== 'B2C' && p.category2 !== 'BOTH') return false
+            }
+
             // 검색어 필터
             if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) {
                 return false
@@ -96,16 +103,24 @@ export default function ProductMaster() {
             }
             return true
         })
-    }, [products, searchQuery, categoryFilter, showInactive])
+    }, [products, searchQuery, categoryFilter, showInactive, channel])
 
     // 통계
-    const stats = useMemo(() => ({
-        total: products.length,
-        active: products.filter(p => p.isActive).length,
-        냉장: products.filter(p => p.category1 === '냉장').length,
-        냉동: products.filter(p => p.category1 === '냉동').length,
-        부산물: products.filter(p => p.category1 === '부산물').length,
-    }), [products])
+    const stats = useMemo(() => {
+        const baseProducts = products.filter(p => {
+            if (channel === 'B2B') return p.category2 === 'B2B' || p.category2 === 'BOTH'
+            if (channel === 'B2C') return p.category2 === 'B2C' || p.category2 === 'BOTH'
+            return true
+        })
+
+        return {
+            total: baseProducts.length,
+            active: baseProducts.filter(p => p.isActive).length,
+            냉장: baseProducts.filter(p => p.category1 === '냉장').length,
+            냉동: baseProducts.filter(p => p.category1 === '냉동').length,
+            부산물: baseProducts.filter(p => p.category1 === '부산물').length,
+        }
+    }, [products, channel])
 
     // 통화 포맷
     const formatCurrency = (value: number) => {
@@ -122,7 +137,7 @@ export default function ProductMaster() {
             setFormData({
                 name: '',
                 category1: '냉장',
-                category2: 'B2B',
+                category2: channel === 'B2C' ? 'B2C' : 'B2B',
                 unit: 'kg',
                 taxFree: true,
                 costPrice: 0,
@@ -303,10 +318,14 @@ export default function ProductMaster() {
     return (
         <div className="product-master">
             {/* Header */}
-            <div className="page-header">
-                <div>
-                    <h1><PackageIcon size={24} /> 상품 마스터</h1>
-                    <p className="text-secondary">상품 정보 및 가격 관리</p>
+            <header className="page-header">
+                <div className="header-left">
+                    <h2>
+                        <PackageIcon size={24} /> {channel === 'B2B' ? 'B2B 상품 관리' : channel === 'B2C' ? 'B2C 상품 관리' : '상품 관리'}
+                    </h2>
+                    <p className="description">
+                        {channel === 'B2B' ? 'B2B 및 공용 거래 품목을 관리합니다.' : channel === 'B2C' ? 'B2C 및 공용 거래 품목을 관리합니다.' : '전체 상품 리스트를 관리하고 단가를 설정합니다.'}
+                    </p>
                 </div>
                 <div className="header-actions">
                     <button className="btn btn-secondary" onClick={openBulkModal}>
@@ -316,7 +335,7 @@ export default function ProductMaster() {
                         + 상품 추가
                     </button>
                 </div>
-            </div>
+            </header>
 
             {/* Stats */}
             <div className="stats-grid">
@@ -338,7 +357,7 @@ export default function ProductMaster() {
                 </div>
             </div>
 
-            {/* Filters */}
+            {/* Filters bar */}
             <div className="filters-bar glass-card">
                 <div className="search-box">
                     <span className="search-icon"><SearchIcon size={18} /></span>
@@ -618,12 +637,12 @@ export default function ProductMaster() {
                                 </div>
 
                                 {/* 마진 계산 */}
-                                {formData.costPrice && formData.wholesalePrice && (
+                                {(formData.costPrice !== undefined && formData.wholesalePrice !== undefined) && (
                                     <div className="margin-info">
                                         <span>도매 마진: </span>
                                         <strong className={formData.wholesalePrice - formData.costPrice > 0 ? 'positive' : 'negative'}>
                                             ₩{formatCurrency(formData.wholesalePrice - formData.costPrice)}
-                                            ({((formData.wholesalePrice - formData.costPrice) / formData.costPrice * 100).toFixed(1)}%)
+                                            ({formData.costPrice > 0 ? ((formData.wholesalePrice - formData.costPrice) / formData.costPrice * 100).toFixed(1) : 0}%)
                                         </strong>
                                     </div>
                                 )}

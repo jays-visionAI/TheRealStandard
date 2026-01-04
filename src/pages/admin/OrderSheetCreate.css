@@ -452,7 +452,7 @@
 
 /* Sidebar */
 .sidebar {
-    width: 320px;
+    width: 340px;
     flex-shrink: 0;
     position: relative;
     transition: width 0.3s ease;
@@ -485,82 +485,111 @@
     height: 100%;
     overflow-y: auto;
     padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
 }
 
 .sidebar-title {
     font-size: var(--text-base);
     font-weight: var(--font-semibold);
-    margin-bottom: var(--space-2);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
 }
 
-.sidebar-desc {
+/* Tabs */
+.sidebar-tabs {
+    display: flex;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: 2px;
+}
+
+.tab-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: var(--space-2);
     font-size: var(--text-sm);
-    color: var(--text-muted);
-    margin-bottom: var(--space-4);
+    font-weight: var(--font-medium);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-secondary);
 }
 
-/* Past Orders */
-.past-orders-list {
+.tab-btn.active {
+    background: white;
+    color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Template List */
+.template-list {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
 }
 
-.past-order-card {
-    padding: var(--space-3);
-    background: var(--bg-secondary);
-    border-radius: var(--radius-md);
+.template-card {
+    background: white;
     border: 1px solid var(--border-secondary);
-}
-
-.past-order-card .order-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: var(--space-2);
-}
-
-.past-order-card .order-id {
-    font-weight: var(--font-semibold);
-    font-size: var(--text-sm);
-}
-
-.past-order-card .order-date {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-}
-
-.order-items-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1);
-    margin-bottom: var(--space-2);
-}
-
-.item-tag {
-    font-size: var(--text-xs);
-    padding: 2px 6px;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-}
-
-.past-order-card .order-footer {
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: var(--space-2);
-    border-top: 1px solid var(--border-secondary);
+    transition: all 0.2s;
 }
 
-.past-order-card .order-total {
+.template-card:hover {
+    border-color: var(--color-primary-light);
+    box-shadow: var(--shadow-sm);
+}
+
+.card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.card-title {
+    font-size: var(--text-sm);
     font-weight: var(--font-semibold);
-    color: var(--color-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.empty-orders {
-    padding: var(--space-6);
-    text-align: center;
+.card-meta {
+    font-size: var(--text-xs);
     color: var(--text-muted);
+}
+
+.empty-msg {
+    text-align: center;
+    padding: var(--space-10) 0;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+}
+
+.btn-xs {
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+}
+
+.btn-outline:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
 }
 
 /* Form Grid */

@@ -46,16 +46,20 @@ const navigation = [
         ],
     },
     {
-        label: 'Products',
-        path: '/admin/products',
+        label: '상품관리',
         iconKey: 'products',
+        children: [
+            { label: 'B2B 상품리스트', path: '/admin/products/b2b' },
+            { label: 'B2C 상품리스트', path: '/admin/products/b2c' },
+            { label: '단가표', path: '/admin/products/price-lists' },
+        ],
     },
     {
-        label: 'Order Book',
+        label: '발주서 관리',
         iconKey: 'orders',
         children: [
-            { label: '주문장 목록', path: '/admin/order-sheets' },
-            { label: '주문장 생성', path: '/admin/order-sheets/create' },
+            { label: '발주서 목록', path: '/admin/order-sheets' },
+            { label: '발주서 생성', path: '/admin/order-sheets/create' },
             { label: '확정주문', path: '/admin/sales-orders' },
         ],
     },
@@ -221,10 +225,12 @@ function getPageTitle(pathname: string): string {
         '/admin/users/customers': '고객사 (구매처) 마스터',
         '/admin/users/suppliers': '공급거래처 마스터',
         // Products
-        '/admin/products': '상품 마스터',
+        '/admin/products/b2b': 'B2B 상품 리스트',
+        '/admin/products/b2c': 'B2C 상품 리스트',
+        '/admin/products/price-lists': '단가표 관리',
         // Order Book
-        '/admin/order-sheets': '주문장 목록',
-        '/admin/order-sheets/create': '주문장 생성',
+        '/admin/order-sheets': '발주서 목록',
+        '/admin/order-sheets/create': '발주서 생성',
         '/admin/sales-orders': '확정주문 목록',
         // 거래내역
         '/admin/purchase-orders': '발주 관리',
