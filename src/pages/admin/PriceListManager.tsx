@@ -26,6 +26,7 @@ export default function PriceListManager() {
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showDetailModal, setShowDetailModal] = useState(false)
     const [selectedList, setSelectedList] = useState<FirestorePriceList | null>(null)
+    const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
 
     // Form state for creating
@@ -36,15 +37,25 @@ export default function PriceListManager() {
     const loadData = async () => {
         try {
             setLoading(true)
+            setError(null)
             const [pLists, pData] = await Promise.all([
                 getAllPriceLists(),
                 getAllProducts()
             ])
             setPriceLists(pLists)
-            // Filter only B2B products for price list creation
-            setProducts(pData.filter(p => p.isActive && (p.category2 === 'B2B' || p.category2 === 'BOTH')))
+
+            // Robustly filter products: default isActive to true and category2 to B2B if missing
+            const b2bProducts = pData.map(p => ({
+                ...p,
+                isActive: p.isActive !== false,
+                category2: p.category2 || 'B2B',
+                category1: p.category1 || (p as any).category || '냉장'
+            })).filter(p => p.isActive && (p.category2 === 'B2B' || p.category2 === 'BOTH'))
+
+            setProducts(b2bProducts)
         } catch (err) {
-            console.error(err)
+            console.error('Failed to load PriceListManager data:', err)
+            setError('데이터를 불러오는 중 오류가 발생했습니다.')
         } finally {
             setLoading(false)
         }
@@ -134,7 +145,19 @@ export default function PriceListManager() {
 
     const formatCurrency = (val: number) => new Intl.NumberFormat('ko-KR').format(val)
 
-    if (loading) return <div className="p-10 text-center">불러오는 중...</div>
+    if (loading) return (
+        <div className="p-20 text-center">
+            <div className="spinner mb-4" style={{ margin: '0 auto' }}></div>
+            <p>데이터를 불러오는 중...</p>
+        </div>
+    )
+
+    if (error) return (
+        <div className="p-20 text-center text-error">
+            <p className="mb-4">❌ {error}</p>
+            <button className="btn btn-primary" onClick={loadData}>다시 시도</button>
+        </div>
+    )
 
     return (
         <div className="product-master">
