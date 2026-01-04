@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => unsubscribe()
     }, [])
 
-    const login = async (email: string, password: string) => {
+    const login: AuthContextType['login'] = async (email, password) => {
         try {
             console.log('Attempting login for:', email)
             // Firebase Auth로 로그인
@@ -140,7 +140,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 name: updatedUser.name,
                 role: updatedUser.role,
                 orgId: updatedUser.orgId,
-                avatar: updatedUser.avatar,
             }
         } catch (error: any) {
             console.error('Firebase Login Error Object:', error)
@@ -163,6 +162,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         status: 'ACTIVE',
                     })
                     console.log('Firestore user identity created')
+                    const newUser = await getUserByEmail(email)
+                    if (!newUser) throw new Error('계정 생성 후 정보를 불러올 수 없습니다.')
+                    return {
+                        id: newUser.id,
+                        email: newUser.email,
+                        name: newUser.name,
+                        role: newUser.role,
+                        orgId: newUser.orgId,
+                    }
                 } catch (createError: any) {
                     console.error('Account Creation Error:', createError)
                     if (createError.code === 'auth/email-already-in-use') {
@@ -175,12 +183,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else if (error.code === 'auth/invalid-email') {
                 throw new Error('유효하지 않은 이메일 형식입니다.')
             } else {
-                throw new Error(`로그인 오류 (${error.code}): ${error.message}`)
+                throw new Error(`로그인 오류 (${error.code || 'unknown'}): ${error.message}`)
             }
         }
     }
 
-    const loginWithKakao = async (kakaoUser: any) => {
+    const loginWithKakao: AuthContextType['loginWithKakao'] = async (kakaoUser) => {
         const email = kakaoUser.kakao_account?.email || `${kakaoUser.id}@kakao.com`
         const tempPassword = `kakao_${kakaoUser.id}_temp`
 
@@ -219,7 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }
 
-    const loginWithGoogle = async () => {
+    const loginWithGoogle: AuthContextType['loginWithGoogle'] = async () => {
         const { signInWithGoogle, signInWithGoogleRedirect } = await import('../lib/googleService')
 
         try {
@@ -252,9 +260,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.warn('Google Popup Login failed, checking for popup-blocked error:', error)
 
             // 팝업 차단 에러 발생 시 리다이렉트 방식으로 자동 전환
-            if (error.message.includes('팝업이 차단되었습니다') || error.code?.includes('popup-blocked')) {
+            if (error.message?.includes('팝업이 차단되었습니다') || error.code?.includes('popup-blocked')) {
                 console.log('Redirecting to Google login due to popup block...')
                 await signInWithGoogleRedirect()
+                // 리다이렉트가 일어나므로 이 이후 코드는 실행되지 않음
+                return null as any
             } else {
                 throw error
             }
