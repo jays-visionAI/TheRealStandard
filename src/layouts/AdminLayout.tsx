@@ -55,19 +55,19 @@ const navigation = [
         ],
     },
     {
-        label: '발주서 관리',
-        iconKey: 'orders',
+        label: '발주 관리',
+        iconKey: 'orders', // Using 'orders' icon for '발주 관리'
         children: [
-            { label: '발주서 목록', path: '/admin/order-sheets' },
-            { label: '발주서 생성', path: '/admin/order-sheets/create' },
-            { label: '확정주문', path: '/admin/sales-orders' },
+            { label: '매입발주(공급사용) 목록', path: '/admin/purchase-orders' },
+            { label: '매출발주(고객용) 목록', path: '/admin/order-sheets' },
+            { label: '확정주문(매출)', path: '/admin/sales-orders' },
+            { label: '확정주문(매입)', path: '/admin/confirmed-purchase-orders' },
         ],
     },
     {
-        label: '거래내역',
+        label: '물류/배송',
         iconKey: 'transactions',
         children: [
-            { label: '발주 관리', path: '/admin/purchase-orders' },
             { label: '배송 목록', path: '/admin/shipments' },
             { label: '정산 현황', path: '/admin/transactions' },
         ],

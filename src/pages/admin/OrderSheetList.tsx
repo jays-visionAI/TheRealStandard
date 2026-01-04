@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { PlusIcon, SearchIcon, FileTextIcon, PencilIcon, TrashIcon, EyeIcon } from '../../components/Icons'
 import {
     getAllOrderSheets,
     deleteOrderSheet as deleteOrderSheetFirebase,
@@ -139,11 +140,11 @@ export default function OrderSheetList() {
             {/* Header */}
             <div className="page-header">
                 <div className="header-left">
-                    <h1>발주서 목록</h1>
-                    <p className="text-secondary">고객별 발주서를 관리합니다</p>
+                    <h1>매출발주(고객용) 목록</h1>
+                    <p className="text-secondary">고객사에게 보낸 매출 발주서 리스트입니다</p>
                 </div>
-                <Link to="/admin/order-sheets/create" className="btn btn-primary btn-lg">
-                    + 발주서 생성
+                <Link to="/admin/order-sheets/create" className="btn btn-primary">
+                    <PlusIcon size={18} /> + 발주서 생성
                 </Link>
             </div>
 

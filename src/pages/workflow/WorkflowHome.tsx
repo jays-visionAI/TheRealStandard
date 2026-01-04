@@ -14,7 +14,7 @@ import type { ReactNode } from 'react'
 
 // 파이프라인 단계 정의 (v1.0 단순화)
 const PIPELINE_STEPS: { id: string; label: string; icon: ReactNode; description: string }[] = [
-    { id: 'create', label: '주문장 생성', icon: <FileEditIcon size={20} />, description: '고객별 주문장을 생성하고 링크를 발송합니다' },
+    { id: 'create', label: '발주서 생성', icon: <FileEditIcon size={20} />, description: '고객별 발주서를 생성하고 링크를 발송합니다' },
     { id: 'submit', label: '고객 제출', icon: '📬', description: '고객이 주문을 작성하고 제출합니다' },
     { id: 'finalize', label: '확정 입력', icon: <PencilIcon size={20} />, description: '최종 수량/배차 정보를 입력합니다' },
     { id: 'confirm', label: '고객 컨펌', icon: <CheckCircleIcon size={20} />, description: '고객이 최종안을 확인합니다' },
@@ -278,7 +278,7 @@ export default function WorkflowHome() {
                     </p>
                 </div>
                 <button className="btn btn-primary" onClick={() => navigate('/admin/workflow/order-create')}>
-                    + 새 주문장 생성
+                    + 새 발주서 생성
                 </button>
             </header>
 

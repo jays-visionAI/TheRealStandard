@@ -150,18 +150,18 @@ export default function OrderReview() {
 
     const handleDelete = async () => {
         if (!orderSheet) return
-        if (!confirm('정말로 이 주문장을 삭제하시겠습니까? 삭제된 주문장은 복구할 수 없습니다.')) return
+        if (!confirm('정말로 이 발주서를 삭제하시겠습니까? 삭제된 발주서는 복구할 수 없습니다.')) return
 
         try {
             setIsSubmitting(true)
 
             await deleteOrderSheet(orderSheet.id)
 
-            alert('주문장이 삭제되었습니다.')
+            alert('발주서가 삭제되었습니다.')
             navigate('/admin/order-sheets')
         } catch (err) {
             console.error('Failed to delete order:', err)
-            alert('주문 삭제에 실패했습니다.')
+            alert('발주서 삭제에 실패했습니다.')
         } finally {
             setIsSubmitting(false)
         }
@@ -169,7 +169,7 @@ export default function OrderReview() {
 
     if (loading) return <div className="p-8 text-center text-white">불러오는 중...</div>
     if (error) return <div className="p-8 text-center text-white">❌ {error}</div>
-    if (!orderSheet) return <div className="p-8 text-center text-white">주문을 찾을 수 없습니다.</div>
+    if (!orderSheet) return <div className="p-8 text-center text-white">발주서를 찾을 수 없습니다.</div>
 
     return (
         <div className="page-container">
@@ -180,7 +180,7 @@ export default function OrderReview() {
                         ← 뒤로
                     </button>
                     <div>
-                        <h1>주문 검토</h1>
+                        <h1>발주서 검토</h1>
                         <p className="text-secondary">{orderSheet.id}</p>
                     </div>
                 </div>

@@ -31,6 +31,8 @@ import OrderReview from './pages/admin/OrderReview'
 import SalesOrderList from './pages/admin/SalesOrderList'
 import SalesOrderDetail from './pages/admin/SalesOrderDetail'
 import POList from './pages/admin/POList'
+import PurchaseOrderCreate from './pages/admin/PurchaseOrderCreate'
+import ConfirmedPurchaseOrderList from './pages/admin/ConfirmedPurchaseOrderList'
 import ShipmentList from './pages/admin/ShipmentList'
 import ShipmentDetail from './pages/admin/ShipmentDetail'
 import DocumentInbox from './pages/admin/DocumentInbox'
@@ -152,6 +154,8 @@ function App() {
                         <Route path="sales-orders/:id" element={<SalesOrderDetail />} />
                         {/* 거래내역 */}
                         <Route path="purchase-orders" element={<POList />} />
+                        <Route path="purchase-orders/create" element={<PurchaseOrderCreate />} />
+                        <Route path="confirmed-purchase-orders" element={<ConfirmedPurchaseOrderList />} />
                         <Route path="shipments" element={<ShipmentList />} />
                         <Route path="shipments/:id" element={<ShipmentDetail />} />
                         <Route path="transactions" element={<Dashboard />} />
