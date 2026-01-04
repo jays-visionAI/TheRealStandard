@@ -12,6 +12,7 @@ import {
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import {
     createPriceList,
+    updatePriceList,
     getAllPriceLists,
     deletePriceList,
     type FirestorePriceList,
@@ -24,6 +25,7 @@ export default function PriceListManager() {
     const [products, setProducts] = useState<FirestoreProduct[]>([])
     const [loading, setLoading] = useState(true)
     const [showCreateModal, setShowCreateModal] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
     const [showDetailModal, setShowDetailModal] = useState(false)
     const [selectedList, setSelectedList] = useState<FirestorePriceList | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -66,6 +68,8 @@ export default function PriceListManager() {
     }, [])
 
     const handleOpenCreateModal = () => {
+        setIsEditing(false)
+        setSelectedList(null)
         setTitle('')
         setSelectedProductIds(new Set())
         const initialPrices: Record<string, number> = {}
@@ -73,6 +77,32 @@ export default function PriceListManager() {
             initialPrices[p.id] = p.wholesalePrice
         })
         setSupplyPrices(initialPrices)
+        setShowCreateModal(true)
+    }
+
+    const handleOpenEditModal = (list: FirestorePriceList) => {
+        setIsEditing(true)
+        setSelectedList(list)
+        setTitle(list.title)
+
+        const newSelectedIds = new Set<string>()
+        const newPrices: Record<string, number> = {}
+
+        // Populate with existing items
+        list.items.forEach(item => {
+            newSelectedIds.add(item.productId)
+            newPrices[item.productId] = item.supplyPrice
+        })
+
+        // Add wholesale price for other products not in the list (just in case)
+        products.forEach(p => {
+            if (!newPrices[p.id]) {
+                newPrices[p.id] = p.wholesalePrice
+            }
+        })
+
+        setSelectedProductIds(newSelectedIds)
+        setSupplyPrices(newPrices)
         setShowCreateModal(true)
     }
 
@@ -116,12 +146,20 @@ export default function PriceListManager() {
                     boxWeight: p.boxWeight
                 }))
 
-            await createPriceList({
-                title,
-                items
-            })
+            if (isEditing && selectedList) {
+                await updatePriceList(selectedList.id, {
+                    title,
+                    items
+                })
+                alert('✅ 단가표가 수정되었습니다.')
+            } else {
+                await createPriceList({
+                    title,
+                    items
+                })
+                alert('✅ 단가표가 생성되었습니다.')
+            }
 
-            alert('✅ 단가표가 생성되었습니다.')
             setShowCreateModal(false)
             loadData()
         } catch (err) {
@@ -214,6 +252,13 @@ export default function PriceListManager() {
                                             <EyeIcon size={16} />
                                         </button>
                                         <button
+                                            className="btn btn-ghost btn-sm"
+                                            title="수정"
+                                            onClick={() => handleOpenEditModal(list)}
+                                        >
+                                            <EditIcon size={16} />
+                                        </button>
+                                        <button
                                             className="btn btn-ghost btn-sm danger"
                                             title="삭제"
                                             onClick={() => handleDelete(list.id)}
@@ -233,7 +278,7 @@ export default function PriceListManager() {
                 <div className="modal-backdrop" onClick={() => setShowCreateModal(false)}>
                     <div className="modal product-modal" style={{ maxWidth: '1000px', width: '92vw' }} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3><FileTextIcon size={20} /> 새 단가표 생성</h3>
+                            <h3><FileTextIcon size={20} /> {isEditing ? '단가표 수정' : '새 단가표 생성'}</h3>
                             <button className="btn btn-ghost" onClick={() => setShowCreateModal(false)}>✕</button>
                         </div>
                         <div className="modal-body">
@@ -348,7 +393,7 @@ export default function PriceListManager() {
                                     onClick={handleSave}
                                     disabled={saving || !title.trim() || selectedProductIds.size === 0}
                                 >
-                                    {saving ? '저장 중...' : '단가표 저장하기'}
+                                    {saving ? '저장 중...' : isEditing ? '단가표 수정하기' : '단가표 저장하기'}
                                 </button>
                             </div>
                         </div>
