@@ -44,6 +44,7 @@ import PriceListManager from './pages/admin/PriceListManager'
 import OrganizationMaster from './pages/admin/OrganizationMaster'
 import SupplierMaster from './pages/admin/SupplierMaster'
 import UserList from './pages/admin/UserList'
+import UserManagement from './pages/admin/UserManagement'
 import DocumentHub from './pages/admin/DocumentHub'
 import SystemSettings from './pages/admin/SystemSettings'
 
@@ -138,6 +139,7 @@ function App() {
                     >
                         <Route index element={<Dashboard />} />
                         <Route path="documents" element={<DocumentHub />} />
+                        <Route path="users/list" element={<UserManagement />} />
                         <Route path="users" element={<UserList />} />
                         <Route path="users/staff" element={<UserList />} />
                         <Route path="users/customers" element={<OrganizationMaster />} />
