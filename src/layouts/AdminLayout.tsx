@@ -37,16 +37,6 @@ const navigation = [
         iconKey: 'docs',
     },
     {
-        label: 'Users',
-        iconKey: 'users',
-        children: [
-            { label: '전체 유저 리스트', path: '/admin/users/list' },
-            { label: 'Staff Setting (임직원)', path: '/admin/users/staff' },
-            { label: '고객사 (구매처) 관리', path: '/admin/users/customers' },
-            { label: '공급 거래처 관리', path: '/admin/users/suppliers' },
-        ],
-    },
-    {
         label: '상품관리',
         iconKey: 'products',
         children: [
@@ -57,10 +47,10 @@ const navigation = [
     },
     {
         label: '발주 관리',
-        iconKey: 'orders', // Using 'orders' icon for '발주 관리'
+        iconKey: 'orders',
         children: [
-            { label: '매입발주(공급사용) 목록', path: '/admin/purchase-orders' },
             { label: '매출발주(고객용) 목록', path: '/admin/order-sheets' },
+            { label: '매입발주(공급사용) 목록', path: '/admin/purchase-orders' },
             { label: '확정주문(매출)', path: '/admin/sales-orders' },
             { label: '확정주문(매입)', path: '/admin/confirmed-purchase-orders' },
         ],
@@ -71,6 +61,16 @@ const navigation = [
         children: [
             { label: '배송 목록', path: '/admin/shipments' },
             { label: '정산 현황', path: '/admin/transactions' },
+        ],
+    },
+    {
+        label: 'Users',
+        iconKey: 'users',
+        children: [
+            { label: '전체 유저 리스트', path: '/admin/users/list' },
+            { label: 'Staff Setting (임직원)', path: '/admin/users/staff' },
+            { label: '고객사 (구매처) 관리', path: '/admin/users/customers' },
+            { label: '공급 거래처 관리', path: '/admin/users/suppliers' },
         ],
     },
     {
