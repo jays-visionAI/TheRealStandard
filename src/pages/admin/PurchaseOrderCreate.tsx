@@ -16,7 +16,7 @@ import {
 } from '../../components/Icons'
 import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
-import { createPurchaseOrder, updatePurchaseOrder /* setPurchaseOrderItems pending in service */ } from '../../lib/orderService'
+import { createPurchaseOrder, getAllPurchaseOrders, type FirestorePurchaseOrder } from '../../lib/orderService'
 import { Timestamp, collection, doc, setDoc, deleteDoc, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import './OrderSheetCreate.css' // Reusing the same style
@@ -40,6 +40,7 @@ interface OrderRow {
     unitPrice: number
     quantity: number
     unit: 'kg' | 'box'
+    boxWeight: number
     estimatedWeight: number
     totalAmount: number
 }
@@ -50,6 +51,7 @@ export default function PurchaseOrderCreate() {
     // Data states
     const [suppliers, setSuppliers] = useState<Supplier[]>([])
     const [products, setProducts] = useState<Product[]>([])
+    const [pastPurchaseOrders, setPastPurchaseOrders] = useState<FirestorePurchaseOrder[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
@@ -68,6 +70,9 @@ export default function PurchaseOrderCreate() {
     const [showDropdown, setShowDropdown] = useState(false)
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
 
+    // Kg/Box 단위 전환
+    const [orderUnit, setOrderUnit] = useState<'kg' | 'box'>('kg')
+
     // Step 3: PO Info
     const [expectedArrivalDate, setExpectedArrivalDate] = useState('')
     const [memo, setMemo] = useState('')
@@ -79,9 +84,10 @@ export default function PurchaseOrderCreate() {
     const loadData = async () => {
         try {
             setLoading(true)
-            const [suppliersData, productsData] = await Promise.all([
+            const [suppliersData, productsData, poData] = await Promise.all([
                 getAllSuppliers(),
-                getAllProducts()
+                getAllProducts(),
+                getAllPurchaseOrders()
             ])
 
             setSuppliers(suppliersData.map(s => ({
@@ -92,10 +98,12 @@ export default function PurchaseOrderCreate() {
 
             setProducts(productsData.map(p => ({
                 ...p,
-                unitPrice: p.costPrice, // For Supplier PO, we use costPrice by default
+                unitPrice: p.costPrice,
                 createdAt: p.createdAt?.toDate?.(),
                 updatedAt: p.updatedAt?.toDate?.(),
-            })))
+            })).sort((a, b) => a.name.localeCompare(b.name, 'ko')))
+
+            setPastPurchaseOrders(poData)
         } catch (err) {
             console.error('Failed to load data:', err)
             setError('데이터를 불러오는데 실패했습니다.')
@@ -116,6 +124,7 @@ export default function PurchaseOrderCreate() {
         unitPrice: 0,
         quantity: 0,
         unit: 'kg',
+        boxWeight: 0,
         estimatedWeight: 0,
         totalAmount: 0
     })
@@ -126,12 +135,44 @@ export default function PurchaseOrderCreate() {
         }
     }, [rows])
 
+    // 수량 업데이트 로직 (Kg/Box 단위 반영)
+    const updateQuantity = (rowId: string, qty: number) => {
+        setRows(prev => prev.map(row => {
+            if (row.id !== rowId) return row
+
+            let estimatedWeight = 0
+            let totalAmount = 0
+
+            if (orderUnit === 'kg') {
+                estimatedWeight = qty
+                totalAmount = qty * row.unitPrice
+            } else {
+                // Box 단위: qty = 박스 수, estimatedWeight = qty * boxWeight
+                estimatedWeight = qty * (row.boxWeight || 0)
+                totalAmount = estimatedWeight * row.unitPrice
+            }
+
+            return {
+                ...row,
+                quantity: qty,
+                estimatedWeight,
+                totalAmount
+            }
+        }))
+    }
+
     const handleRowUpdate = (id: string, updates: Partial<OrderRow>) => {
         setRows(prev => prev.map(row => {
             if (row.id === id) {
                 const updated = { ...row, ...updates }
-                // Re-calculate amount
-                updated.totalAmount = updated.unitPrice * updated.quantity
+                // 금액 재계산
+                if (orderUnit === 'kg') {
+                    updated.estimatedWeight = updated.quantity
+                    updated.totalAmount = updated.quantity * updated.unitPrice
+                } else {
+                    updated.estimatedWeight = updated.quantity * (updated.boxWeight || 0)
+                    updated.totalAmount = updated.estimatedWeight * updated.unitPrice
+                }
                 return updated
             }
             return row
@@ -165,16 +206,55 @@ export default function PurchaseOrderCreate() {
     }, [searchQuery, products])
 
     const selectProduct = (product: Product, rowId: string) => {
+        const boxWeight = product.boxWeight || 0
         handleRowUpdate(rowId, {
             productId: product.id,
             productName: product.name,
-            unitPrice: product.costPrice, // Default to cost price for PO
-            unit: product.unit === 'kg' ? 'kg' : 'box',
-            estimatedWeight: (product.unit === 'kg' ? 1 : (product.boxWeight || 0))
+            unitPrice: product.costPrice,
+            boxWeight: boxWeight
         })
         setShowDropdown(false)
         setSearchQuery('')
         setActiveRowId(null)
+    }
+
+    // 이전 발주서 복사
+    const copyPastOrder = async (po: FirestorePurchaseOrder) => {
+        if (!confirm(`발주 #${po.id.slice(-6)} 품목을 가져오시겠습니까?`)) return
+
+        try {
+            // 해당 PO의 아이템 조회
+            const itemsQuery = query(
+                collection(db, 'purchaseOrderItems'),
+                where('purchaseOrderId', '==', po.id)
+            )
+            const itemsSnap = await getDocs(itemsQuery)
+
+            const newRows: OrderRow[] = itemsSnap.docs.map((doc, idx) => {
+                const item = doc.data()
+                return {
+                    id: Math.random().toString(36).substr(2, 9),
+                    productId: item.productId || null,
+                    productName: item.productName || '',
+                    unitPrice: item.unitPrice || 0,
+                    quantity: 0, // 수량은 새로 입력
+                    unit: 'kg',
+                    boxWeight: 0,
+                    estimatedWeight: 0,
+                    totalAmount: 0
+                }
+            })
+
+            if (newRows.length > 0) {
+                setRows(newRows)
+                alert('이전 발주서 품목이 복사되었습니다. 수량을 입력해주세요.')
+            } else {
+                alert('복사할 품목이 없습니다.')
+            }
+        } catch (err) {
+            console.error('Failed to copy past order:', err)
+            alert('복사에 실패했습니다.')
+        }
     }
 
     // Submit PO
@@ -187,10 +267,9 @@ export default function PurchaseOrderCreate() {
         try {
             setSaving(true)
             const validRows = rows.filter(r => r.productId)
-            const totalsKg = validRows.reduce((sum, r) => sum + (r.estimatedWeight * r.quantity), 0)
+            const totalsKg = validRows.reduce((sum, r) => sum + r.estimatedWeight, 0)
             const totalsAmount = validRows.reduce((sum, r) => sum + r.totalAmount, 0)
 
-            // Create PO
             const poData = {
                 supplierOrgId: selectedSupplier.id,
                 supplierName: selectedSupplier.companyName,
@@ -212,7 +291,7 @@ export default function PurchaseOrderCreate() {
                     purchaseOrderId: newPO.id,
                     productId: row.productId,
                     productName: row.productName,
-                    qtyKg: row.quantity,
+                    qtyKg: row.estimatedWeight,
                     unitPrice: row.unitPrice,
                     amount: row.totalAmount
                 })
@@ -235,6 +314,11 @@ export default function PurchaseOrderCreate() {
             s.bizRegNo.includes(supplierSearch)
         )
     }, [suppliers, supplierSearch])
+
+    // Totals
+    const totalItems = rows.filter(r => r.productId).length
+    const totalWeight = rows.reduce((sum, r) => sum + r.estimatedWeight, 0)
+    const totalAmount = rows.reduce((sum, r) => sum + r.totalAmount, 0)
 
     if (loading) return <div className="loading-state"><div className="spinner"></div><p>데이터 로딩 중...</p></div>
 
@@ -331,23 +415,52 @@ export default function PurchaseOrderCreate() {
                         <div className="main-form-area">
                             <div className="glass-card">
                                 <div className="section-header">
-                                    <h2 className="section-title"><PackageIcon size={20} /> 발주 품목 설정</h2>
-                                    <button className="btn btn-ghost btn-sm" onClick={addRow}>
-                                        <PlusIcon size={16} /> 행 추가
-                                    </button>
+                                    <h2 className="section-title"><PackageIcon size={20} /> 품목 입력</h2>
+                                    {selectedSupplier && (
+                                        <div className="selected-customer-badge">
+                                            <BuildingIcon size={14} />
+                                            <span>{selectedSupplier.companyName}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <p className="guide-text">
+                                    💡 품목명 입력 시 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 행으로 이동합니다.
+                                </p>
+
+                                {/* 주문 단위 토글 */}
+                                <div className="order-unit-toggle">
+                                    <span className="toggle-label">주문 단위 설정</span>
+                                    <div className="toggle-buttons">
+                                        <button
+                                            className={`toggle-btn ${orderUnit === 'kg' ? 'active' : ''}`}
+                                            onClick={() => setOrderUnit('kg')}
+                                        >
+                                            Kg 단위 주문
+                                        </button>
+                                        <button
+                                            className={`toggle-btn ${orderUnit === 'box' ? 'active' : ''}`}
+                                            onClick={() => setOrderUnit('box')}
+                                        >
+                                            박스 단위 주문
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="excel-grid">
                                     <table className="excel-table">
                                         <thead>
                                             <tr>
-                                                <th style={{ width: 50 }}>No</th>
-                                                <th>품목명</th>
-                                                <th style={{ width: 120 }}>단위</th>
-                                                <th style={{ width: 150 }}>수량</th>
-                                                <th style={{ width: 150 }}>매입단가</th>
-                                                <th style={{ width: 150 }}>합계금액</th>
-                                                <th style={{ width: 50 }}></th>
+                                                <th style={{ width: 50 }}>NO</th>
+                                                <th>품목</th>
+                                                <th style={{ width: 120 }}>예상중량/Box</th>
+                                                <th style={{ width: 120 }}>단가(원/KG)</th>
+                                                <th style={{ width: 120 }}>
+                                                    {orderUnit === 'kg' ? '주문수량 (KG)' : '주문수량 (Box)'}
+                                                </th>
+                                                <th style={{ width: 120 }}>예상중량(KG)</th>
+                                                <th style={{ width: 120 }}>금액 (원)</th>
+                                                <th style={{ width: 40 }}></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -359,7 +472,7 @@ export default function PurchaseOrderCreate() {
                                                             <input
                                                                 type="text"
                                                                 className="grid-input"
-                                                                placeholder="품목 검색..."
+                                                                placeholder="품목명 입력..."
                                                                 value={activeRowId === row.id ? searchQuery : row.productName}
                                                                 onFocus={() => {
                                                                     setActiveRowId(row.id)
@@ -383,34 +496,34 @@ export default function PurchaseOrderCreate() {
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td>
-                                                        <select
-                                                            className="grid-select"
-                                                            value={row.unit}
-                                                            onChange={(e) => handleRowUpdate(row.id, { unit: e.target.value as any })}
-                                                        >
-                                                            <option value="kg">kg</option>
-                                                            <option value="box">box</option>
-                                                        </select>
+                                                    <td className="text-center text-muted">
+                                                        {row.boxWeight ? `${row.boxWeight}kg/Box` : '-'}
+                                                    </td>
+                                                    <td className="text-right">
+                                                        ₩{row.unitPrice.toLocaleString()}
                                                     </td>
                                                     <td>
                                                         <input
                                                             type="number"
-                                                            className="grid-input text-right"
+                                                            className="grid-input text-center"
                                                             value={row.quantity || ''}
-                                                            onChange={(e) => handleRowUpdate(row.id, { quantity: Number(e.target.value) })}
+                                                            placeholder="0"
+                                                            onChange={(e) => updateQuantity(row.id, Number(e.target.value))}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault()
+                                                                    if (index === rows.length - 1) {
+                                                                        addRow()
+                                                                    }
+                                                                }
+                                                            }}
                                                         />
                                                     </td>
-                                                    <td>
-                                                        <input
-                                                            type="number"
-                                                            className="grid-input text-right"
-                                                            value={row.unitPrice || ''}
-                                                            onChange={(e) => handleRowUpdate(row.id, { unitPrice: Number(e.target.value) })}
-                                                        />
+                                                    <td className="text-right text-muted">
+                                                        {row.estimatedWeight > 0 ? `${row.estimatedWeight.toLocaleString()}` : '-'}
                                                     </td>
                                                     <td className="text-right font-semibold">
-                                                        ₩{row.totalAmount.toLocaleString()}
+                                                        {row.totalAmount > 0 ? `₩${row.totalAmount.toLocaleString()}` : '-'}
                                                     </td>
                                                     <td>
                                                         <button className="btn btn-ghost danger btn-xs" onClick={() => deleteRow(row.id)}>
@@ -421,18 +534,82 @@ export default function PurchaseOrderCreate() {
                                             ))}
                                         </tbody>
                                     </table>
+
+                                    <button className="add-row-btn" onClick={addRow}>
+                                        + 품목 추가
+                                    </button>
                                 </div>
+
+                                {/* 합계 */}
+                                <div className="summary-banner">
+                                    <div className="summary-item">
+                                        <span className="label">합계</span>
+                                    </div>
+                                    <div className="summary-item">
+                                        <span className="value">{totalItems} 품목</span>
+                                    </div>
+                                    <div className="summary-item">
+                                        <span className="value">{totalWeight.toLocaleString()} kg</span>
+                                    </div>
+                                    <div className="summary-item">
+                                        <span className="value highlight">₩{totalAmount.toLocaleString()}</span>
+                                    </div>
+                                </div>
+
                                 <div className="step-footer mt-6">
                                     <button className="btn btn-secondary btn-lg" onClick={() => setStep(1)}>
-                                        ← 이전 단계
+                                        ← 공급사 선택
                                     </button>
                                     <button
                                         className="btn btn-primary btn-lg"
                                         disabled={rows.filter(r => r.productId).length === 0}
                                         onClick={() => setStep(3)}
                                     >
-                                        다음 단계 (발주 정보) →
+                                        발주 정보 →
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 사이드바: 이전 매입발주서 */}
+                        <div className="sidebar-panel glass-card">
+                            <h3 className="sidebar-title"><ClipboardListIcon size={18} /> 매입발주서 템플릿</h3>
+                            <div className="tab-content">
+                                <div className="template-list">
+                                    {pastPurchaseOrders.filter(po => po.supplierOrgId === selectedSupplier?.id).length === 0 ? (
+                                        <p className="empty-msg">이전 매입 발주 내역이 없습니다.</p>
+                                    ) : (
+                                        pastPurchaseOrders
+                                            .filter(po => po.supplierOrgId === selectedSupplier?.id)
+                                            .map(po => (
+                                                <div key={po.id} className="template-card-v2">
+                                                    <div className="card-left">
+                                                        <div className="card-row-1">
+                                                            <span className="card-title">발주 #{po.id.slice(-6)}</span>
+                                                        </div>
+                                                        <div className="card-row-2">
+                                                            <span className="card-date">
+                                                                {po.createdAt?.toDate?.().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '') || '-'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="card-right">
+                                                        <button
+                                                            className="btn btn-xs btn-ghost"
+                                                            onClick={() => alert(`발주서 #${po.id.slice(-6)} 미리보기 기능 준비중`)}
+                                                        >
+                                                            미리보기
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-xs btn-outline"
+                                                            onClick={() => copyPastOrder(po)}
+                                                        >
+                                                            복사하기
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -443,7 +620,7 @@ export default function PurchaseOrderCreate() {
             {step === 3 && (
                 <div className="step-content">
                     <div className="glass-card">
-                        <h2 className="section-title">최종 발주 정보 확인</h2>
+                        <h2 className="section-title">🚚 최종 발주 정보 확인</h2>
                         <div className="form-grid mt-4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                             <div className="form-group">
                                 <label className="label">입고 예정일</label>
@@ -467,12 +644,20 @@ export default function PurchaseOrderCreate() {
                         </div>
                         <div className="summary-banner mt-6">
                             <div className="summary-item">
+                                <span className="label">공급사</span>
+                                <span className="value">{selectedSupplier?.companyName}</span>
+                            </div>
+                            <div className="summary-item">
                                 <span className="label">총 품목</span>
-                                <span className="value">{rows.filter(r => r.productId).length}종</span>
+                                <span className="value">{totalItems}종</span>
+                            </div>
+                            <div className="summary-item">
+                                <span className="label">총 중량</span>
+                                <span className="value">{totalWeight.toLocaleString()} kg</span>
                             </div>
                             <div className="summary-item">
                                 <span className="label">총 합계금액</span>
-                                <span className="value highlight">₩{rows.reduce((sum, r) => sum + r.totalAmount, 0).toLocaleString()}</span>
+                                <span className="value highlight">₩{totalAmount.toLocaleString()}</span>
                             </div>
                         </div>
                         <div className="step-footer mt-8">
