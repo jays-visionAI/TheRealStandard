@@ -183,29 +183,70 @@ export default function OrderSheetCreate() {
         setHighlightIndex(0)
     }, [searchQuery, searchProducts])
 
-    // 주문 단위 변경 시 모든 행의 수량 계산 방식 변경
-    useEffect(() => {
-        setRows(prevRows => prevRows.map(row => {
-            if (!row.productId) return { ...row, unit: orderUnit };
-            const product = products.find(p => p.id === row.productId);
-            const weightPerBox = product?.boxWeight || 1;
+    // 주문 단위 변경 핸들러 (Box 전환 시 확인 모달)
+    const handleUnitChange = (newUnit: 'kg' | 'box') => {
+        if (newUnit === orderUnit) return;
 
-            let newQuantity = row.quantity;
-            if (orderUnit === 'box') {
-                // Kg -> Box 변환 (기존 예상 중량 기준)
-                newQuantity = row.estimatedWeight / weightPerBox;
-            } else {
-                // Box -> Kg 변환
-                newQuantity = row.estimatedWeight;
+        if (newUnit === 'box') {
+            // Box 단위로 전환 시 검증
+            const filledRows = rows.filter(r => r.productId);
+
+            // boxWeight가 없는 상품이 있는지 확인
+            const rowsWithoutBoxWeight = filledRows.filter(row => {
+                const product = products.find(p => p.id === row.productId);
+                return !product?.boxWeight || product.boxWeight <= 0;
+            });
+
+            if (rowsWithoutBoxWeight.length > 0) {
+                const productNames = rowsWithoutBoxWeight.map(r => r.productName).join(', ');
+                alert(`⚠️ 박스 단위 전환 불가\n\n다음 상품에 예상중량/Box가 설정되어 있지 않습니다:\n${productNames}\n\n상품리스트 데이터베이스에서 예상중량/Box를 설정한 뒤에 사용 가능합니다.`);
+                return;
             }
 
-            return {
-                ...row,
-                quantity: newQuantity,
-                unit: orderUnit
-            };
-        }));
-    }, [orderUnit, products]);
+            // 전환 확인 모달
+            const confirmed = confirm(
+                '📦 박스 단위 주문으로 전환\n\n주문 리스트 중 1박스 예상중량보다 적은 Kg으로 주문한 항목이 있는 경우 1박스당 주문수량으로 자동 보정합니다.\n\n확인을 눌러 전환하시겠습니까?'
+            );
+
+            if (!confirmed) return;
+
+            // Box 단위로 변환
+            setRows(prevRows => prevRows.map(row => {
+                if (!row.productId) return { ...row, unit: 'box' };
+                const product = products.find(p => p.id === row.productId);
+                const weightPerBox = product?.boxWeight || 1;
+
+                // Kg -> Box 변환 (올림 처리하여 최소 1박스)
+                let newQuantity = Math.ceil(row.estimatedWeight / weightPerBox);
+                if (newQuantity < 1 && row.estimatedWeight > 0) newQuantity = 1;
+
+                const newEstimatedWeight = newQuantity * weightPerBox;
+                const newTotalAmount = newEstimatedWeight * row.unitPrice;
+
+                return {
+                    ...row,
+                    quantity: newQuantity,
+                    unit: 'box',
+                    estimatedWeight: newEstimatedWeight,
+                    totalAmount: newTotalAmount
+                };
+            }));
+            setOrderUnit('box');
+        } else {
+            // Kg 단위로 전환 (Box -> Kg)
+            setRows(prevRows => prevRows.map(row => {
+                if (!row.productId) return { ...row, unit: 'kg' };
+
+                // Box에서 Kg로 변환: 예상중량 그대로 유지, quantity = estimatedWeight
+                return {
+                    ...row,
+                    quantity: row.estimatedWeight,
+                    unit: 'kg'
+                };
+            }));
+            setOrderUnit('kg');
+        }
+    };
 
     // 드롭다운 외부 클릭 시 닫기
     useEffect(() => {
@@ -519,7 +560,7 @@ export default function OrderSheetCreate() {
             {/* Header */}
             <header className="page-header">
                 <div className="header-left">
-                    <h1>신규 발주서 생성</h1>
+                    <h1>신규 매출발주서 생성</h1>
                     <p className="text-secondary">고객사를 선택하고 발주 품목 및 배송 정보를 설정합니다</p>
                 </div>
             </header>
@@ -670,13 +711,13 @@ export default function OrderSheetCreate() {
                                 <div className="toggle-group">
                                     <button
                                         className={`toggle-btn ${orderUnit === 'kg' ? 'active' : ''}`}
-                                        onClick={() => setOrderUnit('kg')}
+                                        onClick={() => handleUnitChange('kg')}
                                     >
                                         Kg 단위 주문
                                     </button>
                                     <button
                                         className={`toggle-btn ${orderUnit === 'box' ? 'active' : ''}`}
-                                        onClick={() => setOrderUnit('box')}
+                                        onClick={() => handleUnitChange('box')}
                                     >
                                         박스 단위 주문
                                     </button>
@@ -849,7 +890,7 @@ export default function OrderSheetCreate() {
                                         className={`tab-btn ${sidebarTab === 'pastOrders' ? 'active' : ''}`}
                                         onClick={() => setSidebarTab('pastOrders')}
                                     >
-                                        이전 발주서
+                                        이전 매출발주서
                                     </button>
                                 </div>
 
