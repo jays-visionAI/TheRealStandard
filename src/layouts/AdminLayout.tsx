@@ -127,7 +127,6 @@ export default function AdminLayout() {
                                         <NavLink
                                             key={child.path}
                                             to={child.path}
-                                            end
                                             className={({ isActive }) =>
                                                 `nav-link ${isActive ? 'active' : ''}`
                                             }
