@@ -33,7 +33,7 @@ service cloud.firestore {
     match /customers/{customerId} {
       allow read: if isAuthenticated();
       allow create, update: if isAuthenticated();
-      allow delete: if isAdmin();
+      allow delete: if isAuthenticated();
     }
     
     // ============ PRODUCTS ============

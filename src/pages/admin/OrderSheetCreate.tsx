@@ -860,17 +860,32 @@ export default function OrderSheetCreate() {
                                                 <p className="empty-msg">등록된 단가표가 없습니다.</p>
                                             ) : (
                                                 pastPriceLists.map(list => (
-                                                    <div key={list.id} className="template-card">
-                                                        <div className="card-info">
-                                                            <span className="card-title">{list.title}</span>
-                                                            <span className="card-meta">{list.items.length}개 품목</span>
+                                                    <div key={list.id} className="template-card-v2">
+                                                        <div className="card-left">
+                                                            <div className="card-row-1">
+                                                                <span className="card-title">{list.title}</span>
+                                                                <span className="card-count">{list.items.length}개 품목</span>
+                                                            </div>
+                                                            <div className="card-row-2">
+                                                                <span className="card-date">
+                                                                    {list.createdAt?.toDate?.().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '') || '-'}
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        <button
-                                                            className="btn btn-xs btn-outline"
-                                                            onClick={() => copyPriceList(list)}
-                                                        >
-                                                            복사하기
-                                                        </button>
+                                                        <div className="card-right">
+                                                            <button
+                                                                className="btn btn-xs btn-ghost"
+                                                                onClick={() => alert(`단가표 "${list.title}" 미리보기 기능 준비중`)}
+                                                            >
+                                                                미리보기
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-xs btn-outline"
+                                                                onClick={() => copyPriceList(list)}
+                                                            >
+                                                                복사하기
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 ))
                                             )}
@@ -883,19 +898,31 @@ export default function OrderSheetCreate() {
                                                 pastOrderSheets
                                                     .filter(o => o.customerOrgId === selectedCustomer?.id)
                                                     .map(order => (
-                                                        <div key={order.id} className="template-card">
-                                                            <div className="card-info">
-                                                                <span className="card-title">발주 #{order.id.slice(-6)}</span>
-                                                                <span className="card-meta">
-                                                                    {order.createdAt?.toDate?.().toLocaleDateString() || '-'}
-                                                                </span>
+                                                        <div key={order.id} className="template-card-v2">
+                                                            <div className="card-left">
+                                                                <div className="card-row-1">
+                                                                    <span className="card-title">발주 #{order.id.slice(-6)}</span>
+                                                                </div>
+                                                                <div className="card-row-2">
+                                                                    <span className="card-date">
+                                                                        {order.createdAt?.toDate?.().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '') || '-'}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                            <button
-                                                                className="btn btn-xs btn-outline"
-                                                                onClick={() => copyPastOrder(order)}
-                                                            >
-                                                                복사하기
-                                                            </button>
+                                                            <div className="card-right">
+                                                                <button
+                                                                    className="btn btn-xs btn-ghost"
+                                                                    onClick={() => alert(`발주서 #${order.id.slice(-6)} 미리보기 기능 준비중`)}
+                                                                >
+                                                                    미리보기
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-xs btn-outline"
+                                                                    onClick={() => copyPastOrder(order)}
+                                                                >
+                                                                    복사하기
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     ))
                                             )}
