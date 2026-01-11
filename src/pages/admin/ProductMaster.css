@@ -451,3 +451,34 @@
     font-size: var(--text-sm);
     max-width: 120px;
 }
+/* Compact Table for Price List Selection */
+.compact-table th {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+}
+
+.compact-table td {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+}
+
+.compact-table .name-cell {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.compact-table .name-cell .name {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+}
+
+.compact-table .name-cell .category-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+}
+
+.compact-table .input {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-sm);
+}

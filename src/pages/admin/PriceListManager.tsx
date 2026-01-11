@@ -38,6 +38,17 @@ export default function PriceListManager() {
     const [title, setTitle] = useState('')
     const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set())
     const [supplyPrices, setSupplyPrices] = useState<Record<string, number>>({})
+    const [productSearch, setProductSearch] = useState('')
+
+    // Filter products based on search query
+    const filteredProducts = useMemo(() => {
+        if (!productSearch.trim()) return products
+        const query = productSearch.toLowerCase()
+        return products.filter(p =>
+            p.name.toLowerCase().includes(query) ||
+            (p.category1 && p.category1.toLowerCase().includes(query))
+        )
+    }, [products, productSearch])
 
     const loadData = async () => {
         try {
@@ -310,17 +321,39 @@ export default function PriceListManager() {
                                 </div>
                             </div>
 
-                            <div className="table-container-scroll" style={{ maxHeight: '450px', overflowY: 'auto' }}>
-                                <table className="product-table price-selection-table">
+                            {/* Product Search */}
+                            <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <SearchIcon size={18} color="var(--text-secondary)" />
+                                <input
+                                    type="text"
+                                    className="input"
+                                    style={{ flex: 1, padding: '8px 12px', fontSize: '14px' }}
+                                    placeholder="상품명으로 검색..."
+                                    value={productSearch}
+                                    onChange={e => setProductSearch(e.target.value)}
+                                />
+                                {productSearch && (
+                                    <button
+                                        type="button"
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                                        onClick={() => setProductSearch('')}
+                                    >
+                                        <XIcon size={16} color="var(--text-secondary)" />
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="table-container-scroll" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                                <table className="product-table price-selection-table compact-table">
                                     <thead>
                                         <tr>
                                             <th className="checkbox-col">
                                                 <input
                                                     type="checkbox"
-                                                    checked={selectedProductIds.size === products.length && products.length > 0}
+                                                    checked={selectedProductIds.size === filteredProducts.length && filteredProducts.length > 0}
                                                     onChange={(e) => {
                                                         if (e.target.checked) {
-                                                            setSelectedProductIds(new Set(products.map(p => p.id)))
+                                                            setSelectedProductIds(new Set(filteredProducts.map(p => p.id)))
                                                         } else {
                                                             setSelectedProductIds(new Set())
                                                         }
@@ -335,7 +368,7 @@ export default function PriceListManager() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {products.map((p) => {
+                                        {filteredProducts.map((p) => {
                                             const isSelected = selectedProductIds.has(p.id)
                                             const sPrice = supplyPrices[p.id] || 0
                                             const isBelowCost = isSelected && sPrice < p.costPrice
