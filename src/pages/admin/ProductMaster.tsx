@@ -103,7 +103,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                 return false
             }
             return true
-        })
+        }).sort((a, b) => a.name.localeCompare(b.name, 'ko'))
     }, [products, searchQuery, categoryFilter, showInactive, channel])
 
     // 통계

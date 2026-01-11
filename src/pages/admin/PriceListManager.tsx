@@ -66,7 +66,9 @@ export default function PriceListManager() {
                 isActive: p.isActive !== false,
                 category2: p.category2 || 'B2B',
                 category1: p.category1 || (p as any).category || '냉장'
-            })).filter(p => p.isActive && (p.category2 === 'B2B' || p.category2 === 'BOTH'))
+            }))
+                .filter(p => p.isActive && (p.category2 === 'B2B' || p.category2 === 'BOTH'))
+                .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
 
             setProducts(b2bProducts)
         } catch (err) {
