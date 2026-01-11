@@ -12,14 +12,16 @@ import {
     XIcon,
     PlusIcon,
     AlertTriangleIcon,
-    CheckCircleIcon
+    CheckCircleIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon
 } from '../../components/Icons'
 import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import { createPurchaseOrder, getAllPurchaseOrders, type FirestorePurchaseOrder } from '../../lib/orderService'
 import { Timestamp, collection, doc, setDoc, deleteDoc, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
-import './OrderSheetCreate.css' // Reusing the same style
+import './OrderSheetCreate.css'
 
 // 로컬 타입
 type Supplier = Omit<FirestoreSupplier, 'createdAt' | 'updatedAt'> & {
@@ -45,6 +47,9 @@ interface OrderRow {
     totalAmount: number
 }
 
+// 숫자 포맷
+const formatCurrency = (num: number) => num.toLocaleString()
+
 export default function PurchaseOrderCreate() {
     const navigate = useNavigate()
 
@@ -69,9 +74,13 @@ export default function PurchaseOrderCreate() {
     const [searchQuery, setSearchQuery] = useState('')
     const [showDropdown, setShowDropdown] = useState(false)
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+    const [highlightIndex, setHighlightIndex] = useState(0)
 
     // Kg/Box 단위 전환
     const [orderUnit, setOrderUnit] = useState<'kg' | 'box'>('kg')
+
+    // Sidebar
+    const [showSidebar, setShowSidebar] = useState(true)
 
     // Step 3: PO Info
     const [expectedArrivalDate, setExpectedArrivalDate] = useState('')
@@ -147,7 +156,6 @@ export default function PurchaseOrderCreate() {
                 estimatedWeight = qty
                 totalAmount = qty * row.unitPrice
             } else {
-                // Box 단위: qty = 박스 수, estimatedWeight = qty * boxWeight
                 estimatedWeight = qty * (row.boxWeight || 0)
                 totalAmount = estimatedWeight * row.unitPrice
             }
@@ -165,7 +173,6 @@ export default function PurchaseOrderCreate() {
         setRows(prev => prev.map(row => {
             if (row.id === id) {
                 const updated = { ...row, ...updates }
-                // 금액 재계산
                 if (orderUnit === 'kg') {
                     updated.estimatedWeight = updated.quantity
                     updated.totalAmount = updated.quantity * updated.unitPrice
@@ -191,6 +198,15 @@ export default function PurchaseOrderCreate() {
         setRows(prev => prev.filter(r => r.id !== id))
     }
 
+    const clearProduct = (rowId: string) => {
+        setRows(prev => prev.map(row => {
+            if (row.id === rowId) {
+                return createEmptyRow()
+            }
+            return row
+        }))
+    }
+
     // Product search logic
     useEffect(() => {
         if (!searchQuery.trim()) {
@@ -203,9 +219,10 @@ export default function PurchaseOrderCreate() {
             p.category1.toLowerCase().includes(q)
         ).slice(0, 10)
         setFilteredProducts(filtered)
+        setHighlightIndex(0)
     }, [searchQuery, products])
 
-    const selectProduct = (product: Product, rowId: string) => {
+    const selectProduct = (rowId: string, product: Product) => {
         const boxWeight = product.boxWeight || 0
         handleRowUpdate(rowId, {
             productId: product.id,
@@ -218,12 +235,29 @@ export default function PurchaseOrderCreate() {
         setActiveRowId(null)
     }
 
+    // 키보드 핸들러
+    const handleKeyDown = (e: React.KeyboardEvent, rowId: string, field: string) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setHighlightIndex(prev => Math.min(prev + 1, filteredProducts.length - 1))
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setHighlightIndex(prev => Math.max(prev - 1, 0))
+        } else if (e.key === 'Enter') {
+            e.preventDefault()
+            if (showDropdown && filteredProducts.length > 0) {
+                selectProduct(rowId, filteredProducts[highlightIndex])
+            }
+        } else if (e.key === 'Escape') {
+            setShowDropdown(false)
+        }
+    }
+
     // 이전 발주서 복사
     const copyPastOrder = async (po: FirestorePurchaseOrder) => {
         if (!confirm(`발주 #${po.id.slice(-6)} 품목을 가져오시겠습니까?`)) return
 
         try {
-            // 해당 PO의 아이템 조회
             const itemsQuery = query(
                 collection(db, 'purchaseOrderItems'),
                 where('purchaseOrderId', '==', po.id)
@@ -237,7 +271,7 @@ export default function PurchaseOrderCreate() {
                     productId: item.productId || null,
                     productName: item.productName || '',
                     unitPrice: item.unitPrice || 0,
-                    quantity: 0, // 수량은 새로 입력
+                    quantity: 0,
                     unit: 'kg',
                     boxWeight: 0,
                     estimatedWeight: 0,
@@ -282,7 +316,6 @@ export default function PurchaseOrderCreate() {
 
             const newPO = await createPurchaseOrder(poData as any)
 
-            // Save Items
             const itemsCollection = collection(db, 'purchaseOrderItems')
             for (const row of validRows) {
                 const itemRef = doc(itemsCollection)
@@ -316,7 +349,8 @@ export default function PurchaseOrderCreate() {
     }, [suppliers, supplierSearch])
 
     // Totals
-    const totalItems = rows.filter(r => r.productId).length
+    const validRows = rows.filter(r => r.productId)
+    const totalItems = validRows.length
     const totalWeight = rows.reduce((sum, r) => sum + r.estimatedWeight, 0)
     const totalAmount = rows.reduce((sum, r) => sum + r.totalAmount, 0)
 
@@ -396,223 +430,254 @@ export default function PurchaseOrderCreate() {
                                 </tbody>
                             </table>
                         </div>
-                        <div className="step-footer mt-6">
+                        <div className="step-actions">
+                            <div></div>
                             <button
                                 className="btn btn-primary btn-lg"
                                 disabled={!selectedSupplier}
                                 onClick={() => setStep(2)}
                             >
-                                다음 단계 (품목 설정) →
+                                품목 설정 →
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* Step 2: 품목 설정 */}
             {step === 2 && (
-                <div className="step-content">
-                    <div className="main-layout-with-sidebar">
-                        <div className="main-form-area">
-                            <div className="glass-card">
-                                <div className="section-header">
-                                    <h2 className="section-title"><PackageIcon size={20} /> 품목 입력</h2>
-                                    {selectedSupplier && (
-                                        <div className="selected-customer-badge">
-                                            <BuildingIcon size={14} />
-                                            <span>{selectedSupplier.companyName}</span>
-                                        </div>
-                                    )}
-                                </div>
+                <div className="step-content with-sidebar">
+                    {/* 메인 그리드 */}
+                    <div className="main-panel">
+                        <div className="glass-card">
+                            <div className="section-header">
+                                <h2 className="section-title"><PackageIcon size={20} /> 품목 입력</h2>
+                                <span className="customer-badge">
+                                    <BuildingIcon size={14} /> {selectedSupplier?.companyName}
+                                </span>
+                            </div>
 
-                                <p className="guide-text">
-                                    💡 품목명 입력 시 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 행으로 이동합니다.
-                                </p>
+                            <p className="guide-text">
+                                💡 품목명 입력 시 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 행으로 이동합니다.
+                            </p>
 
-                                {/* 주문 단위 토글 */}
-                                <div className="order-unit-toggle">
-                                    <span className="toggle-label">주문 단위 설정</span>
-                                    <div className="toggle-buttons">
-                                        <button
-                                            className={`toggle-btn ${orderUnit === 'kg' ? 'active' : ''}`}
-                                            onClick={() => setOrderUnit('kg')}
-                                        >
-                                            Kg 단위 주문
-                                        </button>
-                                        <button
-                                            className={`toggle-btn ${orderUnit === 'box' ? 'active' : ''}`}
-                                            onClick={() => setOrderUnit('box')}
-                                        >
-                                            박스 단위 주문
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="excel-grid">
-                                    <table className="excel-table">
-                                        <thead>
-                                            <tr>
-                                                <th style={{ width: 50 }}>NO</th>
-                                                <th>품목</th>
-                                                <th style={{ width: 120 }}>예상중량/Box</th>
-                                                <th style={{ width: 120 }}>단가(원/KG)</th>
-                                                <th style={{ width: 120 }}>
-                                                    {orderUnit === 'kg' ? '주문수량 (KG)' : '주문수량 (Box)'}
-                                                </th>
-                                                <th style={{ width: 120 }}>예상중량(KG)</th>
-                                                <th style={{ width: 120 }}>금액 (원)</th>
-                                                <th style={{ width: 40 }}></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {rows.map((row, index) => (
-                                                <tr key={row.id}>
-                                                    <td className="text-center text-muted">{index + 1}</td>
-                                                    <td className="product-cell">
-                                                        <div className="input-wrapper relative">
-                                                            <input
-                                                                type="text"
-                                                                className="grid-input"
-                                                                placeholder="품목명 입력..."
-                                                                value={activeRowId === row.id ? searchQuery : row.productName}
-                                                                onFocus={() => {
-                                                                    setActiveRowId(row.id)
-                                                                    setShowDropdown(true)
-                                                                }}
-                                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                            />
-                                                            {showDropdown && activeRowId === row.id && filteredProducts.length > 0 && (
-                                                                <div className="product-dropdown" ref={dropdownRef}>
-                                                                    {filteredProducts.map(p => (
-                                                                        <div
-                                                                            key={p.id}
-                                                                            className="dropdown-item"
-                                                                            onClick={() => selectProduct(p, row.id)}
-                                                                        >
-                                                                            <span className="p-name">{p.name}</span>
-                                                                            <span className="p-price">₩{p.costPrice.toLocaleString()}</span>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="text-center text-muted">
-                                                        {row.boxWeight ? `${row.boxWeight}kg/Box` : '-'}
-                                                    </td>
-                                                    <td className="text-right">
-                                                        ₩{row.unitPrice.toLocaleString()}
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            type="number"
-                                                            className="grid-input text-center"
-                                                            value={row.quantity || ''}
-                                                            placeholder="0"
-                                                            onChange={(e) => updateQuantity(row.id, Number(e.target.value))}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter') {
-                                                                    e.preventDefault()
-                                                                    if (index === rows.length - 1) {
-                                                                        addRow()
-                                                                    }
-                                                                }
-                                                            }}
-                                                        />
-                                                    </td>
-                                                    <td className="text-right text-muted">
-                                                        {row.estimatedWeight > 0 ? `${row.estimatedWeight.toLocaleString()}` : '-'}
-                                                    </td>
-                                                    <td className="text-right font-semibold">
-                                                        {row.totalAmount > 0 ? `₩${row.totalAmount.toLocaleString()}` : '-'}
-                                                    </td>
-                                                    <td>
-                                                        <button className="btn btn-ghost danger btn-xs" onClick={() => deleteRow(row.id)}>
-                                                            <XIcon size={14} />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-
-                                    <button className="add-row-btn" onClick={addRow}>
-                                        + 품목 추가
-                                    </button>
-                                </div>
-
-                                {/* 합계 */}
-                                <div className="summary-banner">
-                                    <div className="summary-item">
-                                        <span className="label">합계</span>
-                                    </div>
-                                    <div className="summary-item">
-                                        <span className="value">{totalItems} 품목</span>
-                                    </div>
-                                    <div className="summary-item">
-                                        <span className="value">{totalWeight.toLocaleString()} kg</span>
-                                    </div>
-                                    <div className="summary-item">
-                                        <span className="value highlight">₩{totalAmount.toLocaleString()}</span>
-                                    </div>
-                                </div>
-
-                                <div className="step-footer mt-6">
-                                    <button className="btn btn-secondary btn-lg" onClick={() => setStep(1)}>
-                                        ← 공급사 선택
+                            <div className="order-unit-toggle-bar">
+                                <div className="toggle-label">주문 단위 설정</div>
+                                <div className="toggle-group">
+                                    <button
+                                        className={`toggle-btn ${orderUnit === 'kg' ? 'active' : ''}`}
+                                        onClick={() => setOrderUnit('kg')}
+                                    >
+                                        Kg 단위 주문
                                     </button>
                                     <button
-                                        className="btn btn-primary btn-lg"
-                                        disabled={rows.filter(r => r.productId).length === 0}
-                                        onClick={() => setStep(3)}
+                                        className={`toggle-btn ${orderUnit === 'box' ? 'active' : ''}`}
+                                        onClick={() => setOrderUnit('box')}
                                     >
-                                        발주 정보 →
+                                        박스 단위 주문
                                     </button>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* 사이드바: 이전 매입발주서 */}
-                        <div className="sidebar-panel glass-card">
-                            <h3 className="sidebar-title"><ClipboardListIcon size={18} /> 매입발주서 템플릿</h3>
-                            <div className="tab-content">
-                                <div className="template-list">
-                                    {pastPurchaseOrders.filter(po => po.supplierOrgId === selectedSupplier?.id).length === 0 ? (
-                                        <p className="empty-msg">이전 매입 발주 내역이 없습니다.</p>
-                                    ) : (
-                                        pastPurchaseOrders
-                                            .filter(po => po.supplierOrgId === selectedSupplier?.id)
-                                            .map(po => (
-                                                <div key={po.id} className="template-card-v2">
-                                                    <div className="card-left">
-                                                        <div className="card-row-1">
-                                                            <span className="card-title">발주 #{po.id.slice(-6)}</span>
-                                                        </div>
-                                                        <div className="card-row-2">
-                                                            <span className="card-date">
-                                                                {po.createdAt?.toDate?.().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '') || '-'}
-                                                            </span>
-                                                        </div>
+                            {/* Excel-like Grid */}
+                            <div className="grid-container">
+                                <table className="order-table">
+                                    <thead>
+                                        <tr>
+                                            <th className="col-no">No</th>
+                                            <th className="col-product">품목</th>
+                                            <th className="col-unit" style={{ width: '100px', fontSize: '13px' }}>예상중량/Box</th>
+                                            <th className="col-price">단가(원/kg)</th>
+                                            <th className="col-qty">주문수량 ({orderUnit === 'kg' ? 'Kg' : 'Box'})</th>
+                                            <th className="col-weight">예상중량(kg)</th>
+                                            <th className="col-amount">금액(원)</th>
+                                            <th className="col-action"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {rows.map((row, index) => (
+                                            <tr key={row.id} className={row.productId ? 'filled' : ''}>
+                                                <td className="col-no">{index + 1}</td>
+                                                <td className="col-product">
+                                                    <div className="product-input-wrapper" ref={activeRowId === row.id ? dropdownRef : null}>
+                                                        <input
+                                                            ref={el => { if (el) inputRefs.current.set(`name-${row.id}`, el) }}
+                                                            type="text"
+                                                            className="cell-input product-input"
+                                                            value={row.productId ? row.productName : searchQuery}
+                                                            onChange={(e) => {
+                                                                if (!row.productId) {
+                                                                    setSearchQuery(e.target.value)
+                                                                    setActiveRowId(row.id)
+                                                                    setShowDropdown(true)
+                                                                }
+                                                            }}
+                                                            onFocus={() => {
+                                                                setActiveRowId(row.id)
+                                                                if (!row.productId && searchQuery) {
+                                                                    setShowDropdown(true)
+                                                                }
+                                                            }}
+                                                            onKeyDown={(e) => handleKeyDown(e, row.id, 'name')}
+                                                            placeholder="품목명 입력..."
+                                                            readOnly={!!row.productId}
+                                                        />
+                                                        {row.productId && (
+                                                            <button
+                                                                className="clear-btn"
+                                                                onClick={() => clearProduct(row.id)}
+                                                            >✕</button>
+                                                        )}
+
+                                                        {/* Autocomplete Dropdown */}
+                                                        {showDropdown && activeRowId === row.id && filteredProducts.length > 0 && (
+                                                            <div className="autocomplete-dropdown">
+                                                                {filteredProducts.map((product, idx) => (
+                                                                    <div
+                                                                        key={product.id}
+                                                                        className={`dropdown-item ${idx === highlightIndex ? 'highlighted' : ''}`}
+                                                                        onClick={() => selectProduct(row.id, product)}
+                                                                        onMouseEnter={() => setHighlightIndex(idx)}
+                                                                    >
+                                                                        <span className="product-name">{product.name}</span>
+                                                                        <span className="product-category">{product.category1}</span>
+                                                                        <span className="product-price">₩{formatCurrency(product.costPrice)}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <div className="card-right">
+                                                </td>
+                                                <td className="col-unit">
+                                                    {row.boxWeight ? `${row.boxWeight}kg` : '-'}
+                                                </td>
+                                                <td className="col-price">
+                                                    {row.productId ? `₩${formatCurrency(row.unitPrice)}` : '-'}
+                                                </td>
+                                                <td className="col-qty">
+                                                    <input
+                                                        ref={el => { if (el) inputRefs.current.set(`qty-${row.id}`, el) }}
+                                                        type="number"
+                                                        className="cell-input qty-input"
+                                                        value={row.quantity || ''}
+                                                        onChange={(e) => updateQuantity(row.id, Number(e.target.value))}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault()
+                                                                if (index === rows.length - 1) {
+                                                                    addRow()
+                                                                }
+                                                            }
+                                                        }}
+                                                        placeholder="0"
+                                                        disabled={!row.productId}
+                                                    />
+                                                </td>
+                                                <td className="col-weight">
+                                                    {row.estimatedWeight > 0 ? formatCurrency(row.estimatedWeight) : '-'}
+                                                </td>
+                                                <td className="col-amount">
+                                                    {row.totalAmount > 0 ? `₩${formatCurrency(row.totalAmount)}` : '-'}
+                                                </td>
+                                                <td className="col-action">
+                                                    {rows.length > 1 && (
                                                         <button
-                                                            className="btn btn-xs btn-ghost"
-                                                            onClick={() => alert(`발주서 #${po.id.slice(-6)} 미리보기 기능 준비중`)}
+                                                            className="delete-row-btn"
+                                                            onClick={() => deleteRow(row.id)}
                                                         >
-                                                            미리보기
+                                                            <XIcon size={14} />
                                                         </button>
-                                                        <button
-                                                            className="btn btn-xs btn-outline"
-                                                            onClick={() => copyPastOrder(po)}
-                                                        >
-                                                            복사하기
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))
-                                    )}
-                                </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="add-row-tr">
+                                            <td colSpan={8}>
+                                                <button className="add-row-btn" onClick={addRow}>+ 품목 추가</button>
+                                            </td>
+                                        </tr>
+                                        <tr className="total-row">
+                                            <td className="total-label" colSpan={4}>합계</td>
+                                            <td className="total-qty">{totalItems} 품목</td>
+                                            <td className="total-weight">{formatCurrency(totalWeight)} kg</td>
+                                            <td className="total-amount">₩{formatCurrency(totalAmount)}</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
                             </div>
                         </div>
+
+                        <div className="step-actions glass-card">
+                            <button className="btn btn-secondary" onClick={() => setStep(1)}>
+                                ← 공급사 선택
+                            </button>
+                            <button
+                                className="btn btn-primary btn-lg"
+                                disabled={validRows.length === 0}
+                                onClick={() => setStep(3)}
+                            >
+                                발주 정보 →
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 매입발주서 템플릿 사이드바 */}
+                    <div className={`sidebar ${showSidebar ? 'open' : 'collapsed'}`}>
+                        <button
+                            className="sidebar-toggle"
+                            onClick={() => setShowSidebar(!showSidebar)}
+                            title={showSidebar ? "접기" : "템플릿 보기"}
+                        >
+                            {showSidebar ? <ChevronRightIcon size={18} /> : <ChevronLeftIcon size={18} />}
+                        </button>
+
+                        {showSidebar && (
+                            <div className="sidebar-content glass-card">
+                                <h3 className="sidebar-title"><ClipboardListIcon size={18} /> 매입발주서 템플릿</h3>
+
+                                <div className="tab-content">
+                                    <div className="template-list">
+                                        {pastPurchaseOrders.filter(po => po.supplierOrgId === selectedSupplier?.id).length === 0 ? (
+                                            <p className="empty-msg">이전 매입 발주 내역이 없습니다.</p>
+                                        ) : (
+                                            pastPurchaseOrders
+                                                .filter(po => po.supplierOrgId === selectedSupplier?.id)
+                                                .map(po => (
+                                                    <div key={po.id} className="template-card-v2">
+                                                        <div className="card-left">
+                                                            <div className="card-row-1">
+                                                                <span className="card-title">발주 #{po.id.slice(-6)}</span>
+                                                            </div>
+                                                            <div className="card-row-2">
+                                                                <span className="card-date">
+                                                                    {po.createdAt?.toDate?.().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '') || '-'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="card-right">
+                                                            <button
+                                                                className="btn btn-xs btn-ghost"
+                                                                onClick={() => alert(`발주서 #${po.id.slice(-6)} 미리보기 기능 준비중`)}
+                                                            >
+                                                                미리보기
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-xs btn-outline"
+                                                                onClick={() => copyPastOrder(po)}
+                                                            >
+                                                                복사하기
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -653,16 +718,16 @@ export default function PurchaseOrderCreate() {
                             </div>
                             <div className="summary-item">
                                 <span className="label">총 중량</span>
-                                <span className="value">{totalWeight.toLocaleString()} kg</span>
+                                <span className="value">{formatCurrency(totalWeight)} kg</span>
                             </div>
                             <div className="summary-item">
                                 <span className="label">총 합계금액</span>
-                                <span className="value highlight">₩{totalAmount.toLocaleString()}</span>
+                                <span className="value highlight">₩{formatCurrency(totalAmount)}</span>
                             </div>
                         </div>
-                        <div className="step-footer mt-8">
-                            <button className="btn btn-secondary btn-lg" onClick={() => setStep(2)}>
-                                ← 이전 단계
+                        <div className="step-actions mt-8">
+                            <button className="btn btn-secondary" onClick={() => setStep(2)}>
+                                ← 품목 설정
                             </button>
                             <button
                                 className="btn btn-primary btn-lg"
