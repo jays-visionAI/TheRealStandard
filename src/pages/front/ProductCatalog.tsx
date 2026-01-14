@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
-import { PackageIcon, SearchIcon, PlusIcon } from '../../components/Icons'
+import { PackageIcon, SearchIcon, PlusIcon, ListIcon, GridIcon } from '../../components/Icons'
 import './ProductCatalog.css'
 
 export default function ProductCatalog() {
@@ -8,6 +8,7 @@ export default function ProductCatalog() {
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [categoryFilter, setCategoryFilter] = useState('all')
+    const [viewMode, setViewMode] = useState<'card' | 'list'>('product_card')
 
     useEffect(() => {
         const load = async () => {
@@ -62,6 +63,23 @@ export default function ProductCatalog() {
             </header>
 
             <div className="catalog-controls glass-card animate-slide-up">
+                <div className="controls-top">
+                    <div className="view-toggle">
+                        <button
+                            className={`toggle-btn ${viewMode === 'card' ? 'active' : ''}`}
+                            onClick={() => setViewMode('card')}
+                        >
+                            <GridIcon size={18} /> 카드뷰
+                        </button>
+                        <button
+                            className={`toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                            onClick={() => setViewMode('list')}
+                        >
+                            <ListIcon size={18} /> 리스트뷰
+                        </button>
+                    </div>
+                </div>
+
                 <div className="search-box">
                     <SearchIcon size={18} className="icon" />
                     <input
@@ -88,45 +106,85 @@ export default function ProductCatalog() {
                 </div>
             </div>
 
-            <div className="product-grid">
-                {filtered.map((product, idx) => (
-                    <div
-                        key={product.id}
-                        className="product-card glass-card animate-fade-in"
-                        style={{ animationDelay: `${idx * 0.05}s` }}
-                    >
-                        <div className={`product-visual ${product.category1}`}>
-                            <PackageIcon size={40} className="icon" />
-                        </div>
-                        <div className="product-details">
-                            <div className="top">
-                                <span className={`category-tag ${product.category1}`}>{product.category1}</span>
-                                <h4 className="product-name">{product.name}</h4>
+            {viewMode === 'card' ? (
+                <div className="product-grid">
+                    {filtered.map((product, idx) => (
+                        <div
+                            key={product.id}
+                            className="product-card glass-card animate-fade-in"
+                            style={{ animationDelay: `${idx * 0.05}s` }}
+                        >
+                            <div className={`product-visual ${product.category1}`}>
+                                <PackageIcon size={40} className="icon" />
                             </div>
-                            <div className="middle">
-                                <p className="product-memo">{product.memo || '-'}</p>
-                                <p className="product-unit">판매단위: {product.unit.toUpperCase()}</p>
-                                {product.boxWeight && (
-                                    <p className="product-box">📦 중량: {product.boxWeight}kg/Box (예상)</p>
-                                )}
-                            </div>
-                            <div className="bottom">
-                                <div className="price-info">
-                                    <span className="price-label">공급단가</span>
-                                    <span className="price-value">₩{product.wholesalePrice.toLocaleString()}<small>/kg</small></span>
+                            <div className="product-details">
+                                <div className="top">
+                                    <span className={`category-tag ${product.category1}`}>{product.category1}</span>
+                                    <h4 className="product-name">{product.name}</h4>
                                 </div>
-                                <button
-                                    className="add-btn"
-                                    title="주문에 추가"
-                                    onClick={() => handleAddToOrder(product)}
-                                >
-                                    <PlusIcon size={18} />
-                                </button>
+                                <div className="middle">
+                                    <p className="product-memo">{product.memo || '-'}</p>
+                                    <p className="product-unit">판매단위: {product.unit.toUpperCase()}</p>
+                                    {product.boxWeight && (
+                                        <p className="product-box">📦 중량: {product.boxWeight}kg/Box (예상)</p>
+                                    )}
+                                </div>
+                                <div className="bottom">
+                                    <div className="price-info">
+                                        <span className="price-label">공급단가</span>
+                                        <span className="price-value">₩{product.wholesalePrice.toLocaleString()}<small>/kg</small></span>
+                                    </div>
+                                    <button
+                                        className="add-btn"
+                                        title="주문에 추가"
+                                        onClick={() => handleAddToOrder(product)}
+                                    >
+                                        <PlusIcon size={18} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="product-list-container glass-card">
+                    <table className="product-list-table">
+                        <thead>
+                            <tr>
+                                <th width="100">구분</th>
+                                <th>품목명</th>
+                                <th width="100">단위</th>
+                                <th>단가(kg)</th>
+                                <th width="80"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map((product) => (
+                                <tr key={product.id}>
+                                    <td>
+                                        <span className={`category-badge ${product.category1}`}>{product.category1}</span>
+                                    </td>
+                                    <td>
+                                        <div className="cell-name">{product.name}</div>
+                                        {product.boxWeight && <div className="cell-sub text-muted">예상 {product.boxWeight}kg/Box</div>}
+                                    </td>
+                                    <td>{product.unit.toUpperCase()}</td>
+                                    <td className="font-semibold">₩{product.wholesalePrice.toLocaleString()}</td>
+                                    <td>
+                                        <button
+                                            className="btn btn-sm btn-primary btn-icon-only"
+                                            onClick={() => handleAddToOrder(product)}
+                                            title="주문 추가"
+                                        >
+                                            <PlusIcon size={16} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {filtered.length === 0 && (
                 <div className="empty-catalog glass-card">
