@@ -378,7 +378,7 @@ export default function PurchaseOrderCreate() {
                 inviteTokenId: token,
                 totalsKg,
                 totalsAmount,
-                expectedArrivalDate: expectedArrivalDate ? Timestamp.fromDate(new Date(expectedArrivalDate)) : undefined,
+                expectedArrivalDate: expectedArrivalDate ? Timestamp.fromDate(new Date(expectedArrivalDate)) : null,
                 memo: memo
             }
 

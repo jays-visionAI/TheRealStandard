@@ -10,7 +10,7 @@ export interface FirestoreOrderSheet {
     inviteTokenId?: string
     customerOrgId: string
     customerName: string
-    shipDate?: Timestamp
+    shipDate?: Timestamp | null
     cutOffAt: Timestamp
     shipTo: string
     adminComment?: string
@@ -253,7 +253,7 @@ export interface FirestorePurchaseOrder {
     status: 'DRAFT' | 'SENT' | 'RECEIVED' | 'COMPLETED'
     totalsKg: number
     totalsAmount: number
-    expectedArrivalDate?: Timestamp
+    expectedArrivalDate?: Timestamp | null
     memo?: string
     createdAt: Timestamp
     updatedAt: Timestamp

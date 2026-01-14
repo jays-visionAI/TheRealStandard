@@ -526,7 +526,7 @@ export default function OrderSheetCreate() {
             const newOrderSheet = await createOrderSheet({
                 customerOrgId: selectedCustomer.id,
                 customerName: selectedCustomer.companyName,
-                shipDate: shipDate ? Timestamp.fromDate(new Date(shipDate)) : undefined,
+                shipDate: shipDate ? Timestamp.fromDate(new Date(shipDate)) : null,
                 cutOffAt: Timestamp.fromDate(new Date(cutOffAt)),
                 shipTo: shipTo || selectedCustomer.address,
                 adminComment: adminComment,
