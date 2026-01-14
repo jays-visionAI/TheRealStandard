@@ -153,12 +153,12 @@ export default function PriceListManager() {
                 .filter(p => selectedProductIds.has(p.id))
                 .map(p => ({
                     productId: p.id,
-                    name: p.name,
-                    costPrice: p.costPrice,
-                    wholesalePrice: p.wholesalePrice,
-                    supplyPrice: supplyPrices[p.id],
-                    unit: p.unit,
-                    category1: p.category1,
+                    name: p.name || '',
+                    costPrice: p.costPrice ?? 0,
+                    wholesalePrice: p.wholesalePrice ?? 0,
+                    supplyPrice: supplyPrices[p.id] ?? 0,
+                    unit: p.unit || 'kg',
+                    category1: p.category1 || '기타',
                     boxWeight: p.boxWeight ?? null
                 }))
 
