@@ -5,12 +5,13 @@ import {
     getAllShipments,
     createShipment,
     updateShipment,
+    deleteSalesOrder,
     type FirestoreSalesOrder,
     type FirestoreShipment
 } from '../../lib/orderService'
 import { getAllVehicleTypes, type FirestoreVehicleType } from '../../lib/vehicleService'
 
-import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon, KakaoIcon, XIcon, AlertTriangleIcon } from '../../components/Icons'
+import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon, KakaoIcon, XIcon, AlertTriangleIcon, TrashIcon } from '../../components/Icons'
 import { sendOrderMessage } from '../../lib/kakaoService'
 import ShippingCard from '../../components/ShippingCard'
 import './SalesOrderList.css'
@@ -182,6 +183,18 @@ export default function SalesOrderList() {
         }
     }
 
+    const handleDelete = async (id: string) => {
+        if (!window.confirm('정말 삭제하시겠습니까? 관련 데이터가 모두 삭제됩니다.')) return
+        try {
+            await deleteSalesOrder(id)
+            alert('삭제되었습니다.')
+            loadData()
+        } catch (err) {
+            console.error('Failed to delete:', err)
+            alert('삭제에 실패했습니다.')
+        }
+    }
+
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
     }
@@ -309,6 +322,13 @@ export default function SalesOrderList() {
                                                             </button>
                                                         </>
                                                     )}
+                                                    <button
+                                                        className="btn btn-sm btn-ghost text-red-500"
+                                                        onClick={() => handleDelete(so.id)}
+                                                        title="삭제"
+                                                    >
+                                                        <TrashIcon size={14} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>

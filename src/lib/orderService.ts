@@ -163,6 +163,16 @@ export async function updateSalesOrder(id: string, data: Partial<FirestoreSalesO
     await updateDoc(docRef, data)
 }
 
+export async function deleteSalesOrder(id: string): Promise<void> {
+    const docRef = doc(db, SALES_ORDERS_COLLECTION, id)
+    await deleteDoc(docRef)
+    // Delete items
+    const itemsSnapshot = await getDocs(query(collection(db, SALES_ORDER_ITEMS_COLLECTION), where('salesOrderId', '==', id)))
+    for (const d of itemsSnapshot.docs) {
+        await deleteDoc(d.ref)
+    }
+}
+
 export async function getSalesOrderItems(salesOrderId: string): Promise<FirestoreSalesOrderItem[]> {
     const q = query(collection(db, SALES_ORDER_ITEMS_COLLECTION), where('salesOrderId', '==', salesOrderId))
     const snapshot = await getDocs(q)
