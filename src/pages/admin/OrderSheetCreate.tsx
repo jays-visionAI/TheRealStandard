@@ -79,6 +79,8 @@ export default function OrderSheetCreate() {
     const [shipTo, setShipTo] = useState('')
     const [adminComment, setAdminComment] = useState('')
 
+    const [skipShippingInfo, setSkipShippingInfo] = useState(false)
+
     // 사이드바 패널 (단가표 / 이전 발주서)
     const [showSidebar, setShowSidebar] = useState(true)
     const [sidebarTab, setSidebarTab] = useState<'priceList' | 'pastOrders'>('priceList')
@@ -475,8 +477,8 @@ export default function OrderSheetCreate() {
 
     // 주문장 발송
     const handleSubmit = async () => {
-        if (!selectedCustomer || validRows.length === 0 || !cutOffAt) {
-            alert('주문 마감시간을 확인해주세요.')
+        if (!selectedCustomer || validRows.length === 0 || !cutOffAt || (!skipShippingInfo && !shipDate)) {
+            alert('필수 정보를 입력해주세요 (주문 마감시간 등).')
             return
         }
 
@@ -867,7 +869,7 @@ export default function OrderSheetCreate() {
                                 disabled={validRows.length === 0}
                                 onClick={() => setStep(3)}
                             >
-                                배송 정보 →
+                                다음 →
                             </button>
                         </div>
                     </div>
@@ -987,18 +989,29 @@ export default function OrderSheetCreate() {
             {step === 3 && (
                 <div className="step-content">
                     <div className="glass-card">
-                        <h2 className="section-title">🚚 배송 정보</h2>
+                        <div className="section-header flex justify-between items-center mb-6">
+                            <h2 className="section-title mb-0">🚚 배송 정보</h2>
+                            <button
+                                className={`btn btn-sm ${skipShippingInfo ? 'btn-primary' : 'btn-outline'}`}
+                                onClick={() => setSkipShippingInfo(!skipShippingInfo)}
+                            >
+                                {skipShippingInfo ? '✓ 배송정보 생략됨' : '배송정보 생략'}
+                            </button>
+                        </div>
 
                         <div className="form-grid">
-                            <div className="form-group">
-                                <label className="label">배송일</label>
-                                <input
-                                    type="date"
-                                    className="input"
-                                    value={shipDate}
-                                    onChange={(e) => setShipDate(e.target.value)}
-                                />
-                            </div>
+                            {!skipShippingInfo && (
+                                <div className="form-group">
+                                    <label className="label">배송일 *</label>
+                                    <input
+                                        type="date"
+                                        className="input"
+                                        value={shipDate}
+                                        onChange={(e) => setShipDate(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            )}
                             <div className="form-group">
                                 <label className="label">주문 마감시간 *</label>
                                 <input
@@ -1008,16 +1021,18 @@ export default function OrderSheetCreate() {
                                     onChange={(e) => setCutOffAt(e.target.value)}
                                 />
                             </div>
-                            <div className="form-group full-width">
-                                <label className="label">배송지 주소</label>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    value={shipTo}
-                                    onChange={(e) => setShipTo(e.target.value)}
-                                    placeholder="배송지 주소를 입력하세요"
-                                />
-                            </div>
+                            {!skipShippingInfo && (
+                                <div className="form-group full-width">
+                                    <label className="label">배송지 주소</label>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        value={shipTo}
+                                        onChange={(e) => setShipTo(e.target.value)}
+                                        placeholder="배송지 주소를 입력하세요"
+                                    />
+                                </div>
+                            )}
                             <div className="form-group full-width">
                                 <label className="label">관리자 메모/요청사항</label>
                                 <textarea
@@ -1065,7 +1080,7 @@ export default function OrderSheetCreate() {
                                 </button>
                                 <button
                                     className="btn btn-primary btn-lg"
-                                    disabled={!shipDate || !cutOffAt || saving}
+                                    disabled={(!skipShippingInfo && !shipDate) || !cutOffAt || saving}
                                     onClick={handleSubmit}
                                 >
                                     {saving ? '생성 중...' : '주문장 발송 🔗'}
