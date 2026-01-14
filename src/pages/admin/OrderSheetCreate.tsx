@@ -997,7 +997,7 @@ export default function OrderSheetCreate() {
                                                             <div className="card-right">
                                                                 <button
                                                                     className="btn btn-xs btn-ghost"
-                                                                    onClick={() => alert(`발주서 #${order.id.slice(-6)} 미리보기 기능 준비중`)}
+                                                                    onClick={() => handlePreviewOrderSheet(order)}
                                                                 >
                                                                     미리보기
                                                                 </button>
