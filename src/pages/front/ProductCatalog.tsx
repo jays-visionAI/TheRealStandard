@@ -8,7 +8,7 @@ export default function ProductCatalog() {
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [categoryFilter, setCategoryFilter] = useState('all')
-    const [viewMode, setViewMode] = useState<'card' | 'list'>('product_card')
+    const [viewMode, setViewMode] = useState<'card' | 'list'>('card')
 
     useEffect(() => {
         const load = async () => {
@@ -151,11 +151,11 @@ export default function ProductCatalog() {
                     <table className="product-list-table">
                         <thead>
                             <tr>
-                                <th width="100">구분</th>
+                                <th style={{ width: '100px' }}>구분</th>
                                 <th>품목명</th>
-                                <th width="100">단위</th>
+                                <th style={{ width: '100px' }}>단위</th>
                                 <th>단가(kg)</th>
-                                <th width="80"></th>
+                                <th style={{ width: '80px' }}></th>
                             </tr>
                         </thead>
                         <tbody>
