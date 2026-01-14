@@ -159,7 +159,7 @@ export default function PriceListManager() {
                     supplyPrice: supplyPrices[p.id],
                     unit: p.unit,
                     category1: p.category1,
-                    boxWeight: p.boxWeight
+                    boxWeight: p.boxWeight ?? null
                 }))
 
             if (isEditing && selectedList) {
