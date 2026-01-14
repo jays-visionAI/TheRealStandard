@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIcon, KakaoIcon, GoogleIcon } from '../../components/Icons'
 import { kakaoLogin } from '../../lib/kakaoService'
@@ -8,6 +8,7 @@ import './Login.css'
 
 export default function Login() {
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
     const { user, login, logout, loginWithKakao, loginWithGoogle } = useAuth()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -21,7 +22,8 @@ export default function Login() {
 
         try {
             const loggedInUser = await login(email, password)
-            navigate(getDefaultPathForRole(loggedInUser.role))
+            const redirectUrl = searchParams.get('redirect')
+            navigate(redirectUrl || getDefaultPathForRole(loggedInUser.role))
         } catch (err: any) {
             console.error(err)
             setError(err.message || '로그인 중 오류가 발생했습니다.')
@@ -35,7 +37,8 @@ export default function Login() {
         try {
             const result = await kakaoLogin()
             const loggedInUser = await loginWithKakao(result.user)
-            navigate(getDefaultPathForRole(loggedInUser.role))
+            const redirectUrl = searchParams.get('redirect')
+            navigate(redirectUrl || getDefaultPathForRole(loggedInUser.role))
         } catch (err) {
             console.error(err)
             setError('카카오 로그인에 실패했습니다.')
@@ -48,7 +51,8 @@ export default function Login() {
         setIsLoading(true)
         try {
             const loggedInUser = await loginWithGoogle()
-            navigate(getDefaultPathForRole(loggedInUser.role))
+            const redirectUrl = searchParams.get('redirect')
+            navigate(redirectUrl || getDefaultPathForRole(loggedInUser.role))
         } catch (err: any) {
             console.error(err)
             setError(err.message || '구글 로그인에 실패했습니다.')
@@ -63,7 +67,8 @@ export default function Login() {
         setPassword(userPass)
         try {
             const loggedInUser = await login(userEmail, userPass)
-            navigate(getDefaultPathForRole(loggedInUser.role))
+            const redirectUrl = searchParams.get('redirect')
+            navigate(redirectUrl || getDefaultPathForRole(loggedInUser.role))
         } catch (err: any) {
             console.error(err)
             setError(err.message || '빠른 로그인 중 오류가 발생했습니다.')

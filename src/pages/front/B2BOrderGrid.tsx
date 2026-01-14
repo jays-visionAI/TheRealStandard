@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 import { ClipboardListIcon } from '../../components/Icons'
 import {
     getOrderSheetByToken,
@@ -46,6 +47,8 @@ type OrderStatus = 'DRAFT' | 'SUBMITTED' | 'PENDING_APPROVAL' | 'APPROVED' | 'RE
 export default function B2BOrderGrid() {
     const { token } = useParams()
     const navigate = useNavigate()
+    const location = useLocation()
+    const { user } = useAuth()
 
     // Firebase에서 직접 로드되는 데이터
     const [orderInfo, setOrderInfo] = useState<(Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate' | 'cutOffAt'> & {
@@ -432,6 +435,14 @@ export default function B2BOrderGrid() {
         const validRows = rows.filter(r => r.productId && r.quantity > 0)
         if (validRows.length === 0) {
             alert('최소 1개 이상의 품목을 주문해주세요.')
+            return
+        }
+
+        if (!user) {
+            if (confirm('주문을 제출하려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?')) {
+                const currentUrl = location.pathname + location.search
+                navigate(`/login?redirect=${encodeURIComponent(currentUrl)}`)
+            }
             return
         }
 
