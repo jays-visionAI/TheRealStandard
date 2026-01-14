@@ -51,6 +51,7 @@ import SystemSettings from './pages/admin/SystemSettings'
 // Front (Customer) Pages
 import FrontLayout from './layouts/FrontLayout'
 import InviteLanding from './pages/front/InviteLanding'
+import PurchaseOrderView from './pages/front/PurchaseOrderView'
 import B2BOrderGrid from './pages/front/B2BOrderGrid'
 import CustomerConfirm from './pages/front/CustomerConfirm'
 import DeliveryTracking from './pages/front/DeliveryTracking'
@@ -174,6 +175,11 @@ function App() {
                         <Route path="workflow/dispatch/:id" element={<StepDispatch />} />
                         <Route path="workflow/order-create" element={<OrderSheetCreate />} />
                     </Route>
+
+                    {/* ========================================
+                          PUBLIC - Purchase Order View (Supplier)
+                       ======================================== */}
+                    <Route path="/purchase-order/:token" element={<PurchaseOrderView />} />
 
                     {/* ========================================
                           CUSTOMER (고객) - 주문/확인/배송조회
