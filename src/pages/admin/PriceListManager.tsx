@@ -345,7 +345,7 @@ export default function PriceListManager() {
                                 )}
                             </div>
 
-                            <div className="table-container-scroll" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                            <div className="table-container-scroll" style={{ maxHeight: '520px', overflowY: 'auto' }}>
                                 <table className="product-table price-selection-table compact-table">
                                     <thead>
                                         <tr>

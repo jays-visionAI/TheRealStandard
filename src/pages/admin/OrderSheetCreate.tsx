@@ -406,36 +406,43 @@ export default function OrderSheetCreate() {
 
     // 키보드 네비게이션
     const handleKeyDown = (e: React.KeyboardEvent, rowId: string, field: 'name' | 'qty') => {
-        if (field === 'name' && showDropdown && filteredProducts.length > 0) {
-            switch (e.key) {
-                case 'ArrowDown':
-                    e.preventDefault()
-                    setHighlightIndex(prev => Math.min(prev + 1, filteredProducts.length - 1))
-                    break
-                case 'ArrowUp':
-                    e.preventDefault()
-                    setHighlightIndex(prev => Math.max(prev - 1, 0))
-                    break
-                case 'Enter':
-                    e.preventDefault()
-                    selectProduct(rowId, filteredProducts[highlightIndex])
-                    break
-                case 'Escape':
-                    setShowDropdown(false)
-                    break
+        if (field === 'name') {
+            if (showDropdown && filteredProducts.length > 0) {
+                switch (e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault()
+                        setHighlightIndex(prev => Math.min(prev + 1, filteredProducts.length - 1))
+                        break
+                    case 'ArrowUp':
+                        e.preventDefault()
+                        setHighlightIndex(prev => Math.max(prev - 1, 0))
+                        break
+                    case 'Enter':
+                        e.preventDefault()
+                        selectProduct(rowId, filteredProducts[highlightIndex])
+                        break
+                    case 'Escape':
+                        setShowDropdown(false)
+                        break
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault()
+                // 이미 품목이 선택된 상태거나 드롭다운이 없을 때 Enter 입력 시 수량 입력으로 이동
+                const qtyInput = inputRefs.current.get(`qty-${rowId}`)
+                if (qtyInput) {
+                    qtyInput.focus()
+                    qtyInput.select()
+                }
             }
         } else if (field === 'qty' && e.key === 'Enter') {
             e.preventDefault()
-            const currentRow = rows.find(r => r.id === rowId)
-            if (currentRow && currentRow.productId && currentRow.quantity > 0) {
-                const currentIndex = rows.findIndex(r => r.id === rowId)
-                if (currentIndex === rows.length - 1) {
-                    addRow()
-                } else {
-                    const nextRow = rows[currentIndex + 1]
-                    const nameInput = inputRefs.current.get(`name-${nextRow.id}`)
-                    if (nameInput) nameInput.focus()
-                }
+            const currentIndex = rows.findIndex(r => r.id === rowId)
+            if (currentIndex === rows.length - 1) {
+                addRow()
+            } else {
+                const nextRow = rows[currentIndex + 1]
+                const nameInput = inputRefs.current.get(`name-${nextRow.id}`)
+                if (nameInput) nameInput.focus()
             }
         } else if (field === 'qty' && e.key === 'Tab' && !e.shiftKey) {
             const currentIndex = rows.findIndex(r => r.id === rowId)

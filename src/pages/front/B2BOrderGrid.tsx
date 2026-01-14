@@ -69,6 +69,7 @@ export default function B2BOrderGrid() {
     const [highlightIndex, setHighlightIndex] = useState(0)
     const [saving, setSaving] = useState(false)
     const [customerComment, setCustomerComment] = useState('')
+    const [orderUnit, setOrderUnit] = useState<'kg' | 'box'>('kg')
 
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
@@ -109,6 +110,12 @@ export default function B2BOrderGrid() {
                 let currentRows: OrderRow[] = []
 
                 if (items && items.length > 0) {
+                    // 첫 번째 아이템의 단위를 보고 전체 주문 단위를 추론 (모두 동일하다고 가정)
+                    const firstUnit = items[0].unit as 'kg' | 'box'
+                    if (firstUnit === 'box') {
+                        setOrderUnit('box')
+                    }
+
                     currentRows = items.map(item => ({
                         id: item.id,
                         productId: item.productId,
@@ -181,7 +188,7 @@ export default function B2BOrderGrid() {
             productName: '',
             unitPrice: 0,
             quantity: 0,
-            unit: 'kg',
+            unit: orderUnit, // 현재 설정된 단위 사용
             estimatedWeight: 0,
             totalAmount: 0,
         }
@@ -225,7 +232,7 @@ export default function B2BOrderGrid() {
                     productId: product.id,
                     productName: product.name,
                     unitPrice: product.unitPrice,
-                    unit: product.unit as 'kg' | 'box',
+                    unit: orderUnit, // 현재 설정된 단위 사용
                 }
             }
             return row
@@ -244,6 +251,69 @@ export default function B2BOrderGrid() {
         }, 50)
     }
 
+    // 주문 단위 변경 핸들러
+    const handleUnitChange = (newUnit: 'kg' | 'box') => {
+        if (newUnit === orderUnit) return;
+
+        if (newUnit === 'box') {
+            // Box 단위로 전환 시 검증
+            const filledRows = rows.filter(r => r.productId);
+            const rowsWithoutBoxWeight = filledRows.filter(row => {
+                const product = products.find(p => p.id === row.productId);
+                return !product?.boxWeight || product.boxWeight <= 0;
+            });
+
+            if (rowsWithoutBoxWeight.length > 0) {
+                const productNames = rowsWithoutBoxWeight.map(r => r.productName).join(', ');
+                alert(`⚠️ 박스 단위 전환 불가\n\n다음 상품에 예상중량/Box가 설정되어 있지 않습니다:\n${productNames}\n\n관리자에게 문의해주세요.`);
+                return;
+            }
+
+            // 전환 확인 모달
+            const confirmed = confirm(
+                '📦 박스 단위 주문으로 전환\n\n주문 리스트 중 1박스 예상중량보다 적은 Kg으로 주문한 항목이 있는 경우 1박스당 주문수량으로 자동 보정합니다.\n\n확인을 눌러 전환하시겠습니까?'
+            );
+
+            if (!confirmed) return;
+
+            // Box 단위로 변환
+            setRows(prevRows => prevRows.map(row => {
+                if (!row.productId) return { ...row, unit: 'box' };
+                const product = products.find(p => p.id === row.productId);
+                const weightPerBox = product?.boxWeight || 1;
+
+                // Kg -> Box 변환 (올림 처리하여 최소 1박스)
+                let newQuantity = Math.ceil(row.estimatedWeight / weightPerBox);
+                if (newQuantity < 1 && row.estimatedWeight > 0) newQuantity = 1;
+
+                const newEstimatedWeight = newQuantity * weightPerBox;
+                const newTotalAmount = newEstimatedWeight * row.unitPrice;
+
+                return {
+                    ...row,
+                    quantity: newQuantity,
+                    unit: 'box',
+                    estimatedWeight: newEstimatedWeight,
+                    totalAmount: newTotalAmount
+                };
+            }));
+            setOrderUnit('box');
+        } else {
+            // Kg 단위로 전환 (Box -> Kg)
+            setRows(prevRows => prevRows.map(row => {
+                if (!row.productId) return { ...row, unit: 'kg' };
+
+                // Box에서 Kg로 변환: 예상중량 그대로 유지, quantity = estimatedWeight
+                return {
+                    ...row,
+                    quantity: row.estimatedWeight,
+                    unit: 'kg'
+                };
+            }));
+            setOrderUnit('kg');
+        }
+    };
+
     // 수량 변경 시 계산
     const updateQuantity = (rowId: string, quantity: number) => {
         setRows(prev => prev.map(row => {
@@ -251,8 +321,9 @@ export default function B2BOrderGrid() {
                 const product = products.find(p => p.id === row.productId)
                 let estimatedWeight = quantity
 
-                if (product && product.unit === 'box' && product.boxWeight) {
-                    estimatedWeight = quantity * product.boxWeight
+                if (orderUnit === 'box') {
+                    const weightPerBox = product?.boxWeight || 1
+                    estimatedWeight = quantity * weightPerBox
                 }
 
                 const totalAmount = row.unitPrice * estimatedWeight
@@ -262,6 +333,7 @@ export default function B2BOrderGrid() {
                     quantity,
                     estimatedWeight,
                     totalAmount,
+                    unit: orderUnit
                 }
             }
             return row
@@ -496,9 +568,29 @@ export default function B2BOrderGrid() {
             )}
 
             {/* Grid 안내 */}
-            <div className="grid-guide glass-card">
-                <span className="guide-icon">💡</span>
-                <span>상품명을 입력하면 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 품목으로 이동합니다.</span>
+            <div className="grid-guide glass-card flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                    <span className="guide-icon">💡</span>
+                    <span>상품명을 입력하면 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 품목으로 이동합니다.</span>
+                </div>
+
+                <div className="order-unit-toggle">
+                    <span className="text-sm mr-2 text-secondary">주문 단위:</span>
+                    <div className="toggle-group bg-gray-100 p-1 rounded-lg inline-flex">
+                        <button
+                            className={`px-3 py-1 text-sm rounded-md transition-all ${orderUnit === 'kg' ? 'bg-white shadow-sm font-semibold text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                            onClick={() => handleUnitChange('kg')}
+                        >
+                            Kg 단위
+                        </button>
+                        <button
+                            className={`px-3 py-1 text-sm rounded-md transition-all ${orderUnit === 'box' ? 'bg-white shadow-sm font-semibold text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                            onClick={() => handleUnitChange('box')}
+                        >
+                            Box 단위
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* Excel-like Grid */}
@@ -508,8 +600,9 @@ export default function B2BOrderGrid() {
                         <tr>
                             <th className="col-no">No</th>
                             <th className="col-product">품목</th>
+                            <th className="col-unit" style={{ width: '100px', fontSize: '13px' }}>예상중량/Box</th>
                             <th className="col-price">단가(원/kg)</th>
-                            <th className="col-qty">수량</th>
+                            <th className="col-qty">수량 ({orderUnit === 'kg' ? 'Kg' : 'Box'})</th>
                             <th className="col-weight">예상중량(kg)</th>
                             <th className="col-amount">금액(원)</th>
                             <th className="col-action"></th>
@@ -547,12 +640,11 @@ export default function B2BOrderGrid() {
                                             <button
                                                 className="clear-product-btn"
                                                 onClick={() => {
-                                                    setRows(prev => prev.map((r) =>
-                                                        r.id === row.id ? { ...createEmptyRow(), id: row.id } : r
-                                                    ))
-                                                    const nameInput = inputRefs.current.get(`name-${row.id}`)
-                                                    if (nameInput) nameInput.focus()
+                                                    if (confirm("이 품목을 리스트에서 삭제하시겠습니까?")) {
+                                                        removeRow(row.id)
+                                                    }
                                                 }}
+                                                title="품목 삭제"
                                             >
                                                 ✕
                                             </button>
@@ -576,6 +668,12 @@ export default function B2BOrderGrid() {
                                             </div>
                                         )}
                                     </div>
+                                </td>
+                                <td className="col-unit text-muted" style={{ fontSize: '13px', textAlign: 'center' }}>
+                                    {(() => {
+                                        const p = products.find(prod => prod.id === row.productId);
+                                        return p ? (p.boxWeight ? `${p.boxWeight}kg/Box` : 'kg') : '-';
+                                    })()}
                                 </td>
                                 <td className="col-price">
                                     {row.unitPrice > 0 ? `₩${formatCurrency(row.unitPrice)}` : '-'}
@@ -607,7 +705,11 @@ export default function B2BOrderGrid() {
                                     {rows.length > 1 && (
                                         <button
                                             className="remove-row-btn"
-                                            onClick={() => removeRow(row.id)}
+                                            onClick={() => {
+                                                if (confirm("이 줄을 삭제하시겠습니까?")) {
+                                                    removeRow(row.id)
+                                                }
+                                            }}
                                             title="행 삭제"
                                         >
                                             🗑
@@ -619,14 +721,14 @@ export default function B2BOrderGrid() {
                     </tbody>
                     <tfoot>
                         <tr className="add-row-tr">
-                            <td colSpan={7}>
+                            <td colSpan={8}>
                                 <button className="add-row-btn" onClick={addRow}>
                                     + 품목 추가
                                 </button>
                             </td>
                         </tr>
                         <tr className="total-row">
-                            <td colSpan={3} className="total-label">총계</td>
+                            <td colSpan={4} className="total-label">총계</td>
                             <td className="total-items">{totalItems} 품목</td>
                             <td className="total-weight">{formatCurrency(totalWeight)} kg</td>
                             <td className="total-amount">₩{formatCurrency(totalAmount)}</td>
