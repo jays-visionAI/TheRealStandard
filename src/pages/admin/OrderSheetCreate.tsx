@@ -81,6 +81,11 @@ export default function OrderSheetCreate() {
 
     const [skipShippingInfo, setSkipShippingInfo] = useState(false)
 
+    // Preview Modal State
+    const [previewModalOpen, setPreviewModalOpen] = useState(false)
+    const [previewTitle, setPreviewTitle] = useState('')
+    const [previewData, setPreviewData] = useState<{ name: string, price: number, unit: string }[]>([])
+
     // 사이드바 패널 (단가표 / 이전 발주서)
     const [showSidebar, setShowSidebar] = useState(true)
     const [sidebarTab, setSidebarTab] = useState<'priceList' | 'pastOrders'>('priceList')
@@ -474,6 +479,36 @@ export default function OrderSheetCreate() {
             c.bizRegNo.includes(q)
         )
     }, [customerSearch, customers])
+
+    // Preview Handlers
+    const handlePreviewPriceList = (list: FirestorePriceList) => {
+        setPreviewTitle(`단가표: ${list.title}`)
+        setPreviewData(list.items.map((item) => ({
+            name: item.name,
+            price: item.wholesalePrice, // Using wholesalePrice as the display price for preview
+            unit: item.unit || 'kg'
+        })))
+        setPreviewModalOpen(true)
+    }
+
+    const handlePreviewOrderSheet = async (orderSheet: FirestoreOrderSheet) => {
+        try {
+            setLoading(true)
+            const items = await getOrderSheetItems(orderSheet.id)
+            setPreviewTitle(`발주서 #${orderSheet.id.slice(-6)}`)
+            setPreviewData(items.map(item => ({
+                name: item.productName,
+                price: item.unitPrice,
+                unit: item.unit
+            })))
+            setPreviewModalOpen(true)
+        } catch (err) {
+            console.error('Failed to load items for preview:', err)
+            alert('미리보기 데이터를 불러오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     // 주문장 발송
     const handleSubmit = async () => {
@@ -925,7 +960,7 @@ export default function OrderSheetCreate() {
                                                         <div className="card-right">
                                                             <button
                                                                 className="btn btn-xs btn-ghost"
-                                                                onClick={() => alert(`단가표 "${list.title}" 미리보기 기능 준비중`)}
+                                                                onClick={() => handlePreviewPriceList(list)}
                                                             >
                                                                 미리보기
                                                             </button>
@@ -1086,6 +1121,56 @@ export default function OrderSheetCreate() {
                                     {saving ? '생성 중...' : '주문장 발송 🔗'}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Preview Modal */}
+            {previewModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+                        <div className="p-4 border-b flex justify-between items-center">
+                            <h3 className="font-bold text-lg">{previewTitle}</h3>
+                            <button
+                                onClick={() => setPreviewModalOpen(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <XIcon size={20} />
+                            </button>
+                        </div>
+                        <div className="p-4 overflow-y-auto flex-1">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="p-2 text-left">품목명</th>
+                                        <th className="p-2 text-right">단가</th>
+                                        <th className="p-2 text-center">단위</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {previewData.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={3} className="p-4 text-center text-gray-500">품목이 없습니다.</td>
+                                        </tr>
+                                    ) : (
+                                        previewData.map((item, idx) => (
+                                            <tr key={idx} className="border-b last:border-0 hover:bg-gray-50">
+                                                <td className="p-2">{item.name}</td>
+                                                <td className="p-2 text-right">₩{formatCurrency(item.price)}</td>
+                                                <td className="p-2 text-center text-gray-500">{item.unit}</td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="p-4 border-t bg-gray-50 flex justify-end">
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setPreviewModalOpen(false)}
+                            >
+                                닫기
+                            </button>
                         </div>
                     </div>
                 </div>

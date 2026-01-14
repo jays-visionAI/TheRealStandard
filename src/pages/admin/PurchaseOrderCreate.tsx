@@ -18,7 +18,14 @@ import {
 } from '../../components/Icons'
 import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
-import { createPurchaseOrder, getAllPurchaseOrders, type FirestorePurchaseOrder } from '../../lib/orderService'
+import {
+    createPurchaseOrder,
+    getAllPurchaseOrders,
+    getAllOrderSheets,
+    getOrderSheetItems,
+    type FirestorePurchaseOrder,
+    type FirestoreOrderSheet
+} from '../../lib/orderService'
 import { Timestamp, collection, doc, setDoc, deleteDoc, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import './OrderSheetCreate.css'
@@ -81,6 +88,8 @@ export default function PurchaseOrderCreate() {
 
     // Sidebar
     const [showSidebar, setShowSidebar] = useState(true)
+    const [sidebarTab, setSidebarTab] = useState<'customerOrders' | 'pastPO'>('customerOrders')
+    const [customerOrders, setCustomerOrders] = useState<FirestoreOrderSheet[]>([])
 
     // Step 3: PO Info
     const [expectedArrivalDate, setExpectedArrivalDate] = useState('')
@@ -93,10 +102,11 @@ export default function PurchaseOrderCreate() {
     const loadData = async () => {
         try {
             setLoading(true)
-            const [suppliersData, productsData, poData] = await Promise.all([
+            const [suppliersData, productsData, poData, orderSheetsData] = await Promise.all([
                 getAllSuppliers(),
                 getAllProducts(),
-                getAllPurchaseOrders()
+                getAllPurchaseOrders(),
+                getAllOrderSheets()
             ])
 
             setSuppliers(suppliersData.map(s => ({
@@ -113,6 +123,7 @@ export default function PurchaseOrderCreate() {
             })).sort((a, b) => a.name.localeCompare(b.name, 'ko')))
 
             setPastPurchaseOrders(poData)
+            setCustomerOrders(orderSheetsData)
         } catch (err) {
             console.error('Failed to load data:', err)
             setError('데이터를 불러오는데 실패했습니다.')
@@ -288,6 +299,61 @@ export default function PurchaseOrderCreate() {
         } catch (err) {
             console.error('Failed to copy past order:', err)
             alert('복사에 실패했습니다.')
+        }
+    }
+
+    // 고객 주문서 복사 (매입 발주로 변환)
+    const copyCustomerOrder = async (orderSheet: FirestoreOrderSheet) => {
+        if (!confirm(`'${orderSheet.customerName}'의 주문 품목을 가져오시겠습니까?`)) return
+
+        try {
+            setLoading(true)
+            const items = await getOrderSheetItems(orderSheet.id)
+
+            if (!items || items.length === 0) {
+                alert('가져올 품목이 없습니다.')
+                return
+            }
+
+            const newRows: OrderRow[] = items.map(item => {
+                // 제품 정보 찾기 (매입 단가 확인용)
+                const product = products.find(p => p.id === item.productId)
+                const boxWeight = product?.boxWeight || 0
+
+                // 수량 계산 (Kg 단위 기준)
+                // 고객 주문이 Box단위여도 estimatedKg가 있다면 그것을 사용
+                let qty = item.estimatedKg || 0
+
+                // 만약 현재 발주 설정이 Box 단위라면 Box 수량으로 변환 시도
+                if (orderUnit === 'box') {
+                    if (boxWeight > 0) {
+                        qty = Math.ceil(qty / boxWeight)
+                    } else {
+                        // 박스 중량 정보 없으면 그냥 0 또는 1로? 
+                        // 여기서는 Kg 수량을 그대로 둠 (사용자가 수정하도록)
+                    }
+                }
+
+                return {
+                    id: Math.random().toString(36).substr(2, 9),
+                    productId: item.productId,
+                    productName: product?.name || item.productName,
+                    unitPrice: product?.unitPrice || 0, // 매입단가(costPrice)
+                    quantity: qty,
+                    unit: orderUnit,
+                    boxWeight: boxWeight,
+                    estimatedWeight: orderUnit === 'box' ? qty * boxWeight : qty,
+                    totalAmount: (product?.unitPrice || 0) * (orderUnit === 'box' ? qty * boxWeight : qty)
+                }
+            })
+
+            setRows(newRows)
+            alert('고객 주문 품목이 반영되었습니다. 수량과 단가를 확인해주세요.')
+        } catch (err) {
+            console.error('Failed to copy customer order:', err)
+            alert('주문 정보를 가져오는데 실패했습니다.')
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -636,45 +702,88 @@ export default function PurchaseOrderCreate() {
 
                         {showSidebar && (
                             <div className="sidebar-content glass-card">
-                                <h3 className="sidebar-title"><ClipboardListIcon size={18} /> 매입발주서 템플릿</h3>
+                                <h3 className="sidebar-title"><ClipboardListIcon size={18} /> 템플릿 및 주문현황</h3>
+
+                                <div className="sidebar-tabs">
+                                    <button
+                                        className={`tab-btn ${sidebarTab === 'customerOrders' ? 'active' : ''}`}
+                                        onClick={() => setSidebarTab('customerOrders')}
+                                    >
+                                        고객 주문 현황
+                                    </button>
+                                    <button
+                                        className={`tab-btn ${sidebarTab === 'pastPO' ? 'active' : ''}`}
+                                        onClick={() => setSidebarTab('pastPO')}
+                                    >
+                                        이전 매입발주
+                                    </button>
+                                </div>
 
                                 <div className="tab-content">
-                                    <div className="template-list">
-                                        {pastPurchaseOrders.filter(po => po.supplierOrgId === selectedSupplier?.id).length === 0 ? (
-                                            <p className="empty-msg">이전 매입 발주 내역이 없습니다.</p>
-                                        ) : (
-                                            pastPurchaseOrders
-                                                .filter(po => po.supplierOrgId === selectedSupplier?.id)
-                                                .map(po => (
-                                                    <div key={po.id} className="template-card-v2">
-                                                        <div className="card-left">
-                                                            <div className="card-row-1">
-                                                                <span className="card-title">발주 #{po.id.slice(-6)}</span>
+                                    {sidebarTab === 'customerOrders' ? (
+                                        <div className="template-list">
+                                            {customerOrders.filter(o => o.status === 'CONFIRMED').length === 0 ? (
+                                                <p className="empty-msg">주문 확정된 고객 주문이 없습니다.</p>
+                                            ) : (
+                                                customerOrders
+                                                    .filter(o => o.status === 'CONFIRMED')
+                                                    .map(order => (
+                                                        <div key={order.id} className="template-card-v2">
+                                                            <div className="card-left">
+                                                                <div className="card-row-1">
+                                                                    <span className="card-title">{order.customerName}</span>
+                                                                </div>
+                                                                <div className="card-row-2">
+                                                                    <span className="card-date">
+                                                                        주문일: {order.createdAt?.toDate?.().toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '')}
+                                                                        {order.cutOffAt && ` (마감: ${order.cutOffAt.toDate().toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })})`}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                            <div className="card-row-2">
-                                                                <span className="card-date">
-                                                                    {po.createdAt?.toDate?.().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '') || '-'}
-                                                                </span>
+                                                            <div className="card-right">
+                                                                <button
+                                                                    className="btn btn-xs btn-outline"
+                                                                    onClick={() => copyCustomerOrder(order)}
+                                                                >
+                                                                    반영하기
+                                                                </button>
                                                             </div>
                                                         </div>
-                                                        <div className="card-right">
-                                                            <button
-                                                                className="btn btn-xs btn-ghost"
-                                                                onClick={() => alert(`발주서 #${po.id.slice(-6)} 미리보기 기능 준비중`)}
-                                                            >
-                                                                미리보기
-                                                            </button>
-                                                            <button
-                                                                className="btn btn-xs btn-outline"
-                                                                onClick={() => copyPastOrder(po)}
-                                                            >
-                                                                복사하기
-                                                            </button>
+                                                    ))
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="template-list">
+                                            {pastPurchaseOrders.filter(po => po.supplierOrgId === selectedSupplier?.id).length === 0 ? (
+                                                <p className="empty-msg">이전 매입 발주 내역이 없습니다.</p>
+                                            ) : (
+                                                pastPurchaseOrders
+                                                    .filter(po => po.supplierOrgId === selectedSupplier?.id)
+                                                    .map(po => (
+                                                        <div key={po.id} className="template-card-v2">
+                                                            <div className="card-left">
+                                                                <div className="card-row-1">
+                                                                    <span className="card-title">발주 #{po.id.slice(-6)}</span>
+                                                                </div>
+                                                                <div className="card-row-2">
+                                                                    <span className="card-date">
+                                                                        {po.createdAt?.toDate?.().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '') || '-'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="card-right">
+                                                                <button
+                                                                    className="btn btn-xs btn-outline"
+                                                                    onClick={() => copyPastOrder(po)}
+                                                                >
+                                                                    복사하기
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))
-                                        )}
-                                    </div>
+                                                    ))
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
