@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import {
     getOrderSheetsByCustomer,
@@ -11,13 +11,18 @@ import {
     ClipboardListIcon,
     CheckCircleIcon,
     ChevronRightIcon,
-    ClockIcon
+    ClockIcon,
+    TruckIcon,
+    PackageIcon
 } from '../../components/Icons'
 import './CustomerOrderList.css'
 
 export default function CustomerOrderList() {
     const { user } = useAuth()
     const navigate = useNavigate()
+    const location = useLocation()
+    const isHistoryPage = location.pathname.includes('/history')
+
     const [orderSheets, setOrderSheets] = useState<FirestoreOrderSheet[]>([])
     const [salesOrders, setSalesOrders] = useState<FirestoreSalesOrder[]>([])
     const [loading, setLoading] = useState(true)
@@ -35,8 +40,22 @@ export default function CustomerOrderList() {
                     getSalesOrdersByCustomer(user.orgId)
                 ])
 
+                // Filter sheets (only meaningful for active list)
+                // We show SENT, REVISION, SUBMITTED in active list
+                // CONFIRMED and CLOSED sheets are converted to SalesOrders or History
                 setOrderSheets(sheets.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds))
-                setSalesOrders(orders.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds))
+
+                // Filter sales orders based on page
+                const historyStatuses = ['SHIPPED', 'COMPLETED', 'DELIVERED', 'CANCELLED']
+
+                if (isHistoryPage) {
+                    setSalesOrders(orders.filter(o => historyStatuses.includes(o.status))
+                        .sort((a, b) => b.createdAt.seconds - a.createdAt.seconds))
+                } else {
+                    setSalesOrders(orders.filter(o => !historyStatuses.includes(o.status))
+                        .sort((a, b) => b.createdAt.seconds - a.createdAt.seconds))
+                }
+
             } catch (err) {
                 console.error('Failed to load orders:', err)
             } finally {
@@ -45,7 +64,7 @@ export default function CustomerOrderList() {
         }
 
         loadOrders()
-    }, [user])
+    }, [user, isHistoryPage])
 
     const formatDate = (ts: any) => {
         if (!ts) return '-'
@@ -57,30 +76,44 @@ export default function CustomerOrderList() {
         })
     }
 
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'CREATED': return <span className="status-pill created">주문확정 (준비중)</span>
+            case 'PO_GENERATED': return <span className="status-pill po-generated">상품 준비중</span>
+            case 'SHIPPED': return <span className="status-pill shipped">배송중</span>
+            case 'COMPLETED': return <span className="status-pill completed">배송완료</span>
+            default: return <span className="status-pill">{status}</span>
+        }
+    }
+
     if (loading) return <div className="p-10 text-center">불러오는 중...</div>
 
     return (
         <div className="customer-order-list">
             <header className="section-header">
-                <h2>내 주문 관리</h2>
-                <p>TRS에서 발송한 주문서와 진행중인 주문 내역입니다.</p>
+                <h2>{isHistoryPage ? '주문 내역' : '내 주문 관리'}</h2>
+                <p>{isHistoryPage
+                    ? '지난 주문 내역과 배송 완료된 건들을 확인합니다.'
+                    : '작성 필요한 주문서와 현재 진행중인 주문입니다.'}
+                </p>
             </header>
 
-            {/* Pending Order Sheets */}
-            <section className="order-section">
-                <div className="section-title">
-                    <ClipboardListIcon size={20} />
-                    <h3>새로운 주문서 (작성 필요)</h3>
-                </div>
+            {/* Active Page: Show Order Sheets */}
+            {!isHistoryPage && (
+                <section className="order-section">
+                    <div className="section-title">
+                        <ClipboardListIcon size={20} />
+                        <h3>주문서 현황</h3>
+                    </div>
 
-                <div className="sheet-grid">
-                    {orderSheets.filter(s => s.status === 'SENT' || s.status === 'REVISION').length > 0 ? (
-                        orderSheets
+                    <div className="sheet-grid">
+                        {/* 1. Action Required: SENT, REVISION */}
+                        {orderSheets
                             .filter(s => s.status === 'SENT' || s.status === 'REVISION')
                             .map(sheet => (
-                                <div key={sheet.id} className="sheet-card glass-card animate-fade-in" onClick={() => navigate(`/order/${sheet.inviteTokenId}/edit`)}>
-                                    <div className="card-status badge-primary">
-                                        {sheet.status === 'REVISION' ? '⚠️ 수정요청' : '🆕 뉴 주문서'}
+                                <div key={sheet.id} className="sheet-card glass-card animate-fade-in action-required" onClick={() => navigate(`/order/${sheet.inviteTokenId}/edit`)}>
+                                    <div className={`card-status ${sheet.status === 'REVISION' ? 'badge-error' : 'badge-primary'}`}>
+                                        {sheet.status === 'REVISION' ? '⚠️ 수정요청' : '🆕 작성필요'}
                                     </div>
                                     <div className="card-body">
                                         <p className="order-id">#{sheet.id.slice(0, 8)}</p>
@@ -90,24 +123,47 @@ export default function CustomerOrderList() {
                                         </div>
                                     </div>
                                     <div className="card-footer">
-                                        <span className="action-text">주문서 작성하기</span>
+                                        <span className="action-text">작성하기</span>
                                         <ChevronRightIcon size={18} />
                                     </div>
                                 </div>
-                            ))
-                    ) : (
-                        <div className="empty-state glass-card">
-                            <p>입력 대기 중인 주문서가 없습니다.</p>
-                        </div>
-                    )}
-                </div>
-            </section>
+                            ))}
 
-            {/* Recent Orders (Sales Orders) */}
+                        {/* 2. Pending Approval: SUBMITTED */}
+                        {orderSheets
+                            .filter(s => s.status === 'SUBMITTED')
+                            .map(sheet => (
+                                <div key={sheet.id} className="sheet-card glass-card opacity-card">
+                                    <div className="card-status badge-warning">
+                                        ⏳ 관리자 확인중
+                                    </div>
+                                    <div className="card-body">
+                                        <p className="order-id">#{sheet.id.slice(0, 8)}</p>
+                                        <h4>{sheet.customerName} 주문장</h4>
+                                        <div className="meta-info">
+                                            <span>제출됨: {formatDate(sheet.updatedAt)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="card-footer" style={{ color: 'var(--text-muted)' }}>
+                                        <span className="text-sm">승인 대기중...</span>
+                                    </div>
+                                </div>
+                            ))}
+
+                        {orderSheets.filter(s => ['SENT', 'REVISION', 'SUBMITTED'].includes(s.status)).length === 0 && (
+                            <div className="empty-state glass-card w-full col-span-full">
+                                <p>현재 대기중인 주문서가 없습니다.</p>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
+
+            {/* Sales Orders List */}
             <section className="order-section mt-10">
                 <div className="section-title">
-                    <CheckCircleIcon size={20} />
-                    <h3>진행 중인 주문</h3>
+                    {isHistoryPage ? <TruckIcon size={20} /> : <CheckCircleIcon size={20} />}
+                    <h3>{isHistoryPage ? '지난 주문 내역' : '진행 중인 주문 (확정됨)'}</h3>
                 </div>
 
                 <div className="order-history-list glass-card">
@@ -125,7 +181,7 @@ export default function CustomerOrderList() {
                             </thead>
                             <tbody>
                                 {salesOrders.map(order => (
-                                    <tr key={order.id} onClick={() => navigate(`/order/tracking?id=${order.id}`)}>
+                                    <tr key={order.id} onClick={() => navigate(isHistoryPage ? `/order/tracking?id=${order.id}` : '#')} style={{ cursor: isHistoryPage ? 'pointer' : 'default' }}>
                                         <td>{formatDate(order.createdAt)}</td>
                                         <td className="font-semibold">#{order.id.slice(0, 8)}</td>
                                         <td>
@@ -133,18 +189,16 @@ export default function CustomerOrderList() {
                                         </td>
                                         <td>₩{order.totalsAmount.toLocaleString()}</td>
                                         <td>
-                                            <span className={`status-pill ${order.status.toLowerCase()}`}>
-                                                {order.status === 'CREATED' ? '주문접수' : order.status}
-                                            </span>
+                                            {getStatusBadge(order.status)}
                                         </td>
-                                        <td><ChevronRightIcon size={16} /></td>
+                                        <td>{isHistoryPage && <ChevronRightIcon size={16} />}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     ) : (
                         <div className="p-10 text-center text-muted">
-                            진행 중인 주문이 없습니다.
+                            {isHistoryPage ? '지난 주문 내역이 없습니다.' : '현재 진행 중인 주문이 없습니다.'}
                         </div>
                     )}
                 </div>

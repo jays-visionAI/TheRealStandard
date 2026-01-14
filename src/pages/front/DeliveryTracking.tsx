@@ -1,6 +1,7 @@
 // Cloudflare build trigger - Version 5
+// Cloudflare build trigger - Version 5
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import {
   PackageIcon,
   TruckDeliveryIcon,
@@ -15,6 +16,8 @@ import {
   getOrderSheetByToken,
   getShipmentsBySalesOrder,
   getAllSalesOrders,
+  getSalesOrderById,
+  getOrderSheetById,
   type FirestoreOrderSheet,
   type FirestoreSalesOrder,
   type FirestoreShipment
@@ -31,6 +34,9 @@ interface TrackingState {
 
 export default function DeliveryTracking() {
   const { token } = useParams()
+  const [searchParams] = useSearchParams()
+  const orderId = searchParams.get('id')
+
   const [state, setState] = useState<TrackingState>({
     orderSheet: null,
     salesOrder: null,
@@ -41,11 +47,16 @@ export default function DeliveryTracking() {
 
   useEffect(() => {
     if (token) {
-      loadTrackingData(token)
+      loadTrackingDataByToken(token)
+    } else if (orderId) {
+      loadTrackingDataById(orderId)
+    } else {
+      // If neither token nor id, stop loading
+      setLoading(false)
     }
-  }, [token])
+  }, [token, orderId])
 
-  const loadTrackingData = async (token: string) => {
+  const loadTrackingDataByToken = async (token: string) => {
     try {
       setLoading(true)
       setError(null)
@@ -60,15 +71,48 @@ export default function DeliveryTracking() {
       // 2. Get SalesOrder by sourceOrderSheetId
       // Note: We might need a more efficient query, but for now we search all sales orders
       const allSalesOrders = await getAllSalesOrders()
-      const salesOrder = allSalesOrders.find(so => so.sourceOrderSheetId === orderSheet.id)
+      const salesOrder = allSalesOrders.find(so => so.sourceOrderSheetId === orderSheet.id) || null
 
+      // 3. Get Shipment by sourceSalesOrderId
+      let shipment: FirestoreShipment | null = null
+      if (salesOrder) {
+        const shipments = await getShipmentsBySalesOrder(salesOrder.id)
+        shipment = shipments && shipments.length > 0 ? shipments[0] : null
+      }
+
+      setState({
+        orderSheet,
+        salesOrder,
+        shipment
+      })
+    } catch (err) {
+      console.error('Failed to load tracking data:', err)
+      setError('데이터를 불러오는 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadTrackingDataById = async (id: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // 1. Get SalesOrder by ID
+      const salesOrder = await getSalesOrderById(id)
       if (!salesOrder) {
-        // SalesOrder not yet created (Order still in DRAFT/SENT/SUBMITTED etc)
-        setState({ orderSheet, salesOrder: null, shipment: null })
+        setError('주문 정보를 찾을 수 없습니다.')
         return
       }
 
-      // 3. Get Shipment by sourceSalesOrderId
+      // 2. Get OrderSheet
+      const orderSheet = await getOrderSheetById(salesOrder.sourceOrderSheetId)
+      if (!orderSheet) {
+        setError('참조된 주문서 정보를 찾을 수 없습니다.')
+        return
+      }
+
+      // 3. Get Shipment
       const shipments = await getShipmentsBySalesOrder(salesOrder.id)
       const shipment = shipments && shipments.length > 0 ? shipments[0] : null
 

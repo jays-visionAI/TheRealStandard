@@ -40,7 +40,7 @@ export default function CustomerDashboard() {
                     getSalesOrdersByCustomer(user.orgId)
                 ])
 
-                const pending = sheets.filter(s => s.status === 'SENT' || s.status === 'REVISION')
+                const pending = sheets.filter(s => ['SENT', 'REVISION', 'SUBMITTED'].includes(s.status))
                 const active = orders.filter(o => o.status !== 'COMPLETED')
 
                 const now = new Date()
@@ -79,7 +79,7 @@ export default function CustomerDashboard() {
                 <div className="stat-card glass-card accent-blue" onClick={() => navigate('/order/list')}>
                     <div className="stat-icon"><ClipboardListIcon size={24} /></div>
                     <div className="stat-info">
-                        <span className="label">작성 대기 주문서</span>
+                        <span className="label">진행중인 주문서</span>
                         <span className="value">{stats.pendingSheets}건</span>
                     </div>
                 </div>
@@ -112,9 +112,17 @@ export default function CustomerDashboard() {
                                     <div className="item-icon"><PackageIcon size={20} /></div>
                                     <div className="item-info">
                                         <p className="item-title">{sheet.customerName} 주문서</p>
-                                        <p className="item-meta">마감: {sheet.cutOffAt.toDate().toLocaleDateString()}</p>
+                                        <p className="item-meta">
+                                            {sheet.status === 'SUBMITTED' ? (
+                                                <span className="text-warning">승인 대기중</span>
+                                            ) : (
+                                                `마감: ${sheet.cutOffAt.toDate().toLocaleDateString()}`
+                                            )}
+                                        </p>
                                     </div>
-                                    <button className="item-btn">작성 <ChevronRightIcon size={14} /></button>
+                                    <button className="item-btn">
+                                        {sheet.status === 'SUBMITTED' ? '보기' : '작성'} <ChevronRightIcon size={14} />
+                                    </button>
                                 </div>
                             ))
                         ) : (
