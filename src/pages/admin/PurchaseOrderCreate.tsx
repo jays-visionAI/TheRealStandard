@@ -369,11 +369,13 @@ export default function PurchaseOrderCreate() {
             const validRows = rows.filter(r => r.productId)
             const totalsKg = validRows.reduce((sum, r) => sum + r.estimatedWeight, 0)
             const totalsAmount = validRows.reduce((sum, r) => sum + r.totalAmount, 0)
+            const token = 'po-' + Math.random().toString(36).substr(2, 9)
 
             const poData = {
                 supplierOrgId: selectedSupplier.id,
                 supplierName: selectedSupplier.companyName,
-                status: 'DRAFT' as const,
+                status: 'SENT' as const, // Automatically set to SENT as per request
+                inviteTokenId: token,
                 totalsKg,
                 totalsAmount,
                 expectedArrivalDate: expectedArrivalDate ? Timestamp.fromDate(new Date(expectedArrivalDate)) : undefined,
@@ -396,7 +398,9 @@ export default function PurchaseOrderCreate() {
                 })
             }
 
-            alert('매입 발주서가 생성되었습니다.')
+            const link = `${window.location.origin}/purchase-order/${token}`
+            navigator.clipboard.writeText(link)
+            alert(`✅ 매입 발주서가 생성되었습니다!\n\n공급사 링크가 클립보드에 복사되었습니다.\n\n${link}`)
             navigate('/admin/purchase-orders')
         } catch (err) {
             console.error('PO creation failed:', err)

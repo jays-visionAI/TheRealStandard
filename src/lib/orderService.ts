@@ -237,11 +237,14 @@ export async function deleteShipment(id: string): Promise<void> {
 // ============ PURCHASE ORDER (매입발주) ============
 export interface FirestorePurchaseOrder {
     id: string
+    inviteTokenId?: string
     supplierOrgId: string
     supplierName: string
     status: 'DRAFT' | 'SENT' | 'RECEIVED' | 'COMPLETED'
     totalsKg: number
     totalsAmount: number
+    expectedArrivalDate?: Timestamp
+    memo?: string
     createdAt: Timestamp
     updatedAt: Timestamp
 }
@@ -269,6 +272,14 @@ export async function getPurchaseOrderById(id: string): Promise<FirestorePurchas
     const snapshot = await getDoc(docRef)
     if (!snapshot.exists()) return null
     return { id: snapshot.id, ...snapshot.data() } as FirestorePurchaseOrder
+}
+
+export async function getPurchaseOrderByToken(token: string): Promise<FirestorePurchaseOrder | null> {
+    const q = query(collection(db, PURCHASE_ORDERS_COLLECTION), where('inviteTokenId', '==', token))
+    const snapshot = await getDocs(q)
+    if (snapshot.empty) return null
+    const d = snapshot.docs[0]
+    return { id: d.id, ...d.data() } as FirestorePurchaseOrder
 }
 
 export async function getPurchaseOrderItems(purchaseOrderId: string): Promise<FirestorePurchaseOrderItem[]> {
