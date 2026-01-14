@@ -60,7 +60,7 @@ export default function B2BOrderGrid() {
     const [error, setError] = useState<string | null>(null)
 
     // 상태
-    const [rows, setRows] = useState<OrderRow[]>([])
+    const [rows, setRows] = useState<(OrderRow & { checked?: boolean })[]>([])
     const [status, setStatus] = useState<OrderStatus>('DRAFT')
     const [activeRowId, setActiveRowId] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
@@ -107,7 +107,7 @@ export default function B2BOrderGrid() {
 
                 // 기존 아이템 로드
                 const items = await getOrderSheetItems(osData.id)
-                let currentRows: OrderRow[] = []
+                let currentRows: (OrderRow & { checked?: boolean })[] = []
 
                 if (items && items.length > 0) {
                     // 첫 번째 아이템의 단위를 보고 전체 주문 단위를 추론 (모두 동일하다고 가정)
@@ -124,7 +124,8 @@ export default function B2BOrderGrid() {
                         quantity: item.qtyRequested || 0,
                         unit: item.unit as 'kg' | 'box' || 'kg',
                         estimatedWeight: item.estimatedKg || 0,
-                        totalAmount: item.amount || 0
+                        totalAmount: item.amount || 0,
+                        checked: false
                     }))
                 } else {
                     currentRows = [createEmptyRow()]
@@ -134,8 +135,8 @@ export default function B2BOrderGrid() {
                 const savedSelection = localStorage.getItem('trs_catalog_selection')
                 if (savedSelection) {
                     const selection = JSON.parse(savedSelection)
-                    const newRowsFromCatalog: OrderRow[] = selection.filter((sel: any) =>
-                        !currentRows.find((row: OrderRow) => row.productId === sel.productId)
+                    const newRowsFromCatalog = selection.filter((sel: any) =>
+                        !currentRows.find((row) => row.productId === sel.productId)
                     ).map((sel: any) => ({
                         id: `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                         productId: sel.productId,
@@ -145,6 +146,7 @@ export default function B2BOrderGrid() {
                         unit: sel.unit as 'kg' | 'box' || 'kg',
                         estimatedWeight: 0,
                         totalAmount: 0,
+                        checked: false
                     }))
 
                     if (newRowsFromCatalog.length > 0) {
@@ -181,7 +183,7 @@ export default function B2BOrderGrid() {
     }, [token])
 
     // 빈 행 생성
-    function createEmptyRow(): OrderRow {
+    function createEmptyRow(): OrderRow & { checked?: boolean } {
         return {
             id: `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             productId: null,
@@ -191,6 +193,7 @@ export default function B2BOrderGrid() {
             unit: orderUnit, // 현재 설정된 단위 사용
             estimatedWeight: 0,
             totalAmount: 0,
+            checked: false
         }
     }
 
@@ -357,6 +360,31 @@ export default function B2BOrderGrid() {
         setRows(prev => prev.filter(row => row.id !== rowId))
     }
 
+    // 체크박스 토글
+    const toggleCheck = (rowId: string) => {
+        setRows(prev => prev.map(row =>
+            row.id === rowId ? { ...row, checked: !row.checked } : row
+        ))
+    }
+
+    // 전체 선택 토글
+    const toggleAllCheck = (checked: boolean) => {
+        setRows(prev => prev.map(row => ({ ...row, checked })))
+    }
+
+    // 선택된 행 삭제
+    const deleteSelectedRows = () => {
+        const count = rows.filter(r => r.checked).length
+        if (count === 0) return
+
+        if (confirm(`선택한 ${count}개 항목을 삭제하시겠습니까?`)) {
+            setRows(prev => {
+                const left = prev.filter(r => !r.checked)
+                return left.length > 0 ? left : [createEmptyRow()]
+            })
+        }
+    }
+
     // 키보드 네비게이션
     const handleKeyDown = (e: React.KeyboardEvent, rowId: string, field: 'name' | 'qty') => {
         if (field === 'name' && showDropdown && filteredProducts.length > 0) {
@@ -446,6 +474,7 @@ export default function B2BOrderGrid() {
     const totalItems = vRows.length
     const totalWeight = vRows.reduce((sum, r) => sum + r.estimatedWeight, 0)
     const totalAmount = vRows.reduce((sum, r) => sum + r.totalAmount, 0)
+    const checkedCount = rows.filter(r => r.checked).length
 
     // 통화 포맷
     const formatCurrency = (value: number) => new Intl.NumberFormat('ko-KR').format(value)
@@ -598,9 +627,16 @@ export default function B2BOrderGrid() {
                 <table className="order-table">
                     <thead>
                         <tr>
+                            <th className="col-check" style={{ width: '40px', textAlign: 'center' }}>
+                                <input
+                                    type="checkbox"
+                                    onChange={(e) => toggleAllCheck(e.target.checked)}
+                                    checked={rows.length > 0 && rows.every(r => r.checked)}
+                                />
+                            </th>
                             <th className="col-no">No</th>
                             <th className="col-product">품목</th>
-                            <th className="col-unit" style={{ width: '100px', fontSize: '13px' }}>예상중량/Box</th>
+                            <th className="col-unit mobile-hidden" style={{ width: '100px', fontSize: '13px' }}>예상중량/Box</th>
                             <th className="col-price">단가(원/kg)</th>
                             <th className="col-qty">수량 ({orderUnit === 'kg' ? 'Kg' : 'Box'})</th>
                             <th className="col-weight">예상중량(kg)</th>
@@ -610,7 +646,14 @@ export default function B2BOrderGrid() {
                     </thead>
                     <tbody>
                         {rows.map((row, index) => (
-                            <tr key={row.id} className={row.productId ? 'filled' : ''}>
+                            <tr key={row.id} className={`${row.productId ? 'filled' : ''} ${row.checked ? 'bg-blue-50' : ''}`}>
+                                <td className="col-check" style={{ textAlign: 'center' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!row.checked}
+                                        onChange={() => toggleCheck(row.id)}
+                                    />
+                                </td>
                                 <td className="col-no">{index + 1}</td>
                                 <td className="col-product">
                                     <div className="product-input-wrapper" ref={activeRowId === row.id ? dropdownRef : null}>
@@ -636,19 +679,6 @@ export default function B2BOrderGrid() {
                                             placeholder="품목명 입력..."
                                             readOnly={!!row.productId}
                                         />
-                                        {row.productId && (
-                                            <button
-                                                className="clear-product-btn"
-                                                onClick={() => {
-                                                    if (confirm("이 품목을 리스트에서 삭제하시겠습니까?")) {
-                                                        removeRow(row.id)
-                                                    }
-                                                }}
-                                                title="품목 삭제"
-                                            >
-                                                ✕
-                                            </button>
-                                        )}
 
                                         {/* Autocomplete Dropdown */}
                                         {showDropdown && activeRowId === row.id && filteredProducts.length > 0 && (
@@ -669,7 +699,7 @@ export default function B2BOrderGrid() {
                                         )}
                                     </div>
                                 </td>
-                                <td className="col-unit text-muted" style={{ fontSize: '13px', textAlign: 'center' }}>
+                                <td className="col-unit text-muted mobile-hidden" style={{ fontSize: '13px', textAlign: 'center' }}>
                                     {(() => {
                                         const p = products.find(prod => prod.id === row.productId);
                                         return p ? (p.boxWeight ? `${p.boxWeight}kg/Box` : 'kg') : '-';
@@ -705,6 +735,7 @@ export default function B2BOrderGrid() {
                                     {rows.length > 1 && (
                                         <button
                                             className="remove-row-btn"
+                                            style={{ fontSize: '1.2rem', padding: '8px' }}
                                             onClick={() => {
                                                 if (confirm("이 줄을 삭제하시겠습니까?")) {
                                                     removeRow(row.id)
@@ -721,14 +752,14 @@ export default function B2BOrderGrid() {
                     </tbody>
                     <tfoot>
                         <tr className="add-row-tr">
-                            <td colSpan={8}>
+                            <td colSpan={9}>
                                 <button className="add-row-btn" onClick={addRow}>
                                     + 품목 추가
                                 </button>
                             </td>
                         </tr>
                         <tr className="total-row">
-                            <td colSpan={4} className="total-label">총계</td>
+                            <td colSpan={5} className="total-label">총계</td>
                             <td className="total-items">{totalItems} 품목</td>
                             <td className="total-weight">{formatCurrency(totalWeight)} kg</td>
                             <td className="total-amount">₩{formatCurrency(totalAmount)}</td>
@@ -763,13 +794,24 @@ export default function B2BOrderGrid() {
                         합계 <strong>₩{formatCurrency(totalAmount)}</strong>
                     </span>
                 </div>
-                <button
-                    className="btn btn-primary btn-lg"
-                    onClick={handleSubmit}
-                    disabled={totalItems === 0 || saving}
-                >
-                    {saving ? '제출 중...' : '주문 컨펌 및 승인 요청 📨'}
-                </button>
+
+                <div className="flex gap-4">
+                    {checkedCount > 0 && (
+                        <button
+                            className="btn btn-danger btn-outline"
+                            onClick={deleteSelectedRows}
+                        >
+                            선택품목 삭제 ({checkedCount})
+                        </button>
+                    )}
+                    <button
+                        className="btn btn-primary btn-lg"
+                        onClick={handleSubmit}
+                        disabled={totalItems === 0 || saving}
+                    >
+                        {saving ? '제출 중...' : '주문 컨펌 및 승인 요청 📨'}
+                    </button>
+                </div>
             </footer>
         </div>
     )

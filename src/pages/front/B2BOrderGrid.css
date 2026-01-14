@@ -521,6 +521,10 @@
     .b2b-order-grid .order-footer .btn {
         width: 100%;
     }
+
+    .mobile-hidden {
+        display: none !important;
+    }
 }
 
 /* Comments Styling */
