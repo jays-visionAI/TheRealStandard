@@ -22,6 +22,7 @@ export interface FirestoreSupplier {
     bankAccount?: string
     memo?: string
     isActive: boolean
+    isJoined: boolean
     createdAt: Timestamp
     updatedAt: Timestamp
 }
@@ -72,7 +73,7 @@ export async function seedInitialSuppliers(): Promise<void> {
     if (existing.length > 0) return
 
     const initialSuppliers = [
-        { id: 'supp-1', companyName: '우경인터내셔널', bizRegNo: '111-22-33333', ceoName: '박공급', phone: '02-1111-2222', email: 'wookyoung@example.com', address: '경기도 용인시 처인구...', supplyCategory: 'meat' as const, isActive: true },
+        { id: 'supp-1', companyName: '우경인터내셔널', bizRegNo: '111-22-33333', ceoName: '박공급', phone: '02-1111-2222', email: 'wookyoung@example.com', address: '경기도 용인시 처인구...', supplyCategory: 'meat' as const, isActive: true, isJoined: true },
     ]
 
     for (const s of initialSuppliers) {

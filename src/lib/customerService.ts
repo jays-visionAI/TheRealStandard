@@ -26,6 +26,7 @@ export interface FirestoreCustomer {
     isKeyAccount: boolean
     password?: string
     inviteToken?: string
+    isJoined: boolean
     status: 'PENDING' | 'ACTIVE' | 'INACTIVE'
     createdAt: Timestamp
     updatedAt: Timestamp
@@ -101,8 +102,8 @@ export async function seedInitialCustomers(): Promise<void> {
     if (existing.length > 0) return
 
     const initialCustomers = [
-        { id: 'cust-1', companyName: '아우내식품', bizRegNo: '123-45-67890', ceoName: '박아우', phone: '02-1234-5678', email: 'aunae@example.com', address: '서울시 강남구 삼성동 123', shipAddress1: '서울시 강남구 삼성동 123', priceType: 'wholesale' as const, isActive: true, isKeyAccount: true, status: 'ACTIVE' as const, password: '1234' },
-        { id: 'cust-2', companyName: '진심왕돈가스', bizRegNo: '987-65-43210', ceoName: '김진심', phone: '02-9876-5432', email: 'jinsim@example.com', address: '서울시 송파구 잠실동 456', shipAddress1: '서울시 송파구 잠실동 456', priceType: 'wholesale' as const, isActive: true, isKeyAccount: true, status: 'PENDING' as const, inviteToken: 'welcome-jinsim' },
+        { id: 'cust-1', companyName: '아우내식품', bizRegNo: '123-45-67890', ceoName: '박아우', phone: '02-1234-5678', email: 'aunae@example.com', address: '서울시 강남구 삼성동 123', shipAddress1: '서울시 강남구 삼성동 123', priceType: 'wholesale' as const, isActive: true, isKeyAccount: true, status: 'ACTIVE' as const, password: '1234', isJoined: true },
+        { id: 'cust-2', companyName: '진심왕돈가스', bizRegNo: '987-65-43210', ceoName: '김진심', phone: '02-9876-5432', email: 'jinsim@example.com', address: '서울시 송파구 잠실동 456', shipAddress1: '서울시 송파구 잠실동 456', priceType: 'wholesale' as const, isActive: true, isKeyAccount: true, status: 'PENDING' as const, inviteToken: 'welcome-jinsim', isJoined: false },
     ]
 
     for (const c of initialCustomers) {

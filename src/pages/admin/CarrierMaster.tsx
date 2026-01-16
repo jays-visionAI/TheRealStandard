@@ -119,6 +119,7 @@ export default function CarrierMaster() {
             address: '',
             supplyCategory: 'logistics',
             isActive: true,
+            isJoined: false,
         })
         setShowCarrierModal(true)
     }
@@ -137,7 +138,7 @@ export default function CarrierMaster() {
                 const { id, createdAt, updatedAt, ...updateData } = carrierFormData as any
                 await updateSupplierFirebase(editingCarrier.id, { ...updateData, supplyCategory: 'logistics' })
             } else {
-                await createSupplier({ ...carrierFormData as any, supplyCategory: 'logistics' })
+                await createSupplier({ ...carrierFormData as any, supplyCategory: 'logistics', isJoined: false })
             }
             await loadData()
             setShowCarrierModal(false)
@@ -217,8 +218,8 @@ export default function CarrierMaster() {
                         key={c.id}
                         onClick={() => setActiveCarrierId(c.id)}
                         className={`px-4 py-2 rounded-t-lg font-bold whitespace-nowrap transition-all ${activeCarrierId === c.id
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-white text-gray-600 hover:bg-gray-100'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-white text-gray-600 hover:bg-gray-100'
                             }`}
                     >
                         {c.companyName}
@@ -232,7 +233,12 @@ export default function CarrierMaster() {
                     <div className="lg:col-span-1">
                         <div className="glass-card p-6 border-l-4 border-blue-600">
                             <div className="flex justify-between items-start mb-4">
-                                <h2 className="text-xl font-bold">{activeCarrier.companyName}</h2>
+                                <div className="flex flex-col gap-1">
+                                    <h2 className="text-xl font-bold">{activeCarrier.companyName}</h2>
+                                    <span className={`status-badge ${activeCarrier.isJoined ? 'active' : 'inactive'}`} style={{ width: 'fit-content', opacity: 0.8, fontSize: '10px' }}>
+                                        {activeCarrier.isJoined ? '회원가입' : '회원미가입'}
+                                    </span>
+                                </div>
                                 <button className="btn btn-xs btn-ghost" onClick={() => openEditCarrier(activeCarrier)}>수정</button>
                             </div>
                             <div className="space-y-3 text-sm">
@@ -241,6 +247,14 @@ export default function CarrierMaster() {
                                 </div>
                                 <div className="flex items-center gap-2 text-gray-600">
                                     <UserIcon size={14} /> <span>{activeCarrier.ceoName} (대표)</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-gray-600">
+                                    <FileTextIcon size={14} />
+                                    {activeCarrier.isJoined ? (
+                                        <span>{activeCarrier.email}</span>
+                                    ) : (
+                                        <span className="text-gray-400 italic">미가입 (이메일 비공개)</span>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-2 text-gray-600">
                                     <PhoneIcon size={14} /> <span>{activeCarrier.phone} / {activeCarrier.contactPhone}</span>

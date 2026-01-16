@@ -98,6 +98,7 @@ export default function SupplierMaster() {
             address: '',
             supplyCategory: 'meat',
             isActive: true,
+            isJoined: false,
         })
         setShowModal(true)
     }
@@ -153,6 +154,7 @@ export default function SupplierMaster() {
                     bankAccount: formData.bankAccount,
                     memo: formData.memo,
                     isActive: formData.isActive ?? true,
+                    isJoined: false,
                 })
                 alert('새 공급업체가 등록되었습니다.')
             }
@@ -305,6 +307,7 @@ export default function SupplierMaster() {
                             <th>사업자번호</th>
                             <th>대표자</th>
                             <th>연락처</th>
+                            <th>이메일</th>
                             <th>공급품목</th>
                             <th>결제조건</th>
                             <th>액션</th>
@@ -321,9 +324,14 @@ export default function SupplierMaster() {
                             filteredSuppliers.map(supplier => (
                                 <tr key={supplier.id} className={!supplier.isActive ? 'inactive' : ''}>
                                     <td>
-                                        <span className={`status-badge ${supplier.isActive ? 'active' : 'inactive'}`}>
-                                            {supplier.isActive ? '활성' : '비활성'}
-                                        </span>
+                                        <div className="flex flex-col gap-1">
+                                            <span className={`status-badge ${supplier.isActive ? 'active' : 'inactive'}`}>
+                                                {supplier.isActive ? '활성' : '비활성'}
+                                            </span>
+                                            <span className={`status-badge ${supplier.isJoined ? 'active' : 'inactive'}`} style={{ opacity: 0.8, fontSize: '10px' }}>
+                                                {supplier.isJoined ? '회원가입' : '회원미가입'}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td className="company-name">
                                         <strong>{supplier.companyName}</strong>
@@ -332,6 +340,13 @@ export default function SupplierMaster() {
                                     <td className="mono">{supplier.bizRegNo}</td>
                                     <td>{supplier.ceoName}</td>
                                     <td className="mono">{supplier.phone}</td>
+                                    <td>
+                                        {supplier.isJoined ? (
+                                            supplier.email
+                                        ) : (
+                                            <span className="text-gray-400 italic text-xs">미가입 (이메일 비공개)</span>
+                                        )}
+                                    </td>
                                     <td>
                                         <span className={`price-badge ${supplier.supplyCategory}`}>
                                             {CATEGORY_LABELS[supplier.supplyCategory]}

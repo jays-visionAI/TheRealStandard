@@ -97,6 +97,7 @@ export default function OrganizationMaster() {
             priceType: 'wholesale',
             isActive: true,
             isKeyAccount: false,
+            isJoined: false,
         })
         setShowModal(true)
     }
@@ -156,6 +157,7 @@ export default function OrganizationMaster() {
                     memo: formData.memo,
                     isActive: formData.isActive ?? true,
                     isKeyAccount: formData.isKeyAccount ?? false,
+                    isJoined: false,
                     status: 'PENDING',
                 })
                 alert('새 거래처가 등록되었습니다. 초대장을 발송할 수 있습니다.')
@@ -278,7 +280,7 @@ export default function OrganizationMaster() {
                     <div className="stat-icon"><UsersIcon size={24} /></div>
                     <div className="stat-info">
                         <span className="stat-value">{stats.total}</span>
-                        <span className="stat-label">전체 거래처</span>
+                        <span className="stat-label">전체 고객사</span>
                     </div>
                 </div>
                 <div className="stat-card active">
@@ -357,10 +359,15 @@ export default function OrganizationMaster() {
                             filteredCustomers.map(customer => (
                                 <tr key={customer.id} className={!customer.isActive ? 'inactive' : ''}>
                                     <td>
-                                        <span className={`status-badge ${(customer.status || 'PENDING').toLowerCase()}`}>
-                                            {customer.status === 'PENDING' ? '초대대기' :
-                                                customer.status === 'ACTIVE' ? '활성' : '비활성'}
-                                        </span>
+                                        <div className="flex flex-col gap-1">
+                                            <span className={`status-badge ${(customer.status || 'PENDING').toLowerCase()}`}>
+                                                {customer.status === 'PENDING' ? '초대대기' :
+                                                    customer.status === 'ACTIVE' ? '활성' : '비활성'}
+                                            </span>
+                                            <span className={`status-badge ${customer.isJoined ? 'active' : 'inactive'}`} style={{ opacity: 0.8, fontSize: '10px' }}>
+                                                {customer.isJoined ? '회원가입' : '회원미가입'}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td className="company-name">
                                         {customer.isKeyAccount && <span className="key-account-badge"><StarIcon size={14} /></span>}
@@ -370,7 +377,13 @@ export default function OrganizationMaster() {
                                     <td className="mono">{customer.bizRegNo}</td>
                                     <td>{customer.ceoName}</td>
                                     <td className="mono">{customer.phone}</td>
-                                    <td>{customer.email}</td>
+                                    <td>
+                                        {customer.isJoined ? (
+                                            customer.email
+                                        ) : (
+                                            <span className="text-gray-400 italic text-xs">미가입 (이메일 비공개)</span>
+                                        )}
+                                    </td>
                                     <td>
                                         <span className={`price-badge ${customer.priceType}`}>
                                             {customer.priceType === 'wholesale' ? '도매' : '소매'}
