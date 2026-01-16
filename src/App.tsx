@@ -49,10 +49,14 @@ import UserManagement from './pages/admin/UserManagement'
 import DocumentHub from './pages/admin/DocumentHub'
 import SystemSettings from './pages/admin/SystemSettings'
 
+// Public Pages
+import OrderSheetView from './pages/front/OrderSheetView'
+import PurchaseOrderView from './pages/front/PurchaseOrderView'
+import DispatchView from './pages/public/DispatchView'
+
 // Front (Customer) Pages
 import FrontLayout from './layouts/FrontLayout'
 import InviteLanding from './pages/front/InviteLanding'
-import PurchaseOrderView from './pages/front/PurchaseOrderView'
 import B2BOrderGrid from './pages/front/B2BOrderGrid'
 import CustomerConfirm from './pages/front/CustomerConfirm'
 import DeliveryTracking from './pages/front/DeliveryTracking'
@@ -74,18 +78,13 @@ function App() {
         <AuthProvider>
             <BrowserRouter>
                 <Routes>
-                    {/* ========================================
-                          로그인/인증
-                       ======================================== */}
+                    {/* Public Routes */}
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+                    <Route path="/order-sheet/:token" element={<OrderSheetView />} />
+                    <Route path="/purchase-order/:token" element={<PurchaseOrderView />} />
+                    <Route path="/dispatch/:token" element={<DispatchView />} />
                     <Route path="/invite/:token" element={<InviteActivation />} />
-                    <Route
-                        path="/login"
-                        element={
-                            <PublicRoute>
-                                <Login />
-                            </PublicRoute>
-                        }
-                    />
 
 
                     {/* ========================================

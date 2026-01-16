@@ -180,3 +180,53 @@ export const addKakaoChannel = (channelId?: string) => {
         channelPublicId: finalChannelId,
     });
 };
+
+/**
+ * 배차 요청 메시지 전송 (물류사 담당자용)
+ */
+export const sendDispatchRequestMessage = (carrierName: string, dispatchUrl: string) => {
+    if (!window.Kakao) return;
+
+    window.Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+            title: '[TRS] 배차 요청',
+            description: `${carrierName} 담당자님, 신규 배차 요청이 접수되었습니다. 아래 링크를 통해 배차 정보를 입력해 주세요.`,
+            imageUrl: 'https://images.unsplash.com/photo-1590682680695-43b964a3ae17?q=80&w=1000&auto=format&fit=crop',
+            link: {
+                mobileWebUrl: dispatchUrl,
+                webUrl: dispatchUrl,
+            },
+        },
+        buttons: [
+            {
+                title: '배차 정보 입력하기',
+                link: {
+                    mobileWebUrl: dispatchUrl,
+                    webUrl: dispatchUrl,
+                },
+            },
+        ],
+    });
+};
+
+/**
+ * 배차 확정 알림 (관리자/물류팀용)
+ */
+export const sendDispatchConfirmedMessage = (driverName: string, vehicleNo: string) => {
+    if (!window.Kakao) return;
+
+    window.Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+            title: '[TRS] 배차 확정 알림',
+            description: `배차가 확정되었습니다.\n기사: ${driverName}\n차량: ${vehicleNo}`,
+            imageUrl: 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?q=80&w=1000&auto=format&fit=crop',
+            link: {
+                mobileWebUrl: window.location.origin + '/admin/shipments',
+                webUrl: window.location.origin + '/admin/shipments',
+            },
+        },
+    });
+};
+

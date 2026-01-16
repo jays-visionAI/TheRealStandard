@@ -197,6 +197,9 @@ export interface FirestoreShipment {
     driverName?: string
     driverPhone?: string
     company?: string // 물류사명
+    carrierOrgId?: string // Link to carrier organization
+    dispatcherToken?: string // Token for public access by dispatcher
+    dispatchRequestedAt?: Timestamp
     eta?: Timestamp
     etaAt?: Timestamp
     status: 'PREPARING' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED'
@@ -226,6 +229,14 @@ export async function getShipmentsBySalesOrder(salesOrderId: string): Promise<Fi
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FirestoreShipment))
 }
 
+export async function getShipmentByToken(token: string): Promise<FirestoreShipment | null> {
+    const q = query(collection(db, SHIPMENTS_COLLECTION), where('dispatcherToken', '==', token))
+    const snapshot = await getDocs(q)
+    if (snapshot.empty) return null
+    const d = snapshot.docs[0]
+    return { id: d.id, ...d.data() } as FirestoreShipment
+}
+
 export async function createShipment(data: Omit<FirestoreShipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreShipment> {
     const newDocRef = doc(collection(db, SHIPMENTS_COLLECTION))
     const now = serverTimestamp()
@@ -242,6 +253,51 @@ export async function updateShipment(id: string, data: Partial<FirestoreShipment
 export async function deleteShipment(id: string): Promise<void> {
     const docRef = doc(db, SHIPMENTS_COLLECTION, id)
     await deleteDoc(docRef)
+}
+
+// ============ CARRIER DRIVERS (배차기사 관리) ============
+export interface RegisteredDriver {
+    id: string
+    carrierOrgId: string
+    driverName: string
+    driverPhone: string
+    vehicleNumber: string
+    vehicleTypeId?: string
+    lastUsedAt: Timestamp
+}
+
+const DRIVERS_COLLECTION = 'carrierDrivers'
+
+export async function getDriversByCarrier(carrierOrgId: string): Promise<RegisteredDriver[]> {
+    const q = query(collection(db, DRIVERS_COLLECTION), where('carrierOrgId', '==', carrierOrgId))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RegisteredDriver))
+}
+
+export async function upsertDriver(carrierOrgId: string, data: Omit<RegisteredDriver, 'id' | 'carrierOrgId' | 'lastUsedAt'>): Promise<void> {
+    const q = query(
+        collection(db, DRIVERS_COLLECTION),
+        where('carrierOrgId', '==', carrierOrgId),
+        where('vehicleNumber', '==', data.vehicleNumber)
+    )
+    const snapshot = await getDocs(q)
+    const now = Timestamp.now()
+
+    if (snapshot.empty) {
+        const newRef = doc(collection(db, DRIVERS_COLLECTION))
+        await setDoc(newRef, {
+            ...data,
+            id: newRef.id,
+            carrierOrgId,
+            lastUsedAt: now
+        })
+    } else {
+        const existingDoc = snapshot.docs[0]
+        await updateDoc(existingDoc.ref, {
+            ...data,
+            lastUsedAt: now
+        })
+    }
 }
 
 // ============ PURCHASE ORDER (매입발주) ============

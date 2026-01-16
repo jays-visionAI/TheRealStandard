@@ -414,24 +414,26 @@ export default function CarrierMaster() {
                             </div>
 
                             <div className="form-section">
-                                <h3><UserIcon size={18} /> 담당자 정보</h3>
+                                <h3><UserIcon size={18} /> 배차담당자 정보</h3>
                                 <div className="form-grid">
-                                    <div className="form-group">
-                                        <label>담당자명</label>
+                                    <div className="form-group required">
+                                        <label>배차담당자명</label>
                                         <input
                                             type="text"
                                             className="input"
                                             value={formData.contactPerson || ''}
                                             onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+                                            required
                                         />
                                     </div>
-                                    <div className="form-group">
-                                        <label>담당자 연락처</label>
+                                    <div className="form-group required">
+                                        <label>배차담당자 연락처</label>
                                         <input
                                             type="tel"
                                             className="input"
                                             value={formData.contactPhone || ''}
                                             onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                                            required
                                         />
                                     </div>
                                 </div>
