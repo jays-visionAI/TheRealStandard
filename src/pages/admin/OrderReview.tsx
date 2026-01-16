@@ -251,6 +251,7 @@ export default function OrderReview() {
                         <thead>
                             <tr>
                                 <th>품목명</th>
+                                <th className="text-right">주문수량</th>
                                 <th className="text-right">중량(kg)</th>
                                 <th className="text-right">단가</th>
                                 <th className="text-right">금액</th>
@@ -260,6 +261,9 @@ export default function OrderReview() {
                             {items.map((item, index) => (
                                 <tr key={index}>
                                     <td className="font-medium">{item.productName}</td>
+                                    <td className="text-right">
+                                        {item.qtyRequested} {item.unit === 'box' ? 'Box' : 'Kg'}
+                                    </td>
                                     <td className="text-right">{(item.estimatedKg || 0).toFixed(1)}</td>
                                     <td className="text-right">{formatCurrency(item.unitPrice)}</td>
                                     <td className="text-right font-semibold">{formatCurrency(item.amount || 0)}</td>

@@ -72,7 +72,7 @@ export default function B2BOrderGrid() {
     const [highlightIndex, setHighlightIndex] = useState(0)
     const [saving, setSaving] = useState(false)
     const [customerComment, setCustomerComment] = useState('')
-    const [orderUnit, setOrderUnit] = useState<'kg' | 'box'>('kg')
+    const [orderUnit, setOrderUnit] = useState<'kg' | 'box'>('box')
 
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())

@@ -16,7 +16,7 @@ export interface FirestoreSupplier {
     address: string
     contactPerson?: string
     contactPhone?: string
-    supplyCategory: 'meat' | 'byproduct' | 'packaging' | 'other'
+    supplyCategory: 'meat' | 'byproduct' | 'packaging' | 'logistics' | 'other'
     paymentTerms?: string
     bankName?: string
     bankAccount?: string

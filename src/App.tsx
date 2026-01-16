@@ -43,6 +43,7 @@ import ProductMaster from './pages/admin/ProductMaster'
 import PriceListManager from './pages/admin/PriceListManager'
 import OrganizationMaster from './pages/admin/OrganizationMaster'
 import SupplierMaster from './pages/admin/SupplierMaster'
+import CarrierMaster from './pages/admin/CarrierMaster'
 import UserList from './pages/admin/UserList'
 import UserManagement from './pages/admin/UserManagement'
 import DocumentHub from './pages/admin/DocumentHub'
@@ -145,6 +146,7 @@ function App() {
                         <Route path="users/staff" element={<UserList />} />
                         <Route path="users/customers" element={<OrganizationMaster />} />
                         <Route path="users/suppliers" element={<SupplierMaster />} />
+                        <Route path="users/carriers" element={<CarrierMaster />} />
                         {/* Products */}
                         <Route path="products/b2b" element={<ProductMaster channel="B2B" />} />
                         <Route path="products/b2c" element={<ProductMaster channel="B2C" />} />

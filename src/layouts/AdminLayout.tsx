@@ -71,6 +71,7 @@ const navigation = [
             { label: 'Staff Setting (임직원)', path: '/admin/users/staff' },
             { label: '고객사 (구매처) 관리', path: '/admin/users/customers' },
             { label: '공급 거래처 관리', path: '/admin/users/suppliers' },
+            { label: '배송업체 관리', path: '/admin/users/carriers' },
         ],
     },
     {
@@ -226,6 +227,7 @@ function getPageTitle(pathname: string): string {
         '/admin/users/staff': '임직원 계정 및 권한 관리',
         '/admin/users/customers': '고객사 (구매처) 마스터',
         '/admin/users/suppliers': '공급거래처 마스터',
+        '/admin/users/carriers': '배송업체 마스터',
         // Products
         '/admin/products/b2b': 'B2B 상품 리스트',
         '/admin/products/b2c': 'B2C 상품 리스트',

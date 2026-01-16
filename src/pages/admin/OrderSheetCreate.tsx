@@ -59,7 +59,7 @@ export default function OrderSheetCreate() {
 
     // Step 관리
     const [step, setStep] = useState(1)
-    const [orderUnit, setOrderUnit] = useState<'kg' | 'box'>('kg')
+    const [orderUnit, setOrderUnit] = useState<'kg' | 'box'>('box')
 
     // Step 1: 고객 선택
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
@@ -84,7 +84,8 @@ export default function OrderSheetCreate() {
     // Preview Modal State
     const [previewModalOpen, setPreviewModalOpen] = useState(false)
     const [previewTitle, setPreviewTitle] = useState('')
-    const [previewData, setPreviewData] = useState<{ name: string, price: number, unit: string }[]>([])
+    const [previewData, setPreviewData] = useState<{ name: string, price: number, unit: string, qty?: number, amount?: number }[]>([])
+    const [previewSource, setPreviewSource] = useState<'priceList' | 'orderSheet' | null>(null)
 
     // 사이드바 패널 (단가표 / 이전 발주서)
     const [showSidebar, setShowSidebar] = useState(true)
@@ -145,7 +146,7 @@ export default function OrderSheetCreate() {
             productName: '',
             unitPrice: 0,
             quantity: 0,
-            unit: 'kg',
+            unit: 'box',
             estimatedWeight: 0,
             totalAmount: 0,
         }
@@ -299,12 +300,11 @@ export default function OrderSheetCreate() {
         if (!confirm(`'${list.title}' 단가표의 품목과 단가를 가져오시겠습니까?`)) return
 
         const newRows: OrderRow[] = list.items.map(item => {
-            const p = products.find(p => p.id === item.productId)
             return {
                 id: Math.random().toString(36).substr(2, 9),
                 productId: item.productId,
                 productName: item.name,
-                unitPrice: item.supplyPrice,
+                unitPrice: item.wholesalePrice || 0,
                 quantity: 0,
                 unit: orderUnit,
                 estimatedWeight: 0,
@@ -328,6 +328,14 @@ export default function OrderSheetCreate() {
                 return
             }
 
+            if (items && items.length > 0) {
+                // 이전 주문의 단위를 확인하여 현재 주문 단위(orderUnit) 설정
+                const firstUnit = items[0].unit as 'kg' | 'box';
+                if (firstUnit === 'kg' || firstUnit === 'box') {
+                    setOrderUnit(firstUnit);
+                }
+            }
+
             const newRows: OrderRow[] = items.map(item => {
                 return {
                     id: Math.random().toString(36).substr(2, 9),
@@ -335,7 +343,7 @@ export default function OrderSheetCreate() {
                     productName: item.productName,
                     unitPrice: item.unitPrice,
                     quantity: item.qtyRequested || 0,
-                    unit: orderUnit,
+                    unit: item.unit as 'kg' | 'box',
                     estimatedWeight: item.estimatedKg || 0,
                     totalAmount: item.amount || 0
                 }
@@ -393,24 +401,6 @@ export default function OrderSheetCreate() {
         setRows(prev => prev.filter(row => row.id !== rowId))
     }
 
-    // 이전 주문에서 품목 불러오기
-    const loadFromPastOrder = (pastOrder: PastOrder) => {
-        const newRows: OrderRow[] = pastOrder.items.map(item => {
-            const product = products.find(p => p.id === item.productId)
-            return {
-                id: `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                productId: item.productId,
-                productName: item.productName,
-                unitPrice: product?.unitPrice || 0,
-                quantity: item.qty,
-                unit: product?.unit as 'kg' | 'box' || 'kg',
-                estimatedWeight: item.qty,
-                totalAmount: (product?.unitPrice || 0) * item.qty,
-            }
-        })
-        setRows(newRows)
-    }
-
     // 키보드 네비게이션
     const handleKeyDown = (e: React.KeyboardEvent, rowId: string, field: 'name' | 'qty') => {
         if (field === 'name') {
@@ -434,7 +424,6 @@ export default function OrderSheetCreate() {
                 }
             } else if (e.key === 'Enter') {
                 e.preventDefault()
-                // 이미 품목이 선택된 상태거나 드롭다운이 없을 때 Enter 입력 시 수량 입력으로 이동
                 const qtyInput = inputRefs.current.get(`qty-${rowId}`)
                 if (qtyInput) {
                     qtyInput.focus()
@@ -451,16 +440,10 @@ export default function OrderSheetCreate() {
                 const nameInput = inputRefs.current.get(`name-${nextRow.id}`)
                 if (nameInput) nameInput.focus()
             }
-        } else if (field === 'qty' && e.key === 'Tab' && !e.shiftKey) {
-            const currentIndex = rows.findIndex(r => r.id === rowId)
-            if (currentIndex === rows.length - 1) {
-                e.preventDefault()
-                addRow()
-            }
         }
     }
 
-    // 통계 계산 (수량이 0인 품목도 포함하여 생성 가능)
+    // 통계 계산
     const validRows = useMemo(() => rows.filter(r => r.productId), [rows])
     const totalItems = validRows.length
     const totalWeight = useMemo(() => validRows.reduce((sum, r) => sum + r.estimatedWeight, 0), [validRows])
@@ -469,7 +452,7 @@ export default function OrderSheetCreate() {
     // 통화 포맷
     const formatCurrency = (value: number) => new Intl.NumberFormat('ko-KR').format(value)
 
-    // 고객 필터링 - 활성 고객만 표시
+    // 고객 필터링
     const filteredCustomers = useMemo(() => {
         const activeCustomers = customers.filter(c => c.isActive)
         if (!customerSearch) return activeCustomers
@@ -482,10 +465,11 @@ export default function OrderSheetCreate() {
 
     // Preview Handlers
     const handlePreviewPriceList = (list: FirestorePriceList) => {
+        setPreviewSource('priceList')
         setPreviewTitle(`단가표: ${list.title}`)
         setPreviewData(list.items.map((item) => ({
             name: item.name,
-            price: item.wholesalePrice, // Using wholesalePrice as the display price for preview
+            price: item.wholesalePrice,
             unit: item.unit || 'kg'
         })))
         setPreviewModalOpen(true)
@@ -495,11 +479,14 @@ export default function OrderSheetCreate() {
         try {
             setLoading(true)
             const items = await getOrderSheetItems(orderSheet.id)
+            setPreviewSource('orderSheet')
             setPreviewTitle(`발주서 #${orderSheet.id.slice(-6)}`)
             setPreviewData(items.map(item => ({
                 name: item.productName,
                 price: item.unitPrice,
-                unit: item.unit
+                unit: item.unit || 'kg',
+                qty: item.qtyRequested,
+                amount: item.amount
             })))
             setPreviewModalOpen(true)
         } catch (err) {
@@ -1127,49 +1114,104 @@ export default function OrderSheetCreate() {
             )}
             {/* Preview Modal */}
             {previewModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-                        <div className="p-4 border-b flex justify-between items-center">
-                            <h3 className="font-bold text-lg">{previewTitle}</h3>
+                <div className="modal-backdrop" onClick={() => setPreviewModalOpen(false)}>
+                    <div className="modal" style={{ maxWidth: '800px', width: '90%' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div style={{
+                                    padding: 'var(--space-2)',
+                                    backgroundColor: 'var(--color-primary-glow)',
+                                    color: 'var(--color-primary)',
+                                    borderRadius: 'var(--radius-md)'
+                                }}>
+                                    <ClipboardListIcon size={22} />
+                                </div>
+                                <h3 style={{ margin: 0, fontSize: 'var(--text-xl)' }}>{previewTitle}</h3>
+                            </div>
                             <button
                                 onClick={() => setPreviewModalOpen(false)}
-                                className="text-gray-500 hover:text-gray-700"
+                                className="btn btn-ghost p-2"
+                                style={{ borderRadius: 'var(--radius-full)' }}
                             >
                                 <XIcon size={20} />
                             </button>
                         </div>
-                        <div className="p-4 overflow-y-auto flex-1">
-                            <table className="w-full text-sm">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="p-2 text-left">품목명</th>
-                                        <th className="p-2 text-right">단가</th>
-                                        <th className="p-2 text-center">단위</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {previewData.length === 0 ? (
+
+                        <div className="modal-body custom-scrollbar" style={{ padding: 0 }}>
+                            <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
+                                <table className="table">
+                                    <thead>
                                         <tr>
-                                            <td colSpan={3} className="p-4 text-center text-gray-500">품목이 없습니다.</td>
+                                            <th>품목명</th>
+                                            <th className="text-right">단가(원)</th>
+                                            {previewSource === 'orderSheet' && (
+                                                <>
+                                                    <th className="text-right">주문수량</th>
+                                                    <th className="text-right">금액(원)</th>
+                                                </>
+                                            )}
+                                            {previewSource === 'priceList' && (
+                                                <th className="text-center">단위</th>
+                                            )}
                                         </tr>
-                                    ) : (
-                                        previewData.map((item, idx) => (
-                                            <tr key={idx} className="border-b last:border-0 hover:bg-gray-50">
-                                                <td className="p-2">{item.name}</td>
-                                                <td className="p-2 text-right">₩{formatCurrency(item.price)}</td>
-                                                <td className="p-2 text-center text-gray-500">{item.unit}</td>
+                                    </thead>
+                                    <tbody>
+                                        {previewData.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={previewSource === 'orderSheet' ? 4 : 3} className="text-center" style={{ padding: '40px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                                    등록된 품목이 없습니다.
+                                                </td>
                                             </tr>
-                                        ))
+                                        ) : (
+                                            previewData.map((item, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="font-medium">{item.name}</td>
+                                                    <td className="text-right" style={{ fontFamily: 'var(--font-mono)' }}>
+                                                        {formatCurrency(item.price)}
+                                                    </td>
+                                                    {previewSource === 'orderSheet' && (
+                                                        <>
+                                                            <td className="text-right">
+                                                                <span className="badge badge-secondary" style={{ fontFamily: 'var(--font-mono)' }}>
+                                                                    {item.qty} {item.unit?.toUpperCase()}
+                                                                </span>
+                                                            </td>
+                                                            <td className="text-right font-bold" style={{ color: 'var(--color-primary)' }}>
+                                                                {formatCurrency(item.amount || 0)}
+                                                            </td>
+                                                        </>
+                                                    )}
+                                                    {previewSource === 'priceList' && (
+                                                        <td className="text-center">
+                                                            <span className="badge badge-primary" style={{ fontSize: '10px', textTransform: 'uppercase' }}>
+                                                                {item.unit}
+                                                            </span>
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                    {previewSource === 'orderSheet' && previewData.length > 0 && (
+                                        <tfoot>
+                                            <tr style={{ backgroundColor: 'var(--bg-tertiary)', fontWeight: 'var(--font-bold)' }}>
+                                                <td colSpan={3} className="text-right" style={{ padding: 'var(--space-4)' }}>총 금액</td>
+                                                <td className="text-right" style={{ padding: 'var(--space-4)', fontSize: 'var(--text-lg)', color: 'var(--color-primary)' }}>
+                                                    ₩{formatCurrency(previewData.reduce((sum, i) => sum + (i.amount || 0), 0))}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
                                     )}
-                                </tbody>
-                            </table>
+                                </table>
+                            </div>
                         </div>
-                        <div className="p-4 border-t bg-gray-50 flex justify-end">
+
+                        <div className="modal-footer">
                             <button
-                                className="btn btn-secondary"
+                                className="btn btn-primary px-8"
                                 onClick={() => setPreviewModalOpen(false)}
                             >
-                                닫기
+                                확인
                             </button>
                         </div>
                     </div>
