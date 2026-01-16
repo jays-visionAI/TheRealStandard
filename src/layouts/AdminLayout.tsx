@@ -40,7 +40,7 @@ const navigation = [
         label: '상품관리',
         iconKey: 'products',
         children: [
-            { label: 'B2B 상품리스트', path: '/admin/products/b2b' },
+            { label: '상품리스트', path: '/admin/products/b2b' },
             { label: '단가표', path: '/admin/products/price-lists' },
         ],
     },
@@ -228,7 +228,7 @@ function getPageTitle(pathname: string): string {
         '/admin/users/suppliers': '공급거래처 마스터',
         '/admin/users/carriers': '배송업체 마스터',
         // Products
-        '/admin/products/b2b': 'B2B 상품 리스트',
+        '/admin/products/b2b': '상품 리스트',
         '/admin/products/price-lists': '단가표 관리',
         // Order Book
         '/admin/order-sheets': '발주서 목록',
