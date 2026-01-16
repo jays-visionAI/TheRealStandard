@@ -321,7 +321,8 @@ export default function B2BOrderGrid() {
     };
 
     // 수량 변경 시 계산
-    const updateQuantity = (rowId: string, quantity: number) => {
+    const updateQuantity = (rowId: string, rawQuantity: number) => {
+        const quantity = Math.max(0, rawQuantity)
         setRows(prev => prev.map(row => {
             if (row.id === rowId) {
                 const product = products.find(p => p.id === row.productId)
@@ -631,6 +632,16 @@ export default function B2BOrderGrid() {
                         </button>
                     </div>
                 </div>
+
+                <div className="left-actions ml-4">
+                    <button
+                        className="btn btn-xs btn-outline-danger"
+                        disabled={checkedCount === 0}
+                        onClick={deleteSelectedRows}
+                    >
+                        🗑 선택 삭제 ({checkedCount})
+                    </button>
+                </div>
             </div>
 
             {/* Excel-like Grid */}
@@ -729,6 +740,7 @@ export default function B2BOrderGrid() {
                                             onChange={(e) => updateQuantity(row.id, parseFloat(e.target.value) || 0)}
                                             onKeyDown={(e) => handleKeyDown(e, row.id, 'qty')}
                                             placeholder="0"
+                                            min="0"
                                             disabled={!row.productId}
                                         />
                                         <span className="qty-unit">
@@ -743,20 +755,18 @@ export default function B2BOrderGrid() {
                                     {row.totalAmount > 0 ? `₩${formatCurrency(row.totalAmount)}` : '-'}
                                 </td>
                                 <td className="col-action">
-                                    {rows.length > 1 && (
-                                        <button
-                                            className="remove-row-btn"
-                                            style={{ fontSize: '1.2rem', padding: '8px' }}
-                                            onClick={() => {
-                                                if (confirm("이 줄을 삭제하시겠습니까?")) {
-                                                    removeRow(row.id)
-                                                }
-                                            }}
-                                            title="행 삭제"
-                                        >
-                                            🗑
-                                        </button>
-                                    )}
+                                    <button
+                                        className="remove-row-btn"
+                                        style={{ fontSize: '1.2rem', padding: '8px', color: '#ef4444' }}
+                                        onClick={() => {
+                                            if (confirm("이 줄을 삭제하시겠습니까?")) {
+                                                removeRow(row.id)
+                                            }
+                                        }}
+                                        title="행 삭제"
+                                    >
+                                        🗑
+                                    </button>
                                 </td>
                             </tr>
                         ))}
@@ -807,14 +817,6 @@ export default function B2BOrderGrid() {
                 </div>
 
                 <div className="flex gap-4">
-                    {checkedCount > 0 && (
-                        <button
-                            className="btn btn-danger btn-outline"
-                            onClick={deleteSelectedRows}
-                        >
-                            선택품목 삭제 ({checkedCount})
-                        </button>
-                    )}
                     <button
                         className="btn btn-primary btn-lg"
                         onClick={handleSubmit}

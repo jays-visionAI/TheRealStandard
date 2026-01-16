@@ -52,6 +52,7 @@ interface OrderRow {
     boxWeight: number
     estimatedWeight: number
     totalAmount: number
+    checked?: boolean
 }
 
 // 숫자 포맷
@@ -146,7 +147,8 @@ export default function PurchaseOrderCreate() {
         unit: 'kg',
         boxWeight: 0,
         estimatedWeight: 0,
-        totalAmount: 0
+        totalAmount: 0,
+        checked: false
     })
 
     useEffect(() => {
@@ -156,7 +158,8 @@ export default function PurchaseOrderCreate() {
     }, [rows])
 
     // 수량 업데이트 로직 (Kg/Box 단위 반영)
-    const updateQuantity = (rowId: string, qty: number) => {
+    const updateQuantity = (rowId: string, rawQty: number) => {
+        const qty = Math.max(0, rawQty)
         setRows(prev => prev.map(row => {
             if (row.id !== rowId) return row
 
@@ -207,6 +210,31 @@ export default function PurchaseOrderCreate() {
             return
         }
         setRows(prev => prev.filter(r => r.id !== id))
+    }
+
+    // 체크박스 토글
+    const toggleCheck = (rowId: string) => {
+        setRows(prev => prev.map(row =>
+            row.id === rowId ? { ...row, checked: !row.checked } : row
+        ))
+    }
+
+    // 전체 선택 토글
+    const toggleAllCheck = (checked: boolean) => {
+        setRows(prev => prev.map(row => ({ ...row, checked })))
+    }
+
+    // 선택된 행 삭제
+    const deleteSelectedRows = () => {
+        const checkedCount = rows.filter(r => r.checked).length
+        if (checkedCount === 0) return
+
+        if (confirm(`선택한 ${checkedCount}개 품목을 삭제하시겠습니까?`)) {
+            setRows(prev => {
+                const remaining = prev.filter(r => !r.checked)
+                return remaining.length > 0 ? remaining : [createEmptyRow()]
+            })
+        }
     }
 
     const clearProduct = (rowId: string) => {
@@ -531,21 +559,31 @@ export default function PurchaseOrderCreate() {
                                 💡 품목명 입력 시 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 행으로 이동합니다.
                             </p>
 
-                            <div className="order-unit-toggle-bar">
-                                <div className="toggle-label">주문 단위 설정</div>
-                                <div className="toggle-group">
+                            <div className="grid-toolbar mb-3 flex justify-between items-center">
+                                <div className="left-actions">
                                     <button
-                                        className={`toggle-btn ${orderUnit === 'kg' ? 'active' : ''}`}
-                                        onClick={() => setOrderUnit('kg')}
+                                        className="btn btn-sm btn-outline-danger"
+                                        disabled={!rows.some(r => r.checked)}
+                                        onClick={deleteSelectedRows}
                                     >
-                                        Kg 단위 주문
+                                        🗑 선택 삭제 ({rows.filter(r => r.checked).length})
                                     </button>
-                                    <button
-                                        className={`toggle-btn ${orderUnit === 'box' ? 'active' : ''}`}
-                                        onClick={() => setOrderUnit('box')}
-                                    >
-                                        박스 단위 주문
-                                    </button>
+                                </div>
+                                <div className="order-unit-toggle-bar" style={{ margin: 0, padding: 0, background: 'none' }}>
+                                    <div className="toggle-group">
+                                        <button
+                                            className={`toggle-btn ${orderUnit === 'kg' ? 'active' : ''}`}
+                                            onClick={() => setOrderUnit('kg')}
+                                        >
+                                            Kg 단위
+                                        </button>
+                                        <button
+                                            className={`toggle-btn ${orderUnit === 'box' ? 'active' : ''}`}
+                                            onClick={() => setOrderUnit('box')}
+                                        >
+                                            Box 단위
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -554,6 +592,13 @@ export default function PurchaseOrderCreate() {
                                 <table className="order-table">
                                     <thead>
                                         <tr>
+                                            <th className="col-check" style={{ width: '40px', textAlign: 'center' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    onChange={(e) => toggleAllCheck(e.target.checked)}
+                                                    checked={rows.length > 0 && rows.every(r => r.checked)}
+                                                />
+                                            </th>
                                             <th className="col-no">No</th>
                                             <th className="col-product">품목</th>
                                             <th className="col-unit" style={{ width: '100px', fontSize: '13px' }}>예상중량/Box</th>
@@ -566,7 +611,14 @@ export default function PurchaseOrderCreate() {
                                     </thead>
                                     <tbody>
                                         {rows.map((row, index) => (
-                                            <tr key={row.id} className={row.productId ? 'filled' : ''}>
+                                            <tr key={row.id} className={`${row.productId ? 'filled' : ''} ${row.checked ? 'selected-row' : ''}`}>
+                                                <td className="col-check" style={{ textAlign: 'center' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={!!row.checked}
+                                                        onChange={() => toggleCheck(row.id)}
+                                                    />
+                                                </td>
                                                 <td className="col-no">{index + 1}</td>
                                                 <td className="col-product">
                                                     <div className="product-input-wrapper" ref={activeRowId === row.id ? dropdownRef : null}>
@@ -592,12 +644,7 @@ export default function PurchaseOrderCreate() {
                                                             placeholder="품목명 입력..."
                                                             readOnly={!!row.productId}
                                                         />
-                                                        {row.productId && (
-                                                            <button
-                                                                className="clear-btn"
-                                                                onClick={() => clearProduct(row.id)}
-                                                            >✕</button>
-                                                        )}
+                                                        {/* Redundant clear button removed by user request */}
 
                                                         {/* Autocomplete Dropdown */}
                                                         {showDropdown && activeRowId === row.id && filteredProducts.length > 0 && (
@@ -640,6 +687,7 @@ export default function PurchaseOrderCreate() {
                                                             }
                                                         }}
                                                         placeholder="0"
+                                                        min="0"
                                                         disabled={!row.productId}
                                                     />
                                                 </td>
@@ -650,26 +698,26 @@ export default function PurchaseOrderCreate() {
                                                     {row.totalAmount > 0 ? `₩${formatCurrency(row.totalAmount)}` : '-'}
                                                 </td>
                                                 <td className="col-action">
-                                                    {rows.length > 1 && (
-                                                        <button
-                                                            className="delete-row-btn"
-                                                            onClick={() => deleteRow(row.id)}
-                                                        >
-                                                            <XIcon size={14} />
-                                                        </button>
-                                                    )}
+                                                    <button
+                                                        className="delete-row-btn"
+                                                        onClick={() => deleteRow(row.id)}
+                                                        title="행 삭제"
+                                                        style={{ color: '#ef4444', opacity: 1, fontSize: '1.2rem' }}
+                                                    >
+                                                        🗑
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                     <tfoot>
                                         <tr className="add-row-tr">
-                                            <td colSpan={8}>
+                                            <td colSpan={9}>
                                                 <button className="add-row-btn" onClick={addRow}>+ 품목 추가</button>
                                             </td>
                                         </tr>
                                         <tr className="total-row">
-                                            <td className="total-label" colSpan={4}>합계</td>
+                                            <td className="total-label" colSpan={5}>합계</td>
                                             <td className="total-qty">{totalItems} 품목</td>
                                             <td className="total-weight">{formatCurrency(totalWeight)} kg</td>
                                             <td className="total-amount">₩{formatCurrency(totalAmount)}</td>

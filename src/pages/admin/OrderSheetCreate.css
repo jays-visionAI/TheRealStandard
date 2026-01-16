@@ -256,6 +256,51 @@
     color: var(--text-primary);
 }
 
+/* Grid Toolbar */
+.grid-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) var(--space-4);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-primary);
+    margin-bottom: var(--space-3);
+}
+
+.left-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.btn-sm {
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    height: 32px;
+}
+
+.btn-outline-danger {
+    background: transparent;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: var(--font-medium);
+}
+
+.btn-outline-danger:hover:not(:disabled) {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-outline-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #fca5a5;
+    color: #fca5a5;
+}
+
 /* Grid Container */
 .grid-container {
     overflow-x: auto;
@@ -292,6 +337,14 @@
 
 .order-table tbody tr.filled {
     background: rgba(16, 185, 129, 0.05);
+}
+
+.order-table tbody tr.selected-row {
+    background: rgba(99, 102, 241, 0.1) !important;
+}
+
+.order-table tbody tr.selected-row:hover {
+    background: rgba(99, 102, 241, 0.15) !important;
 }
 
 .order-table .col-no {
@@ -889,6 +942,7 @@
         display: none;
     }
 }
+
 /* Template Card V2 - New Layout */
 .template-card-v2 {
     display: flex;

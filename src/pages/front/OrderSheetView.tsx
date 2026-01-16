@@ -39,7 +39,8 @@ export default function OrderSheetView() {
     }
   }, [token])
 
-  const updateItem = (id: string, field: 'qtyKg' | 'qtyBox', value: number) => {
+  const updateItem = (id: string, field: 'qtyKg' | 'qtyBox', rawValue: number) => {
+    const value = Math.max(0, rawValue)
     setItems(items.map(item => {
       if (item.id === id) {
         const newItem = { ...item, [field]: value }
@@ -150,6 +151,7 @@ export default function OrderSheetView() {
                     value={item.qtyKg || ''}
                     onChange={(e) => updateItem(item.id, 'qtyKg', parseFloat(e.target.value) || 0)}
                     placeholder="0"
+                    min="0"
                     disabled={status === 'CONFIRMED'}
                   />
                 </div>
@@ -162,6 +164,7 @@ export default function OrderSheetView() {
                       value={item.qtyBox || ''}
                       onChange={(e) => updateItem(item.id, 'qtyBox', parseFloat(e.target.value) || 0)}
                       placeholder="0"
+                      min="0"
                       disabled={status === 'CONFIRMED'}
                     />
                   </div>

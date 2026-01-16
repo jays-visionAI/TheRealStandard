@@ -131,7 +131,8 @@ export default function StepReview() {
         return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
     }
 
-    const updateFinalQty = (index: number, qty: number) => {
+    const updateFinalQty = (index: number, rawQty: number) => {
+        const qty = Math.max(0, rawQty)
         const updated = [...finalizedItems]
         updated[index].finalQty = qty
         setFinalizedItems(updated)
@@ -335,6 +336,7 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                                                     className="input"
                                                     value={item.finalQty}
                                                     onChange={(e) => updateFinalQty(idx, parseInt(e.target.value) || 0)}
+                                                    min="0"
                                                 />
                                                 <span className="unit">{item.unit}</span>
                                             </div>
@@ -359,7 +361,8 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                                     type="number"
                                     className="input weight-input"
                                     value={finalEstimatedTotalKg}
-                                    onChange={(e) => setFinalEstimatedTotalKg(parseInt(e.target.value) || 0)}
+                                    onChange={(e) => setFinalEstimatedTotalKg(Math.max(0, parseInt(e.target.value) || 0))}
+                                    min="0"
                                 />
                                 <span className="unit">kg</span>
                                 <span className="calc-note">
