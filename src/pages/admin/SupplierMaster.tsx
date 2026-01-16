@@ -19,6 +19,7 @@ const CATEGORY_LABELS: Record<Supplier['supplyCategory'], string> = {
     meat: '육류',
     byproduct: '부산물',
     packaging: '포장재',
+    logistics: '배송/물류',
     other: '기타',
 }
 
