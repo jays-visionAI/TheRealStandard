@@ -300,6 +300,11 @@ export async function upsertDriver(carrierOrgId: string, data: Omit<RegisteredDr
     }
 }
 
+export async function deleteDriver(id: string): Promise<void> {
+    const docRef = doc(db, DRIVERS_COLLECTION, id)
+    await deleteDoc(docRef)
+}
+
 // ============ PURCHASE ORDER (매입발주) ============
 export interface FirestorePurchaseOrder {
     id: string
