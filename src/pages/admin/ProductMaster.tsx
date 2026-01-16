@@ -406,7 +406,6 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                         <tr>
                             <th>품목명</th>
                             <th>카테고리1(냉장/냉동)</th>
-                            <th>상태(B2B/B2C)</th>
                             <th>단위</th>
                             <th>예상중량/Box</th>
                             <th className="price-col">매입가</th>
@@ -428,11 +427,6 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                 <td>
                                     <span className={`category-badge ${product.category1}`}>
                                         {product.category1 === '냉장' ? '🧊' : product.category1 === '냉동' ? '❄️' : '🦴'} {product.category1}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span className={`channel-badge ${product.category2}`}>
-                                        {product.category2}
                                     </span>
                                 </td>
                                 <td>{product.unit.toUpperCase()}</td>
@@ -539,19 +533,6 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                             <option value="냉장">🧊 냉장</option>
                                             <option value="냉동">❄️ 냉동</option>
                                             <option value="부산물">🦴 부산물</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="label">상태 (B2B/B2C)</label>
-                                        <select
-                                            className="input select"
-                                            value={formData.category2 || 'B2B'}
-                                            onChange={(e) => setFormData({ ...formData, category2: e.target.value as 'B2B' | 'B2C' | 'BOTH' })}
-                                        >
-                                            <option value="B2B">🏢 B2B 전용</option>
-                                            <option value="B2C">🏠 B2C 전용</option>
-                                            <option value="BOTH">🏢🏠 B2B/B2C 공용</option>
                                         </select>
                                     </div>
 
@@ -694,7 +675,6 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                     <thead>
                                         <tr>
                                             <th>카테고리1</th>
-                                            <th>상태(B2B/B2C)</th>
                                             <th>품목명</th>
                                             <th>현재 단위</th>
                                             <th>예상중량 (kg/Box)</th>
@@ -705,9 +685,6 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                             <tr key={p.id}>
                                                 <td>
                                                     <span className={`category-badge ${p.category1}`}>{p.category1}</span>
-                                                </td>
-                                                <td>
-                                                    <span className={`channel-badge ${p.category2}`}>{p.category2}</span>
                                                 </td>
                                                 <td><strong>{p.name}</strong></td>
                                                 <td>{p.unit.toUpperCase()}</td>
