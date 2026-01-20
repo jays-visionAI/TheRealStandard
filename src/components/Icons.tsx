@@ -517,6 +517,16 @@ export const ClockIcon: FC<IconProps> = ({ size = 20, className = '', color = 'c
     </svg>
 )
 
+export const HourglassIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M5 22h14" />
+        <path d="M5 2h14" />
+        <path d="M17 22a5 5 0 0 0-5-5 5 5 0 0 0-5 5" />
+        <path d="M17 2a5 5 0 0 1-5 5 5 5 0 0 1-5-5" />
+        <path d="M12 7v10" />
+    </svg>
+)
+
 // ChevronUp
 export const ChevronUpIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
