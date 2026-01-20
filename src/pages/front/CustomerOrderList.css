@@ -26,89 +26,150 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-5);
     color: var(--text-primary);
 }
 
 .section-title h3 {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #eff6ff;
+    color: #3b82f6;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.count-badge.warning {
+    background: #fffbeb;
+    color: #f59e0b;
+}
+
+.count-badge.active {
+    background: #ecfdf5;
+    color: #10b981;
 }
 
 /* Sheet Grid */
 .sheet-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-5);
 }
 
 .sheet-card {
     cursor: pointer;
     padding: 0;
     transition: all var(--transition-normal);
+    position: relative;
+    border: 1px solid var(--border-secondary);
+    display: flex;
+    flex-direction: column;
 }
 
 .sheet-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-lg);
-    border-color: var(--color-primary);
 }
 
-.card-status {
-    padding: var(--space-2) var(--space-4);
-    font-size: var(--text-xs);
-    font-weight: var(--font-bold);
-    border-bottom: 1px solid var(--border-secondary);
+.status-sent:hover {
+    border-color: #3b82f6;
 }
 
-.badge-primary {
-    background: rgba(37, 99, 235, 0.1);
-    color: var(--color-primary);
+.status-revision:hover {
+    border-color: #ef4444;
+}
+
+.card-status-bubble {
+    position: absolute;
+    top: -10px;
+    right: 15px;
+    background: #3b82f6;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-revision .card-status-bubble {
+    background: #ef4444;
+}
+
+.card-status-bubble.pending {
+    background: #f59e0b;
 }
 
 .card-body {
-    padding: var(--space-5);
+    padding: var(--space-6);
+    flex: 1;
 }
 
 .order-id {
-    font-size: var(--text-xs);
+    font-size: 0.75rem;
     color: var(--text-muted);
     font-family: monospace;
     margin-bottom: var(--space-1);
 }
 
 .card-body h4 {
-    font-size: var(--text-lg);
+    font-size: 1.15rem;
     font-weight: 700;
-    margin-bottom: var(--space-3);
+    margin-bottom: var(--space-4);
+    color: var(--text-primary);
 }
 
 .meta-info {
-    font-size: var(--text-sm);
+    font-size: 0.85rem;
     color: var(--text-secondary);
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: var(--space-2);
+}
+
+.meta-info span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .card-footer {
-    padding: var(--space-3) var(--space-5);
+    padding: var(--space-4) var(--space-6);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(0, 0, 0, 0.02);
+    background: rgba(0, 0, 0, 0.015);
     border-top: 1px solid var(--border-secondary);
 }
 
 .action-text {
-    font-size: var(--text-sm);
-    font-weight: var(--font-bold);
-    color: var(--color-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+.status-revision .action-text {
+    color: #ef4444;
 }
 
 /* Order Table */
 .order-history-list {
     overflow: hidden;
+    padding: 0;
 }
 
 .order-table {
@@ -119,43 +180,123 @@
 .order-table th {
     text-align: left;
     padding: var(--space-4);
-    background: var(--bg-tertiary);
-    font-size: var(--text-xs);
+    background: rgba(0, 0, 0, 0.02);
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
+    font-weight: 600;
 }
 
 .order-table td {
     padding: var(--space-4);
     border-bottom: 1px solid var(--border-secondary);
-    font-size: var(--text-sm);
+    font-size: 0.9rem;
+    vertical-align: middle;
 }
 
-.order-table tbody tr {
-    cursor: pointer;
-    transition: background var(--transition-fast);
+.order-table tbody tr:last-child td {
+    border-bottom: none;
 }
 
-.order-table tbody tr:hover {
-    background: var(--bg-tertiary);
+.order-link-cell {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: monospace;
 }
 
+.weight-text {
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+.amount-text {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Status Pills */
 .status-pill {
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-full);
-    font-size: var(--text-xs);
-    font-weight: var(--font-medium);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: inline-block;
 }
 
 .status-pill.created {
-    background: rgba(37, 99, 235, 0.1);
-    color: var(--color-primary);
+    background: #eff6ff;
+    color: #3b82f6;
 }
 
-/* Empty State */
-.empty-state {
-    padding: var(--space-10);
+.status-pill.po-generated {
+    background: #fff7ed;
+    color: #f97316;
+}
+
+.status-pill.shipped {
+    background: #eef2ff;
+    color: #6366f1;
+}
+
+.status-pill.completed {
+    background: #f0fdf4;
+    color: #10b981;
+}
+
+/* Empty & Loading States */
+.empty-state-mini {
+    padding: var(--space-8);
     text-align: center;
     color: var(--text-muted);
+    font-size: 0.9rem;
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+}
+
+.empty-table-state {
+    padding: var(--space-12);
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-20);
+    color: var(--text-secondary);
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: var(--space-4);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Utilities */
+.opacity-80 {
+    opacity: 0.8;
+}
+
+.mt-12 {
+    margin-top: 3rem;
+}
+
+.italic {
+    font-style: italic;
 }

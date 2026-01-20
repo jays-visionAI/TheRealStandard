@@ -16,7 +16,6 @@ export interface FirestoreProduct {
     taxFree: boolean
     costPrice: number
     wholesalePrice: number
-    retailPrice: number
     wholesaleProfit?: number
     wholesaleMargin?: number
     isActive: boolean
@@ -71,22 +70,22 @@ export async function seedInitialProducts(): Promise<void> {
     if (existing.length > 0) return
 
     const initialProducts = [
-        { id: 'p01', name: '삼겹살', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 17500, retailPrice: 25000, isActive: true },
-        { id: 'p02', name: '미삼겹살', category1: '냉장' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 17000, retailPrice: 25000, isActive: true },
-        { id: 'p03', name: '삼겹살(대패)', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 18500, retailPrice: 26000, isActive: true },
-        { id: 'p04', name: '삼겹살(칼집)', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 19500, retailPrice: 27000, isActive: true },
-        { id: 'p05', name: '삼겹살/오겹살(찌개용, 불고기용)', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 14000, retailPrice: 17000, isActive: true },
-        { id: 'p06', name: '목살', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 16000, retailPrice: 23000, isActive: true },
-        { id: 'p07', name: '목살(대패)', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 16500, retailPrice: 24000, isActive: true },
-        { id: 'p08', name: '항정살', category1: '냉장' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 38000, retailPrice: 42000, isActive: true },
-        { id: 'p09', name: '가브리살', category1: '냉장' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 25000, retailPrice: 33000, isActive: true },
-        { id: 'p10', name: '갈매기살', category1: '냉장' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 22000, retailPrice: 30000, isActive: true },
+        { id: 'p01', name: '삼겹살', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 17500, isActive: true },
+        { id: 'p02', name: '미삼겹살', category1: '냉장' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 17000, isActive: true },
+        { id: 'p03', name: '삼겹살(대패)', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 18500, isActive: true },
+        { id: 'p04', name: '삼겹살(칼집)', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 19500, isActive: true },
+        { id: 'p05', name: '삼겹살/오겹살(찌개용, 불고기용)', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 14000, isActive: true },
+        { id: 'p06', name: '목살', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 16000, isActive: true },
+        { id: 'p07', name: '목살(대패)', category1: '냉장' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 16500, isActive: true },
+        { id: 'p08', name: '항정살', category1: '냉장' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 38000, isActive: true },
+        { id: 'p09', name: '가브리살', category1: '냉장' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 25000, isActive: true },
+        { id: 'p10', name: '갈매기살', category1: '냉장' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 22000, isActive: true },
         // 냉동
-        { id: 'p30', name: '등심(짜장,카레,돈까스,잡채,탕수육) - 냉동', category1: '냉동' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 8000, retailPrice: 10000, isActive: true },
-        { id: 'p31', name: '뒷다리(다짐육)', category1: '냉동' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 5700, retailPrice: 6500, isActive: true },
+        { id: 'p30', name: '등심(짜장,카레,돈까스,잡채,탕수육) - 냉동', category1: '냉동' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 8000, isActive: true },
+        { id: 'p31', name: '뒷다리(다짐육)', category1: '냉동' as const, category2: 'BOTH' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 5700, isActive: true },
         // 부산물
-        { id: 'p37', name: '앞장족', category1: '부산물' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 6000, retailPrice: 8000, isActive: true },
-        { id: 'p38', name: '뒷장족', category1: '부산물' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 5500, retailPrice: 7000, isActive: true },
+        { id: 'p37', name: '앞장족', category1: '부산물' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 6000, isActive: true },
+        { id: 'p38', name: '뒷장족', category1: '부산물' as const, category2: 'B2B' as const, unit: 'kg' as const, taxFree: true, costPrice: 0, wholesalePrice: 5500, isActive: true },
     ]
 
     for (const p of initialProducts) {

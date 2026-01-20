@@ -43,7 +43,6 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
         taxFree: true,
         costPrice: 0,
         wholesalePrice: 0,
-        retailPrice: 0,
         isActive: true,
         memo: '',
     })
@@ -143,7 +142,6 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                 taxFree: true,
                 costPrice: 0,
                 wholesalePrice: 0,
-                retailPrice: 0,
                 isActive: true,
                 memo: '',
             })
@@ -182,7 +180,6 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                 taxFree: !!formData.taxFree,
                 costPrice: cost,
                 wholesalePrice: wholesale,
-                retailPrice: Number(formData.retailPrice) || 0,
                 wholesaleProfit: profit,
                 wholesaleMargin: margin,
                 isActive: formData.isActive !== false,
@@ -412,7 +409,6 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                             <th className="price-col">도매가(B2B)</th>
                             <th className="price-col">이익(도매)</th>
                             <th className="price-col">이익률(도매)</th>
-                            <th className="price-col">소매가(직판)</th>
                             <th>상태</th>
                             <th>관리</th>
                         </tr>
@@ -443,7 +439,6 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                         {(product.wholesaleMargin || 0).toFixed(1)}%
                                     </span>
                                 </td>
-                                <td className="price-col">₩{formatCurrency(product.retailPrice)}</td>
                                 <td>
                                     {product.isActive ? (
                                         <span className="status-badge active">활성</span>
@@ -605,21 +600,6 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                             <span className="unit">원</span>
                                         </div>
                                         <span className="help-text">거래처에 공급하는 가격</span>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="label">소매가 (직판장/돈우매장)</label>
-                                        <div className="input-with-unit">
-                                            <input
-                                                type="number"
-                                                className="input"
-                                                value={formData.retailPrice || ''}
-                                                onChange={(e) => setFormData({ ...formData, retailPrice: parseFloat(e.target.value) || 0 })}
-                                                placeholder="25000"
-                                            />
-                                            <span className="unit">원</span>
-                                        </div>
-                                        <span className="help-text">매장에서 소비자에게 판매하는 가격</span>
                                     </div>
                                 </div>
 
