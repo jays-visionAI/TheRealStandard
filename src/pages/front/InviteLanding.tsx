@@ -211,29 +211,39 @@ export default function InviteLanding() {
               <span className="text-secondary text-sm">주문번호</span>
               <span className="font-mono font-medium text-right text-sm">{orderInfo.id}</span>
 
+              <span className="text-secondary text-sm">발주서 생성일</span>
+              <span className="font-medium text-right text-sm">{orderInfo.createdAt ? formatDate(orderInfo.createdAt) : '-'}</span>
+
+              <span className="text-secondary text-sm">품목</span>
+              <span className="font-medium text-right text-sm">
+                {orderInfo.items && orderInfo.items.length > 0
+                  ? (orderInfo.items.length === 1 ? orderInfo.items[0].productName : `${orderInfo.items[0].productName} 외 ${orderInfo.items.length - 1}개 품목`)
+                  : '-'}
+              </span>
+
               <span className="text-secondary text-sm">배송예정일</span>
               <span className="font-bold text-right text-sm">{orderInfo.shipDate ? formatDate(orderInfo.shipDate) : '-'}</span>
 
               <span className="text-secondary text-sm">주문마감</span>
               <span className="font-bold text-right text-sm text-red-500">{orderInfo.cutOffAt ? formatDateTime(orderInfo.cutOffAt) : '-'}</span>
 
-              <div className="col-span-2 pt-4 mt-2 border-t border-blue-100 flex justify-between items-center">
-                <span className="font-bold text-primary">예상 주문 합계</span>
-                <span className="text-xl font-black text-blue-600">
-                  {orderInfo.items && orderInfo.items.length > 0
-                    ? orderInfo.items.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString() + '원'
-                    : '0원'}
-                </span>
-              </div>
+              {orderInfo.items && orderInfo.items.reduce((sum, item) => sum + (item.amount || 0), 0) > 0 && (
+                <div className="col-span-2 pt-4 mt-2 border-t border-blue-100 flex justify-between items-center">
+                  <span className="font-bold text-primary">예상 주문 합계</span>
+                  <span className="text-xl font-black text-blue-600">
+                    {orderInfo.items.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString() + '원'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          {orderInfo.adminComment && (
+          {orderInfo.adminComment ? (
             <div className="admin-memo text-left border-l-4 border-amber-400 pl-4 bg-amber-50/50 py-3 rounded-r-xl mb-6">
               <span className="text-[10px] font-black text-amber-600 uppercase tracking-tighter">관리자 전달사항</span>
               <p className="text-sm text-amber-900 mt-0.5 leading-relaxed">{orderInfo.adminComment}</p>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* 2. Authentication Gate (Conditional) */}

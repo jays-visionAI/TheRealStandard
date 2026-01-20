@@ -70,6 +70,37 @@ export async function createOrderSheet(data: Omit<FirestoreOrderSheet, 'id' | 'c
     return { id: created.id, ...created.data() } as FirestoreOrderSheet
 }
 
+export async function createOrderSheetWithId(id: string, data: Omit<FirestoreOrderSheet, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreOrderSheet> {
+    const docRef = doc(db, ORDER_SHEETS_COLLECTION, id)
+    const now = serverTimestamp()
+    await setDoc(docRef, { ...data, createdAt: now, updatedAt: now })
+    const created = await getDoc(docRef)
+    return { id: created.id, ...created.data() } as FirestoreOrderSheet
+}
+
+export async function generateOrderSheetId(): Promise<string> {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    const yyyymmdd = `${year}${month}${day}`
+
+    const startOfDay = new Date(year, today.getMonth(), today.getDate())
+    const endOfDay = new Date(year, today.getMonth(), today.getDate() + 1)
+
+    const q = query(
+        collection(db, ORDER_SHEETS_COLLECTION),
+        where('createdAt', '>=', Timestamp.fromDate(startOfDay)),
+        where('createdAt', '<', Timestamp.fromDate(endOfDay))
+    )
+
+    const snapshot = await getDocs(q)
+    const count = snapshot.size + 1
+    const sequence = String(count).padStart(3, '0')
+
+    return `${yyyymmdd}-${sequence}`
+}
+
 export async function updateOrderSheet(id: string, data: Partial<FirestoreOrderSheet>): Promise<void> {
     const docRef = doc(db, ORDER_SHEETS_COLLECTION, id)
     await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() })

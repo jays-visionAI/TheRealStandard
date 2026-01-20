@@ -3,7 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon, CheckIcon, XIcon, AlertTriangleIcon, ChevronLeftIcon, ChevronRightIcon, InfoIcon } from '../../components/Icons'
 import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
-import { createOrderSheet, setOrderSheetItems, getAllOrderSheets, getOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
+import {
+    getAllOrderSheets,
+    getOrderSheetItems,
+    createOrderSheetWithId,
+    generateOrderSheetId,
+    setOrderSheetItems,
+    type FirestoreOrderSheet,
+    type FirestoreOrderSheetItem
+} from '../../lib/orderService'
 import { getAllPriceLists, type FirestorePriceList } from '../../lib/priceListService'
 import './OrderSheetCreate.css'
 import { Timestamp } from 'firebase/firestore'
@@ -154,7 +162,7 @@ export default function OrderSheetCreate() {
     // 빈 행 생성
     function createEmptyRow(): OrderRow {
         return {
-            id: `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id: `row - ${Date.now()} -${Math.random().toString(36).substr(2, 9)} `,
             productId: null,
             productName: '',
             unitPrice: 0,
@@ -221,7 +229,7 @@ export default function OrderSheetCreate() {
 
             if (rowsWithoutBoxWeight.length > 0) {
                 const productNames = rowsWithoutBoxWeight.map(r => r.productName).join(', ');
-                alert(`⚠️ 박스 단위 전환 불가\n\n다음 상품에 예상중량/Box가 설정되어 있지 않습니다:\n${productNames}\n\n상품리스트 데이터베이스에서 예상중량/Box를 설정한 뒤에 사용 가능합니다.`);
+                alert(`⚠️ 박스 단위 전환 불가\n\n다음 상품에 예상중량 / Box가 설정되어 있지 않습니다: \n${productNames} \n\n상품리스트 데이터베이스에서 예상중량 / Box를 설정한 뒤에 사용 가능합니다.`);
                 return;
             }
 
@@ -304,7 +312,7 @@ export default function OrderSheetCreate() {
 
         // 수량 입력란으로 포커스 이동
         setTimeout(() => {
-            const qtyInput = inputRefs.current.get(`qty-${rowId}`)
+            const qtyInput = inputRefs.current.get(`qty - ${rowId} `)
             if (qtyInput) {
                 qtyInput.focus()
                 qtyInput.select()
@@ -316,7 +324,7 @@ export default function OrderSheetCreate() {
     const copyPriceList = (list: FirestorePriceList) => {
         setConfirmModalConfig({
             title: '단가표 복사',
-            message: `'${list.title}' 단가표의 품목과 단가를 가져오시겠습니까? 현재 작성 중인 목록이 초기화될 수 있습니다.`,
+            message: `'${list.title}' 단가표의 품목과 단가를 가져오시겠습니까 ? 현재 작성 중인 목록이 초기화될 수 있습니다.`,
             onConfirm: () => {
                 const newRows: OrderRow[] = list.items.map(item => {
                     return {
@@ -418,7 +426,7 @@ export default function OrderSheetCreate() {
         setRows(prev => [...prev, newRow])
 
         setTimeout(() => {
-            const nameInput = inputRefs.current.get(`name-${newRow.id}`)
+            const nameInput = inputRefs.current.get(`name - ${newRow.id} `)
             if (nameInput) nameInput.focus()
         }, 50)
     }
@@ -451,7 +459,7 @@ export default function OrderSheetCreate() {
 
         setConfirmModalConfig({
             title: '품목 삭제',
-            message: `선택한 ${checkedCount}개 품목을 삭제하시겠습니까?`,
+            message: `선택한 ${checkedCount}개 품목을 삭제하시겠습니까 ? `,
             onConfirm: () => {
                 setRows(prev => {
                     const remaining = prev.filter(r => !r.checked)
@@ -486,7 +494,7 @@ export default function OrderSheetCreate() {
                 }
             } else if (e.key === 'Enter') {
                 e.preventDefault()
-                const qtyInput = inputRefs.current.get(`qty-${rowId}`)
+                const qtyInput = inputRefs.current.get(`qty - ${rowId} `)
                 if (qtyInput) {
                     qtyInput.focus()
                     qtyInput.select()
@@ -499,7 +507,7 @@ export default function OrderSheetCreate() {
                 addRow()
             } else {
                 const nextRow = rows[currentIndex + 1]
-                const nameInput = inputRefs.current.get(`name-${nextRow.id}`)
+                const nameInput = inputRefs.current.get(`name - ${nextRow.id} `)
                 if (nameInput) nameInput.focus()
             }
         }
@@ -528,7 +536,7 @@ export default function OrderSheetCreate() {
     // Preview Handlers
     const handlePreviewPriceList = (list: FirestorePriceList) => {
         setPreviewSource('priceList')
-        setPreviewTitle(`단가표: ${list.title}`)
+        setPreviewTitle(`단가표: ${list.title} `)
         setPreviewData(list.items.map((item) => ({
             name: item.name,
             price: item.wholesalePrice,
@@ -542,7 +550,7 @@ export default function OrderSheetCreate() {
             setLoading(true)
             const items = await getOrderSheetItems(orderSheet.id)
             setPreviewSource('orderSheet')
-            setPreviewTitle(`발주서 #${orderSheet.id.slice(-6)}`)
+            setPreviewTitle(`발주서 #${orderSheet.id.slice(-6)} `)
             setPreviewData(items.map(item => ({
                 name: item.productName,
                 price: item.unitPrice,
@@ -569,10 +577,11 @@ export default function OrderSheetCreate() {
         try {
             setSaving(true)
 
+            const customOrderId = await generateOrderSheetId()
             const token = 'token-' + Math.random().toString(36).substr(2, 9)
 
             // Firebase에 발주서 생성
-            const newOrderSheet = await createOrderSheet({
+            const newOrderSheet = await createOrderSheetWithId(customOrderId, {
                 customerOrgId: selectedCustomer.id,
                 customerName: selectedCustomer.companyName,
                 shipDate: shipDate ? Timestamp.fromDate(new Date(shipDate)) : null,
@@ -613,7 +622,7 @@ export default function OrderSheetCreate() {
         setRows(prev => prev.map((r, i) =>
             i === index ? { ...createEmptyRow(), id: rowId } : r
         ))
-        const nameInput = inputRefs.current.get(`name-${rowId}`)
+        const nameInput = inputRefs.current.get(`name - ${rowId} `)
         if (nameInput) nameInput.focus()
     }
 
@@ -660,17 +669,17 @@ export default function OrderSheetCreate() {
 
             {/* Progress Steps */}
             <div className="steps-bar glass-card">
-                <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
+                <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''} `}>
                     <div className="step-number">{step > 1 ? '✓' : '1'}</div>
                     <span>고객 선택</span>
                 </div>
                 <div className="step-line"></div>
-                <div className={`step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
+                <div className={`step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''} `}>
                     <div className="step-number">{step > 2 ? '✓' : '2'}</div>
                     <span>품목 설정</span>
                 </div>
                 <div className="step-line"></div>
-                <div className={`step ${step >= 3 ? 'active' : ''}`}>
+                <div className={`step ${step >= 3 ? 'active' : ''} `}>
                     <div className="step-number">3</div>
                     <span>배송 정보</span>
                 </div>
@@ -701,7 +710,7 @@ export default function OrderSheetCreate() {
                                     {filteredCustomers.filter(c => c.isKeyAccount).map((customer) => (
                                         <div
                                             key={customer.id}
-                                            className={`customer-card key-account ${selectedCustomer?.id === customer.id ? 'selected' : ''}`}
+                                            className={`customer - card key - account ${selectedCustomer?.id === customer.id ? 'selected' : ''} `}
                                             onClick={() => setSelectedCustomer(customer)}
                                         >
                                             <div className="customer-name">
@@ -825,13 +834,13 @@ export default function OrderSheetCreate() {
                                 <div className="order-unit-toggle-bar" style={{ margin: 0, padding: 0, background: 'none' }}>
                                     <div className="toggle-group">
                                         <button
-                                            className={`toggle-btn ${orderUnit === 'kg' ? 'active' : ''}`}
+                                            className={`toggle - btn ${orderUnit === 'kg' ? 'active' : ''} `}
                                             onClick={() => handleUnitChange('kg')}
                                         >
                                             Kg 단위
                                         </button>
                                         <button
-                                            className={`toggle-btn ${orderUnit === 'box' ? 'active' : ''}`}
+                                            className={`toggle - btn ${orderUnit === 'box' ? 'active' : ''} `}
                                             onClick={() => handleUnitChange('box')}
                                         >
                                             Box 단위
@@ -864,7 +873,7 @@ export default function OrderSheetCreate() {
                                     </thead>
                                     <tbody>
                                         {rows.map((row, index) => (
-                                            <tr key={row.id} className={`${row.productId ? 'filled' : ''} ${row.checked ? 'selected-row' : ''}`}>
+                                            <tr key={row.id} className={`${row.productId ? 'filled' : ''} ${row.checked ? 'selected-row' : ''} `}>
                                                 <td className="col-check" style={{ textAlign: 'center' }}>
                                                     <input
                                                         type="checkbox"
@@ -876,7 +885,7 @@ export default function OrderSheetCreate() {
                                                 <td className="col-product">
                                                     <div className="product-input-wrapper" ref={activeRowId === row.id ? dropdownRef : null}>
                                                         <input
-                                                            ref={el => { if (el) inputRefs.current.set(`name-${row.id}`, el) }}
+                                                            ref={el => { if (el) inputRefs.current.set(`name - ${row.id} `, el) }}
                                                             type="text"
                                                             className="cell-input product-input"
                                                             value={row.productId ? row.productName : searchQuery}
@@ -905,7 +914,7 @@ export default function OrderSheetCreate() {
                                                                 {filteredProducts.map((product, idx) => (
                                                                     <div
                                                                         key={product.id}
-                                                                        className={`dropdown-item ${idx === highlightIndex ? 'highlighted' : ''}`}
+                                                                        className={`dropdown - item ${idx === highlightIndex ? 'highlighted' : ''} `}
                                                                         onClick={() => selectProduct(row.id, product)}
                                                                         onMouseEnter={() => setHighlightIndex(idx)}
                                                                     >
@@ -921,16 +930,16 @@ export default function OrderSheetCreate() {
                                                 <td className="col-unit text-muted" style={{ fontSize: '13px' }}>
                                                     {(() => {
                                                         const p = products.find(prod => prod.id === row.productId);
-                                                        return p ? (p.boxWeight ? `${p.boxWeight}kg/Box` : 'kg') : '-';
+                                                        return p ? (p.boxWeight ? `${p.boxWeight} kg / Box` : 'kg') : '-';
                                                     })()}
                                                 </td>
                                                 <td className="col-price">
-                                                    {row.unitPrice > 0 ? `₩${formatCurrency(row.unitPrice)}` : '-'}
+                                                    {row.unitPrice > 0 ? `₩${formatCurrency(row.unitPrice)} ` : '-'}
                                                 </td>
                                                 <td className="col-qty">
                                                     <div className="qty-input-wrapper">
                                                         <input
-                                                            ref={el => { if (el) inputRefs.current.set(`qty-${row.id}`, el) }}
+                                                            ref={el => { if (el) inputRefs.current.set(`qty - ${row.id} `, el) }}
                                                             type="number"
                                                             className="cell-input qty-input"
                                                             value={row.quantity || ''}
@@ -949,7 +958,7 @@ export default function OrderSheetCreate() {
                                                     {row.estimatedWeight > 0 ? formatCurrency(row.estimatedWeight) : '-'}
                                                 </td>
                                                 <td className="col-amount">
-                                                    {row.totalAmount > 0 ? `₩${formatCurrency(row.totalAmount)}` : '-'}
+                                                    {row.totalAmount > 0 ? `₩${formatCurrency(row.totalAmount)} ` : '-'}
                                                 </td>
                                                 <td className="col-action">
                                                     <button
@@ -997,7 +1006,7 @@ export default function OrderSheetCreate() {
                     </div>
 
                     {/* 발주서 템플릿 사이드바 (단가표 / 이전 발주서) */}
-                    <div className={`sidebar ${showSidebar ? 'open' : 'collapsed'}`}>
+                    <div className={`sidebar ${showSidebar ? 'open' : 'collapsed'} `}>
                         <button
                             className="sidebar-toggle"
                             onClick={() => setShowSidebar(!showSidebar)}
@@ -1012,13 +1021,13 @@ export default function OrderSheetCreate() {
 
                                 <div className="sidebar-tabs">
                                     <button
-                                        className={`tab-btn ${sidebarTab === 'priceList' ? 'active' : ''}`}
+                                        className={`tab - btn ${sidebarTab === 'priceList' ? 'active' : ''} `}
                                         onClick={() => setSidebarTab('priceList')}
                                     >
                                         단가표
                                     </button>
                                     <button
-                                        className={`tab-btn ${sidebarTab === 'pastOrders' ? 'active' : ''}`}
+                                        className={`tab - btn ${sidebarTab === 'pastOrders' ? 'active' : ''} `}
                                         onClick={() => setSidebarTab('pastOrders')}
                                     >
                                         이전 매출발주서
@@ -1114,7 +1123,7 @@ export default function OrderSheetCreate() {
                         <div className="section-header flex justify-between items-center mb-6">
                             <h2 className="section-title mb-0">🚚 배송 정보</h2>
                             <button
-                                className={`btn btn-sm ${skipShippingInfo ? 'btn-primary' : 'btn-outline'}`}
+                                className={`btn btn - sm ${skipShippingInfo ? 'btn-primary' : 'btn-outline'} `}
                                 onClick={() => setSkipShippingInfo(!skipShippingInfo)}
                             >
                                 {skipShippingInfo ? '✓ 배송정보 생략됨' : '배송정보 생략'}
