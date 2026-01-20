@@ -1,20 +1,69 @@
-import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { CheckCircleIcon, PackageIcon, TruckDeliveryIcon, FileTextIcon } from '../../components/Icons'
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { CheckCircleIcon, PackageIcon, TruckDeliveryIcon, FileTextIcon, UserIcon, InfoIcon, ChevronRightIcon, AlertTriangleIcon } from '../../components/Icons'
+import { getOrderSheetByToken, type FirestoreOrderSheet } from '../../lib/orderService'
+import { getCustomerById, type FirestoreCustomer } from '../../lib/customerService'
 import './CustomerConfirm.css'
 
 export default function CustomerConfirm() {
-    // token은 향후 API 연동 시 사용 예정
-    useParams()
+    const { token } = useParams()
+    const navigate = useNavigate()
+    const [loading, setLoading] = useState(true)
+    const [orderInfo, setOrderInfo] = useState<FirestoreOrderSheet | null>(null)
+    const [customer, setCustomer] = useState<FirestoreCustomer | null>(null)
     const [revisionComment, setRevisionComment] = useState('')
     const [showRevisionForm, setShowRevisionForm] = useState(false)
 
-    // Mock 최종안 데이터 (관리자가 확정한 내용)
+    useEffect(() => {
+        const loadData = async () => {
+            if (!token) {
+                setLoading(false)
+                return
+            }
+            try {
+                const order = await getOrderSheetByToken(token)
+                if (order) {
+                    setOrderInfo(order)
+                    const customerData = await getCustomerById(order.customerOrgId)
+                    setCustomer(customerData)
+                }
+            } catch (err) {
+                console.error('Failed to load confirm data:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadData()
+    }, [token])
+
+    // Activation Guard
+    if (customer && customer.status !== 'ACTIVE') {
+        return (
+            <div className="invite-container p-10 flex justify-center">
+                <div className="glass-card invite-card text-center max-w-md p-8">
+                    <UserIcon size={48} color="#3b82f6" className="mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold mb-2">계정 활성화 필요</h2>
+                    <p className="text-secondary mb-6">최종 확정안 확인과 주문 진행을 위해 먼저 파트너 계정을 활성화해주세요.</p>
+                    <button
+                        className="btn btn-primary w-full py-3 flex items-center justify-center gap-2"
+                        onClick={() => navigate(`/invite/${customer.inviteToken}`)}
+                    >
+                        계정 활성화하기 <ChevronRightIcon size={20} />
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    if (loading) return <div className="p-20 text-center">불러오는 중...</div>
+    if (!orderInfo) return <div className="p-20 text-center">주문 정보를 찾을 수 없습니다.</div>
+
+    // Mock 최종안 데이터 (관리자가 확정한 내용) - For UI display only
     const finalizedOrder = {
-        id: 'OS-2024-003',
-        customerName: '태윤유통',
-        shipDate: '2024-01-16',
-        shipTo: '서울시 강남구 역삼동 123-45',
+        id: orderInfo.id,
+        customerName: customer?.companyName || orderInfo.customerName,
+        shipDate: orderInfo.shipDate?.toDate?.().toLocaleDateString() || '2024-01-16',
+        shipTo: customer?.shipAddress1 || '서울시 강남구 역삼동 123-45',
         finalizedAt: '2024-01-15 16:30',
         items: [
             { name: '한우 등심 1++', originalQty: 50, finalQty: 50, unit: 'kg' },
@@ -29,8 +78,8 @@ export default function CustomerConfirm() {
             driverPhone: '010-1234-5678',
             etaAt: '14:00',
         },
-        adminNote: '안심 2kg 재고 부족으로 조정되었습니다. 양해 부탁드립니다.',
-        status: 'ADMIN_FINALIZED', // ADMIN_FINALIZED, CUSTOMER_CONFIRMED, REVISION_REQUESTED
+        adminNote: orderInfo.adminComment || '안심 2kg 재고 부족으로 조정되었습니다. 양해 부탁드립니다.',
+        status: orderInfo.status === 'CONFIRMED' ? 'CUSTOMER_CONFIRMED' : 'ADMIN_FINALIZED',
     }
 
     const handleConfirm = () => {

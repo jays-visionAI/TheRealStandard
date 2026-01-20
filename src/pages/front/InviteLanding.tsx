@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { XIcon, ClipboardListIcon } from '../../components/Icons'
+import { XIcon, ClipboardListIcon, UserIcon, AlertTriangleIcon, ChevronRightIcon, InfoIcon } from '../../components/Icons'
 import { getOrderSheetByToken, getOrderSheetItems, type FirestoreOrderSheet, type FirestoreOrderSheetItem } from '../../lib/orderService'
+import { getCustomerById, type FirestoreCustomer } from '../../lib/customerService'
 
 // 로컬 타입
 type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate' | 'cutOffAt'> & {
@@ -17,6 +18,7 @@ export default function InviteLanding() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [orderInfo, setOrderInfo] = useState<LocalOrderSheet | null>(null)
+  const [customer, setCustomer] = useState<FirestoreCustomer | null>(null)
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -28,6 +30,10 @@ export default function InviteLanding() {
       try {
         const order = await getOrderSheetByToken(token)
         if (order) {
+          // Fetch customer info to check activation status
+          const customerData = await getCustomerById(order.customerOrgId)
+          setCustomer(customerData)
+
           const items = await getOrderSheetItems(order.id)
           setOrderInfo({
             ...order,
@@ -68,6 +74,89 @@ export default function InviteLanding() {
           <p>이 링크는 만료되었거나 유효하지 않습니다.</p>
           <p className="text-sm">담당자에게 문의해주세요.</p>
         </div>
+      </div>
+    )
+  }
+
+  // Account Activation Guard
+  if (customer && customer.status !== 'ACTIVE') {
+    return (
+      <div className="invite-container">
+        <div className="glass-card invite-card activation-required">
+          <div className="icon"><UserIcon size={48} color="#3b82f6" /></div>
+          <h2 className="gradient-text">계정 활성화 필요</h2>
+          <p className="customer-name">{customer.companyName} 파트너님</p>
+
+          <div className="notice-box glass-card mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <AlertTriangleIcon size={20} color="#f59e0b" />
+              <h4 className="font-bold text-amber-700">첫 주문 전 계정 생성이 필요합니다</h4>
+            </div>
+            <p className="text-sm text-secondary text-left leading-relaxed">
+              본 주문장은 <strong>{customer.companyName}</strong> 전용으로 발송되었습니다.
+              안전한 거래와 주문 이력 관리를 위해 먼저 파트너 계정을 활성화해주세요.
+            </p>
+          </div>
+
+          <div className="action-guide mb-8">
+            <div className="guide-item">
+              <span className="step-no">1</span>
+              <span>계정 정보 (이메일/비밀번호) 설정</span>
+            </div>
+            <div className="guide-item">
+              <span className="step-no">2</span>
+              <span>로그인 후 주문서 작성 및 제출</span>
+            </div>
+          </div>
+
+          <button
+            className="btn btn-primary btn-lg w-full flex items-center justify-center gap-2"
+            onClick={() => navigate(`/invite/${customer.inviteToken}`)}
+          >
+            파트너 계정 활성화하기 <ChevronRightIcon size={20} />
+          </button>
+
+          <p className="mt-6 text-xs text-muted">
+            이미 계정이 있으신가요? <span className="underline cursor-pointer" onClick={() => navigate('/login')}>로그인하기</span>
+          </p>
+        </div>
+
+        <style>{`
+          .activation-required {
+            background: linear-gradient(to bottom, #ffffff, #f8faff);
+            border: 1px solid #dbeafe;
+          }
+          .notice-box {
+            background: #fffbeb;
+            border: 1px solid #fef3c7;
+            padding: var(--space-4);
+          }
+          .action-guide {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+          }
+          .guide-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            font-size: var(--text-sm);
+            color: var(--text-primary);
+          }
+          .step-no {
+            width: 24px;
+            height: 24px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+          }
+        `}</style>
       </div>
     )
   }
@@ -134,6 +223,11 @@ export default function InviteLanding() {
             <p className="memo-text">{orderInfo.adminComment}</p>
           </div>
         )}
+
+        <div className="login-notice mb-4 flex items-center gap-2 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
+          <InfoIcon size={14} />
+          <span>주문 제출을 위해 파트너 로그인이 필요합니다.</span>
+        </div>
 
         <button
           className="btn btn-primary btn-lg w-full"

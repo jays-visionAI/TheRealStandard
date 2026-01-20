@@ -2,15 +2,9 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { ClipboardListIcon } from '../../components/Icons'
-import {
-    getOrderSheetByToken,
-    getOrderSheetItems,
-    updateOrderSheet,
-    setOrderSheetItems,
-    type FirestoreOrderSheet,
-
-} from '../../lib/orderService'
+import { getOrderSheetByToken, getOrderSheetItems, updateOrderSheet, setOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
+import { getCustomerById } from '../../lib/customerService'
 import './B2BOrderGrid.css'
 
 // ============================================
@@ -92,6 +86,14 @@ export default function B2BOrderGrid() {
             ])
 
             if (osData) {
+                // Secondary Guard: Ensure customer is active before allowing order entry
+                const customerData = await getCustomerById(osData.customerOrgId)
+                if (customerData?.status !== 'ACTIVE') {
+                    console.warn('Customer not active. Redirecting to landing...')
+                    navigate(`/order/${token}`)
+                    return
+                }
+
                 const orderSheet = {
                     ...osData,
                     createdAt: osData.createdAt?.toDate?.() || new Date(),

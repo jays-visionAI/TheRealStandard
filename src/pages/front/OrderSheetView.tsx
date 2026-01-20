@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { CheckCircleIcon } from '../../components/Icons'
+import { CheckCircleIcon, UserIcon, ChevronRightIcon } from '../../components/Icons'
+import { getOrderSheetByToken } from '../../lib/orderService'
+import { getCustomerById, type FirestoreCustomer } from '../../lib/customerService'
 
 interface OrderItem {
   id: string
@@ -20,10 +22,33 @@ export default function OrderSheetView() {
   const [status, setStatus] = useState<'SENT' | 'REVISION' | 'SUBMITTED' | 'CONFIRMED'>('SENT')
   const [revisionComment, setRevisionComment] = useState('')
   const [items, setItems] = useState<OrderItem[]>([])
+  const [customer, setCustomer] = useState<FirestoreCustomer | null>(null)
+  const [loading, setLoading] = useState(true)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   useEffect(() => {
-    // Load order data
+    const loadData = async () => {
+      if (!token) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const order = await getOrderSheetByToken(token)
+        if (order) {
+          const customerData = await getCustomerById(order.customerOrgId)
+          setCustomer(customerData)
+        }
+      } catch (err) {
+        console.error('Failed to load order data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+
+    // Mock Items loading
     setItems([
       { id: '1', productName: '한우 등심 1++', unitPrice: 85000, qtyKg: 0, qtyBox: 0, estimatedKg: 0, amount: 0 },
       { id: '2', productName: '한우 안심 1++', unitPrice: 95000, qtyKg: 0, qtyBox: 0, estimatedKg: 0, amount: 0 },
@@ -32,12 +57,37 @@ export default function OrderSheetView() {
       { id: '5', productName: '수입 부채살', unitPrice: 35000, qtyKg: 0, qtyBox: 0, estimatedKg: 0, amount: 0, boxToKg: 20 },
     ])
 
-    // Demo: Show revision state
     if (token?.includes('revision')) {
       setStatus('REVISION')
       setRevisionComment('안심 수량이 너무 많습니다. 재고 확인 후 조정 부탁드립니다.')
     }
   }, [token])
+
+  if (loading) return <div className="p-20 text-center">불러오는 중...</div>
+
+  // Account Activation Guard
+  if (customer && customer.status !== 'ACTIVE') {
+    return (
+      <div className="order-view-container p-6 flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="glass-card p-10 text-center max-w-md shadow-2xl">
+          <UserIcon size={64} color="#3b82f6" className="mx-auto mb-6" />
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">계정 활성화 필요</h2>
+          <p className="text-gray-600 mb-8 leading-relaxed">
+            주문서를 확인하고 주문을 진행하시려면 먼저 <strong>{customer.companyName}</strong>의 파트너 계정을 활성화해주세요.
+          </p>
+          <button
+            className="btn btn-primary w-full py-4 text-lg flex items-center justify-center gap-3 rounded-xl transition-all active:scale-95"
+            onClick={() => navigate(`/invite/${customer.inviteToken}`)}
+          >
+            파트너 계정 활성화하기 <ChevronRightIcon size={20} />
+          </button>
+          <p className="mt-8 text-sm text-gray-400">
+            이미 계정이 있으신가요? <span className="text-blue-500 font-semibold underline cursor-pointer" onClick={() => navigate('/login')}>로그인하기</span>
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const updateItem = (id: string, field: 'qtyKg' | 'qtyBox', rawValue: number) => {
     const value = Math.max(0, rawValue)
