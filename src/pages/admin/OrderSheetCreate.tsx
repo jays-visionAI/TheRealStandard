@@ -681,7 +681,12 @@ export default function OrderSheetCreate() {
                                                 <span><MapPinIcon size={14} /> {customer.address}</span>
                                                 <span><PhoneIcon size={14} /> {customer.phone}</span>
                                             </div>
-                                            <div className="customer-biz">사업자: {customer.bizRegNo}</div>
+                                            <div className="card-footer-flex">
+                                                <div className="customer-biz">사업자: {customer.bizRegNo}</div>
+                                                {customer.status !== 'ACTIVE' && (
+                                                    <span className="activation-badge unjoined">미가입</span>
+                                                )}
+                                            </div>
                                             {selectedCustomer?.id === customer.id && (
                                                 <div className="selected-badge">✓ 선택됨</div>
                                             )}
@@ -703,6 +708,7 @@ export default function OrderSheetCreate() {
                                                 <th>거래처명</th>
                                                 <th>사업자번호</th>
                                                 <th>대표자</th>
+                                                <th>가입상태</th>
                                                 <th>전화번호</th>
                                                 <th>주소</th>
                                             </tr>
@@ -727,6 +733,13 @@ export default function OrderSheetCreate() {
                                                     </td>
                                                     <td className="mono">{customer.bizRegNo}</td>
                                                     <td>{customer.ceoName}</td>
+                                                    <td>
+                                                        {customer.status === 'ACTIVE' ? (
+                                                            <span className="status-badge joined">가입완료</span>
+                                                        ) : (
+                                                            <span className="status-badge unjoined">미가입</span>
+                                                        )}
+                                                    </td>
                                                     <td className="mono">{customer.phone}</td>
                                                     <td className="address-cell">{customer.address}</td>
                                                 </tr>
