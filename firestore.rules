@@ -31,7 +31,8 @@ service cloud.firestore {
     
     // ============ CUSTOMERS (Organizations) ============
     match /customers/{customerId} {
-      allow read: if isAuthenticated();
+      // 읽기: 공개 (로그인하지 않은 상태에서도 주문장 확인을 위해 필요)
+      allow read: if true;
       allow create, update: if isAuthenticated();
       allow delete: if isAuthenticated();
     }
@@ -52,14 +53,16 @@ service cloud.firestore {
     
     // ============ ORDER SHEETS ============
     match /orderSheets/{orderSheetId} {
-      allow read: if isAuthenticated();
+      // 읽기: 공개 (토큰 기반 접근을 위해 필요)
+      allow read: if true;
       allow create: if isAuthenticated();
       allow update: if isAuthenticated();
       allow delete: if isAuthenticated();
     }
     
     match /orderSheetItems/{itemId} {
-      allow read: if isAuthenticated();
+      // 읽기: 공개 (토큰 기반 접근 시 품목 확인을 위해 필요)
+      allow read: if true;
       allow create, update, delete: if isAuthenticated();
     }
     

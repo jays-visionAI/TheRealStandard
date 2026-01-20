@@ -1,8 +1,9 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { XIcon, ClipboardListIcon, UserIcon, AlertTriangleIcon, ChevronRightIcon, InfoIcon } from '../../components/Icons'
+import { XIcon, ClipboardListIcon, UserIcon, AlertTriangleIcon, ChevronRightIcon, InfoIcon, LogInIcon } from '../../components/Icons'
 import { getOrderSheetByToken, getOrderSheetItems, type FirestoreOrderSheet, type FirestoreOrderSheetItem } from '../../lib/orderService'
 import { getCustomerById, type FirestoreCustomer } from '../../lib/customerService'
+import { useAuth } from '../../contexts/AuthContext'
 
 // 로컬 타입
 type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate' | 'cutOffAt'> & {
@@ -16,6 +17,7 @@ type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'sh
 export default function InviteLanding() {
   const { token } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [orderInfo, setOrderInfo] = useState<LocalOrderSheet | null>(null)
   const [customer, setCustomer] = useState<FirestoreCustomer | null>(null)
@@ -155,6 +157,53 @@ export default function InviteLanding() {
             justify-content: center;
             font-size: 0.75rem;
             font-weight: bold;
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  // Case 2: Customer is ACTIVE but user is NOT LOGGED IN
+  if (customer && customer.status === 'ACTIVE' && !user) {
+    return (
+      <div className="invite-container">
+        <div className="glass-card invite-card login-required">
+          <div className="icon"><LogInIcon size={48} color="#3b82f6" /></div>
+          <h2 className="gradient-text">파트너 로그인 필요</h2>
+          <p className="customer-name">{customer.companyName} 파트너님</p>
+
+          <div className="notice-box glass-card mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <InfoIcon size={20} color="#3b82f6" />
+              <h4 className="font-bold text-blue-700">이미 활성화된 계정입니다</h4>
+            </div>
+            <p className="text-sm text-secondary text-left leading-relaxed">
+              본 주문장은 <strong>{customer.companyName}</strong> 전용으로 발송되었습니다.
+              보안 및 주문 이력 관리를 위해 등록된 파트너 계정으로 로그인 후 주문을 진행해주세요.
+            </p>
+          </div>
+
+          <button
+            className="btn btn-primary btn-lg w-full flex items-center justify-center gap-2"
+            onClick={() => navigate('/login', { state: { from: `/order/${token}` } })}
+          >
+            파트너 로그인하기 <ChevronRightIcon size={20} />
+          </button>
+
+          <p className="mt-6 text-xs text-muted">
+            계정 정보를 잊으셨나요? <span className="underline cursor-pointer">비밀번호 찾기</span>
+          </p>
+        </div>
+
+        <style>{`
+          .login-required {
+            background: linear-gradient(to bottom, #ffffff, #f8faff);
+            border: 1px solid #dbeafe;
+          }
+          .login-required .notice-box {
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            padding: var(--space-4);
           }
         `}</style>
       </div>
