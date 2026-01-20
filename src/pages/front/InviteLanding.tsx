@@ -30,26 +30,43 @@ export default function InviteLanding() {
       }
 
       try {
+        console.log('InviteLanding: Fetching order with token:', token)
         const order = await getOrderSheetByToken(token)
 
         if (order) {
-          // Fetch customer info to check activation status
-          const customerData = await getCustomerById(order.customerOrgId)
-          setCustomer(customerData)
-
-          const items = await getOrderSheetItems(order.id)
-
-          setOrderInfo({
+          console.log('InviteLanding: Order found:', order.id)
+          // Set basic order info first so summary shows up even if other fetches fail
+          const initialOrderInfo: LocalOrderSheet = {
             ...order,
             createdAt: order.createdAt?.toDate?.() || new Date(),
             updatedAt: order.updatedAt?.toDate?.() || new Date(),
             shipDate: order.shipDate?.toDate?.() || undefined,
             cutOffAt: order.cutOffAt?.toDate?.() || undefined,
-            items: items || []
-          })
+            items: []
+          }
+          setOrderInfo(initialOrderInfo)
+
+          // Fetch other details in parallel but don't let them block the whole thing
+          try {
+            console.log('InviteLanding: Fetching customer info for:', order.customerOrgId)
+            const customerData = await getCustomerById(order.customerOrgId)
+            setCustomer(customerData)
+          } catch (custErr) {
+            console.error('InviteLanding: Customer fetch failed:', custErr)
+          }
+
+          try {
+            console.log('InviteLanding: Fetching items for order:', order.id)
+            const items = await getOrderSheetItems(order.id)
+            setOrderInfo(prev => prev ? { ...prev, items: items || [] } : null)
+          } catch (itemErr) {
+            console.error('InviteLanding: Items fetch failed:', itemErr)
+          }
+        } else {
+          console.warn('InviteLanding: No order found for token:', token)
         }
       } catch (err) {
-        console.error('InviteLanding: Failed to load order:', err)
+        console.error('InviteLanding: CRITICAL Failed to load order:', err)
       } finally {
         setLoading(false)
       }
