@@ -17,10 +17,16 @@ type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'sh
 export default function InviteLanding() {
   const { token } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, login } = useAuth()
   const [loading, setLoading] = useState(true)
   const [orderInfo, setOrderInfo] = useState<LocalOrderSheet | null>(null)
   const [customer, setCustomer] = useState<FirestoreCustomer | null>(null)
+
+  // Login states
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -117,6 +123,22 @@ export default function InviteLanding() {
     })
   }
 
+  const handleInlineLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoginError('')
+    setIsLoggingIn(true)
+
+    try {
+      await login(email, password)
+      // 로그인 성공 시 AuthContext가 변경되면서 자동으로 리렌더링됩니다.
+    } catch (err: any) {
+      console.error('Login failed:', err)
+      setLoginError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.')
+    } finally {
+      setIsLoggingIn(false)
+    }
+  }
+
   return (
     <>
       <div className="invite-container flex flex-col items-center">
@@ -159,72 +181,71 @@ export default function InviteLanding() {
         {/* 2. Authentication Gate (Conditional) */}
         <div className="glass-card invite-card shadow-2xl border-2 border-blue-500/20">
           {!user || user.orgId !== orderInfo.customerOrgId ? (
-            <>
-              {/* Account Status Messages */}
-              {(!customer || customer.status !== 'ACTIVE') ? (
-                <div className="auth-step-box">
-                  <div className="flex items-center gap-3 mb-6 bg-amber-50 p-4 rounded-xl border border-amber-100">
-                    <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
-                      <AlertTriangleIcon size={24} />
-                    </div>
-                    <div className="text-left">
-                      <h4 className="font-bold text-amber-800 text-sm">계정 활성화가 필요합니다</h4>
-                      <p className="text-[11px] text-amber-700/80">안전한 거래를 위해 첫 주문 전 가입을 진행해주세요.</p>
-                    </div>
-                  </div>
-
-                  <button
-                    className="btn btn-primary btn-lg w-full py-4 text-base font-bold shadow-lg shadow-blue-500/30 active:scale-95 transition-all mb-4"
-                    onClick={() => navigate(`/invite/${customer?.inviteToken || ''}`)}
-                  >
-                    파트너 계정 활성화하기
-                  </button>
+            <div className="auth-step-box">
+              <div className="flex items-center gap-3 mb-8 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                  <LogInIcon size={24} />
                 </div>
-              ) : !user ? (
-                <div className="auth-step-box">
-                  <div className="flex items-center gap-3 mb-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                      <InfoIcon size={24} />
-                    </div>
-                    <div className="text-left">
-                      <h4 className="font-bold text-blue-800 text-sm">기존 파트너 계정 로그인</h4>
-                      <p className="text-[11px] text-blue-700/80">이미 가입된 계정이 있습니다. 로그인 후 주문해주세요.</p>
-                    </div>
-                  </div>
-
-                  <button
-                    className="btn btn-primary btn-lg w-full py-4 text-base font-bold shadow-lg shadow-blue-500/30 active:scale-95 transition-all mb-4"
-                    onClick={() => navigate('/login', { state: { from: `/order/${token}` } })}
-                  >
-                    로그인 후 주문하기
-                  </button>
+                <div className="text-left">
+                  <h4 className="font-bold text-blue-900 text-sm leading-tight">로그인하거나 비회원인 경우<br />계정활성화가 필요합니다</h4>
+                  <p className="text-[11px] text-blue-700/80 mt-1">안전한 거래를 위해 본인 인증된 계정으로만 접근이 가능합니다.</p>
                 </div>
-              ) : (
-                // Mismatched Account
-                <div className="auth-step-box">
-                  <div className="flex items-center gap-3 mb-6 bg-red-50 p-4 rounded-xl border border-red-100">
-                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
-                      <XIcon size={24} />
-                    </div>
-                    <div className="text-left">
-                      <h4 className="font-bold text-red-800 text-sm">접근 권한이 없습니다</h4>
-                      <p className="text-[11px] text-red-700/80">현재 로그인된 계정이 발주서 대상과 다릅니다.</p>
-                    </div>
-                  </div>
+              </div>
 
-                  <button
-                    className="btn btn-secondary w-full py-3 mb-2"
-                    onClick={() => navigate('/login')}
-                  >
-                    다른 계정으로 로그인
-                  </button>
+              {/* Inline Login Form */}
+              <form onSubmit={handleInlineLogin} className="inline-login-form mb-8 text-left">
+                <div className="form-group mb-3">
+                  <label className="text-[11px] font-bold text-gray-400 ml-1 mb-1 block">아이디(이메일)</label>
+                  <input
+                    type="email"
+                    className="input w-full py-3 px-4 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-sans"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
-              )}
+                <div className="form-group mb-1">
+                  <label className="text-[11px] font-bold text-gray-400 ml-1 mb-1 block">비밀번호</label>
+                  <input
+                    type="password"
+                    className="input w-full py-3 px-4 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
 
-              <p className="text-[11px] text-muted text-center">
-                주문장 보안을 위해 <strong>본인 인증된 계정</strong>으로만 접근이 가능합니다.
-              </p>
-            </>
+                {loginError && (
+                  <p className="text-red-500 text-[11px] mt-2 ml-1">
+                    {loginError}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-lg w-full py-4 mt-6 text-base font-black shadow-lg shadow-blue-500/30 active:scale-95 transition-all"
+                  disabled={isLoggingIn}
+                >
+                  {isLoggingIn ? '인증 중...' : '로그인 후 주문하기'}
+                </button>
+              </form>
+
+              <div className="activation-separator relative h-px bg-gray-100 my-8">
+                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-4 text-[11px] text-gray-400 font-bold">OR</span>
+              </div>
+
+              <div className="activation-link-box text-center">
+                <p className="text-xs text-secondary mb-3">아직 계정이 없으신가요?</p>
+                <button
+                  className="w-full py-3 rounded-xl border-2 border-blue-100 text-blue-600 font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                  onClick={() => navigate(`/invite/${customer?.inviteToken || ''}`)}
+                >
+                  파트너 계정 활성화하기 <ChevronRightIcon size={16} />
+                </button>
+              </div>
+            </div>
           ) : (
             /* Authorized User */
             <div className="auth-success-box text-center py-4">
