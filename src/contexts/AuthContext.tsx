@@ -80,9 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             firebaseUid: fbUser.uid
                         })
                     } else {
-                        // 고객 DB에서 확인
-                        const customers = await getAllCustomers()
-                        const foundCustomer = customers.find(c => c.email === fbUser.email)
+                        // 고객 DB에서 확인 (전체 목록 대신 이메일로 직접 조회)
+                        const { getCustomerByEmail } = await import('../lib/customerService')
+                        const foundCustomer = await getCustomerByEmail(fbUser.email)
 
                         if (foundCustomer) {
                             setUser({

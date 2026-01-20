@@ -972,6 +972,19 @@
     white-space: nowrap;
 }
 
+/* Opaque Modal for Confirmations */
+.opaque-modal {
+    background: #ffffff !important;
+    border: 2px solid var(--border-primary);
+    box-shadow: var(--shadow-xl), 0 0 0 100vmax rgba(0, 0, 0, 0.4);
+}
+
+.order-sheet-create .modal-backdrop {
+    backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.4);
+    z-index: var(--z-modal-backdrop) !important;
+}
+
 @media (max-width: 768px) {
     .customer-table-container {
         max-height: 300px;

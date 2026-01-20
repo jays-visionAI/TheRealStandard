@@ -31,12 +31,14 @@ export default function InviteLanding() {
 
       try {
         const order = await getOrderSheetByToken(token)
+
         if (order) {
           // Fetch customer info to check activation status
           const customerData = await getCustomerById(order.customerOrgId)
           setCustomer(customerData)
 
           const items = await getOrderSheetItems(order.id)
+
           setOrderInfo({
             ...order,
             createdAt: order.createdAt?.toDate?.() || new Date(),
@@ -47,7 +49,7 @@ export default function InviteLanding() {
           })
         }
       } catch (err) {
-        console.error('Failed to load order:', err)
+        console.error('InviteLanding: Failed to load order:', err)
       } finally {
         setLoading(false)
       }
@@ -67,6 +69,7 @@ export default function InviteLanding() {
     )
   }
 
+  // Case 2: Link is INVALID or LOADING
   if (!orderInfo) {
     return (
       <div className="invite-container">
@@ -76,136 +79,6 @@ export default function InviteLanding() {
           <p>이 링크는 만료되었거나 유효하지 않습니다.</p>
           <p className="text-sm">담당자에게 문의해주세요.</p>
         </div>
-      </div>
-    )
-  }
-
-  // Account Activation Guard
-  if (customer && customer.status !== 'ACTIVE') {
-    return (
-      <div className="invite-container">
-        <div className="glass-card invite-card activation-required">
-          <div className="icon"><UserIcon size={48} color="#3b82f6" /></div>
-          <h2 className="gradient-text">계정 활성화 필요</h2>
-          <p className="customer-name">{customer.companyName} 파트너님</p>
-
-          <div className="notice-box glass-card mb-6">
-            <div className="flex items-center gap-3 mb-3">
-              <AlertTriangleIcon size={20} color="#f59e0b" />
-              <h4 className="font-bold text-amber-700">첫 주문 전 계정 생성이 필요합니다</h4>
-            </div>
-            <p className="text-sm text-secondary text-left leading-relaxed">
-              본 주문장은 <strong>{customer.companyName}</strong> 전용으로 발송되었습니다.
-              안전한 거래와 주문 이력 관리를 위해 먼저 파트너 계정을 활성화해주세요.
-            </p>
-          </div>
-
-          <div className="action-guide mb-8">
-            <div className="guide-item">
-              <span className="step-no">1</span>
-              <span>계정 정보 (이메일/비밀번호) 설정</span>
-            </div>
-            <div className="guide-item">
-              <span className="step-no">2</span>
-              <span>로그인 후 주문서 작성 및 제출</span>
-            </div>
-          </div>
-
-          <button
-            className="btn btn-primary btn-lg w-full flex items-center justify-center gap-2"
-            onClick={() => navigate(`/invite/${customer.inviteToken}`)}
-          >
-            파트너 계정 활성화하기 <ChevronRightIcon size={20} />
-          </button>
-
-          <p className="mt-6 text-xs text-muted">
-            이미 계정이 있으신가요? <span className="underline cursor-pointer" onClick={() => navigate('/login')}>로그인하기</span>
-          </p>
-        </div>
-
-        <style>{`
-          .activation-required {
-            background: linear-gradient(to bottom, #ffffff, #f8faff);
-            border: 1px solid #dbeafe;
-          }
-          .notice-box {
-            background: #fffbeb;
-            border: 1px solid #fef3c7;
-            padding: var(--space-4);
-          }
-          .action-guide {
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3);
-          }
-          .guide-item {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
-            font-size: var(--text-sm);
-            color: var(--text-primary);
-          }
-          .step-no {
-            width: 24px;
-            height: 24px;
-            background: #3b82f6;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: bold;
-          }
-        `}</style>
-      </div>
-    )
-  }
-
-  // Case 2: Customer is ACTIVE but user is NOT LOGGED IN
-  if (customer && customer.status === 'ACTIVE' && !user) {
-    return (
-      <div className="invite-container">
-        <div className="glass-card invite-card login-required">
-          <div className="icon"><LogInIcon size={48} color="#3b82f6" /></div>
-          <h2 className="gradient-text">파트너 로그인 필요</h2>
-          <p className="customer-name">{customer.companyName} 파트너님</p>
-
-          <div className="notice-box glass-card mb-6">
-            <div className="flex items-center gap-3 mb-3">
-              <InfoIcon size={20} color="#3b82f6" />
-              <h4 className="font-bold text-blue-700">이미 활성화된 계정입니다</h4>
-            </div>
-            <p className="text-sm text-secondary text-left leading-relaxed">
-              본 주문장은 <strong>{customer.companyName}</strong> 전용으로 발송되었습니다.
-              보안 및 주문 이력 관리를 위해 등록된 파트너 계정으로 로그인 후 주문을 진행해주세요.
-            </p>
-          </div>
-
-          <button
-            className="btn btn-primary btn-lg w-full flex items-center justify-center gap-2"
-            onClick={() => navigate('/login', { state: { from: `/order/${token}` } })}
-          >
-            파트너 로그인하기 <ChevronRightIcon size={20} />
-          </button>
-
-          <p className="mt-6 text-xs text-muted">
-            계정 정보를 잊으셨나요? <span className="underline cursor-pointer">비밀번호 찾기</span>
-          </p>
-        </div>
-
-        <style>{`
-          .login-required {
-            background: linear-gradient(to bottom, #ffffff, #f8faff);
-            border: 1px solid #dbeafe;
-          }
-          .login-required .notice-box {
-            background: #eff6ff;
-            border: 1px solid #dbeafe;
-            padding: var(--space-4);
-          }
-        `}</style>
       </div>
     )
   }
@@ -228,65 +101,136 @@ export default function InviteLanding() {
   }
 
   return (
-    <div className="invite-container">
-      <div className="glass-card invite-card">
-        <div className="icon"><ClipboardListIcon size={48} /></div>
-        <h2 className="gradient-text">주문장 초대</h2>
-        <p className="customer-name">{orderInfo.customerName}님</p>
+    <>
+      <div className="invite-container flex flex-col items-center">
+        {/* 1. Order Summary (Visible to Everyone) */}
+        <div className="glass-card invite-card mb-4 min-h-0 bg-white/80 backdrop-blur-md border-white/50 shadow-xl">
+          <div className="icon mb-2 opacity-60"><ClipboardListIcon size={40} /></div>
+          <h2 className="text-xl font-bold mb-1">발주서 초대 내역</h2>
+          <p className="customer-name mb-4 text-primary font-bold">{orderInfo.customerName} 파트너님</p>
 
-        <div className="order-info">
-          <div className="info-row">
-            <span className="label">주문번호</span>
-            <span className="value">{orderInfo.id}</span>
+          <div className="order-summary-box mb-6 bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+            <div className="grid grid-cols-2 gap-y-4 text-left">
+              <span className="text-secondary text-sm">주문번호</span>
+              <span className="font-mono font-medium text-right text-sm">{orderInfo.id}</span>
+
+              <span className="text-secondary text-sm">배송예정일</span>
+              <span className="font-bold text-right text-sm">{orderInfo.shipDate ? formatDate(orderInfo.shipDate) : '-'}</span>
+
+              <span className="text-secondary text-sm">주문마감</span>
+              <span className="font-bold text-right text-sm text-red-500">{orderInfo.cutOffAt ? formatDateTime(orderInfo.cutOffAt) : '-'}</span>
+
+              <div className="col-span-2 pt-4 mt-2 border-t border-blue-100 flex justify-between items-center">
+                <span className="font-bold text-primary">예상 주문 합계</span>
+                <span className="text-xl font-black text-blue-600">
+                  {orderInfo.items && orderInfo.items.length > 0
+                    ? orderInfo.items.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString() + '원'
+                    : '0원'}
+                </span>
+              </div>
+            </div>
           </div>
-          {orderInfo.items && orderInfo.items.length > 0 && (
-            <>
-              <div className="info-row">
-                <span className="label">주문내역</span>
-                <span className="value">
-                  {orderInfo.items[0].productName}
-                  {orderInfo.items.length > 1 ? ` 외 ${orderInfo.items.length - 1}품목` : ''}
-                </span>
-              </div>
-              <div className="info-row">
-                <span className="label">예상주문금액</span>
-                <span className="value">
-                  {orderInfo.items.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString()}원
-                </span>
-              </div>
-            </>
+
+          {orderInfo.adminComment && (
+            <div className="admin-memo text-left border-l-4 border-amber-400 pl-4 bg-amber-50/50 py-3 rounded-r-xl mb-6">
+              <span className="text-[10px] font-black text-amber-600 uppercase tracking-tighter">관리자 전달사항</span>
+              <p className="text-sm text-amber-900 mt-0.5 leading-relaxed">{orderInfo.adminComment}</p>
+            </div>
           )}
-          <div className="info-row">
-            <span className="label">배송예정일</span>
-            <span className="value">{orderInfo.shipDate ? formatDate(orderInfo.shipDate) : '-'}</span>
-          </div>
-          <div className="info-row">
-            <span className="label">주문마감</span>
-            <span className="value highlight">{orderInfo.cutOffAt ? formatDateTime(orderInfo.cutOffAt) : '-'}</span>
-          </div>
         </div>
 
-        {orderInfo.adminComment && (
-          <div className="admin-memo">
-            <span className="memo-label">관리자 메모</span>
-            <p className="memo-text">{orderInfo.adminComment}</p>
-          </div>
-        )}
+        {/* 2. Authentication Gate (Conditional) */}
+        <div className="glass-card invite-card shadow-2xl border-2 border-blue-500/20">
+          {!user || user.orgId !== orderInfo.customerOrgId ? (
+            <>
+              {/* Account Status Messages */}
+              {(!customer || customer.status !== 'ACTIVE') ? (
+                <div className="auth-step-box">
+                  <div className="flex items-center gap-3 mb-6 bg-amber-50 p-4 rounded-xl border border-amber-100">
+                    <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
+                      <AlertTriangleIcon size={24} />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-bold text-amber-800 text-sm">계정 활성화가 필요합니다</h4>
+                      <p className="text-[11px] text-amber-700/80">안전한 거래를 위해 첫 주문 전 가입을 진행해주세요.</p>
+                    </div>
+                  </div>
 
-        <div className="login-notice mb-4 flex items-center gap-2 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
-          <InfoIcon size={14} />
-          <span>주문 제출을 위해 파트너 로그인이 필요합니다.</span>
+                  <button
+                    className="btn btn-primary btn-lg w-full py-4 text-base font-bold shadow-lg shadow-blue-500/30 active:scale-95 transition-all mb-4"
+                    onClick={() => navigate(`/invite/${customer?.inviteToken || ''}`)}
+                  >
+                    파트너 계정 활성화하기
+                  </button>
+                </div>
+              ) : !user ? (
+                <div className="auth-step-box">
+                  <div className="flex items-center gap-3 mb-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                      <InfoIcon size={24} />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-bold text-blue-800 text-sm">기존 파트너 계정 로그인</h4>
+                      <p className="text-[11px] text-blue-700/80">이미 가입된 계정이 있습니다. 로그인 후 주문해주세요.</p>
+                    </div>
+                  </div>
+
+                  <button
+                    className="btn btn-primary btn-lg w-full py-4 text-base font-bold shadow-lg shadow-blue-500/30 active:scale-95 transition-all mb-4"
+                    onClick={() => navigate('/login', { state: { from: `/order/${token}` } })}
+                  >
+                    로그인 후 주문하기
+                  </button>
+                </div>
+              ) : (
+                // Mismatched Account
+                <div className="auth-step-box">
+                  <div className="flex items-center gap-3 mb-6 bg-red-50 p-4 rounded-xl border border-red-100">
+                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                      <XIcon size={24} />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-bold text-red-800 text-sm">접근 권한이 없습니다</h4>
+                      <p className="text-[11px] text-red-700/80">현재 로그인된 계정이 발주서 대상과 다릅니다.</p>
+                    </div>
+                  </div>
+
+                  <button
+                    className="btn btn-secondary w-full py-3 mb-2"
+                    onClick={() => navigate('/login')}
+                  >
+                    다른 계정으로 로그인
+                  </button>
+                </div>
+              )}
+
+              <p className="text-[11px] text-muted text-center">
+                주문장 보안을 위해 <strong>본인 인증된 계정</strong>으로만 접근이 가능합니다.
+              </p>
+            </>
+          ) : (
+            /* Authorized User */
+            <div className="auth-success-box text-center py-4">
+              <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ClipboardListIcon size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 mb-2 font-black">인증 완료</h3>
+              <p className="text-sm text-secondary mb-8">
+                {user.name} 님, 주문을 시작할 준비가 되었습니다.<br />
+                품목과 수량을 확인하고 주문을 제출해주세요.
+              </p>
+
+              <button
+                className="btn btn-primary btn-lg w-full py-5 text-lg font-bold shadow-xl shadow-blue-500/20 animate-bounce-subtle"
+                onClick={() => navigate(`/order/${token}/edit`)}
+              >
+                주문서 작성하러 가기 →
+              </button>
+            </div>
+          )}
         </div>
 
-        <button
-          className="btn btn-primary btn-lg w-full"
-          onClick={() => navigate(`/order/${token}/edit`)}
-        >
-          주문하기 →
-        </button>
-      </div>
-
-      <style>{`
+        <style>{`
         .invite-container {
           display: flex;
           justify-content: center;
@@ -389,6 +333,7 @@ export default function InviteLanding() {
           to { transform: rotate(360deg); }
         }
       `}</style>
-    </div>
+      </div>
+    </>
   )
 }

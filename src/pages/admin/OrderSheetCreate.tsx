@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon, CheckIcon, XIcon, AlertTriangleIcon, ChevronLeftIcon, ChevronRightIcon } from '../../components/Icons'
+import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon, CheckIcon, XIcon, AlertTriangleIcon, ChevronLeftIcon, ChevronRightIcon, InfoIcon } from '../../components/Icons'
 import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import { createOrderSheet, setOrderSheetItems, getAllOrderSheets, getOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
@@ -93,6 +93,18 @@ export default function OrderSheetCreate() {
     const [sidebarTab, setSidebarTab] = useState<'priceList' | 'pastOrders'>('priceList')
     const [pastPriceLists, setPastPriceLists] = useState<FirestorePriceList[]>([])
     const [pastOrderSheets, setPastOrderSheets] = useState<FirestoreOrderSheet[]>([])
+
+    // Confirm Modal state
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+    const [confirmModalConfig, setConfirmModalConfig] = useState<{
+        title: string
+        message: string
+        onConfirm: () => void
+    }>({
+        title: '',
+        message: '',
+        onConfirm: () => { }
+    })
 
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
@@ -214,34 +226,37 @@ export default function OrderSheetCreate() {
             }
 
             // 전환 확인 모달
-            const confirmed = confirm(
-                '📦 박스 단위 주문으로 전환\n\n주문 리스트 중 1박스 예상중량보다 적은 Kg으로 주문한 항목이 있는 경우 1박스당 주문수량으로 자동 보정합니다.\n\n확인을 눌러 전환하시겠습니까?'
-            );
+            setConfirmModalConfig({
+                title: '📦 박스 단위 주문으로 전환',
+                message: '주문 리스트 중 1박스 예상중량보다 적은 Kg으로 주문한 항목이 있는 경우 1박스당 주문수량으로 자동 보정합니다. 전환하시겠습니까?',
+                onConfirm: () => {
+                    // Box 단위로 변환
+                    setRows(prevRows => prevRows.map(row => {
+                        if (!row.productId) return { ...row, unit: 'box' };
+                        const product = products.find(p => p.id === row.productId);
+                        const weightPerBox = product?.boxWeight || 1;
 
-            if (!confirmed) return;
+                        // Kg -> Box 변환 (올림 처리하여 최소 1박스)
+                        let newQuantity = Math.ceil(row.estimatedWeight / weightPerBox);
+                        if (newQuantity < 1 && row.estimatedWeight > 0) newQuantity = 1;
 
-            // Box 단위로 변환
-            setRows(prevRows => prevRows.map(row => {
-                if (!row.productId) return { ...row, unit: 'box' };
-                const product = products.find(p => p.id === row.productId);
-                const weightPerBox = product?.boxWeight || 1;
+                        const newEstimatedWeight = newQuantity * weightPerBox;
+                        const newTotalAmount = newEstimatedWeight * row.unitPrice;
 
-                // Kg -> Box 변환 (올림 처리하여 최소 1박스)
-                let newQuantity = Math.ceil(row.estimatedWeight / weightPerBox);
-                if (newQuantity < 1 && row.estimatedWeight > 0) newQuantity = 1;
-
-                const newEstimatedWeight = newQuantity * weightPerBox;
-                const newTotalAmount = newEstimatedWeight * row.unitPrice;
-
-                return {
-                    ...row,
-                    quantity: newQuantity,
-                    unit: 'box',
-                    estimatedWeight: newEstimatedWeight,
-                    totalAmount: newTotalAmount
-                };
-            }));
-            setOrderUnit('box');
+                        return {
+                            ...row,
+                            quantity: newQuantity,
+                            unit: 'box',
+                            estimatedWeight: newEstimatedWeight,
+                            totalAmount: newTotalAmount
+                        };
+                    }));
+                    setOrderUnit('box');
+                    setConfirmModalOpen(false);
+                }
+            });
+            setConfirmModalOpen(true);
+            return;
         } else {
             // Kg 단위로 전환 (Box -> Kg)
             setRows(prevRows => prevRows.map(row => {
@@ -299,64 +314,75 @@ export default function OrderSheetCreate() {
 
     // 단가표 복사
     const copyPriceList = (list: FirestorePriceList) => {
-        if (!confirm(`'${list.title}' 단가표의 품목과 단가를 가져오시겠습니까?`)) return
-
-        const newRows: OrderRow[] = list.items.map(item => {
-            return {
-                id: Math.random().toString(36).substr(2, 9),
-                productId: item.productId,
-                productName: item.name,
-                unitPrice: item.wholesalePrice || 0,
-                quantity: 0,
-                unit: orderUnit,
-                estimatedWeight: 0,
-                totalAmount: 0
+        setConfirmModalConfig({
+            title: '단가표 복사',
+            message: `'${list.title}' 단가표의 품목과 단가를 가져오시겠습니까? 현재 작성 중인 목록이 초기화될 수 있습니다.`,
+            onConfirm: () => {
+                const newRows: OrderRow[] = list.items.map(item => {
+                    return {
+                        id: Math.random().toString(36).substr(2, 9),
+                        productId: item.productId,
+                        productName: item.name,
+                        unitPrice: item.wholesalePrice || 0,
+                        quantity: 0,
+                        unit: orderUnit,
+                        estimatedWeight: 0,
+                        totalAmount: 0
+                    }
+                })
+                setRows(newRows)
+                setConfirmModalOpen(false)
             }
         })
-        setRows(newRows)
+        setConfirmModalOpen(true)
     }
 
     // 이전 발주서 복사
     const copyPastOrder = async (order: FirestoreOrderSheet) => {
-        if (!confirm('해당 발주서의 품목을 가져오시겠습니까?')) return
+        setConfirmModalConfig({
+            title: '이전 발주서 복사',
+            message: '해당 발주서의 품목을 가져오시겠습니까? 현재 작성 중인 목록이 초기화될 수 있습니다.',
+            onConfirm: async () => {
+                try {
+                    setConfirmModalOpen(false)
+                    setLoading(true)
+                    const items = await getOrderSheetItems(order.id)
 
-        try {
-            setLoading(true)
-            const items = await getOrderSheetItems(order.id)
+                    if (!items || items.length === 0) {
+                        alert('복사할 항목이 없습니다.')
+                        return
+                    }
 
-            if (!items || items.length === 0) {
-                alert('복사할 항목이 없습니다.')
-                return
-            }
+                    if (items && items.length > 0) {
+                        // 이전 주문의 단위를 확인하여 현재 주문 단위(orderUnit) 설정
+                        const firstUnit = items[0].unit as 'kg' | 'box';
+                        if (firstUnit === 'kg' || firstUnit === 'box') {
+                            setOrderUnit(firstUnit);
+                        }
+                    }
 
-            if (items && items.length > 0) {
-                // 이전 주문의 단위를 확인하여 현재 주문 단위(orderUnit) 설정
-                const firstUnit = items[0].unit as 'kg' | 'box';
-                if (firstUnit === 'kg' || firstUnit === 'box') {
-                    setOrderUnit(firstUnit);
+                    const newRows: OrderRow[] = items.map(item => {
+                        return {
+                            id: Math.random().toString(36).substr(2, 9),
+                            productId: item.productId,
+                            productName: item.productName,
+                            unitPrice: item.unitPrice,
+                            quantity: item.qtyRequested || 0,
+                            unit: item.unit as 'kg' | 'box',
+                            estimatedWeight: item.estimatedKg || 0,
+                            totalAmount: item.amount || 0
+                        }
+                    })
+                    setRows(newRows)
+                } catch (err) {
+                    console.error(err)
+                    alert('발주서 항목을 가져오는데 실패했습니다.')
+                } finally {
+                    setLoading(false)
                 }
             }
-
-            const newRows: OrderRow[] = items.map(item => {
-                return {
-                    id: Math.random().toString(36).substr(2, 9),
-                    productId: item.productId,
-                    productName: item.productName,
-                    unitPrice: item.unitPrice,
-                    quantity: item.qtyRequested || 0,
-                    unit: item.unit as 'kg' | 'box',
-                    estimatedWeight: item.estimatedKg || 0,
-                    totalAmount: item.amount || 0
-                }
-            })
-            setRows(newRows)
-            alert('발주서 항목이 복사되었습니다.')
-        } catch (err) {
-            console.error(err)
-            alert('발주서 항목을 가져오는데 실패했습니다.')
-        } finally {
-            setLoading(false)
-        }
+        })
+        setConfirmModalOpen(true)
     }
 
     // 수량 변경 시 계산
@@ -423,12 +449,18 @@ export default function OrderSheetCreate() {
         const checkedCount = rows.filter(r => r.checked).length
         if (checkedCount === 0) return
 
-        if (confirm(`선택한 ${checkedCount}개 품목을 삭제하시겠습니까?`)) {
-            setRows(prev => {
-                const remaining = prev.filter(r => !r.checked)
-                return remaining.length > 0 ? remaining : [createEmptyRow()]
-            })
-        }
+        setConfirmModalConfig({
+            title: '품목 삭제',
+            message: `선택한 ${checkedCount}개 품목을 삭제하시겠습니까?`,
+            onConfirm: () => {
+                setRows(prev => {
+                    const remaining = prev.filter(r => !r.checked)
+                    return remaining.length > 0 ? remaining : [createEmptyRow()]
+                })
+                setConfirmModalOpen(false)
+            }
+        })
+        setConfirmModalOpen(true)
     }
 
     // 키보드 네비게이션
@@ -1278,6 +1310,46 @@ export default function OrderSheetCreate() {
                             <button
                                 className="btn btn-primary px-8"
                                 onClick={() => setPreviewModalOpen(false)}
+                            >
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Confirm Modal */}
+            {confirmModalOpen && (
+                <div className="modal-backdrop" onClick={() => setConfirmModalOpen(false)}>
+                    <div className="modal opaque-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-xl font-bold">{confirmModalConfig.title}</h3>
+                                <button
+                                    onClick={() => setConfirmModalOpen(false)}
+                                    className="btn btn-ghost p-2"
+                                >
+                                    <XIcon size={20} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="modal-body py-8 text-center">
+                            <div className="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 text-blue-600">
+                                <InfoIcon size={32} />
+                            </div>
+                            <p className="text-lg text-primary whitespace-pre-wrap leading-relaxed px-4">
+                                {confirmModalConfig.message}
+                            </p>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                className="btn btn-secondary px-6"
+                                onClick={() => setConfirmModalOpen(false)}
+                            >
+                                취소
+                            </button>
+                            <button
+                                className="btn btn-primary px-10 font-bold"
+                                onClick={confirmModalConfig.onConfirm}
                             >
                                 확인
                             </button>

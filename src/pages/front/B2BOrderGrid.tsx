@@ -94,6 +94,19 @@ export default function B2BOrderGrid() {
                     return
                 }
 
+                // Authorization Guard: Only allow the correct user/org
+                if (!user) {
+                    console.warn('No user. Redirecting to landing...')
+                    navigate(`/order/${token}`)
+                    return
+                }
+
+                if (user.orgId !== osData.customerOrgId) {
+                    alert('해당 주문장에 대한 접근 권한이 없습니다. 올바른 파트너 계정으로 로그인해주세요.')
+                    navigate('/order/list')
+                    return
+                }
+
                 const orderSheet = {
                     ...osData,
                     createdAt: osData.createdAt?.toDate?.() || new Date(),

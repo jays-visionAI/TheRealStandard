@@ -34,31 +34,31 @@ export default function FrontLayout() {
 
     return (
         <div className="front-layout-v2">
-            {/* Sidebar */}
-            <aside className="front-sidebar glass-card">
-                <div className="sidebar-header">
-                    <TRSLogo size={32} />
-                    <div className="logo-text">
-                        <span className="logo-title">TRS</span>
-                        <span className="logo-subtitle">CUSTOMER</span>
+            {/* Sidebar - Only shown for logged in users with an organization */}
+            {user && user.orgId && (
+                <aside className="front-sidebar glass-card">
+                    <div className="sidebar-header">
+                        <TRSLogo size={32} />
+                        <div className="logo-text">
+                            <span className="logo-title">TRS</span>
+                            <span className="logo-subtitle">CUSTOMER</span>
+                        </div>
                     </div>
-                </div>
 
-                <nav className="sidebar-nav">
-                    {menus.map((menu) => (
-                        <Link
-                            key={menu.path}
-                            to={menu.path}
-                            className={`nav-item ${location.pathname === menu.path ? 'active' : ''}`}
-                        >
-                            <span className="nav-icon">{menu.icon}</span>
-                            <span className="nav-label">{menu.label}</span>
-                        </Link>
-                    ))}
-                </nav>
+                    <nav className="sidebar-nav">
+                        {menus.map((menu) => (
+                            <Link
+                                key={menu.path}
+                                to={menu.path}
+                                className={`nav-item ${location.pathname === menu.path ? 'active' : ''}`}
+                            >
+                                <span className="nav-icon">{menu.icon}</span>
+                                <span className="nav-label">{menu.label}</span>
+                            </Link>
+                        ))}
+                    </nav>
 
-                <div className="sidebar-footer">
-                    {user ? (
+                    <div className="sidebar-footer">
                         <div className="user-profile">
                             <div className="user-info">
                                 <p className="user-name">{user.name}</p>
@@ -68,13 +68,9 @@ export default function FrontLayout() {
                                 <LogOutIcon size={18} />
                             </button>
                         </div>
-                    ) : (
-                        <Link to="/login" className="login-prompt">
-                            <UserIcon size={18} /> 로그인하기
-                        </Link>
-                    )}
-                </div>
-            </aside>
+                    </div>
+                </aside>
+            )}
 
             {/* Main Content Area */}
             <div className="front-main-container">
