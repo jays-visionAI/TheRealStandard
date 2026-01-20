@@ -22,11 +22,13 @@ export default function InviteLanding() {
   const [orderInfo, setOrderInfo] = useState<LocalOrderSheet | null>(null)
   const [customer, setCustomer] = useState<FirestoreCustomer | null>(null)
 
-  // Login states
+  // Mode and Login/Signup states
+  const [mode, setMode] = useState<'LOGIN' | 'SIGNUP'>('LOGIN')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loginError, setLoginError] = useState('')
-  const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [errorStatus, setErrorStatus] = useState('')
+  const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -81,6 +83,13 @@ export default function InviteLanding() {
     loadOrder()
   }, [token])
 
+  // Prefill email if customer info is loaded
+  useEffect(() => {
+    if (customer && customer.email && mode === 'SIGNUP') {
+      setEmail(customer.email)
+    }
+  }, [customer, mode])
+
   if (loading) {
     return (
       <div className="invite-container">
@@ -125,17 +134,66 @@ export default function InviteLanding() {
 
   const handleInlineLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoginError('')
-    setIsLoggingIn(true)
+    setErrorStatus('')
+    setIsProcessing(true)
 
     try {
       await login(email, password)
       // 로그인 성공 시 AuthContext가 변경되면서 자동으로 리렌더링됩니다.
     } catch (err: any) {
       console.error('Login failed:', err)
-      setLoginError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.')
+      setErrorStatus('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.')
     } finally {
-      setIsLoggingIn(false)
+      setIsProcessing(false)
+    }
+  }
+
+  const handleInlineSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorStatus('')
+
+    if (password !== confirmPassword) {
+      setErrorStatus('비밀번호가 일치하지 않습니다.')
+      return
+    }
+
+    if (password.length < 6) {
+      setErrorStatus('비밀번호는 최소 6자 이상이어야 합니다.')
+      return
+    }
+
+    setIsProcessing(true)
+
+    try {
+      // 1. Firebase Auth 계정 생성
+      const { createUserWithEmailAndPassword } = await import('firebase/auth')
+      const { auth } = await import('../../lib/firebase')
+      const { updateCustomer } = await import('../../lib/customerService')
+
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const firebaseUid = userCredential.user.uid
+
+      // 2. Firestore 고객 데이터 업데이트 (활성화)
+      if (customer) {
+        await updateCustomer(customer.id, {
+          email: email,
+          status: 'ACTIVE',
+          firebaseUid: firebaseUid // Link Auth UID
+        })
+      }
+
+      // 3. 페이지 새로고침 또는 AuthContext 업데이트 대기
+      // AuthContext의 onAuthStateChanged가 감지하여 자동으로 user 상태를 업데이트할 것입니다.
+      console.log('Signup and Activation successful')
+    } catch (err: any) {
+      console.error('Signup failed:', err)
+      if (err.code === 'auth/email-already-in-use') {
+        setErrorStatus('이미 가입된 이메일입니다. 로그인해 주세요.')
+      } else {
+        setErrorStatus(`회원가입 실패: ${err.message}`)
+      }
+    } finally {
+      setIsProcessing(false)
     }
   }
 
@@ -187,13 +245,19 @@ export default function InviteLanding() {
                   <LogInIcon size={24} />
                 </div>
                 <div className="text-left">
-                  <h4 className="font-bold text-blue-900 text-sm leading-tight">로그인하거나 비회원인 경우<br />계정활성화가 필요합니다</h4>
+                  <h4 className="font-bold text-blue-900 text-sm leading-tight">
+                    {mode === 'LOGIN' ? (
+                      <>로그인하거나 비회원인 경우<br />계정활성화가 필요합니다</>
+                    ) : (
+                      <>파트너 계정을 활성화하고<br />발주를 시작하세요</>
+                    )}
+                  </h4>
                   <p className="text-[11px] text-blue-700/80 mt-1">안전한 거래를 위해 본인 인증된 계정으로만 접근이 가능합니다.</p>
                 </div>
               </div>
 
-              {/* Inline Login Form */}
-              <form onSubmit={handleInlineLogin} className="inline-login-form mb-8 text-left">
+              {/* Inline Login/Signup Form */}
+              <form onSubmit={mode === 'LOGIN' ? handleInlineLogin : handleInlineSignup} className="inline-login-form mb-8 text-left">
                 <div className="form-group mb-3">
                   <label className="text-[11px] font-bold text-gray-400 ml-1 mb-1 block">아이디(이메일)</label>
                   <input
@@ -202,10 +266,11 @@ export default function InviteLanding() {
                     placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    readOnly={mode === 'SIGNUP' && !!customer?.email}
                     required
                   />
                 </div>
-                <div className="form-group mb-1">
+                <div className="form-group mb-3">
                   <label className="text-[11px] font-bold text-gray-400 ml-1 mb-1 block">비밀번호</label>
                   <input
                     type="password"
@@ -217,18 +282,32 @@ export default function InviteLanding() {
                   />
                 </div>
 
-                {loginError && (
+                {mode === 'SIGNUP' && (
+                  <div className="form-group mb-1">
+                    <label className="text-[11px] font-bold text-gray-400 ml-1 mb-1 block">비밀번호 확인</label>
+                    <input
+                      type="password"
+                      className="input w-full py-3 px-4 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+
+                {errorStatus && (
                   <p className="text-red-500 text-[11px] mt-2 ml-1">
-                    {loginError}
+                    {errorStatus}
                   </p>
                 )}
 
                 <button
                   type="submit"
                   className="btn btn-primary btn-lg w-full py-4 mt-6 text-base font-black shadow-lg shadow-blue-500/30 active:scale-95 transition-all"
-                  disabled={isLoggingIn}
+                  disabled={isProcessing}
                 >
-                  {isLoggingIn ? '인증 중...' : '로그인 후 주문하기'}
+                  {isProcessing ? '처리 중...' : (mode === 'LOGIN' ? '로그인 후 주문하기' : '계정 활성화 및 주문하기')}
                 </button>
               </form>
 
@@ -237,13 +316,33 @@ export default function InviteLanding() {
               </div>
 
               <div className="activation-link-box text-center">
-                <p className="text-xs text-secondary mb-3">아직 계정이 없으신가요?</p>
-                <button
-                  className="w-full py-3 rounded-xl border-2 border-blue-100 text-blue-600 font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
-                  onClick={() => navigate(`/invite/${customer?.inviteToken || ''}`)}
-                >
-                  파트너 계정 활성화하기 <ChevronRightIcon size={16} />
-                </button>
+                {mode === 'LOGIN' ? (
+                  <>
+                    <p className="text-xs text-secondary mb-3">아직 계정이 없으신가요?</p>
+                    <button
+                      className="w-full py-3 rounded-xl border-2 border-blue-100 text-blue-600 font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                      onClick={() => {
+                        setMode('SIGNUP')
+                        setErrorStatus('')
+                      }}
+                    >
+                      파트너 계정 활성화하기 <ChevronRightIcon size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-secondary mb-3">이미 계정이 있으신가요?</p>
+                    <button
+                      className="w-full py-3 rounded-xl border-2 border-gray-100 text-gray-600 font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                      onClick={() => {
+                        setMode('LOGIN')
+                        setErrorStatus('')
+                      }}
+                    >
+                      기존 계정으로 로그인하기
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ) : (

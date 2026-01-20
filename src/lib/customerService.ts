@@ -28,6 +28,7 @@ export interface FirestoreCustomer {
     inviteToken?: string
     isJoined: boolean
     status: 'PENDING' | 'ACTIVE' | 'INACTIVE'
+    firebaseUid?: string
     createdAt: Timestamp
     updatedAt: Timestamp
 }
