@@ -314,7 +314,6 @@ export default function OrderSheetCreate() {
             }
         })
         setRows(newRows)
-        alert('단가표 항목이 복사되었습니다. 수량을 입력해주세요.')
     }
 
     // 이전 발주서 복사
