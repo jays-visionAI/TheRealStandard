@@ -174,7 +174,7 @@ export default function OrderSheetList() {
                         <option value="REVISION">수정요청</option>
                         <option value="CONFIRMED">승인됨</option>
                     </select>
-                    <Link to="/admin/order-sheets/create" className="btn btn-primary">
+                    <Link to="/admin/order-sheets/create" className="btn btn-primary" style={{ whiteSpace: 'nowrap', minWidth: '140px' }}>
                         <PlusIcon size={18} /> + 발주서 생성
                     </Link>
                 </div>
