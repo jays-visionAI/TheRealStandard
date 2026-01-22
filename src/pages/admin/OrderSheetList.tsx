@@ -148,9 +148,6 @@ export default function OrderSheetList() {
                     <h1>매출발주(고객용) 목록</h1>
                     <p className="text-secondary">고객사에게 보낸 매출 발주서 리스트입니다</p>
                 </div>
-                <Link to="/admin/order-sheets/create" className="btn btn-primary">
-                    <PlusIcon size={18} /> + 발주서 생성
-                </Link>
             </div>
 
             {/* Filters */}
@@ -164,7 +161,7 @@ export default function OrderSheetList() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="filter-group">
+                <div className="filter-group" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <select
                         className="input select"
                         value={filterStatus}
@@ -177,6 +174,9 @@ export default function OrderSheetList() {
                         <option value="REVISION">수정요청</option>
                         <option value="CONFIRMED">승인됨</option>
                     </select>
+                    <Link to="/admin/order-sheets/create" className="btn btn-primary">
+                        <PlusIcon size={18} /> + 발주서 생성
+                    </Link>
                 </div>
             </div>
 
