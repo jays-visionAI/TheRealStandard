@@ -88,7 +88,7 @@ export default function OrderSheetCreate() {
     const [shipTo, setShipTo] = useState('')
     const [adminComment, setAdminComment] = useState('')
 
-    const [skipShippingInfo, setSkipShippingInfo] = useState(false)
+    const [skipShippingInfo, setSkipShippingInfo] = useState(true)
 
     // Preview Modal State
     const [previewModalOpen, setPreviewModalOpen] = useState(false)
@@ -1121,12 +1121,12 @@ export default function OrderSheetCreate() {
                 <div className="step-content">
                     <div className="glass-card">
                         <div className="section-header flex justify-between items-center mb-6">
-                            <h2 className="section-title mb-0">🚚 배송 정보</h2>
+                            <h2 className="section-title mb-0">배송 정보</h2>
                             <button
-                                className={`btn btn - sm ${skipShippingInfo ? 'btn-primary' : 'btn-outline'} `}
+                                className={`btn btn-sm ${skipShippingInfo ? 'btn-outline' : 'btn-primary'}`}
                                 onClick={() => setSkipShippingInfo(!skipShippingInfo)}
                             >
-                                {skipShippingInfo ? '✓ 배송정보 생략됨' : '배송정보 생략'}
+                                {skipShippingInfo ? '+ 배송정보 추가하기' : '배송정보 숨기기'}
                             </button>
                         </div>
 
