@@ -4,6 +4,9 @@ import {
     updateUser as updateUserFirebase,
     deleteUser as deleteUserFirebase,
     getAllCustomerUsers,
+    getAllSupplierUsers,
+    getAll3PLUsers,
+    migrateLegacySuppliersToUsers,
     type FirestoreUser
 } from '../../lib/userService'
 import {
@@ -17,7 +20,7 @@ import {
     UserIcon,
     BuildingIcon
 } from '../../components/Icons'
-import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
+
 import './UserList.css' // Reusing existing styles or adding new ones
 
 // UserAccount 타입 정의
@@ -40,7 +43,8 @@ const ROLE_LABELS: Record<string, string> = {
 export default function UserManagement() {
     const [users, setUsers] = useState<UserAccount[]>([])
     const [customers, setCustomers] = useState<FirestoreUser[]>([])
-    const [suppliers, setSuppliers] = useState<FirestoreSupplier[]>([])
+    const [suppliers, setSuppliers] = useState<FirestoreUser[]>([])
+    const [carriers, setCarriers] = useState<FirestoreUser[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
@@ -58,13 +62,14 @@ export default function UserManagement() {
             setLoading(true)
             setError(null)
 
-            const [usersData, customersData, suppliersData] = await Promise.all([
+            const [usersData, customersData, suppliersData, carriersData] = await Promise.all([
                 getAllUsers(),
                 getAllCustomerUsers(),
-                getAllSuppliers()
+                getAllSupplierUsers(),
+                getAll3PLUsers()
             ])
 
-            setUsers(usersData.map(u => ({
+            setUsers(usersData.map((u: FirestoreUser) => ({
                 ...u,
                 createdAt: u.createdAt?.toDate?.() || new Date(),
                 updatedAt: u.updatedAt?.toDate?.() || new Date(),
@@ -73,6 +78,7 @@ export default function UserManagement() {
 
             setCustomers(customersData)
             setSuppliers(suppliersData)
+            setCarriers(carriersData)
         } catch (err) {
             console.error('Failed to load users:', err)
             setError('사용자 목록을 불러오는데 실패했습니다.')
@@ -125,7 +131,6 @@ export default function UserManagement() {
                 name: formData.name,
                 role: formData.role as any,
                 status: formData.status as any,
-                password: formData.password,
                 orgId: formData.orgId || undefined, // Ensure orgId is updated or cleared
             })
             await loadData()
@@ -150,6 +155,25 @@ export default function UserManagement() {
         }
     }
 
+    const handleMigrateSuppliers = async () => {
+        if (!confirm('기존 공급사 및 배송업체 데이터를 통합 users 컬렉션으로 복사하시겠습니까?')) return
+        setLoading(true)
+        try {
+            const result = await migrateLegacySuppliersToUsers()
+            let message = `공급사 마이그레이션 완료!\n성공: ${result.migrated}건\n제외: ${result.skipped}건\n오류: ${result.errors.length}건`
+            if (result.errors.length > 0) {
+                message += `\n\n최근 오류:\n${result.errors.slice(0, 3).join('\n')}`
+            }
+            alert(message)
+            await loadData()
+        } catch (err) {
+            console.error('Migration failed:', err)
+            alert('마이그레이션 중 오류가 발생했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
 
 
     if (loading && users.length === 0) {
@@ -170,6 +194,11 @@ export default function UserManagement() {
                     <h1><UsersIcon size={24} /> 전체 유저 리스트</h1>
                     <p className="text-secondary">시스템에 등록된 모든 사용자 계정(고객/직원 등)을 한눈에 관리합니다.</p>
                     <p className="text-primary font-bold mt-2" style={{ color: 'var(--color-primary)' }}>이름은 실명을 사용해주세요.</p>
+                </div>
+                <div className="header-right">
+                    <button className="btn btn-secondary" onClick={handleMigrateSuppliers} style={{ marginRight: '10px' }}>
+                        공급사 데이터 마이그레이션
+                    </button>
                 </div>
             </div>
 
@@ -215,7 +244,8 @@ export default function UserManagement() {
                                             <BuildingIcon size={14} className="text-secondary" />
                                             <span>
                                                 {customers.find(c => c.id === user.orgId)?.business?.companyName ||
-                                                    suppliers.find(s => s.id === user.orgId)?.companyName || '-'}
+                                                    suppliers.find(s => s.id === user.orgId)?.business?.companyName ||
+                                                    carriers.find(c => c.id === user.orgId)?.business?.companyName || '-'}
                                             </span>
                                         </div>
                                     ) : '-'}
@@ -344,7 +374,7 @@ export default function UserManagement() {
                                     >
                                         <option value="">공급사 선택...</option>
                                         {suppliers.map(s => (
-                                            <option key={s.id} value={s.id}>{s.companyName}</option>
+                                            <option key={s.id} value={s.id}>{s.business?.companyName || s.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -359,21 +389,13 @@ export default function UserManagement() {
                                         onChange={e => setFormData({ ...formData, orgId: e.target.value })}
                                     >
                                         <option value="">3PL 업체 선택...</option>
-                                        {suppliers.map(s => (
-                                            <option key={s.id} value={s.id}>{s.companyName}</option>
+                                        {carriers.map(c => (
+                                            <option key={c.id} value={c.id}>{c.business?.companyName || c.name}</option>
                                         ))}
                                     </select>
                                 </div>
                             )}
-                            <div className="form-group">
-                                <label>비밀번호</label>
-                                <input
-                                    type="password"
-                                    placeholder="변경 시에만 입력"
-                                    value={formData.password || ''}
-                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                />
-                            </div>
+
                             <div className="form-group">
                                 <label>상태</label>
                                 <select

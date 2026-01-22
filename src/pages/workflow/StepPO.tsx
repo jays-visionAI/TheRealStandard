@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ClipboardListIcon, FactoryIcon, DashboardIcon, CheckCircleIcon, PackageIcon } from '../../components/Icons'
 import { getSalesOrderById, getSalesOrderItems, type FirestoreSalesOrder, type FirestoreSalesOrderItem } from '../../lib/orderService'
-import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
+import { getAllSupplierUsers, type FirestoreUser } from '../../lib/userService'
 import './StepPO.css'
 import type { ReactNode } from 'react'
 
@@ -29,7 +29,8 @@ type LocalSalesOrder = Omit<FirestoreSalesOrder, 'createdAt' | 'confirmedAt'> & 
     confirmedAt?: Date
 }
 
-type LocalSupplier = Omit<FirestoreSupplier, 'createdAt' | 'updatedAt'> & {
+type LocalSupplier = Omit<FirestoreUser, 'createdAt' | 'updatedAt'> & {
+    companyName: string
     createdAt?: Date
     updatedAt?: Date
     specialty?: string
@@ -60,7 +61,7 @@ export default function StepPO() {
             const [soData, itemsData, suppliersData] = await Promise.all([
                 getSalesOrderById(id),
                 getSalesOrderItems(id),
-                getAllSuppliers()
+                getAllSupplierUsers()
             ])
 
             if (soData) {
@@ -73,6 +74,7 @@ export default function StepPO() {
             setSalesOrderItems(itemsData)
             setSuppliers(suppliersData.map(s => ({
                 ...s,
+                companyName: s.business?.companyName || s.name || '',
                 createdAt: s.createdAt?.toDate?.() || new Date(),
                 updatedAt: s.updatedAt?.toDate?.() || new Date(),
                 specialty: '전품목',

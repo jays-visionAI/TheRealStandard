@@ -69,7 +69,6 @@ export interface FirestoreUser {
 
     // 레거시 호환용 (마이그레이션 후 제거 예정)
     orgId?: string
-    password?: string             // 실제 프로덕션에서는 Firebase Auth 사용 권장
 
     createdAt: Timestamp
     updatedAt: Timestamp
@@ -188,18 +187,6 @@ export async function deleteUser(id: string): Promise<void> {
 
 // ============ AUTH ============
 
-// 이메일/비밀번호로 로그인 검증
-export async function validateLogin(email: string, password: string): Promise<FirestoreUser | null> {
-    const user = await getUserByEmail(email)
-    if (!user) return null
-    if (user.password !== password) return null
-    if (user.status !== 'ACTIVE') return null
-
-    // 로그인 성공시 lastLogin 업데이트
-    await updateLastLogin(user.id)
-
-    return user
-}
 
 // ============ SEED DATA ============
 
@@ -212,10 +199,10 @@ export async function seedInitialUsers(): Promise<void> {
     }
 
     const initialUsers = [
-        { id: 'admin-1', email: 'admin@trs.co.kr', name: '김관리', role: 'ADMIN' as UserRole, status: 'ACTIVE' as const, password: '1234' },
-        { id: 'acc-1', email: 'accounting@trs.co.kr', name: '이경리', role: 'ACCOUNTING' as UserRole, status: 'ACTIVE' as const, password: '1234' },
-        { id: 'wh-1', email: 'warehouse@trs.co.kr', name: '박창고', role: 'WAREHOUSE' as UserRole, status: 'ACTIVE' as const, password: '1234' },
-        { id: 'sales-1', email: 'sales@trs.co.kr', name: '최영업', role: 'OPS' as UserRole, status: 'ACTIVE' as const, password: '1234' },
+        { id: 'admin-1', email: 'admin@trs.co.kr', name: '김관리', role: 'ADMIN' as UserRole, status: 'ACTIVE' as const },
+        { id: 'acc-1', email: 'accounting@trs.co.kr', name: '이경리', role: 'ACCOUNTING' as UserRole, status: 'ACTIVE' as const },
+        { id: 'wh-1', email: 'warehouse@trs.co.kr', name: '박창고', role: 'WAREHOUSE' as UserRole, status: 'ACTIVE' as const },
+        { id: 'sales-1', email: 'sales@trs.co.kr', name: '최영업', role: 'OPS' as UserRole, status: 'ACTIVE' as const },
     ]
 
     for (const user of initialUsers) {
@@ -224,7 +211,6 @@ export async function seedInitialUsers(): Promise<void> {
             name: user.name,
             role: user.role,
             status: user.status,
-            password: user.password
         })
     }
 
@@ -326,3 +312,68 @@ export async function getActiveSuppliers(): Promise<FirestoreUser[]> {
     } as FirestoreUser))
 }
 
+
+// ============ 마이그레이션 함수 (Suppliers) ============
+
+export async function migrateLegacySuppliersToUsers(): Promise<{ migrated: number; skipped: number; errors: string[] }> {
+    const result = { migrated: 0, skipped: 0, errors: [] as string[] }
+
+    try {
+        const legacySuppliersRef = collection(db, 'suppliers')
+        const snapshot = await getDocs(legacySuppliersRef)
+
+        console.log(`Found ${snapshot.docs.length} legacy suppliers/carriers to migrate`)
+
+        for (const sDoc of snapshot.docs) {
+            const data = sDoc.data()
+            const id = sDoc.id
+
+            try {
+                // 이미 존재하지 않는 경우에만 생성
+                const existing = await getUserByEmail(data.email || '')
+                if (existing) {
+                    result.skipped++
+                    continue
+                }
+
+                const role: UserRole = data.supplyCategory === 'logistics' ? '3PL' : 'SUPPLIER'
+                
+                const newUserData: Omit<FirestoreUser, 'id' | 'createdAt' | 'updatedAt'> = {
+                    email: (data.email || '').toLowerCase().trim(),
+                    name: data.contactPerson || data.ceoName || data.companyName,
+                    phone: data.contactPhone || data.phone,
+                    role: role,
+                    status: data.isActive ? 'ACTIVE' : 'INACTIVE',
+                    business: {
+                        companyName: data.companyName,
+                        bizRegNo: data.bizRegNo,
+                        ceoName: data.ceoName,
+                        address: data.address,
+                        tel: data.phone,
+                        fax: data.fax,
+                        contactPerson: data.contactPerson,
+                        contactPhone: data.contactPhone,
+                        // 공급사 전용 필드들
+                        productCategories: data.supplyCategory !== 'logistics' ? [data.supplyCategory] : undefined,
+                        bankInfo: data.bankName ? {
+                            bankName: data.bankName,
+                            accountNo: data.bankAccount || '',
+                            accountHolder: data.ceoName || ''
+                        } : undefined,
+                        paymentTerms: data.paymentTerms,
+                    },
+                    orgId: id // 레거시 참조용
+                }
+
+                await createUserWithId(id, newUserData)
+                result.migrated++
+            } catch (err: any) {
+                result.errors.push(`Failed to migrate ${data.companyName}: ${err.message}`)
+            }
+        }
+    } catch (err: any) {
+        result.errors.push(`Migration failed: ${err.message}`)
+    }
+
+    return result
+}

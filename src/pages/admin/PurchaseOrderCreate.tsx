@@ -16,7 +16,7 @@ import {
     ChevronLeftIcon,
     ChevronRightIcon
 } from '../../components/Icons'
-import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
+import { getAllSupplierUsers, type FirestoreUser } from '../../lib/userService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import {
     createPurchaseOrder,
@@ -31,7 +31,8 @@ import { db } from '../../lib/firebase'
 import './OrderSheetCreate.css'
 
 // 로컬 타입
-type Supplier = Omit<FirestoreSupplier, 'createdAt' | 'updatedAt'> & {
+type Supplier = Omit<FirestoreUser, 'createdAt' | 'updatedAt'> & {
+    companyName: string
     createdAt?: Date
     updatedAt?: Date
 }
@@ -104,7 +105,7 @@ export default function PurchaseOrderCreate() {
         try {
             setLoading(true)
             const [suppliersData, productsData, poData, orderSheetsData] = await Promise.all([
-                getAllSuppliers(),
+                getAllSupplierUsers(),
                 getAllProducts(),
                 getAllPurchaseOrders(),
                 getAllOrderSheets()
@@ -112,6 +113,7 @@ export default function PurchaseOrderCreate() {
 
             setSuppliers(suppliersData.map(s => ({
                 ...s,
+                companyName: s.business?.companyName || s.name || '',
                 createdAt: s.createdAt?.toDate?.(),
                 updatedAt: s.updatedAt?.toDate?.(),
             })))
@@ -442,7 +444,7 @@ export default function PurchaseOrderCreate() {
     const filteredSuppliers = useMemo(() => {
         return suppliers.filter(s =>
             s.companyName.toLowerCase().includes(supplierSearch.toLowerCase()) ||
-            s.bizRegNo.includes(supplierSearch)
+            (s.business?.bizRegNo || '').includes(supplierSearch)
         )
     }, [suppliers, supplierSearch])
 
@@ -520,9 +522,9 @@ export default function PurchaseOrderCreate() {
                                                 />
                                             </td>
                                             <td><strong>{s.companyName}</strong></td>
-                                            <td>{s.supplyCategory}</td>
-                                            <td>{s.ceoName}</td>
-                                            <td className="mono">{s.phone}</td>
+                                            <td>{s.business?.productCategories?.[0] || '기타'}</td>
+                                            <td>{s.business?.ceoName || '-'}</td>
+                                            <td className="mono">{s.business?.tel || s.phone || '-'}</td>
                                         </tr>
                                     ))}
                                 </tbody>

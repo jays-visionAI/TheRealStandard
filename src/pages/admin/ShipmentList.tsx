@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getAllShipments, updateShipment, type FirestoreShipment } from '../../lib/orderService'
 import { getAllVehicleTypes, type FirestoreVehicleType } from '../../lib/vehicleService'
-import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
+import { getAll3PLUsers, type FirestoreUser } from '../../lib/userService'
 import { sendDispatchRequestMessage } from '../../lib/kakaoService'
 import type { ShipmentStatus } from '../../types'
 import { Timestamp } from 'firebase/firestore'
@@ -10,7 +10,7 @@ import { Timestamp } from 'firebase/firestore'
 export default function ShipmentList() {
     const [shipments, setShipments] = useState<FirestoreShipment[]>([])
     const [vehicleTypes, setVehicleTypes] = useState<FirestoreVehicleType[]>([])
-    const [carriers, setCarriers] = useState<FirestoreSupplier[]>([])
+    const [carriers, setCarriers] = useState<FirestoreUser[]>([])
 
     const [loading, setLoading] = useState(true)
     const [filterStatus, setFilterStatus] = useState<ShipmentStatus | 'ALL'>('ALL')
@@ -32,11 +32,11 @@ export default function ShipmentList() {
             const [shipmentsData, vehicleTypesData, suppliersData] = await Promise.all([
                 getAllShipments(),
                 getAllVehicleTypes(),
-                getAllSuppliers()
+                getAll3PLUsers()
             ])
             setShipments(shipmentsData)
             setVehicleTypes(vehicleTypesData)
-            setCarriers(suppliersData.filter(s => s.supplyCategory === 'logistics'))
+            setCarriers(suppliersData)
         } catch (err) {
             console.error('Failed to load data:', err)
         } finally {
@@ -90,7 +90,7 @@ export default function ShipmentList() {
             const token = 'ds-' + Math.random().toString(36).substr(2, 9)
             await updateShipment(selectedShipment.id, {
                 carrierOrgId: carrierId,
-                company: carrier.companyName,
+                company: carrier.business?.companyName || carrier.name || '',
                 dispatcherToken: token,
                 dispatchRequestedAt: Timestamp.now()
             })
@@ -98,7 +98,9 @@ export default function ShipmentList() {
             const link = `${window.location.origin}/dispatch/${token}`
             navigator.clipboard.writeText(link)
 
-            alert(`✅ 배차 요청이 완료되었습니다!\n\n${carrier.companyName} 담당자(${carrier.contactPerson})에게 링크를 전달해주세요.\n\n링크: ${link}`)
+            const companyName = carrier.business?.companyName || carrier.name || ''
+            const contactPerson = carrier.business?.contactPerson || carrier.name || ''
+            alert(`✅ 배차 요청이 완료되었습니다!\n\n${companyName} 담당자(${contactPerson})에게 링크를 전달해주세요.\n\n링크: ${link}`)
 
             await loadData()
             setShowModal(false)
@@ -114,7 +116,7 @@ export default function ShipmentList() {
         try {
             await updateShipment(selectedShipment.id, {
                 carrierOrgId: carrierId,
-                company: carrier?.companyName || '',
+                company: carrier?.business?.companyName || carrier?.name || '',
                 vehicleTypeId,
                 vehicleNumber: vehicleNo,
                 driverName,
@@ -212,7 +214,7 @@ export default function ShipmentList() {
                                 <label className="label">배송업체 선택</label>
                                 <select className="input select" value={carrierId} onChange={e => setCarrierId(e.target.value)}>
                                     <option value="">배송업체 선택...</option>
-                                    {carriers.map(c => <option key={c.id} value={c.id}>{c.companyName} ({c.contactPerson})</option>)}
+                                    {carriers.map(c => <option key={c.id} value={c.id}>{c.business?.companyName || c.name} ({c.business?.contactPerson || c.name})</option>)}
                                 </select>
                             </div>
 

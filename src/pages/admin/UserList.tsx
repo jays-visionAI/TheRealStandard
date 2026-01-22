@@ -6,9 +6,9 @@ import {
     updateUser as updateUserFirebase,
     deleteUser as deleteUserFirebase,
     getAllCustomerUsers,
+    getAllSupplierUsers,
     type FirestoreUser
 } from '../../lib/userService'
-import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
 import { UsersIcon, SearchIcon, MailIcon, BuildingIcon, PlusIcon, TrashIcon as Trash2Icon, EditIcon, AlertTriangleIcon } from '../../components/Icons'
 import './UserList.css'
 
@@ -24,7 +24,7 @@ type Customer = UserAccount & {
     companyName?: string
 }
 
-type Supplier = Omit<FirestoreSupplier, 'createdAt' | 'updatedAt'> & {
+type Supplier = Omit<FirestoreUser, 'createdAt' | 'updatedAt'> & {
     createdAt?: Date
     updatedAt?: Date
 }
@@ -65,7 +65,7 @@ export default function UserList() {
             const [usersData, customersData, suppliersData] = await Promise.all([
                 getAllUsers(),
                 getAllCustomerUsers(), // 통합 users에서 CUSTOMER 역할 조회
-                getAllSuppliers()
+                getAllSupplierUsers()
             ])
 
             setUsers(usersData.map((u: FirestoreUser) => ({
@@ -83,7 +83,7 @@ export default function UserList() {
                 companyName: c.business?.companyName || c.name,
             })))
 
-            setSuppliers(suppliersData.map((s: FirestoreSupplier) => ({
+            setSuppliers(suppliersData.map((s: FirestoreUser) => ({
                 ...s,
                 createdAt: s.createdAt?.toDate?.() || new Date(),
                 updatedAt: s.updatedAt?.toDate?.() || new Date(),
@@ -153,7 +153,6 @@ export default function UserList() {
                     role: formData.role as any,
                     orgId: formData.orgId,
                     status: formData.status as any,
-                    password: formData.password,
                 })
             } else {
                 await createUser({
@@ -162,7 +161,6 @@ export default function UserList() {
                     role: (formData.role as any) || 'OPS',
                     orgId: formData.orgId,
                     status: (formData.status as any) || 'ACTIVE',
-                    password: formData.password || '1234',
                 })
             }
             await loadData()
@@ -285,7 +283,7 @@ export default function UserList() {
                                     {user.orgId ? (
                                         <span className="org-name">
                                             {customers.find(c => c.id === user.orgId)?.companyName ||
-                                                suppliers.find(s => s.id === user.orgId)?.companyName || '-'}
+                                                suppliers.find(s => s.id === user.orgId)?.business?.companyName || '-'}
                                         </span>
                                     ) : '-'}
                                 </td>
@@ -370,7 +368,7 @@ export default function UserList() {
                                     >
                                         <option value="">3PL 업체 선택...</option>
                                         {suppliers.map(s => (
-                                            <option key={s.id} value={s.id}>{s.companyName}</option>
+                                            <option key={s.id} value={s.id}>{s.business?.companyName || s.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -402,20 +400,12 @@ export default function UserList() {
                                     >
                                         <option value="">공급사 선택...</option>
                                         {suppliers.map(s => (
-                                            <option key={s.id} value={s.id}>{s.companyName}</option>
+                                            <option key={s.id} value={s.id}>{s.business?.companyName || s.name}</option>
                                         ))}
                                     </select>
                                 </div>
                             )}
-                            <div className="form-group">
-                                <label>비밀번호</label>
-                                <input
-                                    type="password"
-                                    placeholder={editingUser ? '변경 시에만 입력' : '초기 비밀번호 (기본 1234)'}
-                                    value={formData.password || ''}
-                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                />
-                            </div>
+
                             <div className="form-group">
                                 <label>상태</label>
                                 <select
