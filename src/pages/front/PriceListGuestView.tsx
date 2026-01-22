@@ -101,14 +101,14 @@ export default function PriceListGuestView() {
     const isExpired = priceList?.validUntil ? priceList.validUntil.toDate() < new Date() : false
 
     return (
-        <div className="price-guest-view min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 font-sans text-slate-800">
+        <div className="price-guest-view min-h-screen bg-gradient-to-b from-slate-100 to-slate-200 font-sans text-slate-800 p-4 md:p-10 lg:p-16">
             {/* Subtle top accent bar */}
-            <div className="h-1.5 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600" />
+            <div className="h-1.5 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 max-w-[900px] mx-auto" />
 
             {/* Main Document Container */}
-            <div className="max-w-[900px] mx-auto px-4 py-8 md:px-8 md:py-12 lg:py-16">
+            <div className="max-w-[900px] mx-auto">
                 {/* Document Card - Premium Paper Effect */}
-                <div className="bg-white shadow-[0_4px_40px_-8px_rgba(0,0,0,0.1)] border border-slate-200/80 overflow-hidden">
+                <div className="bg-white shadow-[0_8px_60px_-12px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden">
 
                     {/* Document Header */}
                     <div className="px-8 pt-12 pb-8 md:px-12 md:pt-16 md:pb-10 border-b-2 border-slate-900">
@@ -194,7 +194,7 @@ export default function PriceListGuestView() {
 
                         {!isExpired && (
                             <button
-                                className="hidden md:flex bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg shadow-lg shadow-blue-500/20 items-center gap-2.5 transition-all hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98] font-semibold"
+                                className="hidden md:flex bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-slate-900 px-6 py-3 rounded-lg shadow-lg shadow-blue-500/20 items-center gap-2.5 transition-all hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98] font-bold"
                                 onClick={() => setShowOrderModal(true)}
                             >
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
@@ -283,7 +283,7 @@ export default function PriceListGuestView() {
             {!isExpired && (
                 <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-48px)] max-w-sm">
                     <button
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg shadow-xl shadow-blue-500/30 flex items-center justify-center gap-3 transition-all active:scale-[0.98] font-semibold"
+                        className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-slate-900 py-4 px-6 rounded-lg shadow-xl shadow-blue-500/30 flex items-center justify-center gap-3 transition-all active:scale-[0.98] font-bold"
                         onClick={() => setShowOrderModal(true)}
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
