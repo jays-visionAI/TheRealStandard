@@ -101,86 +101,92 @@ export default function PriceListGuestView() {
     const isExpired = priceList?.validUntil ? priceList.validUntil.toDate() < new Date() : false
 
     return (
-        <div className="price-guest-view min-h-screen bg-[#F1F5F9] font-sans text-slate-800 p-4 md:p-12 lg:p-20">
-            {/* Main Content Card - Matching Admin UI style with clear floating margins */}
-            <div className="max-w-[1000px] mx-auto bg-white rounded-[32px] shadow-[0_20px_60px_-10px_rgba(0,0,0,0.05)] border border-slate-200/50 overflow-hidden">
+        <div className="price-guest-view min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 font-sans text-slate-800">
+            {/* Subtle top accent bar */}
+            <div className="h-1.5 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600" />
 
-                {/* Header Section */}
-                <div className="px-8 py-10 md:px-14 md:py-16 bg-white">
-                    {/* Top Row: Title Left, Date Info Right */}
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
-                        <div className="flex items-center gap-3">
-                            <span className="p-3 bg-blue-50 rounded-2xl text-blue-600 shadow-sm border border-blue-100">
-                                <FileTextIcon size={32} />
-                            </span>
-                            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900 uppercase">견 적 서</h1>
-                        </div>
-                        <div className="text-right space-y-1">
-                            <p className="text-[14px] text-slate-500 font-medium">
-                                <span className="text-slate-400">적용일자:</span> {priceList.sharedAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }) || priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
-                            </p>
-                            <p className="text-[14px] text-slate-500 font-medium">
-                                <span className="text-slate-400">유효기간:</span> 발행일로부터 5일
-                            </p>
+            {/* Main Document Container */}
+            <div className="max-w-[900px] mx-auto px-4 py-8 md:px-8 md:py-12 lg:py-16">
+                {/* Document Card - Premium Paper Effect */}
+                <div className="bg-white shadow-[0_4px_40px_-8px_rgba(0,0,0,0.1)] border border-slate-200/80 overflow-hidden">
+
+                    {/* Document Header */}
+                    <div className="px-8 pt-12 pb-8 md:px-12 md:pt-16 md:pb-10 border-b-2 border-slate-900">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
+                            {/* Title Section */}
+                            <div>
+                                <h1 className="text-4xl md:text-5xl font-black tracking-[0.2em] text-slate-900 mb-3">견 적 서</h1>
+                                <p className="text-sm text-slate-400 font-medium tracking-wide">QUOTATION</p>
+                            </div>
+
+                            {/* Date Info - Right Aligned */}
+                            <div className="text-right space-y-2 pt-2">
+                                <div className="inline-flex flex-col items-end gap-1.5 text-[13px]">
+                                    <p className="text-slate-600">
+                                        <span className="text-slate-400 mr-2">적용일자</span>
+                                        <span className="font-bold">{priceList.sharedAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일') || priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일')}</span>
+                                    </p>
+                                    <p className="text-slate-600">
+                                        <span className="text-slate-400 mr-2">유효기간</span>
+                                        <span className="font-bold">적용일로부터 5일</span>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Customer Name with 귀하 */}
-                    <div className="mb-10 pl-1 md:pl-[68px]">
-                        <p className="text-2xl md:text-3xl font-black text-slate-900">{priceList.title} <span className="font-bold text-slate-500">귀하</span></p>
+                    {/* Recipient Section */}
+                    <div className="px-8 py-8 md:px-12 md:py-10 bg-slate-50/50 border-b border-slate-200">
+                        <p className="text-2xl md:text-3xl font-bold text-slate-900">
+                            {priceList.title}
+                            <span className="ml-3 text-slate-500 font-medium">귀하</span>
+                        </p>
+                        <p className="text-sm text-slate-400 mt-2">아래와 같이 견적합니다.</p>
                     </div>
 
-                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-10">
-
-                        {/* Supplier Info Box - Visible Borders */}
-                        <div className="w-full lg:w-auto min-w-[360px]">
-                            <table className="w-full border-collapse border-2 border-slate-800 text-[13px] table-fixed">
+                    {/* Supplier Info Table */}
+                    <div className="px-8 py-8 md:px-12 md:py-10">
+                        <div className="max-w-[480px]">
+                            <table className="w-full border-collapse text-[13px]">
                                 <tbody>
                                     <tr>
-                                        <th rowSpan={5} className="w-10 bg-slate-100 border border-slate-400 font-bold text-slate-600 [writing-mode:vertical-lr] py-4 text-center tracking-[0.5em] text-[10px]">공급자</th>
-                                        <th className="w-[80px] bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">등록번호</th>
-                                        <td colSpan={3} className="border border-slate-400 px-4 py-2.5 font-black text-slate-900 tracking-wider text-[14px]">123-45-67890</td>
+                                        <th rowSpan={5} className="w-9 bg-slate-800 text-white font-bold [writing-mode:vertical-lr] text-center tracking-[0.3em] text-[11px] border border-slate-800">공급자</th>
+                                        <th className="w-20 bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">등록번호</th>
+                                        <td colSpan={3} className="border border-slate-300 px-4 py-2.5 font-bold text-slate-900 tracking-wide">123-45-67890</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-[80px] bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">상호</th>
-                                        <td className="w-[140px] border border-slate-400 px-4 py-2.5 font-bold text-slate-800">TRS 주식회사</td>
-                                        <th className="w-14 bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">성명</th>
-                                        <td className="border border-slate-400 px-4 py-2.5 font-bold text-slate-800 text-center whitespace-nowrap">홍길동 (인)</td>
+                                        <th className="bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">상호</th>
+                                        <td className="w-32 border border-slate-300 px-4 py-2.5 font-semibold text-slate-800">TRS 주식회사</td>
+                                        <th className="w-12 bg-slate-100 border border-slate-300 px-2 py-2.5 text-slate-600 text-center font-semibold">성명</th>
+                                        <td className="border border-slate-300 px-4 py-2.5 font-semibold text-slate-800 text-center whitespace-nowrap">홍길동 (인)</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-[80px] bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">사업장 주소</th>
-                                        <td colSpan={3} className="border border-slate-400 px-4 py-2.5 text-[12px] font-medium leading-[1.4] text-slate-700">서울특별시 강남구 테헤란로 123, 45층 (TRS타워)</td>
+                                        <th className="bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">주소</th>
+                                        <td colSpan={3} className="border border-slate-300 px-4 py-2.5 text-[12px] text-slate-700">서울특별시 강남구 테헤란로 123, 45층 (TRS타워)</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-[80px] bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">업태</th>
-                                        <td className="border border-slate-400 px-4 py-2.5 font-medium text-slate-700">도매 및 소매업</td>
-                                        <th className="w-14 bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">종목</th>
-                                        <td className="border border-slate-400 px-4 py-2.5 font-medium text-slate-700 text-center">식육유통외</td>
+                                        <th className="bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">업태</th>
+                                        <td className="border border-slate-300 px-4 py-2.5 text-slate-700">도매 및 소매업</td>
+                                        <th className="bg-slate-100 border border-slate-300 px-2 py-2.5 text-slate-600 text-center font-semibold">종목</th>
+                                        <td className="border border-slate-300 px-4 py-2.5 text-slate-700 text-center">식육유통</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-[80px] bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">연락처</th>
-                                        <td colSpan={3} className="border border-slate-400 px-4 py-2.5 font-bold text-slate-900">02-1234-5678</td>
+                                        <th className="bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">연락처</th>
+                                        <td colSpan={3} className="border border-slate-300 px-4 py-2.5 font-semibold text-slate-900">02-1234-5678</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                </div>
 
-                {/* Desktop "즉시 주문하기" Action Section */}
-                <div className="px-10 md:px-14 pb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                        <p className="text-sm font-bold text-slate-600">현재 단가로 즉시 발주가 가능합니다.</p>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-4 bg-slate-50/50 border border-slate-200 rounded-2xl px-5 py-0.5 focus-within:ring-4 focus-within:ring-blue-500/5 focus-within:border-blue-500 transition-all shadow-sm w-full md:w-[400px]">
-                            <SearchIcon size={20} className="text-slate-300 flex-shrink-0" />
+                    {/* Search and Action Bar */}
+                    <div className="px-8 py-6 md:px-12 bg-slate-50 border-y border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 w-full md:w-80 shadow-sm">
+                            <SearchIcon size={18} className="text-slate-400" />
                             <input
                                 type="text"
-                                placeholder="상세 품목명을 검색하세요"
-                                className="w-full py-3.5 bg-transparent outline-none text-[15px] font-semibold text-slate-700 placeholder:text-slate-300"
+                                placeholder="품목명 검색"
+                                className="flex-1 bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-400"
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                             />
@@ -188,95 +194,100 @@ export default function PriceListGuestView() {
 
                         {!isExpired && (
                             <button
-                                className="hidden md:flex bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl shadow-xl shadow-blue-500/30 items-center gap-3 transition-all hover:translate-y-[-2px] active:scale-95 group font-black"
+                                className="hidden md:flex bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg shadow-lg shadow-blue-500/20 items-center gap-2.5 transition-all hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98] font-semibold"
                                 onClick={() => setShowOrderModal(true)}
                             >
-                                <ClipboardListIcon size={20} />
-                                <span className="whitespace-nowrap tracking-tight">즉시 주문하기</span>
-                                <ChevronRightIcon size={18} className="opacity-50 group-hover:translate-x-1 transition-transform" />
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
+                                <span>즉시 주문하기</span>
                             </button>
                         )}
                     </div>
-                </div>
 
-                {/* Table matching the provided Admin design exactly */}
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[700px]">
-                        <thead>
-                            <tr className="bg-[#F8FAFC] border-y border-slate-100">
-                                <th className="px-10 py-5 text-[14px] font-bold text-slate-500 uppercase tracking-tight">품목명</th>
-                                <th className="px-10 py-5 text-[14px] font-bold text-slate-500 uppercase tracking-tight text-right w-[200px]">냉장 공급가</th>
-                                <th className="px-10 py-5 text-[14px] font-bold text-slate-500 uppercase tracking-tight text-right w-[200px]">냉동 공급가</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {(() => {
-                                const grouped: Record<string, { name: string, refrigerated?: number, frozen?: number }> = {};
-                                filteredItems.forEach(item => {
-                                    const baseName = item.name.replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').replace(/\s*(냉장|냉동|냉장육|냉동육)\s*$/g, '').trim();
-                                    if (!grouped[baseName]) grouped[baseName] = { name: baseName };
-                                    if (item.category1 === '냉장') grouped[baseName].refrigerated = item.supplyPrice;
-                                    else if (item.category1 === '냉동') grouped[baseName].frozen = item.supplyPrice;
-                                });
-                                const sortedGroups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+                    {/* Price Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left min-w-[600px]">
+                            <thead>
+                                <tr className="bg-slate-800 text-white">
+                                    <th className="px-8 py-4 text-[13px] font-semibold tracking-wide">품목명</th>
+                                    <th className="px-6 py-4 text-[13px] font-semibold tracking-wide text-right w-40">냉장 공급가</th>
+                                    <th className="px-8 py-4 text-[13px] font-semibold tracking-wide text-right w-40">냉동 공급가</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {(() => {
+                                    const grouped: Record<string, { name: string, refrigerated?: number, frozen?: number }> = {};
+                                    filteredItems.forEach(item => {
+                                        const baseName = item.name.replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').replace(/\s*(냉장|냉동|냉장육|냉동육)\s*$/g, '').trim();
+                                        if (!grouped[baseName]) grouped[baseName] = { name: baseName };
+                                        if (item.category1 === '냉장') grouped[baseName].refrigerated = item.supplyPrice;
+                                        else if (item.category1 === '냉동') grouped[baseName].frozen = item.supplyPrice;
+                                    });
+                                    const sortedGroups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
-                                return sortedGroups.length > 0 ? sortedGroups.map((group, idx) => (
-                                    <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
-                                        <td className="px-10 py-6">
-                                            <span className="text-[17px] font-bold text-slate-900 leading-none">{group.name}</span>
-                                        </td>
-                                        <td className="px-10 py-6 text-right">
-                                            {group.refrigerated !== undefined ? (
-                                                <span className="text-[18px] font-extrabold text-slate-900 tracking-tight">{formatCurrency(group.refrigerated)}</span>
-                                            ) : (
-                                                <span className="text-slate-200 font-medium">₩0</span>
-                                            )}
-                                        </td>
-                                        <td className="px-10 py-6 text-right">
-                                            {group.frozen !== undefined ? (
-                                                <span className="text-[18px] font-extrabold text-slate-900 tracking-tight">{formatCurrency(group.frozen)}</span>
-                                            ) : (
-                                                <span className="text-slate-200 font-medium">₩0</span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan={3} className="px-10 py-32 text-center text-slate-300 font-bold italic text-lg">
-                                            검색 조건에 맞는 상품이 없습니다.
-                                        </td>
-                                    </tr>
-                                )
-                            })()}
-                        </tbody>
-                    </table>
-                </div>
+                                    return sortedGroups.length > 0 ? sortedGroups.map((group, idx) => (
+                                        <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
+                                            <td className="px-8 py-5">
+                                                <span className="text-[15px] font-semibold text-slate-900">{group.name}</span>
+                                            </td>
+                                            <td className="px-6 py-5 text-right">
+                                                {group.refrigerated !== undefined ? (
+                                                    <span className="text-[15px] font-bold text-slate-900 tabular-nums">{formatCurrency(group.refrigerated)}</span>
+                                                ) : (
+                                                    <span className="text-slate-300">-</span>
+                                                )}
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                {group.frozen !== undefined ? (
+                                                    <span className="text-[15px] font-bold text-slate-900 tabular-nums">{formatCurrency(group.frozen)}</span>
+                                                ) : (
+                                                    <span className="text-slate-300">-</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={3} className="px-8 py-20 text-center text-slate-400 text-sm">
+                                                검색 결과가 없습니다.
+                                            </td>
+                                        </tr>
+                                    )
+                                })()}
+                            </tbody>
+                        </table>
+                    </div>
 
-                {isExpired && (
-                    <div className="m-10 p-8 bg-red-50/50 rounded-3xl border border-red-100/50 flex items-center gap-5">
-                        <AlertTriangleIcon size={32} className="text-red-400" />
-                        <div className="space-y-1">
-                            <p className="text-[16px] font-extrabold text-red-900 underline decoration-red-200 decoration-4 underline-offset-4">단가표 유효기간 만료</p>
-                            <p className="text-sm text-red-600 font-medium">본 단가표는 현재 유효하지 않습니다. 최신 단가표를 담당자에게 요청해주세요.</p>
+                    {isExpired && (
+                        <div className="mx-8 my-8 md:mx-12 p-6 bg-red-50 border border-red-200 rounded-lg flex items-start gap-4">
+                            <AlertTriangleIcon size={24} className="text-red-500 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-sm font-bold text-red-800">견적 유효기간 만료</p>
+                                <p className="text-sm text-red-600 mt-1">본 견적서는 유효기간이 만료되었습니다. 최신 견적을 요청해 주세요.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="px-8 py-10 md:px-12 bg-slate-50 border-t border-slate-200">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="space-y-1">
+                                <p className="text-xs text-slate-400">본 견적서는 전자문서로서 법적 효력을 갖습니다.</p>
+                                <p className="text-xs text-slate-400">문의사항은 위 연락처로 연락 바랍니다.</p>
+                            </div>
+                            <p className="text-[11px] text-slate-400 tracking-wider uppercase">The Real Standard Co., Ltd.</p>
                         </div>
                     </div>
-                )}
-
-                <div className="py-16 text-center bg-slate-50/30 flex flex-col items-center gap-3">
-                    <div className="w-12 h-px bg-slate-200"></div>
-                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em]">The Real Standard Official Price List</p>
                 </div>
             </div>
 
-            {/* Mobile-only Sticky Blue Button - Matching provided style */}
+            {/* Mobile-only Sticky Button */}
             {!isExpired && (
-                <div className="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-64px)] max-w-xs">
+                <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-48px)] max-w-sm">
                     <button
-                        className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-slate-900 py-4 px-8 rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg shadow-xl shadow-blue-500/30 flex items-center justify-center gap-3 transition-all active:scale-[0.98] font-semibold"
                         onClick={() => setShowOrderModal(true)}
                     >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                        <span className="text-[17px] font-bold tracking-tight">즉시 주문하기</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
+                        <span>즉시 주문하기</span>
                     </button>
                 </div>
             )}
