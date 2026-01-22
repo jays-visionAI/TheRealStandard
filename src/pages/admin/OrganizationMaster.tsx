@@ -1,19 +1,65 @@
 import { useState, useMemo, useEffect } from 'react'
 import {
-    getAllCustomers,
-    createCustomer,
-    updateCustomer as updateCustomerFirebase,
-    deleteCustomer as deleteCustomerFirebase,
-    type FirestoreCustomer
-} from '../../lib/customerService'
+    getAllCustomerUsers,
+    createUser,
+    updateUser,
+    deleteUser,
+    type FirestoreUser,
+    type BusinessProfile
+} from '../../lib/userService'
 import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon, KakaoIcon, AlertTriangleIcon, XIcon, CheckIcon } from '../../components/Icons'
 import { sendInviteMessage } from '../../lib/kakaoService'
 import './OrganizationMaster.css'
 
-// Customer 타입 정의
-type Customer = Omit<FirestoreCustomer, 'createdAt' | 'updatedAt'> & {
+// Customer 타입 정의 (FirestoreUser 기반, 폼용 확장 필드 포함)
+type Customer = Omit<FirestoreUser, 'createdAt' | 'updatedAt'> & {
     createdAt?: Date
     updatedAt?: Date
+    // 편의를 위한 getter (business에서 추출)
+    companyName?: string
+    bizRegNo?: string
+    ceoName?: string
+    phone?: string
+    fax?: string
+    address?: string
+    shipAddress1?: string
+    shipAddress2?: string
+    contactPerson?: string
+    contactPhone?: string
+    priceType?: 'wholesale' | 'retail'
+    paymentTerms?: string
+    creditLimit?: number
+    memo?: string
+    isActive?: boolean
+    isKeyAccount?: boolean
+    isJoined?: boolean
+}
+
+// FirestoreUser를 Customer로 변환하는 헬퍼
+function toCustomer(user: FirestoreUser): Customer {
+    return {
+        ...user,
+        createdAt: user.createdAt?.toDate?.() || new Date(),
+        updatedAt: user.updatedAt?.toDate?.() || new Date(),
+        // business 필드에서 추출
+        companyName: user.business?.companyName || '',
+        bizRegNo: user.business?.bizRegNo || '',
+        ceoName: user.business?.ceoName || '',
+        phone: user.business?.tel || user.phone || '',
+        fax: user.business?.fax || '',
+        address: user.business?.address || '',
+        shipAddress1: user.business?.shipAddress1 || '',
+        shipAddress2: user.business?.shipAddress2 || '',
+        contactPerson: user.business?.contactPerson || '',
+        contactPhone: user.business?.contactPhone || '',
+        priceType: user.business?.priceType || 'wholesale',
+        paymentTerms: user.business?.paymentTerms || '',
+        creditLimit: user.business?.creditLimit || 0,
+        isActive: user.status === 'ACTIVE',
+        isKeyAccount: user.business?.isKeyAccount || false,
+        isJoined: user.status === 'ACTIVE',
+        memo: '',
+    }
 }
 
 export default function OrganizationMaster() {
@@ -33,17 +79,13 @@ export default function OrganizationMaster() {
     const [inviteModalOpen, setInviteModalOpen] = useState(false)
     const [inviteModalLink, setInviteModalLink] = useState('')
 
-    // Firebase에서 거래처 목록 로드
+    // Firebase에서 거래처 목록 로드 (통합 users 컬렉션)
     const loadCustomers = async () => {
         try {
             setLoading(true)
             setError(null)
-            const data = await getAllCustomers()
-            setCustomers(data.map(c => ({
-                ...c,
-                createdAt: c.createdAt?.toDate?.() || new Date(),
-                updatedAt: c.updatedAt?.toDate?.() || new Date(),
-            })))
+            const data = await getAllCustomerUsers()
+            setCustomers(data.map(toCustomer))
         } catch (err) {
             console.error('Failed to load customers:', err)
             setError('거래처 목록을 불러오는데 실패했습니다.')
@@ -119,50 +161,43 @@ export default function OrganizationMaster() {
         setIsSubmitting(true)
 
         try {
+            // business 프로필 구성
+            const businessData: BusinessProfile = {
+                companyName: formData.companyName || '',
+                bizRegNo: formData.bizRegNo || '',
+                ceoName: formData.ceoName || '',
+                address: formData.address || '',
+                tel: formData.phone || '',
+                fax: formData.fax,
+                shipAddress1: formData.shipAddress1,
+                shipAddress2: formData.shipAddress2,
+                contactPerson: formData.contactPerson,
+                contactPhone: formData.contactPhone,
+                priceType: formData.priceType || 'wholesale',
+                paymentTerms: formData.paymentTerms,
+                creditLimit: formData.creditLimit,
+                isKeyAccount: formData.isKeyAccount ?? false,
+            }
+
             if (editingCustomer) {
-                // 수정 - Firebase에 직접
-                await updateCustomerFirebase(editingCustomer.id, {
-                    companyName: formData.companyName,
-                    bizRegNo: formData.bizRegNo,
-                    ceoName: formData.ceoName,
-                    phone: formData.phone,
-                    fax: formData.fax,
+                // 수정 - 통합 users 컬렉션에 업데이트
+                await updateUser(editingCustomer.id, {
+                    name: formData.contactPerson || formData.ceoName || '',
                     email: formData.email,
-                    address: formData.address,
-                    shipAddress1: formData.shipAddress1,
-                    shipAddress2: formData.shipAddress2,
-                    contactPerson: formData.contactPerson,
-                    contactPhone: formData.contactPhone,
-                    priceType: formData.priceType,
-                    paymentTerms: formData.paymentTerms,
-                    creditLimit: formData.creditLimit,
-                    memo: formData.memo,
-                    isActive: formData.isActive,
-                    isKeyAccount: formData.isKeyAccount,
+                    phone: formData.phone,
+                    status: formData.isActive ? 'ACTIVE' : 'INACTIVE',
+                    business: businessData,
                 })
                 alert('거래처 정보가 수정되었습니다.')
             } else {
-                // 신규 등록 - Firebase에 직접
-                await createCustomer({
-                    companyName: formData.companyName || '',
-                    bizRegNo: formData.bizRegNo || '',
-                    ceoName: formData.ceoName || '',
-                    phone: formData.phone || '',
+                // 신규 등록 - 통합 users 컬렉션에 생성
+                await createUser({
                     email: formData.email || '',
-                    address: formData.address || '',
-                    shipAddress1: formData.shipAddress1 || '',
-                    shipAddress2: formData.shipAddress2,
-                    fax: formData.fax,
-                    contactPerson: formData.contactPerson,
-                    contactPhone: formData.contactPhone,
-                    priceType: formData.priceType || 'wholesale',
-                    paymentTerms: formData.paymentTerms,
-                    creditLimit: formData.creditLimit,
-                    memo: formData.memo,
-                    isActive: formData.isActive ?? true,
-                    isKeyAccount: formData.isKeyAccount ?? false,
-                    isJoined: false,
+                    name: formData.contactPerson || formData.ceoName || '',
+                    phone: formData.phone,
+                    role: 'CUSTOMER',
                     status: 'PENDING',
+                    business: businessData,
                 })
                 alert('새 거래처가 등록되었습니다. 초대장을 발송할 수 있습니다.')
             }
@@ -182,7 +217,7 @@ export default function OrganizationMaster() {
     const handleGenerateInvite = async (customer: Customer) => {
         const token = `invite-${Math.random().toString(36).substr(2, 9)}`
         try {
-            await updateCustomerFirebase(customer.id, { inviteToken: token })
+            await updateUser(customer.id, { inviteToken: token })
             const inviteUrl = `${window.location.origin}/invite/${token}`
             await navigator.clipboard.writeText(inviteUrl)
             await loadCustomers()
@@ -198,10 +233,10 @@ export default function OrganizationMaster() {
     const handleKakaoInvite = async (customer: Customer) => {
         const token = `invite-${Math.random().toString(36).substr(2, 9)}`
         try {
-            await updateCustomerFirebase(customer.id, { inviteToken: token })
+            await updateUser(customer.id, { inviteToken: token })
             const inviteUrl = `${window.location.origin}/invite/${token}`
             await loadCustomers()
-            sendInviteMessage(customer.companyName, inviteUrl)
+            sendInviteMessage(customer.companyName || '', inviteUrl)
         } catch (err) {
             console.error('Failed to send Kakao invite:', err)
             alert('카카오 초대장 발송에 실패했습니다.')
@@ -212,7 +247,7 @@ export default function OrganizationMaster() {
     const handleDelete = async (customer: Customer) => {
         if (!confirm(`"${customer.companyName}" 거래처를 정말 삭제하시겠습니까?`)) return
         try {
-            await deleteCustomerFirebase(customer.id)
+            await deleteUser(customer.id)
             await loadCustomers()
             alert('삭제되었습니다.')
         } catch (err) {
@@ -224,10 +259,8 @@ export default function OrganizationMaster() {
     // 활성/비활성 토글
     const handleToggleActive = async (customer: Customer) => {
         try {
-            await updateCustomerFirebase(customer.id, {
-                isActive: !customer.isActive,
-                status: !customer.isActive ? (customer.status === 'INACTIVE' ? 'PENDING' : customer.status) : 'INACTIVE',
-            })
+            const newStatus = customer.isActive ? 'INACTIVE' : 'ACTIVE'
+            await updateUser(customer.id, { status: newStatus })
             await loadCustomers()
         } catch (err) {
             console.error('Toggle failed:', err)
