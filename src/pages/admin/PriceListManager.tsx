@@ -10,7 +10,8 @@ import {
     TrashIcon,
     ClipboardListIcon,
     CheckCircleIcon,
-    AlertTriangleIcon
+    AlertTriangleIcon,
+    CopyIcon
 } from '../../components/Icons'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import {
@@ -42,13 +43,23 @@ export default function PriceListManager() {
 
     // Filter products based on search query
     const filteredProducts = useMemo(() => {
-        if (!productSearch.trim()) return products
-        const query = productSearch.toLowerCase()
-        return products.filter(p =>
-            p.name.toLowerCase().includes(query) ||
-            (p.category1 && p.category1.toLowerCase().includes(query))
-        )
-    }, [products, productSearch])
+        let list = [...products]
+        if (productSearch.trim()) {
+            const query = productSearch.toLowerCase()
+            list = list.filter(p =>
+                p.name.toLowerCase().includes(query) ||
+                (p.category1 && p.category1.toLowerCase().includes(query))
+            )
+        }
+
+        // Sort: Prioritize selected items, then alphabetical
+        return list.sort((a, b) => {
+            const aSelected = selectedProductIds.has(a.id) ? 1 : 0
+            const bSelected = selectedProductIds.has(b.id) ? 1 : 0
+            if (aSelected !== bSelected) return bSelected - aSelected
+            return a.name.localeCompare(b.name, 'ko')
+        })
+    }, [products, productSearch, selectedProductIds])
 
     const loadData = async () => {
         try {
@@ -135,6 +146,26 @@ export default function PriceListManager() {
     const handleSupplyPriceChange = (productId: string, value: string) => {
         const num = parseFloat(value) || 0
         setSupplyPrices(prev => ({ ...prev, [productId]: num }))
+    }
+
+    const handleDuplicate = (list: FirestorePriceList) => {
+        setIsEditing(false)
+        setSelectedList(null)
+        setTitle(`${list.title} (복사본)`)
+
+        const newSelectedIds = new Set<string>()
+        const newPrices: Record<string, number> = { ...supplyPrices }
+
+        list.items.forEach(item => {
+            newSelectedIds.add(item.productId)
+            newPrices[item.productId] = item.supplyPrice
+        })
+
+        setSelectedProductIds(newSelectedIds)
+        setSupplyPrices(newPrices)
+        setShowDetailModal(false)
+        setShowCreateModal(true)
+        setProductSearch('') // Reset search to show all items (with selected at top)
     }
 
     const handleSave = async () => {
@@ -452,7 +483,15 @@ export default function PriceListManager() {
                                 </h3>
                                 <p className="text-sm text-secondary">생성일: {selectedList.createdAt?.toDate?.()?.toLocaleDateString()}</p>
                             </div>
-                            <button className="btn btn-ghost" onClick={() => setShowDetailModal(false)}>✕</button>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={() => handleDuplicate(selectedList)}
+                                >
+                                    <CopyIcon size={16} /> 복제하기
+                                </button>
+                                <button className="btn btn-ghost" onClick={() => setShowDetailModal(false)}>✕</button>
+                            </div>
                         </div>
                         <div className="modal-body">
                             <div className="table-container">
