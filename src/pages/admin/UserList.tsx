@@ -5,9 +5,9 @@ import {
     createUser,
     updateUser as updateUserFirebase,
     deleteUser as deleteUserFirebase,
+    getAllCustomerUsers,
     type FirestoreUser
 } from '../../lib/userService'
-import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
 import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
 import { UsersIcon, SearchIcon, MailIcon, BuildingIcon, PlusIcon, TrashIcon as Trash2Icon, EditIcon, AlertTriangleIcon } from '../../components/Icons'
 import './UserList.css'
@@ -19,9 +19,9 @@ type UserAccount = Omit<FirestoreUser, 'createdAt' | 'updatedAt' | 'lastLogin'> 
     lastLogin?: Date
 }
 
-type Customer = Omit<FirestoreCustomer, 'createdAt' | 'updatedAt'> & {
-    createdAt?: Date
-    updatedAt?: Date
+// Customer는 이제 FirestoreUser 기반 (통합 DB)
+type Customer = UserAccount & {
+    companyName?: string
 }
 
 type Supplier = Omit<FirestoreSupplier, 'createdAt' | 'updatedAt'> & {
@@ -64,24 +64,26 @@ export default function UserList() {
 
             const [usersData, customersData, suppliersData] = await Promise.all([
                 getAllUsers(),
-                getAllCustomers(),
+                getAllCustomerUsers(), // 통합 users에서 CUSTOMER 역할 조회
                 getAllSuppliers()
             ])
 
-            setUsers(usersData.map(u => ({
+            setUsers(usersData.map((u: FirestoreUser) => ({
                 ...u,
                 createdAt: u.createdAt?.toDate?.() || new Date(),
                 updatedAt: u.updatedAt?.toDate?.() || new Date(),
                 lastLogin: u.lastLogin?.toDate?.() || undefined,
             })))
 
-            setCustomers(customersData.map(c => ({
+            setCustomers(customersData.map((c: FirestoreUser) => ({
                 ...c,
                 createdAt: c.createdAt?.toDate?.() || new Date(),
                 updatedAt: c.updatedAt?.toDate?.() || new Date(),
+                lastLogin: c.lastLogin?.toDate?.() || undefined,
+                companyName: c.business?.companyName || c.name,
             })))
 
-            setSuppliers(suppliersData.map(s => ({
+            setSuppliers(suppliersData.map((s: FirestoreSupplier) => ({
                 ...s,
                 createdAt: s.createdAt?.toDate?.() || new Date(),
                 updatedAt: s.updatedAt?.toDate?.() || new Date(),

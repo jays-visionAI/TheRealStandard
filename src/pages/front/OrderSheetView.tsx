@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { CheckCircleIcon, UserIcon, ChevronRightIcon } from '../../components/Icons'
 import { getOrderSheetByToken } from '../../lib/orderService'
-import { getCustomerById, type FirestoreCustomer } from '../../lib/customerService'
+import { getUserById, type FirestoreUser } from '../../lib/userService'
 
 interface OrderItem {
   id: string
@@ -22,7 +22,7 @@ export default function OrderSheetView() {
   const [status, setStatus] = useState<'SENT' | 'REVISION' | 'SUBMITTED' | 'CONFIRMED'>('SENT')
   const [revisionComment, setRevisionComment] = useState('')
   const [items, setItems] = useState<OrderItem[]>([])
-  const [customer, setCustomer] = useState<FirestoreCustomer | null>(null)
+  const [customer, setCustomer] = useState<FirestoreUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
@@ -36,7 +36,7 @@ export default function OrderSheetView() {
       try {
         const order = await getOrderSheetByToken(token)
         if (order) {
-          const customerData = await getCustomerById(order.customerOrgId)
+          const customerData = await getUserById(order.customerOrgId)
           setCustomer(customerData)
         }
       } catch (err) {
@@ -73,7 +73,7 @@ export default function OrderSheetView() {
           <UserIcon size={64} color="#3b82f6" className="mx-auto mb-6" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2">계정 활성화 필요</h2>
           <p className="text-gray-600 mb-8 leading-relaxed">
-            주문서를 확인하고 주문을 진행하시려면 먼저 <strong>{customer.companyName}</strong>의 파트너 계정을 활성화해주세요.
+            주문서를 확인하고 주문을 진행하시려면 먼저 <strong>{customer.business?.companyName || customer.name}</strong>의 파트너 계정을 활성화해주세요.
           </p>
           <button
             className="btn btn-primary w-full py-4 text-lg flex items-center justify-center gap-3 rounded-xl transition-all active:scale-95"

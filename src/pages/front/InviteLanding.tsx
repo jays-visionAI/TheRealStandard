@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { XIcon, ClipboardListIcon, UserIcon, AlertTriangleIcon, ChevronRightIcon, InfoIcon, LogInIcon } from '../../components/Icons'
 import { getOrderSheetByToken, getOrderSheetItems, type FirestoreOrderSheet, type FirestoreOrderSheetItem } from '../../lib/orderService'
-import { getCustomerById, type FirestoreCustomer } from '../../lib/customerService'
+import { getUserById, updateUser, type FirestoreUser } from '../../lib/userService'
 import { useAuth } from '../../contexts/AuthContext'
 
 // 로컬 타입
@@ -20,7 +20,7 @@ export default function InviteLanding() {
   const { user, login } = useAuth()
   const [loading, setLoading] = useState(true)
   const [orderInfo, setOrderInfo] = useState<LocalOrderSheet | null>(null)
-  const [customer, setCustomer] = useState<FirestoreCustomer | null>(null)
+  const [customer, setCustomer] = useState<FirestoreUser | null>(null)
 
   // Mode and Login/Signup states
   const [mode, setMode] = useState<'LOGIN' | 'SIGNUP'>('LOGIN')
@@ -93,7 +93,7 @@ export default function InviteLanding() {
           // Fetch other details in parallel but don't let them block the whole thing
           try {
             console.log('InviteLanding: Fetching customer info for:', order.customerOrgId)
-            const customerData = await getCustomerById(order.customerOrgId)
+            const customerData = await getUserById(order.customerOrgId)
             setCustomer(customerData)
           } catch (custErr) {
             console.error('InviteLanding: Customer fetch failed:', custErr)
@@ -204,7 +204,6 @@ export default function InviteLanding() {
       // 1. Firebase Auth 계정 생성 (이메일 소문자 정규화)
       const { createUserWithEmailAndPassword } = await import('firebase/auth')
       const { auth } = await import('../../lib/firebase')
-      const { updateCustomer } = await import('../../lib/customerService')
 
       const normalizedEmail = email.toLowerCase().trim()
       const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password)
@@ -212,7 +211,7 @@ export default function InviteLanding() {
 
       // 2. Firestore 고객 데이터 업데이트 (활성화)
       if (customer) {
-        await updateCustomer(customer.id, {
+        await updateUser(customer.id, {
           email: normalizedEmail,
           status: 'ACTIVE',
           firebaseUid: firebaseUid // Link Auth UID

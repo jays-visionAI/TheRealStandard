@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { ClipboardListIcon } from '../../components/Icons'
 import { getOrderSheetByToken, getOrderSheetItems, updateOrderSheet, setOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
-import { getCustomerById } from '../../lib/customerService'
+import { getUserById } from '../../lib/userService'
 import './B2BOrderGrid.css'
 
 // ============================================
@@ -87,7 +87,7 @@ export default function B2BOrderGrid() {
 
             if (osData) {
                 // Secondary Guard: Ensure customer is active before allowing order entry
-                const customerData = await getCustomerById(osData.customerOrgId)
+                const customerData = await getUserById(osData.customerOrgId)
                 if (customerData?.status !== 'ACTIVE') {
                     console.warn('Customer not active. Redirecting to landing...')
                     navigate(`/order/${token}`)

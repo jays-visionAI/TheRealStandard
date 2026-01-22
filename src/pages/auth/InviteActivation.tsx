@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getCustomerByToken, updateCustomer, type FirestoreCustomer } from '../../lib/customerService'
+import { getUserByInviteToken, updateUser, type FirestoreUser } from '../../lib/userService'
 import { CheckCircleIcon, KeyIcon, MailIcon, BuildingIcon, UserIcon } from '../../components/Icons'
 import './InviteActivation.css'
 
 // 로컬 타입
-type LocalCustomer = Omit<FirestoreCustomer, 'createdAt' | 'updatedAt'> & {
+type LocalUser = Omit<FirestoreUser, 'createdAt' | 'updatedAt'> & {
     createdAt?: Date
     updatedAt?: Date
 }
@@ -15,7 +15,7 @@ export default function InviteActivation() {
     const navigate = useNavigate()
 
     // Firebase에서 직접 로드되는 데이터
-    const [customer, setCustomer] = useState<LocalCustomer | null>(null)
+    const [customer, setCustomer] = useState<LocalUser | null>(null)
     const [loading, setLoading] = useState(true)
 
     const [email, setEmail] = useState('')
@@ -34,7 +34,7 @@ export default function InviteActivation() {
         try {
             setLoading(true)
 
-            const cData = await getCustomerByToken(token)
+            const cData = await getUserByInviteToken(token)
 
             if (cData) {
                 setCustomer({
@@ -95,7 +95,7 @@ export default function InviteActivation() {
         setIsSubmitting(true)
         try {
             // Firebase에서 고객 계정 활성화
-            await updateCustomer(customer.id, {
+            await updateUser(customer.id, {
                 email: email,
                 status: 'ACTIVE',
             })
@@ -116,7 +116,7 @@ export default function InviteActivation() {
                         <CheckCircleIcon size={64} />
                     </div>
                     <h1>활성화 완료! ✨</h1>
-                    <p><strong>{customer.companyName}</strong>의 공식 계정이 생성되었습니다.</p>
+                    <p><strong>{customer.business?.companyName || customer.name}</strong>의 공식 계정이 생성되었습니다.</p>
                     <p className="text-secondary">설정하신 이메일과 비밀번호로 로그인해주세요.</p>
                     <div className="mt-8">
                         <button className="btn btn-primary btn-lg w-full" onClick={() => navigate('/login')}>
@@ -140,11 +140,11 @@ export default function InviteActivation() {
                 <div className="customer-preview">
                     <div className="info-item">
                         <BuildingIcon size={16} />
-                        <span>{customer.companyName}</span>
+                        <span>{customer.business?.companyName || customer.name}</span>
                     </div>
                     <div className="info-item">
                         <UserIcon size={16} />
-                        <span>{customer.ceoName} 대표님</span>
+                        <span>{customer.business?.ceoName || customer.name} 대표님</span>
                     </div>
                 </div>
 

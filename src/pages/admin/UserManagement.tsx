@@ -3,6 +3,8 @@ import {
     getAllUsers,
     updateUser as updateUserFirebase,
     deleteUser as deleteUserFirebase,
+    getAllCustomerUsers,
+    migrateCustomersToUsers,
     type FirestoreUser
 } from '../../lib/userService'
 import {
@@ -16,7 +18,6 @@ import {
     UserIcon,
     BuildingIcon
 } from '../../components/Icons'
-import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
 import { getAllSuppliers, type FirestoreSupplier } from '../../lib/supplierService'
 import './UserList.css' // Reusing existing styles or adding new ones
 
@@ -39,7 +40,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function UserManagement() {
     const [users, setUsers] = useState<UserAccount[]>([])
-    const [customers, setCustomers] = useState<FirestoreCustomer[]>([])
+    const [customers, setCustomers] = useState<FirestoreUser[]>([])
     const [suppliers, setSuppliers] = useState<FirestoreSupplier[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -60,7 +61,7 @@ export default function UserManagement() {
 
             const [usersData, customersData, suppliersData] = await Promise.all([
                 getAllUsers(),
-                getAllCustomers(),
+                getAllCustomerUsers(),
                 getAllSuppliers()
             ])
 
@@ -150,6 +151,21 @@ export default function UserManagement() {
         }
     }
 
+    const handleMigrate = async () => {
+        if (!confirm('기존 고객 데이터를 통합 users 컬렉션으로 복사하시겠습니까? (중복 제외)')) return
+        setLoading(true)
+        try {
+            const result = await migrateCustomersToUsers()
+            alert(`마이그레이션 완료!\n성공: ${result.migrated}건\n제외: ${result.skipped}건\n오류: ${result.errors.length}건`)
+            await loadData()
+        } catch (err) {
+            console.error('Migration failed:', err)
+            alert('마이그레이션 중 오류가 발생했습니다.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     if (loading && users.length === 0) {
         return (
             <div className="user-list-page">
@@ -168,6 +184,11 @@ export default function UserManagement() {
                     <h1><UsersIcon size={24} /> 전체 유저 리스트</h1>
                     <p className="text-secondary">시스템에 등록된 모든 사용자 계정(고객/직원 등)을 한눈에 관리합니다.</p>
                     <p className="text-primary font-bold mt-2" style={{ color: 'var(--color-primary)' }}>이름은 실명을 사용해주세요.</p>
+                </div>
+                <div className="header-right">
+                    <button className="btn btn-secondary" onClick={handleMigrate} style={{ marginRight: '10px' }}>
+                        구 DB 마이그레이션
+                    </button>
                 </div>
             </div>
 
@@ -212,7 +233,7 @@ export default function UserManagement() {
                                         <div className="org-info-cell">
                                             <BuildingIcon size={14} className="text-secondary" />
                                             <span>
-                                                {customers.find(c => c.id === user.orgId)?.companyName ||
+                                                {customers.find(c => c.id === user.orgId)?.business?.companyName ||
                                                     suppliers.find(s => s.id === user.orgId)?.companyName || '-'}
                                             </span>
                                         </div>
@@ -326,7 +347,7 @@ export default function UserManagement() {
                                     >
                                         <option value="">고객사 선택...</option>
                                         {customers.map(c => (
-                                            <option key={c.id} value={c.id}>{c.companyName}</option>
+                                            <option key={c.id} value={c.id}>{c.business?.companyName || c.name}</option>
                                         ))}
                                     </select>
                                 </div>

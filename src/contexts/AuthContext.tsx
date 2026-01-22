@@ -9,7 +9,6 @@ import {
 import { auth } from '../lib/firebase'
 import type { UserRole } from '../types'
 import { getUserByEmail, createUser } from '../lib/userService'
-import { getAllCustomers } from '../lib/customerService'
 
 interface User {
     id: string

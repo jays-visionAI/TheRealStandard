@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { CheckCircleIcon, PackageIcon, TruckDeliveryIcon, FileTextIcon, UserIcon, InfoIcon, ChevronRightIcon, AlertTriangleIcon } from '../../components/Icons'
 import { getOrderSheetByToken, type FirestoreOrderSheet } from '../../lib/orderService'
-import { getCustomerById, type FirestoreCustomer } from '../../lib/customerService'
+import { getUserById, type FirestoreUser } from '../../lib/userService'
 import './CustomerConfirm.css'
 
 export default function CustomerConfirm() {
@@ -10,7 +10,7 @@ export default function CustomerConfirm() {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
     const [orderInfo, setOrderInfo] = useState<FirestoreOrderSheet | null>(null)
-    const [customer, setCustomer] = useState<FirestoreCustomer | null>(null)
+    const [customer, setCustomer] = useState<FirestoreUser | null>(null)
     const [revisionComment, setRevisionComment] = useState('')
     const [showRevisionForm, setShowRevisionForm] = useState(false)
 
@@ -24,7 +24,7 @@ export default function CustomerConfirm() {
                 const order = await getOrderSheetByToken(token)
                 if (order) {
                     setOrderInfo(order)
-                    const customerData = await getCustomerById(order.customerOrgId)
+                    const customerData = await getUserById(order.customerOrgId)
                     setCustomer(customerData)
                 }
             } catch (err) {
@@ -61,9 +61,9 @@ export default function CustomerConfirm() {
     // Mock 최종안 데이터 (관리자가 확정한 내용) - For UI display only
     const finalizedOrder = {
         id: orderInfo.id,
-        customerName: customer?.companyName || orderInfo.customerName,
+        customerName: customer?.business?.companyName || customer?.name || orderInfo.customerName,
         shipDate: orderInfo.shipDate?.toDate?.().toLocaleDateString() || '2024-01-16',
-        shipTo: customer?.shipAddress1 || '서울시 강남구 역삼동 123-45',
+        shipTo: customer?.business?.shipAddress1 || customer?.business?.address || '서울시 강남구 역삼동 123-45',
         finalizedAt: '2024-01-15 16:30',
         items: [
             { name: '한우 등심 1++', originalQty: 50, finalQty: 50, unit: 'kg' },
