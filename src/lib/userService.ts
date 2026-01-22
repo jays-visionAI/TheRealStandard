@@ -14,15 +14,63 @@ import {
 import { db, cleanData } from './firebase'
 import type { UserRole } from '../types'
 
-// Firestore에서 사용할 User 인터페이스
+// ============ 사업체 정보 타입 정의 ============
+
+// 은행 정보 (공급사, 배송업체용)
+export interface BankInfo {
+    bankName: string
+    accountNo: string
+    accountHolder: string
+}
+
+// 사업체 공통 정보
+export interface BusinessProfile {
+    companyName: string           // 상호명
+    bizRegNo: string              // 사업자등록번호
+    ceoName: string               // 대표자명
+    address: string               // 사업장 주소
+    tel: string                   // 전화번호
+    fax?: string                  // 팩스
+
+    // 고객사 전용 (CUSTOMER)
+    shipAddress1?: string         // 배송지1
+    shipAddress2?: string         // 배송지2
+    priceType?: 'wholesale' | 'retail'  // 가격 유형
+    paymentTerms?: string         // 결제 조건
+    creditLimit?: number          // 여신 한도
+    isKeyAccount?: boolean        // 주요 거래처 여부
+    contactPerson?: string        // 담당자명
+    contactPhone?: string         // 담당자 연락처
+
+    // 공급사 전용 (SUPPLIER)
+    productCategories?: string[]  // 취급 품목 카테고리
+    bankInfo?: BankInfo           // 계좌 정보
+
+    // 배송업체 전용 (3PL)
+    vehicleTypes?: string[]       // 보유 차량 유형
+    serviceArea?: string[]        // 서비스 가능 지역
+}
+
+// ============ 통합 사용자 인터페이스 ============
+
+// Firestore에서 사용할 User 인터페이스 (통합)
 export interface FirestoreUser {
     id: string
     email: string
-    name: string
+    name: string                  // 개인명 또는 담당자명
+    phone?: string                // 개인 연락처
     role: UserRole
-    orgId?: string
     status: 'ACTIVE' | 'PENDING' | 'INACTIVE'
-    password?: string  // 실제 프로덕션에서는 Firebase Auth 사용 권장
+    firebaseUid?: string          // Firebase Auth UID
+    inviteToken?: string          // 초대 토큰 (가입 전)
+
+    // 사업체 정보 (CUSTOMER, SUPPLIER, 3PL 역할인 경우)
+    business?: BusinessProfile
+
+    // 레거시 호환용 (마이그레이션 후 제거 예정)
+    orgId?: string
+    password?: string             // 실제 프로덕션에서는 Firebase Auth 사용 권장
+
     createdAt: Timestamp
     updatedAt: Timestamp
     lastLogin?: Timestamp
@@ -181,4 +229,99 @@ export async function seedInitialUsers(): Promise<void> {
     }
 
     console.log('Initial users seeded successfully')
+}
+
+// ============ 사업체 역할 관련 함수 ============
+
+// 고객사(CUSTOMER) 목록 조회
+export async function getAllCustomerUsers(): Promise<FirestoreUser[]> {
+    const q = query(usersRef, where('role', '==', 'CUSTOMER'))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as FirestoreUser))
+}
+
+// 공급사(SUPPLIER) 목록 조회
+export async function getAllSupplierUsers(): Promise<FirestoreUser[]> {
+    const q = query(usersRef, where('role', '==', 'SUPPLIER'))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as FirestoreUser))
+}
+
+// 배송업체(3PL) 목록 조회
+export async function getAll3PLUsers(): Promise<FirestoreUser[]> {
+    const q = query(usersRef, where('role', '==', '3PL'))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as FirestoreUser))
+}
+
+// 사업체 정보로 사용자 조회 (사업자등록번호)
+export async function getUserByBizRegNo(bizRegNo: string): Promise<FirestoreUser | null> {
+    const q = query(usersRef, where('business.bizRegNo', '==', bizRegNo))
+    const snapshot = await getDocs(q)
+    if (snapshot.empty) return null
+    const d = snapshot.docs[0]
+    return { id: d.id, ...d.data() } as FirestoreUser
+}
+
+// 초대 토큰으로 사용자 조회
+export async function getUserByInviteToken(token: string): Promise<FirestoreUser | null> {
+    const q = query(usersRef, where('inviteToken', '==', token))
+    const snapshot = await getDocs(q)
+    if (snapshot.empty) return null
+    const d = snapshot.docs[0]
+    return { id: d.id, ...d.data() } as FirestoreUser
+}
+
+// 사업체 정보 업데이트
+export async function updateUserBusiness(id: string, business: Partial<BusinessProfile>): Promise<void> {
+    const docRef = doc(db, USERS_COLLECTION, id)
+    const user = await getUserById(id)
+    if (!user) throw new Error('User not found')
+
+    const updatedBusiness = {
+        ...(user.business || {}),
+        ...business
+    }
+
+    await updateDoc(docRef, {
+        business: cleanData(updatedBusiness),
+        updatedAt: serverTimestamp()
+    })
+}
+
+// 활성 고객사 목록 (주문/발주 선택용)
+export async function getActiveCustomers(): Promise<FirestoreUser[]> {
+    const q = query(
+        usersRef,
+        where('role', '==', 'CUSTOMER'),
+        where('status', '==', 'ACTIVE')
+    )
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as FirestoreUser))
+}
+
+// 활성 공급사 목록 (발주 선택용)
+export async function getActiveSuppliers(): Promise<FirestoreUser[]> {
+    const q = query(
+        usersRef,
+        where('role', '==', 'SUPPLIER'),
+        where('status', '==', 'ACTIVE')
+    )
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as FirestoreUser))
 }
