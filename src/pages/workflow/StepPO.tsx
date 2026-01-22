@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ClipboardListIcon, FactoryIcon, DashboardIcon, CheckCircleIcon, PackageIcon } from '../../components/Icons'
+import { AlertTriangleIcon, ClipboardListIcon, FactoryIcon, DashboardIcon, CheckCircleIcon, PackageIcon } from '../../components/Icons'
 import { getSalesOrderById, getSalesOrderItems, type FirestoreSalesOrder, type FirestoreSalesOrderItem } from '../../lib/orderService'
 import { getAllSupplierUsers, type FirestoreUser } from '../../lib/userService'
 import './StepPO.css'
@@ -42,6 +42,46 @@ export default function StepPO() {
     const navigate = useNavigate()
     const [currentStep, setCurrentStep] = useState(1)
     const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([])
+
+    // 모달 통보 전용 상태
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string,
+        message: string,
+        onConfirm?: () => void,
+        onCancel?: () => void,
+        isDanger?: boolean,
+        confirmText?: string,
+        cancelText?: string,
+        type: 'alert' | 'confirm'
+    } | null>(null)
+
+    // 알림창 헬퍼
+    const showAlert = (title: string, message: string, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'alert',
+            isDanger,
+            confirmText: '확인'
+        })
+    }
+
+    // 확인창 헬퍼
+    const showConfirm = (title: string, message: string, onConfirm: () => void, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'confirm',
+            isDanger,
+            confirmText: '확인',
+            cancelText: '취소',
+            onConfirm: () => {
+                onConfirm()
+                setConfirmConfig(null)
+            },
+            onCancel: () => setConfirmConfig(null)
+        })
+    }
 
     // Firebase에서 직접 로드되는 데이터
     const [salesOrder, setSalesOrder] = useState<LocalSalesOrder | null>(null)
@@ -150,7 +190,7 @@ export default function StepPO() {
 
     const handleNext = () => {
         if (currentStep === 2 && selectedSuppliers.length === 0) {
-            alert('최소 1개 이상의 매입처를 선택해주세요.')
+            showAlert('선택 오류', '최소 1개 이상의 매입처를 선택해주세요.', true)
             return
         }
         if (currentStep < 4) {
@@ -159,13 +199,11 @@ export default function StepPO() {
     }
 
     const handleComplete = () => {
-        const poList = selectedSuppliers.map(sId => {
-            const supplier = suppliers.find(s => s.id === sId)
-            return `${supplier?.companyName || '알 수 없음'}: ${items.map(i => i.allocations[sId] ? `${i.name} ${i.allocations[sId]}${i.unit}` : '').filter(Boolean).join(', ')}`
-        }).join('\n')
-
-        alert(`✅ 발주가 생성되었습니다!\n\n${poList}`)
-        navigate('/admin/workflow')
+        const poCount = selectedSuppliers.length
+        showAlert('발주 완료', `✅ 총 ${poCount}개의 매입처로 발주서가 생성되었습니다!\n\n관련 매입처 담당자에게 알림이 전송됩니다.`)
+        setTimeout(() => {
+            navigate('/admin/workflow')
+        }, 1500)
     }
 
     // 로딩 상태
@@ -395,6 +433,39 @@ export default function StepPO() {
                 )}
                 {currentStep === 4 && <div style={{ width: 80 }} />}
             </footer>
+
+            {/* Final Global Confirmation/Alert Modal */}
+            {confirmConfig && (
+                <div className="modal-backdrop" onClick={() => setConfirmConfig(null)} style={{ zIndex: 10000 }}>
+                    <div className="modal notification-modal" style={{ maxWidth: '400px', width: '90%' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-body text-center py-8">
+                            <div className={`notification-icon-wrapper mb-6 mx-auto ${confirmConfig.isDanger ? 'bg-red-50' : 'bg-blue-50'} rounded-full w-20 h-20 flex items-center justify-center`}>
+                                {confirmConfig.isDanger ? (
+                                    <AlertTriangleIcon size={40} color="#ef4444" />
+                                ) : (
+                                    <PackageIcon size={40} color="var(--color-primary)" />
+                                )}
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">{confirmConfig.title}</h3>
+                            <p className="text-secondary whitespace-pre-wrap">{confirmConfig.message}</p>
+                        </div>
+                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '12px', borderTop: 'none', paddingTop: 0 }}>
+                            {confirmConfig.type === 'confirm' && (
+                                <button className="btn btn-secondary px-8" onClick={confirmConfig.onCancel}>
+                                    {confirmConfig.cancelText || '취소'}
+                                </button>
+                            )}
+                            <button
+                                className={`btn ${confirmConfig.isDanger ? 'btn-danger' : 'btn-primary'} px-8`}
+                                onClick={confirmConfig.onConfirm || (() => setConfirmConfig(null))}
+                                style={confirmConfig.isDanger ? { backgroundColor: '#ef4444', color: 'white' } : {}}
+                            >
+                                {confirmConfig.confirmText || '확인'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

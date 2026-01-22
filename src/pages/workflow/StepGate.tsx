@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { FilesIcon, TruckDeliveryIcon, FactoryIcon, CheckCircleIcon } from '../../components/Icons'
+import { AlertTriangleIcon, CheckCircleIcon, FilesIcon, TruckDeliveryIcon, FactoryIcon } from '../../components/Icons'
 import './StepGate.css'
 import type { ReactNode } from 'react'
 
@@ -25,6 +25,46 @@ export default function StepGate() {
     const [currentStep, setCurrentStep] = useState(1)
     const [checklist, setChecklist] = useState<Record<string, boolean>>({})
     const [signatureData, setSignatureData] = useState('')
+
+    // 모달 통보 전용 상태
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string,
+        message: string,
+        onConfirm?: () => void,
+        onCancel?: () => void,
+        isDanger?: boolean,
+        confirmText?: string,
+        cancelText?: string,
+        type: 'alert' | 'confirm'
+    } | null>(null)
+
+    // 알림창 헬퍼
+    const showAlert = (title: string, message: string, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'alert',
+            isDanger,
+            confirmText: '확인'
+        })
+    }
+
+    // 확인창 헬퍼
+    const showConfirm = (title: string, message: string, onConfirm: () => void, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'confirm',
+            isDanger,
+            confirmText: '확인',
+            cancelText: '취소',
+            onConfirm: () => {
+                onConfirm()
+                setConfirmConfig(null)
+            },
+            onCancel: () => setConfirmConfig(null)
+        })
+    }
 
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const isDrawing = useRef(false)
@@ -93,11 +133,11 @@ export default function StepGate() {
 
     const handleNext = () => {
         if (currentStep === 2 && !allChecklistDone) {
-            alert('모든 체크리스트 항목을 완료해주세요.')
+            showAlert('검수 미완료', '모든 체크리스트 항목을 완료해주세요.', true)
             return
         }
         if (currentStep === 3 && !signatureData) {
-            alert('서명을 입력해주세요.')
+            showAlert('서명 필요', '서명을 입력해주세요.', true)
             return
         }
         if (currentStep < 4) {
@@ -106,8 +146,10 @@ export default function StepGate() {
     }
 
     const handleComplete = () => {
-        alert(`✅ 출고가 완료되었습니다!\n\n${shipment.customerName} - ${shipment.totalKg}kg\n차량: ${shipment.vehicleNo}`)
-        navigate('/admin/workflow')
+        showAlert('출고 완료', '✅ 출고가 완료되었습니다!\n\n운영팀과 고객에게 알림이 전송됩니다.')
+        setTimeout(() => {
+            navigate('/admin/workflow')
+        }, 1500)
     }
 
     return (
@@ -325,6 +367,39 @@ export default function StepGate() {
                 )}
                 {currentStep === 4 && <div style={{ width: 80 }} />}
             </footer>
+
+            {/* Final Global Confirmation/Alert Modal */}
+            {confirmConfig && (
+                <div className="modal-backdrop" onClick={() => setConfirmConfig(null)} style={{ zIndex: 10000 }}>
+                    <div className="modal notification-modal" style={{ maxWidth: '400px', width: '90%' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-body text-center py-8">
+                            <div className={`notification-icon-wrapper mb-6 mx-auto ${confirmConfig.isDanger ? 'bg-red-50' : 'bg-blue-50'} rounded-full w-20 h-20 flex items-center justify-center`}>
+                                {confirmConfig.isDanger ? (
+                                    <AlertTriangleIcon size={40} color="#ef4444" />
+                                ) : (
+                                    <CheckCircleIcon size={40} color="var(--color-primary)" />
+                                )}
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">{confirmConfig.title}</h3>
+                            <p className="text-secondary whitespace-pre-wrap">{confirmConfig.message}</p>
+                        </div>
+                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '12px', borderTop: 'none', paddingTop: 0 }}>
+                            {confirmConfig.type === 'confirm' && (
+                                <button className="btn btn-secondary px-8" onClick={confirmConfig.onCancel}>
+                                    {confirmConfig.cancelText || '취소'}
+                                </button>
+                            )}
+                            <button
+                                className={`btn ${confirmConfig.isDanger ? 'btn-danger' : 'btn-primary'} px-8`}
+                                onClick={confirmConfig.onConfirm || (() => setConfirmConfig(null))}
+                                style={confirmConfig.isDanger ? { backgroundColor: '#ef4444', color: 'white' } : {}}
+                            >
+                                {confirmConfig.confirmText || '확인'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -47,6 +47,46 @@ export default function StepReview() {
     const navigate = useNavigate()
     const [currentStep, setCurrentStep] = useState(1)
 
+    // 모달 통보 전용 상태
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string,
+        message: string,
+        onConfirm?: () => void,
+        onCancel?: () => void,
+        isDanger?: boolean,
+        confirmText?: string,
+        cancelText?: string,
+        type: 'alert' | 'confirm'
+    } | null>(null)
+
+    // 알림창 헬퍼
+    const showAlert = (title: string, message: string, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'alert',
+            isDanger,
+            confirmText: '확인'
+        })
+    }
+
+    // 확인창 헬퍼
+    const showConfirm = (title: string, message: string, onConfirm: () => void, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'confirm',
+            isDanger,
+            confirmText: '확인',
+            cancelText: '취소',
+            onConfirm: () => {
+                onConfirm()
+                setConfirmConfig(null)
+            },
+            onCancel: () => setConfirmConfig(null)
+        })
+    }
+
     // Firebase에서 직접 로드되는 데이터
     const [orderRecord, setOrderRecord] = useState<LocalOrderSheet | null>(null)
     const [itemsRecord, setItemsRecord] = useState<FirestoreOrderSheetItem[]>([])
@@ -195,7 +235,7 @@ export default function StepReview() {
         if (currentStep === 2) {
             // 필수 입력 검증
             if (!selectedVehicleType) {
-                alert('차량 타입을 선택해주세요.')
+                showAlert('입력 오류', '차량 타입을 선택해주세요.', true)
                 return
             }
         }
@@ -227,10 +267,12 @@ ${autoSummary ? `${autoSummary}\n` : ''}
 ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
     `.trim()
 
-        if (confirm(`아래 내용으로 고객에게 최종안을 발송하시겠습니까?\n\n${summary}`)) {
-            alert('✅ 최종안이 고객에게 발송되었습니다!\n\n고객 확인 대기 상태로 변경됩니다.')
-            navigate('/admin/workflow')
-        }
+        showConfirm('최종안 발송', `아래 내용으로 고객에게 최종안을 발송하시겠습니까?\n\n총 ${finalizedItems.length}개 품목 / 예상중량 ${finalEstimatedTotalKg}kg`, () => {
+            showAlert('발송 완료', '✅ 최종안이 고객에게 발송되었습니다!\n\n고객 확인 대기 상태로 변경됩니다.')
+            setTimeout(() => {
+                navigate('/admin/workflow')
+            }, 1000)
+        })
     }
 
     // 로딩 상태
@@ -649,6 +691,39 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                 )}
                 {currentStep === 3 && <div style={{ width: 80 }} />}
             </footer>
+
+            {/* Final Global Confirmation/Alert Modal */}
+            {confirmConfig && (
+                <div className="modal-backdrop" onClick={() => setConfirmConfig(null)} style={{ zIndex: 10000 }}>
+                    <div className="modal notification-modal" style={{ maxWidth: '400px', width: '90%' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-body text-center py-8">
+                            <div className={`notification-icon-wrapper mb-6 mx-auto ${confirmConfig.isDanger ? 'bg-red-50' : 'bg-blue-50'} rounded-full w-20 h-20 flex items-center justify-center`}>
+                                {confirmConfig.isDanger ? (
+                                    <AlertTriangleIcon size={40} color="#ef4444" />
+                                ) : (
+                                    <ClipboardListIcon size={40} color="var(--color-primary)" />
+                                )}
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">{confirmConfig.title}</h3>
+                            <p className="text-secondary whitespace-pre-wrap">{confirmConfig.message}</p>
+                        </div>
+                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '12px', borderTop: 'none', paddingTop: 0 }}>
+                            {confirmConfig.type === 'confirm' && (
+                                <button className="btn btn-secondary px-8" onClick={confirmConfig.onCancel}>
+                                    {confirmConfig.cancelText || '취소'}
+                                </button>
+                            )}
+                            <button
+                                className={`btn ${confirmConfig.isDanger ? 'btn-danger' : 'btn-primary'} px-8`}
+                                onClick={confirmConfig.onConfirm || (() => setConfirmConfig(null))}
+                                style={confirmConfig.isDanger ? { backgroundColor: '#ef4444', color: 'white' } : {}}
+                            >
+                                {confirmConfig.confirmText || '확인'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

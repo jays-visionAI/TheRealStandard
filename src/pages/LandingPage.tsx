@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     ChartIcon,
@@ -19,11 +20,51 @@ export default function LandingPage() {
     const navigate = useNavigate()
     const { user, loading, logout, loginWithKakao } = useAuth()
 
+    // 모달 통보 전용 상태
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string,
+        message: string,
+        onConfirm?: () => void,
+        onCancel?: () => void,
+        isDanger?: boolean,
+        confirmText?: string,
+        cancelText?: string,
+        type: 'alert' | 'confirm'
+    } | null>(null)
+
+    // 알림창 헬퍼
+    const showAlert = (title: string, message: string, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'alert',
+            isDanger,
+            confirmText: '확인'
+        })
+    }
+
+    // 확인창 헬퍼
+    const showConfirm = (title: string, message: string, onConfirm: () => void, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'confirm',
+            isDanger,
+            confirmText: '확인',
+            cancelText: '취소',
+            onConfirm: () => {
+                onConfirm()
+                setConfirmConfig(null)
+            },
+            onCancel: () => setConfirmConfig(null)
+        })
+    }
+
     const handleLogout = async () => {
-        if (confirm('로그아웃 하시겠습니까?')) {
+        showConfirm('로그아웃', '로그아웃 하시겠습니까?', async () => {
             await logout()
             window.location.reload()
-        }
+        })
     }
 
     const handleKakaoLogin = async () => {
@@ -34,7 +75,7 @@ export default function LandingPage() {
             navigate(getDefaultPathForRole(loggedInUser.role))
         } catch (error) {
             console.error('Kakao login failed:', error)
-            alert('카카오 로그인에 실패했습니다. 다시 시도해 주세요.')
+            showAlert('로그인 실패', '카카오 로그인에 실패했습니다. 다시 시도해 주세요.', true)
         }
     }
 
@@ -348,6 +389,39 @@ export default function LandingPage() {
                     </div>
                 </div>
             </footer>
+
+            {/* Final Global Confirmation/Alert Modal */}
+            {confirmConfig && (
+                <div className="modal-backdrop" style={{ zIndex: 10000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="modal notification-modal" style={{ maxWidth: '400px', width: '90%', filter: 'drop-shadow(0 25px 25px rgb(0 0 0 / 0.15))' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-body text-center py-8">
+                            <div className={`notification-icon-wrapper mb-6 mx-auto ${confirmConfig.isDanger ? 'bg-red-50' : 'bg-blue-50'} rounded-full w-20 h-20 flex items-center justify-center`}>
+                                {confirmConfig.isDanger ? (
+                                    <AlertTriangleIcon size={40} color="#ef4444" />
+                                ) : (
+                                    <LogoSmall />
+                                )}
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">{confirmConfig.title}</h3>
+                            <p className="text-secondary whitespace-pre-wrap">{confirmConfig.message}</p>
+                        </div>
+                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '12px', borderTop: 'none', paddingTop: 0 }}>
+                            {confirmConfig.type === 'confirm' && (
+                                <button className="btn btn-secondary px-8" onClick={confirmConfig.onCancel}>
+                                    {confirmConfig.cancelText || '취소'}
+                                </button>
+                            )}
+                            <button
+                                className={`btn ${confirmConfig.isDanger ? 'btn-danger' : 'btn-primary'} px-8`}
+                                onClick={confirmConfig.onConfirm || (() => setConfirmConfig(null))}
+                                style={confirmConfig.isDanger ? { backgroundColor: '#ef4444', color: 'white' } : {}}
+                            >
+                                {confirmConfig.confirmText || '확인'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -63,6 +63,46 @@ export default function SupplierMaster() {
     const [formData, setFormData] = useState<any>({})
     const [isSubmitting, setIsSubmitting] = useState(false)
 
+    // 모달 통보 전용 상태
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string,
+        message: string,
+        onConfirm?: () => void,
+        onCancel?: () => void,
+        isDanger?: boolean,
+        confirmText?: string,
+        cancelText?: string,
+        type: 'alert' | 'confirm'
+    } | null>(null)
+
+    // 알림창 헬퍼
+    const showAlert = (title: string, message: string, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'alert',
+            isDanger,
+            confirmText: '확인'
+        })
+    }
+
+    // 확인창 헬퍼
+    const showConfirm = (title: string, message: string, onConfirm: () => void, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'confirm',
+            isDanger,
+            confirmText: '확인',
+            cancelText: '취소',
+            onConfirm: () => {
+                onConfirm()
+                setConfirmConfig(null)
+            },
+            onCancel: () => setConfirmConfig(null)
+        })
+    }
+
     const loadSuppliers = async () => {
         try {
             setLoading(true)
@@ -176,7 +216,7 @@ export default function SupplierMaster() {
                     status: formData.status,
                     business
                 })
-                alert('수정되었습니다.')
+                showAlert('공급사 수정', '수정되었습니다.')
             } else {
                 await createUser({
                     email: formData.email,
@@ -185,27 +225,29 @@ export default function SupplierMaster() {
                     status: formData.status,
                     business
                 })
-                alert('등록되었습니다.')
+                showAlert('공급사 등록', '등록되었습니다.')
             }
 
             await loadSuppliers()
             setShowModal(false)
         } catch (error) {
             console.error('Save failed:', error)
-            alert('저장에 실패했습니다.')
+            showAlert('저장 실패', '저장에 실패했습니다.', true)
         } finally {
             setIsSubmitting(false)
         }
     }
 
-    const handleDelete = async (supplier: SupplierVM) => {
-        if (!confirm(`"${supplier.companyName}" 공급업체를 삭제하시겠습니까?`)) return
-        try {
-            await deleteUserFirebase(supplier.id)
-            await loadSuppliers()
-        } catch (err) {
-            alert('삭제 실패')
-        }
+    const handleDelete = (supplier: SupplierVM) => {
+        showConfirm('공급사 삭제', `"${supplier.companyName}" 공급업체를 삭제하시겠습니까?`, async () => {
+            try {
+                await deleteUserFirebase(supplier.id)
+                await loadSuppliers()
+                showAlert('삭제 완료', '공급사가 삭제되었습니다.')
+            } catch (err) {
+                showAlert('삭제 실패', '삭제 중 오류가 발생했습니다.', true)
+            }
+        }, true)
     }
 
     const toggleActive = async (supplier: SupplierVM) => {
@@ -213,7 +255,7 @@ export default function SupplierMaster() {
             await updateUserFirebase(supplier.id, { status: supplier.isActive ? 'INACTIVE' : 'ACTIVE' })
             await loadSuppliers()
         } catch (err) {
-            alert('상태 변경 실패')
+            showAlert('오류', '상태 변경에 실패했습니다.', true)
         }
     }
 
@@ -370,6 +412,38 @@ export default function SupplierMaster() {
                                 <button type="submit" className="btn btn-primary" disabled={isSubmitting}>{isSubmitting ? '저장 중...' : '저장하기'}</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Final Global Confirmation/Alert Modal */}
+            {confirmConfig && (
+                <div className="modal-backdrop" style={{ zIndex: 3000 }}>
+                    <div className="modal notification-modal" style={{ maxWidth: '400px', width: '90%' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-body text-center py-8">
+                            <div className={`notification-icon-wrapper mb-6 mx-auto ${confirmConfig.isDanger ? 'bg-red-50' : 'bg-blue-50'} rounded-full w-20 h-20 flex items-center justify-center`}>
+                                {confirmConfig.isDanger ? (
+                                    <AlertTriangleIcon size={40} color="#ef4444" />
+                                ) : (
+                                    <FactoryIcon size={40} color="var(--color-primary)" />
+                                )}
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">{confirmConfig.title}</h3>
+                            <p className="text-secondary whitespace-pre-wrap">{confirmConfig.message}</p>
+                        </div>
+                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '12px', borderTop: 'none', paddingTop: 0 }}>
+                            {confirmConfig.type === 'confirm' && (
+                                <button className="btn btn-secondary px-8" onClick={confirmConfig.onCancel}>
+                                    {confirmConfig.cancelText || '취소'}
+                                </button>
+                            )}
+                            <button
+                                className={`btn ${confirmConfig.isDanger ? 'btn-danger' : 'btn-primary'} px-8`}
+                                onClick={confirmConfig.onConfirm || (() => setConfirmConfig(null))}
+                                style={confirmConfig.isDanger ? { backgroundColor: '#ef4444', color: 'white' } : {}}
+                            >
+                                {confirmConfig.confirmText || '확인'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

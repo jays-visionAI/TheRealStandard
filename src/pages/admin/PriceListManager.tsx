@@ -43,6 +43,46 @@ export default function PriceListManager() {
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
 
+    // 모달 통보 전용 상태
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string,
+        message: string,
+        onConfirm?: () => void,
+        onCancel?: () => void,
+        isDanger?: boolean,
+        confirmText?: string,
+        cancelText?: string,
+        type: 'alert' | 'confirm' | 'copy'
+    } | null>(null)
+
+    // 알림창 헬퍼
+    const showAlert = (title: string, message: string, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'alert',
+            isDanger,
+            confirmText: '확인'
+        })
+    }
+
+    // 확인창 헬퍼
+    const showConfirm = (title: string, message: string, onConfirm: () => void, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'confirm',
+            isDanger,
+            confirmText: '확인',
+            cancelText: '취소',
+            onConfirm: () => {
+                onConfirm()
+                setConfirmConfig(null)
+            },
+            onCancel: () => setConfirmConfig(null)
+        })
+    }
+
     // Form state for creating/editing
     const [title, setTitle] = useState('')
     const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set())
@@ -184,11 +224,11 @@ export default function PriceListManager() {
 
     const handleSave = async () => {
         if (!title.trim()) {
-            alert('단가표 제목을 입력하세요.')
+            showAlert('입력 오류', '단가표 제목을 입력하세요.', true)
             return
         }
         if (selectedProductIds.size === 0) {
-            alert('최소 하나 이상의 품목을 선택하세요.')
+            showAlert('입력 오류', '최소 하나 이상의 품목을 선택하세요.', true)
             return
         }
 
@@ -213,21 +253,21 @@ export default function PriceListManager() {
                     items,
                     validUntil: validUntil ? new Date(validUntil) : null
                 })
-                alert('단가표가 수정되었습니다.')
+                showAlert('수정 완료', '단가표가 수정되었습니다.')
             } else {
                 await createPriceList({
                     title,
                     items,
                     validUntil: validUntil ? new Date(validUntil) : null
                 })
-                alert('단가표가 생성되었습니다.')
+                showAlert('생성 완료', '단가표가 생성되었습니다.')
             }
 
             setShowCreateModal(false)
             loadData()
         } catch (err) {
             console.error(err)
-            alert('저장에 실패했습니다.')
+            showAlert('저장 실패', '저장에 실패했습니다.', true)
         } finally {
             setSaving(false)
         }
@@ -243,7 +283,7 @@ export default function PriceListManager() {
                 loadData()
             } catch (err) {
                 console.error('Failed to generate share link:', err)
-                alert('링크 생성에 실패했습니다.')
+                showAlert('링크 생성 실패', '링크 생성에 실패했습니다.', true)
                 return
             }
         } else {
@@ -259,22 +299,30 @@ export default function PriceListManager() {
         const link = `${window.location.origin}/price-view/${tokenId}`
         try {
             await navigator.clipboard.writeText(link)
-            alert('단가표 공유 링크가 복사되었습니다.\n잠재 고객에게 전송하여 비회원 주문을 유도할 수 있습니다.')
+            showAlert('링크 복사 완료', '단가표 공유 링크가 복사되었습니다.\n잠재 고객에게 전송하여 비회원 주문을 유도할 수 있습니다.')
         } catch (err) {
             console.error('Clipboard copy failed:', err)
-            prompt('아래 링크를 복사하세요:', link)
+            setConfirmConfig({
+                title: '링크 복사',
+                message: '브라우저 설정으로 인해 자동 복사가 실패했습니다.\n아래 링크를 직접 복사해 주세요:',
+                type: 'copy',
+                confirmText: '확인',
+                cancelText: link // Reuse this field to store the link
+            })
         }
     }
 
-    const handleDelete = async (id: string) => {
-        if (confirm('이 단가표를 삭제하시겠습니까?')) {
+    const handleDelete = (id: string) => {
+        showConfirm('단가표 삭제', '이 단가표를 정말 삭제하시겠습니까? 관련 데이터가 모두 삭제됩니다.', async () => {
             try {
                 await deletePriceList(id)
                 loadData()
+                showAlert('완료', '단가표가 삭제되었습니다.')
             } catch (err) {
                 console.error(err)
+                showAlert('실패', '삭제 중 오류가 발생했습니다.', true)
             }
-        }
+        }, true)
     }
 
     const formatCurrency = (val: number) => new Intl.NumberFormat('ko-KR').format(val)
@@ -880,6 +928,46 @@ export default function PriceListManager() {
                 .badge-sent { background: #e0f2fe; color: #075985; }
                 .badge-confirmed { background: #ede9fe; color: #5b21b6; }
             `}</style>
+            {/* Final Global Confirmation/Alert Modal */}
+            {confirmConfig && (
+                <div className="modal-backdrop" onClick={() => setConfirmConfig(null)} style={{ zIndex: 3000 }}>
+                    <div className="modal notification-modal" style={{ maxWidth: '450px', width: '90%' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-body text-center py-8">
+                            <div className={`notification-icon-wrapper mb-6 mx-auto ${confirmConfig.isDanger ? 'bg-red-50' : 'bg-blue-50'} rounded-full w-20 h-20 flex items-center justify-center`}>
+                                {confirmConfig.isDanger ? (
+                                    <AlertTriangleIcon size={40} color="#ef4444" />
+                                ) : confirmConfig.type === 'copy' ? (
+                                    <CopyIcon size={40} color="var(--color-primary)" />
+                                ) : (
+                                    <FileTextIcon size={40} color="var(--color-primary)" />
+                                )}
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">{confirmConfig.title}</h3>
+                            <p className="text-secondary whitespace-pre-wrap mb-4">{confirmConfig.message}</p>
+
+                            {confirmConfig.type === 'copy' && (
+                                <div className="p-3 bg-slate-100 rounded-lg text-xs font-mono break-all border border-slate-200 select-all mb-4">
+                                    {confirmConfig.cancelText}
+                                </div>
+                            )}
+                        </div>
+                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '12px', borderTop: 'none', paddingTop: 0 }}>
+                            {confirmConfig.type === 'confirm' && (
+                                <button className="btn btn-secondary px-8" onClick={confirmConfig.onCancel}>
+                                    {confirmConfig.cancelText || '취소'}
+                                </button>
+                            )}
+                            <button
+                                className={`btn ${confirmConfig.isDanger ? 'btn-danger' : 'btn-primary'} px-8`}
+                                onClick={confirmConfig.onConfirm || (() => setConfirmConfig(null))}
+                                style={confirmConfig.isDanger ? { backgroundColor: '#ef4444', color: 'white' } : {}}
+                            >
+                                {confirmConfig.confirmText || '확인'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

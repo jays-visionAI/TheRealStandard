@@ -30,6 +30,46 @@ export default function WarehouseReceive() {
     const [poData, setPoData] = useState<FirestorePurchaseOrder | null>(null)
     const [items, setItems] = useState<ReceiveItem[]>([])
 
+    // 모달 통보 전용 상태
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string,
+        message: string,
+        onConfirm?: () => void,
+        onCancel?: () => void,
+        isDanger?: boolean,
+        confirmText?: string,
+        cancelText?: string,
+        type: 'alert' | 'confirm'
+    } | null>(null)
+
+    // 알림창 헬퍼
+    const showAlert = (title: string, message: string, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'alert',
+            isDanger,
+            confirmText: '확인'
+        })
+    }
+
+    // 확인창 헬퍼
+    const showConfirm = (title: string, message: string, onConfirm: () => void, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'confirm',
+            isDanger,
+            confirmText: '확인',
+            cancelText: '취소',
+            onConfirm: () => {
+                onConfirm()
+                setConfirmConfig(null)
+            },
+            onCancel: () => setConfirmConfig(null)
+        })
+    }
+
     // Firebase에서 데이터 로드
     const loadData = async () => {
         if (!id) return
@@ -109,11 +149,14 @@ export default function WarehouseReceive() {
         if (!poData) return
 
         if (hasIssues) {
-            if (!confirm('이상 항목이 있습니다. 그래도 반입 처리를 완료하시겠습니까?')) {
-                return
-            }
+            showConfirm('이상 항목 확인', '이상 항목이 포함되어 있습니다. 그래도 반입 처리를 완료하시겠습니까?', () => proceedWithComplete(), true)
+        } else {
+            proceedWithComplete()
         }
+    }
 
+    const proceedWithComplete = async () => {
+        if (!poData) return
         try {
             setLoading(true)
             // 발주 상태를 RECEIVED로 업데이트
@@ -122,11 +165,13 @@ export default function WarehouseReceive() {
                 totalsKg: items.reduce((sum, i) => sum + i.actualKg, 0)
             })
 
-            alert('✅ 반입 처리가 완료되었습니다!')
-            navigate('/warehouse')
+            showAlert('반입 완료', '✅ 반입 처리가 완료되었습니다!')
+            setTimeout(() => {
+                navigate('/warehouse')
+            }, 1000)
         } catch (err) {
             console.error('Failed to complete receive:', err)
-            alert('반입 처리 중 오류가 발생했습니다.')
+            showAlert('오류', '반입 처리 중 오류가 발생했습니다.', true)
         } finally {
             setLoading(false)
         }
@@ -450,6 +495,39 @@ export default function WarehouseReceive() {
                     </section>
                 )}
             </main>
+
+            {/* Final Global Confirmation/Alert Modal */}
+            {confirmConfig && (
+                <div className="modal-backdrop" onClick={() => setConfirmConfig(null)} style={{ zIndex: 10000 }}>
+                    <div className="modal notification-modal" style={{ maxWidth: '400px', width: '90%' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-body text-center py-8">
+                            <div className={`notification-icon-wrapper mb-6 mx-auto ${confirmConfig.isDanger ? 'bg-red-50' : 'bg-blue-50'} rounded-full w-20 h-20 flex items-center justify-center`}>
+                                {confirmConfig.isDanger ? (
+                                    <AlertTriangleIcon size={40} color="#ef4444" />
+                                ) : (
+                                    <CheckCircleIcon size={40} color="var(--color-primary)" />
+                                )}
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">{confirmConfig.title}</h3>
+                            <p className="text-secondary whitespace-pre-wrap">{confirmConfig.message}</p>
+                        </div>
+                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '12px', borderTop: 'none', paddingTop: 0 }}>
+                            {confirmConfig.type === 'confirm' && (
+                                <button className="btn btn-secondary px-8" onClick={confirmConfig.onCancel}>
+                                    {confirmConfig.cancelText || '취소'}
+                                </button>
+                            )}
+                            <button
+                                className={`btn ${confirmConfig.isDanger ? 'btn-danger' : 'btn-primary'} px-8`}
+                                onClick={confirmConfig.onConfirm || (() => setConfirmConfig(null))}
+                                style={confirmConfig.isDanger ? { backgroundColor: '#ef4444', color: 'white' } : {}}
+                            >
+                                {confirmConfig.confirmText || '확인'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
