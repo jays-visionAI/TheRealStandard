@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore, Timestamp } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 
 // Firebase configuration - 환경 변수에서 로드
@@ -27,12 +27,21 @@ export const db = getFirestore(app)
 // Initialize Auth
 export const auth = getAuth(app)
 
-// Firestore에 저장하기 전에 undefined 필드를 제거하는 유틸리티
-export function cleanData(data: any) {
-    const clean: any = {}
+// Firestore에 저장하기 전에 undefined 필드를 제거하는 유틸리티 (재귀적)
+export function cleanData(data: any): any {
+    if (data === null || typeof data !== 'object' || data instanceof Date || data instanceof Timestamp) {
+        return data
+    }
+
+    const clean: any = Array.isArray(data) ? [] : {}
     Object.keys(data).forEach(key => {
         if (data[key] !== undefined) {
-            clean[key] = data[key]
+            const value = data[key]
+            if (typeof value === 'object' && value !== null && !(value instanceof Date) && !(value instanceof Timestamp)) {
+                clean[key] = cleanData(value)
+            } else {
+                clean[key] = value
+            }
         }
     })
     return clean

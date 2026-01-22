@@ -156,7 +156,11 @@ export default function UserManagement() {
         setLoading(true)
         try {
             const result = await migrateCustomersToUsers()
-            alert(`마이그레이션 완료!\n성공: ${result.migrated}건\n제외: ${result.skipped}건\n오류: ${result.errors.length}건`)
+            let message = `마이그레이션 완료!\n성공: ${result.migrated}건\n제외: ${result.skipped}건\n오류: ${result.errors.length}건`
+            if (result.errors.length > 0) {
+                message += `\n\n최근 오류:\n${result.errors.slice(0, 3).join('\n')}`
+            }
+            alert(message)
             await loadData()
         } catch (err) {
             console.error('Migration failed:', err)
