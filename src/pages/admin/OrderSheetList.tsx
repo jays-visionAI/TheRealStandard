@@ -86,14 +86,26 @@ export default function OrderSheetList() {
         })
     }
 
-    const copyInviteLink = async (token?: string) => {
+    const copyInviteLink = async (order: OrderSheet) => {
+        const token = order.inviteTokenId
         if (!token) {
             alert('초대 토큰이 없습니다.')
             return
         }
-        const link = `${window.location.origin}/order/${token}`
-        await navigator.clipboard.writeText(link)
-        alert('발주서 링크가 복사되었습니다!')
+        const link = `${window.location.origin}/order/${token}/edit`
+
+        // For guest orders, include a message template
+        if (order.isGuest) {
+            const message = `[주식회사 믿고] 발주 내용이 확정되었습니다.
+아래 링크에서 확인해주세요.
+
+${link}`
+            await navigator.clipboard.writeText(message)
+            alert('고객 안내 메시지와 링크가 복사되었습니다!\n\n고객에게 직접 전송해주세요.')
+        } else {
+            await navigator.clipboard.writeText(link)
+            alert('발주서 링크가 복사되었습니다!')
+        }
     }
 
     const handleDelete = async (id: string) => {
@@ -200,7 +212,12 @@ export default function OrderSheetList() {
                                 filteredOrders.map((order) => (
                                     <tr key={order.id}>
                                         <td className="font-semibold text-primary">{order.id}</td>
-                                        <td>{order.customerName}</td>
+                                        <td>
+                                            {order.customerName}
+                                            {order.isGuest && (
+                                                <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-orange-100 text-orange-600 rounded">비회원</span>
+                                            )}
+                                        </td>
                                         <td>{order.shipDate ? order.shipDate.toLocaleDateString('ko-KR') : '-'}</td>
                                         <td>{formatDate(order.cutOffAt)}</td>
                                         <td>{getStatusBadge(order.status)}</td>
@@ -220,12 +237,13 @@ export default function OrderSheetList() {
                                                         검토
                                                     </Link>
                                                 )}
-                                                {(order.status === 'SENT') && (
+                                                {(order.status === 'SENT' || order.isGuest) && order.inviteTokenId && (
                                                     <button
                                                         className="btn btn-secondary btn-sm"
-                                                        onClick={() => copyInviteLink(order.inviteTokenId)}
+                                                        onClick={() => copyInviteLink(order)}
+                                                        title={order.isGuest ? '비회원 고객 링크 복사' : '링크 복사'}
                                                     >
-                                                        링크복사
+                                                        {order.isGuest ? '고객링크' : '링크복사'}
                                                     </button>
                                                 )}
                                                 {order.status === 'DRAFT' && (
