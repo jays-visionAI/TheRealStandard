@@ -6,7 +6,7 @@ import {
     deleteCustomer as deleteCustomerFirebase,
     type FirestoreCustomer
 } from '../../lib/customerService'
-import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon, KakaoIcon, AlertTriangleIcon } from '../../components/Icons'
+import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon, KakaoIcon, AlertTriangleIcon, XIcon, CheckIcon } from '../../components/Icons'
 import { sendInviteMessage } from '../../lib/kakaoService'
 import './OrganizationMaster.css'
 
@@ -28,6 +28,10 @@ export default function OrganizationMaster() {
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
     const [formData, setFormData] = useState<Partial<Customer>>({})
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Invite Link Modal State
+    const [inviteModalOpen, setInviteModalOpen] = useState(false)
+    const [inviteModalLink, setInviteModalLink] = useState('')
 
     // Firebase에서 거래처 목록 로드
     const loadCustomers = async () => {
@@ -182,7 +186,8 @@ export default function OrganizationMaster() {
             const inviteUrl = `${window.location.origin}/invite/${token}`
             await navigator.clipboard.writeText(inviteUrl)
             await loadCustomers()
-            alert(`초대 링크가 복사되었습니다!\n고객님께 전달해주세요.\n\n${inviteUrl}`)
+            setInviteModalLink(inviteUrl)
+            setInviteModalOpen(true)
         } catch (err) {
             console.error('Failed to generate invite:', err)
             alert('초대장 생성에 실패했습니다.')
@@ -657,6 +662,40 @@ export default function OrganizationMaster() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Invite Link Modal */}
+            {inviteModalOpen && (
+                <div className="modal-overlay" onClick={() => setInviteModalOpen(false)}>
+                    <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>초대장 링크 복사 완료</h2>
+                            <button className="close-btn" onClick={() => setInviteModalOpen(false)}>
+                                <XIcon size={20} />
+                            </button>
+                        </div>
+                        <div className="modal-body" style={{ textAlign: 'center', padding: '32px 24px' }}>
+                            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                                <CheckIcon size={32} />
+                            </div>
+                            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>초대 링크가 복사되었습니다!</h3>
+                            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>고객님께 전달해주세요.</p>
+                            <div style={{ background: '#f3f4f6', borderRadius: '12px', padding: '16px', textAlign: 'left' }}>
+                                <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>복사된 링크</label>
+                                <p style={{ fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all', color: '#374151' }}>{inviteModalLink}</p>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                className="btn btn-primary"
+                                style={{ width: '100%', padding: '14px', fontWeight: 'bold' }}
+                                onClick={() => setInviteModalOpen(false)}
+                            >
+                                확인
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
