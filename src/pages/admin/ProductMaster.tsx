@@ -41,6 +41,46 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
     const [selectedProductForHistory, setSelectedProductForHistory] = useState<Product | null>(null)
     const csvInputRef = useRef<HTMLInputElement>(null)
 
+    // 모달 통보 전용 상태
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string,
+        message: string,
+        onConfirm?: () => void,
+        onCancel?: () => void,
+        isDanger?: boolean,
+        confirmText?: string,
+        cancelText?: string,
+        type: 'alert' | 'confirm'
+    } | null>(null)
+
+    // 알림창 헬퍼
+    const showAlert = (title: string, message: string, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'alert',
+            isDanger,
+            confirmText: '확인'
+        })
+    }
+
+    // 확인창 헬퍼
+    const showConfirm = (title: string, message: string, onConfirm: () => void, isDanger = false) => {
+        setConfirmConfig({
+            title,
+            message,
+            type: 'confirm',
+            isDanger,
+            confirmText: '확인',
+            cancelText: '취소',
+            onConfirm: () => {
+                onConfirm()
+                setConfirmConfig(null)
+            },
+            onCancel: () => setConfirmConfig(null)
+        })
+    }
+
     // 폼 상태
     const [formData, setFormData] = useState<Partial<Product>>({
         name: '',
@@ -165,7 +205,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
     // 저장 (Firebase에 직접)
     const handleSave = async () => {
         if (!formData.name) {
-            alert('품목명을 입력해주세요.')
+            showAlert('입력 오류', '품목명을 입력해주세요.', true)
             return
         }
 
@@ -205,7 +245,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                     cleanData.wholesalePrice
                 )
 
-                alert('상품이 수정되었습니다.')
+
             } else {
                 // 신규 생성
                 const newProduct = await createProduct(cleanData)
@@ -218,15 +258,16 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                     cleanData.wholesalePrice
                 )
 
-                alert('상품이 추가되었습니다.')
+
             }
 
             // 목록 새로고침
             await loadProducts()
             closeModal()
+            showAlert('저장 완료', editingProduct ? '상품이 수정되었습니다.' : '상품이 추가되었습니다.')
         } catch (err: any) {
             console.error('Save failed details:', err)
-            alert(`저장에 실패했습니다. (${err.message || '알 수 없는 오류'})\n다시 시도해주세요.`)
+            showAlert('저장 실패', `저장에 실패했습니다. (${err.message || '알 수 없는 오류'})\n다시 시도해주세요.`, true)
         } finally {
             setSaving(false)
         }
@@ -260,55 +301,52 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
             }
 
             if (updateCount > 0) {
-                alert(`${updateCount}개의 상품 정보가 일괄 업데이트되었습니다.`)
+                showAlert('저장 완료', `${updateCount}개의 상품 정보가 일괄 업데이트되었습니다.`)
                 await loadProducts()
             }
             setShowBulkModal(false)
         } catch (err: any) {
             console.error('Bulk save failed:', err)
-            alert(`일괄 저장 중 오류가 발생했습니다: ${err.message}`)
+            showAlert('일괄 저장 실패', `일괄 저장 중 오류가 발생했습니다: ${err.message}`, true)
         } finally {
             setSaving(false)
         }
     }
 
-    // 삭제 (비활성화)
-    const handleDelete = async (product: Product) => {
-        if (confirm(`"${product.name}" 상품을 삭제(비활성화)하시겠습니까?`)) {
+    const handleDelete = (product: Product) => {
+        showConfirm('비활성화 확인', `"${product.name}" 상품을 삭제(비활성화)하시겠습니까?`, async () => {
             try {
                 await updateProductFirebase(product.id, { isActive: false })
                 await loadProducts()
-                alert('상품이 비활성화되었습니다.')
+                showAlert('완료', '상품이 비활성화되었습니다.')
             } catch (err) {
                 console.error('Delete failed:', err)
-                alert('비활성화에 실패했습니다.')
+                showAlert('오류', '비활성화에 실패했습니다.', true)
             }
-        }
+        })
     }
 
-    // 완전 삭제
-    const handlePermanentDelete = async (product: Product) => {
-        if (confirm(`⚠️ "${product.name}" 상품을 완전히 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+    const handlePermanentDelete = (product: Product) => {
+        showConfirm('완전 삭제 확인', `⚠️ "${product.name}" 상품을 완전히 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`, async () => {
             try {
                 await deleteProductFirebase(product.id)
                 await loadProducts()
-                alert('상품이 완전히 삭제되었습니다.')
+                showAlert('삭제 완료', '상품이 완전히 삭제되었습니다.')
             } catch (err) {
                 console.error('Permanent delete failed:', err)
-                alert('삭제에 실패했습니다.')
+                showAlert('삭제 실패', '삭제에 실패했습니다.', true)
             }
-        }
+        }, true)
     }
 
-    // 복원
     const handleRestore = async (product: Product) => {
         try {
             await updateProductFirebase(product.id, { isActive: true })
             await loadProducts()
-            alert('상품이 복원되었습니다.')
+            showAlert('복원 완료', '상품이 복원되었습니다.')
         } catch (err) {
             console.error('Restore failed:', err)
-            alert('복원에 실패했습니다.')
+            showAlert('복원 실패', '복원에 실패했습니다.', true)
         }
     }
 
@@ -324,7 +362,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
             setPriceHistory(history)
         } catch (err) {
             console.error('Failed to load price history:', err)
-            alert('가격 변동 이력을 불러오는데 실패했습니다.')
+            showAlert('로드 실패', '가격 변동 이력을 불러오는데 실패했습니다.', true)
         }
     }
 
@@ -383,7 +421,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
         if (file && file.name.endsWith('.csv')) {
             setSelectedFile(file)
         } else {
-            alert('CSV 파일만 업로드 가능합니다.')
+            showAlert('형식 오류', 'CSV 파일만 업로드 가능합니다.', true)
         }
     }
 
@@ -397,7 +435,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
             const lines = text.split('\n').filter(line => line.trim())
 
             if (lines.length < 2) {
-                alert('유효한 CSV 파일이 아닙니다.')
+                showAlert('데이터 오류', '유효한 CSV 파일이 아닙니다.', true)
                 return
             }
 
@@ -413,7 +451,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
             const memoIdx = headers.findIndex(h => h.includes('비고'))
 
             if (nameIdx === -1) {
-                alert('품목명 컬럼을 찾을 수 없습니다.')
+                showAlert('형식 오류', '품목명 컬럼을 찾을 수 없습니다.', true)
                 return
             }
 
@@ -461,12 +499,12 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
             }
 
             await loadProducts()
-            alert(`CSV 업로드 완료!\n- 신규 추가: ${createCount}건\n- 업데이트: ${updateCount}건`)
+            showAlert('업로드 완료', `CSV 업로드 완료!\n- 신규 추가: ${createCount}건\n- 업데이트: ${updateCount}건`)
             setShowUploadModal(false)
             setSelectedFile(null)
-        } catch (err) {
+        } catch (err: any) {
             console.error('CSV upload failed:', err)
-            alert('CSV 업로드에 실패했습니다.')
+            showAlert('업로드 실패', `CSV 업로드에 실패했습니다. (${err.message || '권한 부족'})`, true)
         } finally {
             setSaving(false)
             if (csvInputRef.current) csvInputRef.current.value = ''
@@ -1171,7 +1209,38 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                     </div>
                 </div>
             )}
+            {/* Final Global Confirmation/Alert Modal */}
+            {confirmConfig && (
+                <div className="modal-backdrop" onClick={() => setConfirmConfig(null)} style={{ zIndex: 3000 }}>
+                    <div className="modal notification-modal" style={{ maxWidth: '400px', width: '90%' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-body text-center py-8">
+                            <div className={`notification-icon-wrapper mb-6 mx-auto ${confirmConfig.isDanger ? 'bg-red-50' : 'bg-blue-50'} rounded-full w-20 h-20 flex items-center justify-center`}>
+                                {confirmConfig.isDanger ? (
+                                    <AlertTriangleIcon size={40} color="#ef4444" />
+                                ) : (
+                                    <PackageIcon size={40} color="var(--color-primary)" />
+                                )}
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">{confirmConfig.title}</h3>
+                            <p className="text-secondary whitespace-pre-wrap">{confirmConfig.message}</p>
+                        </div>
+                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '12px' }}>
+                            {confirmConfig.type === 'confirm' && (
+                                <button className="btn btn-secondary px-8" onClick={confirmConfig.onCancel}>
+                                    {confirmConfig.cancelText || '취소'}
+                                </button>
+                            )}
+                            <button
+                                className={`btn ${confirmConfig.isDanger ? 'btn-danger' : 'btn-primary'} px-8`}
+                                onClick={confirmConfig.onConfirm || (() => setConfirmConfig(null))}
+                                style={confirmConfig.isDanger ? { backgroundColor: '#ef4444', color: 'white' } : {}}
+                            >
+                                {confirmConfig.confirmText || '확인'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-
     )
 }
