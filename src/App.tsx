@@ -48,6 +48,7 @@ import UserList from './pages/admin/UserList'
 import UserManagement from './pages/admin/UserManagement'
 import DocumentHub from './pages/admin/DocumentHub'
 import SystemSettings from './pages/admin/SystemSettings'
+import LLMSettings from './pages/admin/LLMSettings'
 
 // Public Pages
 import OrderSheetView from './pages/front/OrderSheetView'
@@ -171,6 +172,7 @@ function App() {
                         <Route path="settings/documents" element={<DocumentInbox />} />
                         <Route path="settings/warehouse" element={<WarehouseGate />} />
                         <Route path="settings/system" element={<SystemSettings />} />
+                        <Route path="settings/llm" element={<LLMSettings />} />
                         {/* Legacy: workflow */}
                         <Route path="workflow" element={<WorkflowHome />} />
                         <Route path="workflow/finalize/:id" element={<StepReview />} />

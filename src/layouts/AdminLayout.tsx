@@ -82,6 +82,7 @@ const navigation = [
             { label: '문서 관리', path: '/admin/settings/documents' },
             { label: '물류 게이트', path: '/admin/settings/warehouse' },
             { label: 'API 설정', path: '/admin/settings/system' },
+            { label: 'LLM 설정', path: '/admin/settings/llm' },
         ],
     },
 ]
@@ -244,6 +245,7 @@ function getPageTitle(pathname: string): string {
         '/admin/settings/documents': '문서 관리',
         '/admin/settings/warehouse': '물류 게이트 세팅',
         '/admin/settings/system': '시스템 API 설정',
+        '/admin/settings/llm': 'LLM API 및 모델 설정',
     }
     return titles[pathname] || 'TRS 물류관리'
 }

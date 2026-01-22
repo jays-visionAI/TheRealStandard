@@ -7,6 +7,10 @@ interface SystemSettings {
     kakaoChannelId: string
     companyName: string
     supportEmail: string
+    openaiApiKey?: string
+    geminiApiKey?: string
+    anthropicApiKey?: string
+    activeLlmProvider?: 'openai' | 'gemini' | 'anthropic'
 }
 
 interface SystemStore {

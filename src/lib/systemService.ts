@@ -12,6 +12,11 @@ export interface SystemSettings {
     kakaoChannelId: string
     companyName: string
     supportEmail: string
+    // LLM Settings
+    openaiApiKey?: string
+    geminiApiKey?: string
+    anthropicApiKey?: string
+    activeLlmProvider?: 'openai' | 'gemini' | 'anthropic'
 }
 
 const SYSTEM_SETTINGS_DOC = 'settings'
@@ -44,7 +49,8 @@ export async function seedInitialSystemSettings(): Promise<void> {
         kakaoRestApiKey: '',
         kakaoChannelId: '_zeXxjG',
         companyName: 'THE REAL STANDARD (TRS)',
-        supportEmail: 'admin@trs.co.kr'
+        supportEmail: 'admin@trs.co.kr',
+        activeLlmProvider: 'openai'
     }
 
     const docRef = doc(db, SYSTEM_COLLECTION, SYSTEM_SETTINGS_DOC)
