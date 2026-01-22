@@ -630,21 +630,40 @@ export default function B2BOrderGrid() {
                     <span>상품명을 입력하면 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 품목으로 이동합니다.</span>
                 </div>
 
-                <div className="order-unit-toggle">
-                    <span className="text-sm mr-2 text-secondary">주문 단위:</span>
-                    <div className="toggle-group bg-gray-100 p-1 rounded-lg inline-flex">
+                <div className="order-unit-toggle flex items-center gap-3">
+                    <span className="text-sm text-secondary">주문 단위:</span>
+                    <div className="ios-toggle-wrapper flex items-center gap-2">
+                        <span className={`text-sm font-medium ${orderUnit === 'box' ? 'text-primary' : 'text-gray-400'}`}>Box 단위</span>
                         <button
-                            className={`px-3 py-1 text-sm rounded-md transition-all ${orderUnit === 'kg' ? 'bg-white shadow-sm font-semibold text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-                            onClick={() => handleUnitChange('kg')}
+                            className={`ios-toggle ${orderUnit === 'kg' ? 'active' : ''}`}
+                            onClick={() => handleUnitChange(orderUnit === 'kg' ? 'box' : 'kg')}
+                            style={{
+                                width: '51px',
+                                height: '31px',
+                                borderRadius: '31px',
+                                backgroundColor: orderUnit === 'kg' ? '#34c759' : '#e5e5ea',
+                                border: 'none',
+                                cursor: 'pointer',
+                                position: 'relative',
+                                transition: 'background-color 0.2s ease',
+                                padding: 0,
+                            }}
                         >
-                            Kg 단위
+                            <span
+                                style={{
+                                    position: 'absolute',
+                                    top: '2px',
+                                    left: orderUnit === 'kg' ? '22px' : '2px',
+                                    width: '27px',
+                                    height: '27px',
+                                    borderRadius: '50%',
+                                    backgroundColor: '#fff',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                    transition: 'left 0.2s ease',
+                                }}
+                            />
                         </button>
-                        <button
-                            className={`px-3 py-1 text-sm rounded-md transition-all ${orderUnit === 'box' ? 'bg-white shadow-sm font-semibold text-primary' : 'text-gray-500 hover:text-gray-700'}`}
-                            onClick={() => handleUnitChange('box')}
-                        >
-                            Box 단위
-                        </button>
+                        <span className={`text-sm font-medium ${orderUnit === 'kg' ? 'text-primary' : 'text-gray-400'}`}>Kg 단위</span>
                     </div>
                 </div>
 

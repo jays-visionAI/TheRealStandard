@@ -149,6 +149,49 @@ export default function CustomerOrderList() {
                                 </div>
                             )}
                         </div>
+
+                        {/* List View for Writing Sheets */}
+                        {writingSheets.length > 0 && (
+                            <div className="order-list-view glass-card mt-6">
+                                <div className="list-view-header">
+                                    <h4>주문서 목록</h4>
+                                </div>
+                                <table className="order-table">
+                                    <thead>
+                                        <tr>
+                                            <th>주문번호</th>
+                                            <th>고객사</th>
+                                            <th>마감일시</th>
+                                            <th>상태</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {writingSheets.map(sheet => (
+                                            <tr
+                                                key={sheet.id}
+                                                onClick={() => navigate(`/order/${sheet.inviteTokenId}/edit`)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <td className="font-mono font-medium text-primary">#{sheet.id.slice(0, 12)}</td>
+                                                <td>{sheet.customerName}</td>
+                                                <td>{formatDate(sheet.cutOffAt)}</td>
+                                                <td>
+                                                    {sheet.status === 'REVISION' ? (
+                                                        <span className="status-pill revision">수정요청</span>
+                                                    ) : (
+                                                        <span className="status-pill sent">신규작성</span>
+                                                    )}
+                                                </td>
+                                                <td className="text-right">
+                                                    <button className="btn btn-sm btn-primary">작성하기</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </section>
 
                     {/* 2. 승인 대기 주문 (SUBMITTED) */}
