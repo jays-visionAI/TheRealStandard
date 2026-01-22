@@ -30,6 +30,7 @@ export interface FirestorePriceList {
     title: string
     items: PriceListItem[]
     shareTokenId?: string
+    validUntil?: any // Timestamp
     createdAt: any
     updatedAt: any
 }

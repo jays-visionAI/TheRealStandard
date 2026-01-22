@@ -41,6 +41,7 @@ export default function PriceListManager() {
     const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set())
     const [supplyPrices, setSupplyPrices] = useState<Record<string, number>>({})
     const [productSearch, setProductSearch] = useState('')
+    const [validUntil, setValidUntil] = useState('')
 
     // Filter products based on search query
     const filteredProducts = useMemo(() => {
@@ -105,6 +106,7 @@ export default function PriceListManager() {
             initialPrices[p.id] = p.wholesalePrice
         })
         setSupplyPrices(initialPrices)
+        setValidUntil('')
         setShowCreateModal(true)
     }
 
@@ -131,6 +133,7 @@ export default function PriceListManager() {
 
         setSelectedProductIds(newSelectedIds)
         setSupplyPrices(newPrices)
+        setValidUntil(list.validUntil?.toDate ? list.validUntil.toDate().toISOString().split('T')[0] : '')
         setShowCreateModal(true)
     }
 
@@ -164,6 +167,7 @@ export default function PriceListManager() {
 
         setSelectedProductIds(newSelectedIds)
         setSupplyPrices(newPrices)
+        setValidUntil(list.validUntil?.toDate ? list.validUntil.toDate().toISOString().split('T')[0] : '')
         setShowDetailModal(false)
         setShowCreateModal(true)
         setProductSearch('') // Reset search to show all items (with selected at top)
@@ -197,13 +201,15 @@ export default function PriceListManager() {
             if (isEditing && selectedList) {
                 await updatePriceList(selectedList.id, {
                     title,
-                    items
+                    items,
+                    validUntil: validUntil ? new Date(validUntil) : null
                 })
                 alert('단가표가 수정되었습니다.')
             } else {
                 await createPriceList({
                     title,
-                    items
+                    items,
+                    validUntil: validUntil ? new Date(validUntil) : null
                 })
                 alert('단가표가 생성되었습니다.')
             }
@@ -380,8 +386,18 @@ export default function PriceListManager() {
                                         onChange={e => setTitle(e.target.value)}
                                         autoFocus
                                     />
+                                </div>
+                                <div className="form-group mb-4">
+                                    <label className="label">유효기간 설정</label>
+                                    <input
+                                        type="date"
+                                        className="input"
+                                        style={{ maxWidth: '200px' }}
+                                        value={validUntil}
+                                        onChange={e => setValidUntil(e.target.value)}
+                                    />
                                     <p className="description" style={{ marginTop: '8px', fontSize: '13px' }}>
-                                        단가표를 구분할 수 있는 이름을 입력하세요.
+                                        지정한 날짜가 지나면 공개 단가표 하단에 '만료됨' 안내가 표시됩니다. (미설정 시 무기한)
                                     </p>
                                 </div>
                             </div>
