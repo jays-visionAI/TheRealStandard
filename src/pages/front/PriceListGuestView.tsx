@@ -205,45 +205,55 @@ export default function PriceListGuestView() {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-secondary/10 text-black text-sm font-black text-center border-b-2 border-black">
-                                        <th className="px-6 py-4 border-r border-gray-300 w-1/3">품  명</th>
-                                        <th className="px-6 py-4 border-r border-gray-300">구  분</th>
-                                        <th className="px-6 py-4 border-r border-gray-300 text-right">공급단가</th>
+                                        <th className="px-6 py-4 border-r border-black w-1/4">품  명</th>
+                                        <th className="px-6 py-4 border-r border-black">냉  장</th>
+                                        <th className="px-6 py-4 border-r border-black">냉  동</th>
                                         <th className="px-6 py-4">비  고</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-300">
-                                    {filteredItems.length > 0 ? (
-                                        filteredItems.map((item, idx) => (
-                                            <tr key={idx} className="hover:bg-primary/[0.02]">
-                                                <td className="px-6 py-4 border-r border-gray-300 font-bold bg-secondary/[0.02]">{item.name}</td>
-                                                <td className="px-6 py-4 border-r border-gray-300 text-center font-bold text-muted">{item.category1}</td>
-                                                <td className="px-6 py-4 border-r border-gray-300 text-right font-black text-xl">
-                                                    {formatCurrency(item.supplyPrice)}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-muted font-medium italic">
-                                                    {item.boxWeight ? `${item.boxWeight}kg/Box` : '-'}
-                                                </td>
+                                    {(() => {
+                                        const grouped: Record<string, { name: string, refrigerated?: number, frozen?: number, others: string[] }> = {};
+                                        filteredItems.forEach(item => {
+                                            const baseName = item.name.replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').replace(/\s*(냉장|냉동|냉장육|냉동육)\s*$/g, '').trim();
+                                            if (!grouped[baseName]) grouped[baseName] = { name: baseName, others: [] };
+                                            if (item.category1 === '냉장') grouped[baseName].refrigerated = item.supplyPrice;
+                                            else if (item.category1 === '냉동') grouped[baseName].frozen = item.supplyPrice;
+                                            else grouped[baseName].others.push(`${item.category1}: ${formatCurrency(item.supplyPrice)}`);
+                                        });
+                                        const sortedGroups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+                                        return sortedGroups.length > 0 ? (
+                                            sortedGroups.map((group, idx) => (
+                                                <tr key={idx} className="hover:bg-primary/[0.02]">
+                                                    <td className="px-6 py-4 border-r border-gray-300 font-bold bg-secondary/[0.02]">{group.name}</td>
+                                                    <td className="px-6 py-4 border-r border-gray-300 text-center font-black text-lg">
+                                                        {group.refrigerated ? formatCurrency(group.refrigerated) : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 border-r border-gray-300 text-center font-black text-lg">
+                                                        {group.frozen ? formatCurrency(group.frozen) : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs text-muted font-medium">
+                                                        {group.others.join(', ')}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={4} className="p-20 text-center text-muted font-bold italic">데이터가 없습니다.</td>
                                             </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={4} className="p-20 text-center text-muted font-bold italic">데이터가 없습니다.</td>
-                                        </tr>
-                                    )}
+                                        );
+                                    })()}
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    {/* Official Stamp Footer */}
-                    <div className="bg-white p-12 md:p-20 rounded-sm shadow-xl border-x-2 border-b-2 border-black text-center relative mb-16">
+                    {/* Official Footer */}
+                    <div className="bg-white p-12 md:p-16 rounded-sm shadow-xl border-x-2 border-b-2 border-black text-center relative mb-16">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] scale-150 pointer-events-none">
                             <ClipboardListIcon size={300} />
                         </div>
-                        <h3 className="text-3xl md:text-5xl font-black text-black tracking-widest relative z-10 mb-8">
-                            (주) 남부미트 대표이사 이재우
-                        </h3>
-                        <div className="flex justify-center gap-12 text-sm font-bold text-muted relative z-10 uppercase tracking-widest">
+                        <div className="flex justify-center gap-12 text-sm font-bold text-muted relative z-10 uppercase tracking-widest mt-10">
                             <span>Main Office: Chungcheongnam-do</span>
                             <span>Direct: 041)642-7341</span>
                         </div>
