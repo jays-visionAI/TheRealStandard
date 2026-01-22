@@ -236,12 +236,14 @@ export default function OrderSheetList() {
                                                         편집
                                                     </Link>
                                                 )}
-                                                <Link
-                                                    to={`/admin/order-sheets/${order.id}/review`}
-                                                    className="btn btn-ghost btn-sm"
-                                                >
-                                                    상세
-                                                </Link>
+                                                {order.status !== 'SUBMITTED' && (
+                                                    <Link
+                                                        to={`/admin/order-sheets/${order.id}/review`}
+                                                        className="btn btn-ghost btn-sm"
+                                                    >
+                                                        상세
+                                                    </Link>
+                                                )}
                                                 <button
                                                     className="btn btn-ghost btn-sm text-error"
                                                     onClick={() => handleDelete(order.id)}

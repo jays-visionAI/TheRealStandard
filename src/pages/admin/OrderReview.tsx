@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { XIcon, AlertTriangleIcon } from '../../components/Icons'
+import { XIcon, AlertTriangleIcon, ClockIcon } from '../../components/Icons'
 import {
     getOrderSheetById,
     getOrderSheetItems,
@@ -37,6 +37,8 @@ export default function OrderReview() {
     const [showRevisionModal, setShowRevisionModal] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [discountAmount, setDiscountAmount] = useState(0)
+    const [timeLeft, setTimeLeft] = useState<string>('')
+    const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set())
 
     // Firebase에서 데이터 로드
     const loadData = async () => {
@@ -79,6 +81,36 @@ export default function OrderReview() {
     useEffect(() => {
         loadData()
     }, [id])
+
+    // Countdown Timer
+    useEffect(() => {
+        if (!orderSheet?.cutOffAt) return
+
+        const updateTimer = () => {
+            const now = new Date().getTime()
+            const cutOff = new Date(orderSheet.cutOffAt!).getTime()
+            const distance = cutOff - now
+
+            if (distance < 0) {
+                setTimeLeft('마감됨')
+                return
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24))
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000)
+
+            let str = ''
+            if (days > 0) str += `${days}일 `
+            str += `${hours}시간 ${minutes}분 ${seconds}초`
+            setTimeLeft(str)
+        }
+
+        updateTimer()
+        const timer = setInterval(updateTimer, 1000)
+        return () => clearInterval(timer)
+    }, [orderSheet?.cutOffAt])
 
     const totalKg = items.reduce((sum, item) => sum + (item.estimatedKg || 0), 0)
     const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0)
@@ -181,20 +213,22 @@ export default function OrderReview() {
     return (
         <div className="page-container">
             {/* Header */}
-            <div className="page-header">
-                <div className="header-left">
-                    <button className="btn btn-ghost" onClick={() => navigate(-1)}>
-                        ← 뒤로
-                    </button>
+            <div className="mb-6">
+                <button className="btn btn-ghost mb-4" onClick={() => navigate(-1)}>
+                    ← 뒤로
+                </button>
+                <div className="flex justify-between items-start">
                     <div>
-                        <h1>발주서 검토</h1>
-                        <p className="text-secondary">{orderSheet.id}</p>
+                        <h1 className="text-2xl font-bold mb-1">발주서 검토</h1>
+                        <p className="text-secondary font-mono">{orderSheet.id}</p>
+                    </div>
+                    <div className="flex gap-2">
+                        {orderSheet.status === 'SUBMITTED' && <div className="badge badge-warning">고객 컨펌</div>}
+                        {orderSheet.status === 'CONFIRMED' && <div className="badge badge-success">승인됨</div>}
+                        {orderSheet.status === 'SENT' && <div className="badge badge-primary">발송됨</div>}
+                        {orderSheet.status === 'REVISION' && <div className="badge badge-error">수정요청</div>}
                     </div>
                 </div>
-                {orderSheet.status === 'SUBMITTED' && <div className="badge badge-warning">고객 컨펌</div>}
-                {orderSheet.status === 'CONFIRMED' && <div className="badge badge-success">승인됨</div>}
-                {orderSheet.status === 'SENT' && <div className="badge badge-primary">발송됨</div>}
-                {orderSheet.status === 'REVISION' && <div className="badge badge-error">수정요청</div>}
             </div>
 
             {/* Order Info */}
@@ -215,6 +249,12 @@ export default function OrderReview() {
                     <div className="info-item">
                         <span className="info-label">주문마감시간</span>
                         <span className="info-value">{formatDateTime(orderSheet.cutOffAt)}</span>
+                        {timeLeft && (
+                            <div className="flex items-center gap-1 mt-1" style={{ color: timeLeft === '마감됨' ? '#ef4444' : '#f59e0b', fontSize: '0.85rem', fontWeight: 600 }}>
+                                <ClockIcon size={14} />
+                                <span>{timeLeft} {timeLeft !== '마감됨' && '남음'}</span>
+                            </div>
+                        )}
                     </div>
                     <div className="info-item full-width">
                         <span className="info-label">배송지</span>
@@ -245,11 +285,38 @@ export default function OrderReview() {
 
             {/* Items Table */}
             <div className="glass-card mb-4">
-                <h3 className="mb-4">주문 품목</h3>
+                <div className="flex justify-between items-center mb-4">
+                    <h3>주문 품목</h3>
+                    {checkedItems.size > 0 && (
+                        <button
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => {
+                                const newItems = items.filter((_, idx) => !checkedItems.has(idx))
+                                setItems(newItems)
+                                setCheckedItems(new Set())
+                            }}
+                        >
+                            선택 삭제 ({checkedItems.size})
+                        </button>
+                    )}
+                </div>
                 <div className="table-container">
                     <table className="table">
                         <thead>
                             <tr>
+                                <th style={{ width: '40px', textAlign: 'center' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={items.length > 0 && checkedItems.size === items.length}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setCheckedItems(new Set(items.map((_, idx) => idx)))
+                                            } else {
+                                                setCheckedItems(new Set())
+                                            }
+                                        }}
+                                    />
+                                </th>
                                 <th>품목명</th>
                                 <th className="text-right">주문수량</th>
                                 <th className="text-right">중량(kg)</th>
@@ -259,7 +326,22 @@ export default function OrderReview() {
                         </thead>
                         <tbody>
                             {items.map((item, index) => (
-                                <tr key={index}>
+                                <tr key={index} className={checkedItems.has(index) ? 'bg-blue-50' : ''}>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={checkedItems.has(index)}
+                                            onChange={(e) => {
+                                                const newSet = new Set(checkedItems)
+                                                if (e.target.checked) {
+                                                    newSet.add(index)
+                                                } else {
+                                                    newSet.delete(index)
+                                                }
+                                                setCheckedItems(newSet)
+                                            }}
+                                        />
+                                    </td>
                                     <td className="font-medium">{item.productName}</td>
                                     <td className="text-right">
                                         {item.qtyRequested} {item.unit === 'box' ? 'Box' : 'Kg'}
@@ -272,6 +354,7 @@ export default function OrderReview() {
                         </tbody>
                         <tfoot>
                             <tr className="summary-row">
+                                <td></td>
                                 <td className="font-semibold">소계</td>
                                 <td className="text-right font-semibold">{totalKg.toFixed(1)} kg</td>
                                 <td></td>
@@ -280,6 +363,7 @@ export default function OrderReview() {
                                 </td>
                             </tr>
                             <tr className="discount-row">
+                                <td></td>
                                 <td className="font-semibold text-warning">할인금액</td>
                                 <td></td>
                                 <td></td>
@@ -298,6 +382,7 @@ export default function OrderReview() {
                                 </td>
                             </tr>
                             <tr className="final-total-row">
+                                <td></td>
                                 <td colSpan={2} className="font-bold text-lg">최종 결제금액</td>
                                 <td></td>
                                 <td className="text-right font-bold gradient-text text-xl">
