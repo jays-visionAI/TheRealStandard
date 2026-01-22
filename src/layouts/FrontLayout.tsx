@@ -27,8 +27,8 @@ export default function FrontLayout() {
     const menus = [
         { path: '/order/dashboard', label: '대시보드', icon: <DashboardIcon size={20} /> },
         { path: '/order/catalog', label: '상품 카탈로그', icon: <PackageIcon size={20} /> },
-        { path: '/order/list', label: '내 주문장', icon: <ClipboardListIcon size={20} /> },
-        { path: '/order/history', label: '주문 내역', icon: <ClipboardCheckIcon size={20} /> },
+        { path: '/order/list', label: '발주서', icon: <ClipboardListIcon size={20} /> },
+        { path: '/order/history', label: '발주 내역', icon: <ClipboardCheckIcon size={20} /> },
         { path: '/order/tracking', label: '배송 현황', icon: <TruckIcon size={20} /> },
     ]
 

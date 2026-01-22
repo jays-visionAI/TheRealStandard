@@ -99,10 +99,10 @@ export default function CustomerOrderList() {
     return (
         <div className="customer-order-list">
             <header className="section-header">
-                <h2>{isHistoryPage ? '주문 내역' : '내 주문 관리'}</h2>
+                <h2>{isHistoryPage ? '발주 내역' : '내 발주서 관리'}</h2>
                 <p>{isHistoryPage
-                    ? '지난 주문 내역과 배송 완료된 건들을 확인합니다.'
-                    : '작성 필요한 주문서와 현재 진행중인 주문 현황입니다.'}
+                    ? '지난 발주 내역과 배송 완료된 건들을 확인합니다.'
+                    : '작성 필요한 발주서와 현재 진행중인 발주 현황입니다.'}
                 </p>
             </header>
 
@@ -112,7 +112,7 @@ export default function CustomerOrderList() {
                     <section className="order-section">
                         <div className="section-title">
                             <ClipboardListIcon size={20} color="#3b82f6" />
-                            <h3>작성할 주문서 <span className="count-badge">{writingSheets.length}</span></h3>
+                            <h3>작성할 발주서 <span className="count-badge">{writingSheets.length}</span></h3>
                         </div>
 
                         <div className="sheet-grid">
@@ -131,13 +131,13 @@ export default function CustomerOrderList() {
                                     </div>
                                     <div className="card-body">
                                         <p className="order-id">#{sheet.id.slice(0, 8)}</p>
-                                        <h4>{sheet.customerName} 주문장</h4>
+                                        <h4>{sheet.customerName} 발주서</h4>
                                         <div className="meta-info">
                                             <span><ClockIcon size={14} /> 마감: {formatDate(sheet.cutOffAt)}</span>
                                         </div>
                                     </div>
                                     <div className="card-footer">
-                                        <span className="action-text">주문서 작성하기</span>
+                                        <span className="action-text">발주서 작성하기</span>
                                         <ChevronRightIcon size={18} />
                                     </div>
                                 </div>
@@ -145,7 +145,7 @@ export default function CustomerOrderList() {
 
                             {writingSheets.length === 0 && (
                                 <div className="empty-state-mini glass-card">
-                                    <p>현재 작성할 주문서가 없습니다.</p>
+                                    <p>현재 작성할 발주서가 없습니다.</p>
                                 </div>
                             )}
                         </div>
@@ -154,12 +154,12 @@ export default function CustomerOrderList() {
                         {writingSheets.length > 0 && (
                             <div className="order-list-view glass-card mt-6">
                                 <div className="list-view-header">
-                                    <h4>주문서 목록</h4>
+                                    <h4>발주서 목록</h4>
                                 </div>
                                 <table className="order-table">
                                     <thead>
                                         <tr>
-                                            <th>주문번호</th>
+                                            <th>발주번호</th>
                                             <th>고객사</th>
                                             <th>마감일시</th>
                                             <th>상태</th>
@@ -209,7 +209,7 @@ export default function CustomerOrderList() {
                                     </div>
                                     <div className="card-body">
                                         <p className="order-id">#{sheet.id.slice(0, 8)}</p>
-                                        <h4>{sheet.customerName} 주문장</h4>
+                                        <h4>{sheet.customerName} 발주서</h4>
                                         <div className="meta-info">
                                             <span>제출일: {formatDate(sheet.updatedAt)}</span>
                                         </div>
@@ -222,7 +222,7 @@ export default function CustomerOrderList() {
 
                             {pendingSheets.length === 0 && (
                                 <div className="empty-state-mini glass-card border-dashed">
-                                    <p>승인 대기 중인 주문이 없습니다.</p>
+                                    <p>승인 대기 중인 발주가 없습니다.</p>
                                 </div>
                             )}
                         </div>
