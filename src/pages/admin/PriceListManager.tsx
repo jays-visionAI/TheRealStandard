@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { Timestamp } from 'firebase/firestore'
 import {
     PackageIcon,
     PlusIcon,
@@ -226,15 +227,24 @@ export default function PriceListManager() {
 
     const handleShare = async (list: FirestorePriceList) => {
         let tokenId = list.shareTokenId
+        const now = Timestamp.now()
         if (!tokenId) {
             tokenId = 'PL-' + Math.random().toString(36).substr(2, 9)
             try {
-                await updatePriceList(list.id, { shareTokenId: tokenId })
+                await updatePriceList(list.id, { shareTokenId: tokenId, sharedAt: now })
                 loadData()
             } catch (err) {
                 console.error('Failed to generate share link:', err)
                 alert('링크 생성에 실패했습니다.')
                 return
+            }
+        } else {
+            // Update sharedAt every time the link is shared
+            try {
+                await updatePriceList(list.id, { sharedAt: now })
+                loadData()
+            } catch (err) {
+                console.error('Failed to update sharedAt:', err)
             }
         }
 

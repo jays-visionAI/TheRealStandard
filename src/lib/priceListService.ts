@@ -30,6 +30,7 @@ export interface FirestorePriceList {
     title: string
     items: PriceListItem[]
     shareTokenId?: string
+    sharedAt?: any // Timestamp - 고객에게 전송한 날짜
     validUntil?: any // Timestamp
     createdAt: any
     updatedAt: any

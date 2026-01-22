@@ -117,7 +117,7 @@ export default function PriceListGuestView() {
                         </div>
                         <div className="text-right space-y-1">
                             <p className="text-[14px] text-slate-500 font-medium">
-                                <span className="text-slate-400">적용일자:</span> {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                <span className="text-slate-400">적용일자:</span> {priceList.sharedAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }) || priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
                             </p>
                             <p className="text-[14px] text-slate-500 font-medium">
                                 <span className="text-slate-400">유효기간:</span> 발행일로부터 5일
@@ -272,7 +272,7 @@ export default function PriceListGuestView() {
             {!isExpired && (
                 <div className="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-64px)] max-w-xs">
                     <button
-                        className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white py-4 px-8 rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+                        className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-slate-900 py-4 px-8 rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
                         onClick={() => setShowOrderModal(true)}
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
