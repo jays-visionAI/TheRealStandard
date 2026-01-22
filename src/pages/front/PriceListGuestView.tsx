@@ -125,34 +125,34 @@ export default function PriceListGuestView() {
                             </div>
                         </div>
 
-                        {/* Supplier Info Box - Standard Quotation Format */}
-                        <div className="w-full lg:w-auto min-w-[340px]">
-                            <table className="w-full border-collapse border-y-2 border-slate-900 text-[13px]">
+                        {/* Supplier Info Box - Refined Alignment */}
+                        <div className="w-full lg:w-auto min-w-[360px]">
+                            <table className="w-full border-collapse border border-slate-900 border-x-0 border-b-0 text-[13px] table-fixed">
                                 <tbody>
                                     <tr>
-                                        <th rowSpan={5} className="w-8 bg-slate-50 border border-slate-200 font-bold text-slate-500 [writing-mode:vertical-lr] py-4 text-center tracking-[0.5em]">공급자</th>
-                                        <th className="w-24 bg-slate-50 border border-slate-200 px-3 py-2 text-slate-500 text-center font-bold">등록번호</th>
-                                        <td colSpan={3} className="border border-slate-200 px-4 py-2 font-black text-slate-800 tracking-wider">123-45-67890</td>
+                                        <th rowSpan={5} className="w-10 bg-slate-100 border border-slate-200 font-bold text-slate-500 [writing-mode:vertical-lr] py-4 text-center tracking-[0.5em] text-[10px]">공급자</th>
+                                        <th className="w-[80px] bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">등록번호</th>
+                                        <td colSpan={3} className="border border-slate-200 px-4 py-2.5 font-black text-slate-900 tracking-wider text-[14px]">123-45-67890</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-24 bg-slate-50 border border-slate-200 px-3 py-2 text-slate-500 text-center font-bold">상호</th>
-                                        <td className="border border-slate-200 px-4 py-2 font-bold text-slate-800">TRS 주식회사</td>
-                                        <th className="w-16 bg-slate-50 border border-slate-200 px-3 py-2 text-slate-500 text-center font-bold">성명</th>
-                                        <td className="border border-slate-200 px-4 py-2 font-bold text-slate-800 text-center">홍길동 (인)</td>
+                                        <th className="w-[80px] bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">상호</th>
+                                        <td className="w-[140px] border border-slate-200 px-4 py-2.5 font-bold text-slate-800">TRS 주식회사</td>
+                                        <th className="w-14 bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">성명</th>
+                                        <td className="border border-slate-200 px-4 py-2.5 font-bold text-slate-800 text-center whitespace-nowrap">홍길동 (인)</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-24 bg-slate-50 border border-slate-200 px-3 py-2 text-slate-500 text-center font-bold">사업장 주소</th>
-                                        <td colSpan={3} className="border border-slate-200 px-4 py-2 text-[12px] font-medium leading-tight">서울특별시 강남구 테헤란로 123, 45층 (TRS타워)</td>
+                                        <th className="w-[80px] bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">사업장 주소</th>
+                                        <td colSpan={3} className="border border-slate-200 px-4 py-2.5 text-[12px] font-medium leading-[1.4] text-slate-700">서울특별시 강남구 테헤란로 123, 45층 (TRS타워)</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-24 bg-slate-50 border border-slate-200 px-3 py-2 text-slate-500 text-center font-bold">업태</th>
-                                        <td className="border border-slate-200 px-4 py-2 font-medium">도매 및 소매업</td>
-                                        <th className="w-24 bg-slate-50 border border-slate-200 px-3 py-2 text-slate-500 text-center font-bold">종목</th>
-                                        <td className="border border-slate-200 px-4 py-2 font-medium">식육유통외</td>
+                                        <th className="w-[80px] bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">업태</th>
+                                        <td className="border border-slate-200 px-4 py-2.5 font-medium text-slate-700">도매 및 소매업</td>
+                                        <th className="w-14 bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">종목</th>
+                                        <td className="border border-slate-200 px-4 py-2.5 font-medium text-slate-700 text-center">식육유통외</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-24 bg-slate-50 border border-slate-200 px-3 py-2 text-slate-500 text-center font-bold">연락처</th>
-                                        <td colSpan={3} className="border border-slate-200 px-4 py-2 font-bold">02-1234-5678</td>
+                                        <th className="w-[80px] bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">연락처</th>
+                                        <td colSpan={3} className="border border-slate-200 px-4 py-2.5 font-bold text-slate-900">02-1234-5678</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -168,12 +168,12 @@ export default function PriceListGuestView() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <div className="relative group w-full md:w-[350px]">
-                            <SearchIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                        <div className="flex items-center gap-4 bg-slate-50/50 border border-slate-200 rounded-2xl px-5 py-0.5 focus-within:ring-4 focus-within:ring-blue-500/5 focus-within:border-blue-500 transition-all shadow-sm w-full md:w-[400px]">
+                            <SearchIcon size={20} className="text-slate-300 flex-shrink-0" />
                             <input
                                 type="text"
                                 placeholder="상세 품목명을 검색하세요"
-                                className="w-full pl-12 pr-10 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl outline-none text-sm font-semibold text-slate-700 placeholder:text-slate-300 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
+                                className="w-full py-3.5 bg-transparent outline-none text-[15px] font-semibold text-slate-700 placeholder:text-slate-300"
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                             />
