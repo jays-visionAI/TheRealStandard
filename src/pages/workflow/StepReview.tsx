@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ClipboardListIcon, PencilIcon, FilePlusIcon, MapPinIcon, PhoneIcon, PackageIcon, TruckDeliveryIcon, FileTextIcon } from '../../components/Icons'
+import { ClipboardListIcon, PencilIcon, FilePlusIcon, MapPinIcon, PhoneIcon, PackageIcon, TruckDeliveryIcon, FileTextIcon, AlertTriangleIcon, SparklesIcon } from '../../components/Icons'
 import { getOrderSheetById, getOrderSheetItems, type FirestoreOrderSheet, type FirestoreOrderSheetItem } from '../../lib/orderService'
+import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import './StepReview.css'
 import type { ReactNode } from 'react'
 
@@ -21,9 +22,13 @@ const vehicleTypes = [
 ]
 
 interface FinalizedItem {
+    productId: string
     productName: string
     originalQty: number
     finalQty: number
+    originalPrice: number
+    finalPrice: number
+    costPrice: number  // 매입단가 (손실 계산용)
     unit: string
     note: string
 }
@@ -56,9 +61,10 @@ export default function StepReview() {
             setLoading(true)
             setError(null)
 
-            const [osData, itemsData] = await Promise.all([
+            const [osData, itemsData, productsData] = await Promise.all([
                 getOrderSheetById(id),
-                getOrderSheetItems(id)
+                getOrderSheetItems(id),
+                getAllProducts()
             ])
 
             if (osData) {
@@ -69,7 +75,15 @@ export default function StepReview() {
                     shipDate: osData.shipDate?.toDate?.() || undefined,
                 })
             }
-            setItemsRecord(itemsData)
+
+            // Map cost price to items
+            const productsMap = new Map(productsData.map(p => [p.id, p]))
+            setItemsRecord(itemsData.map(item => ({
+                ...item,
+                // Ensure cost price is available (mocking if missing in product but required by user)
+                costPrice: productsMap.get(item.productId)?.costPrice || 0
+            })) as (FirestoreOrderSheetItem & { costPrice: number })[])
+
         } catch (err) {
             console.error('Failed to load data:', err)
             setError('데이터를 불러오는데 실패했습니다.')
@@ -116,9 +130,13 @@ export default function StepReview() {
     useEffect(() => {
         if (itemsRecord.length > 0 && finalizedItems.length === 0) {
             const items = itemsRecord.map(i => ({
+                productId: i.productId,
                 productName: i.productName || '상품명 없음',
                 originalQty: i.estimatedKg || 0,
                 finalQty: i.estimatedKg || 0,
+                originalPrice: i.unitPrice || 0,
+                finalPrice: i.unitPrice || 0,
+                costPrice: (i as any).costPrice || 0,
                 unit: 'kg',
                 note: '',
             }))
@@ -136,9 +154,16 @@ export default function StepReview() {
         const updated = [...finalizedItems]
         updated[index].finalQty = qty
         setFinalizedItems(updated)
-        // 총 중량 자동 계산 (참고값, 관리자가 수정 가능)
+        // 총 중량 자동 계산
         const totalKg = updated.reduce((sum, item) => sum + item.finalQty, 0)
         setFinalEstimatedTotalKg(totalKg)
+    }
+
+    const updateFinalPrice = (index: number, rawPrice: number) => {
+        const price = Math.max(0, rawPrice)
+        const updated = [...finalizedItems]
+        updated[index].finalPrice = price
+        setFinalizedItems(updated)
     }
 
     const updateItemNote = (index: number, note: string) => {
@@ -146,6 +171,25 @@ export default function StepReview() {
         updated[index].note = note
         setFinalizedItems(updated)
     }
+
+    // 변경 내역 자동 생성 (LLM 컨셉)
+    const autoSummary = useMemo(() => {
+        const changes: string[] = []
+        finalizedItems.forEach(item => {
+            const qtyChanged = item.originalQty !== item.finalQty
+            const priceChanged = item.originalPrice !== item.finalPrice
+
+            if (qtyChanged || priceChanged) {
+                let msg = `[${item.productName}] `
+                if (qtyChanged) msg += `수량 변경 (${item.originalQty}kg → ${item.finalQty}kg) `
+                if (priceChanged) msg += `단가 변경 (₩${item.originalPrice.toLocaleString()} → ₩${item.finalPrice.toLocaleString()})`
+                changes.push(msg)
+            }
+        })
+
+        if (changes.length === 0) return ""
+        return "🤖 AI 자동 요약:\n" + changes.join('\n')
+    }, [finalizedItems])
 
     const handleNext = () => {
         if (currentStep === 2) {
@@ -170,7 +214,7 @@ export default function StepReview() {
 배송일: ${order.shipDate}
 
 [품목]
-${finalizedItems.map(item => `• ${item.productName}: ${item.finalQty}${item.unit}`).join('\n')}
+${finalizedItems.map(item => `• ${item.productName}: ${item.finalQty}${item.unit} (₩${item.finalPrice.toLocaleString()})`).join('\n')}
 
 [배송 정보]
 총 예상 중량: ${finalEstimatedTotalKg}kg
@@ -179,6 +223,7 @@ ${dispatchInfo.carrierName ? `배송업체: ${dispatchInfo.carrierName}` : ''}
 ${dispatchInfo.driverName ? `기사: ${dispatchInfo.driverName} (${dispatchInfo.driverPhone})` : ''}
 ${dispatchInfo.etaAt ? `도착예정: ${dispatchInfo.etaAt}` : ''}
 
+${autoSummary ? `${autoSummary}\n` : ''}
 ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
     `.trim()
 
@@ -328,25 +373,58 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                                             <span className="item-name">{item.productName}</span>
                                             <span className="original-qty">요청: {item.originalQty}{item.unit}</span>
                                         </div>
-                                        <div className="item-inputs">
+                                        <div className="item-inputs-grid">
+                                            {/* 수량 입력 */}
                                             <div className="qty-input-group">
                                                 <label>최종 수량</label>
-                                                <input
-                                                    type="number"
-                                                    className="input"
-                                                    value={item.finalQty}
-                                                    onChange={(e) => updateFinalQty(idx, parseInt(e.target.value) || 0)}
-                                                    min="0"
-                                                />
-                                                <span className="unit">{item.unit}</span>
+                                                <div className="input-with-unit">
+                                                    <input
+                                                        type="number"
+                                                        className="input"
+                                                        value={item.finalQty}
+                                                        onChange={(e) => updateFinalQty(idx, parseInt(e.target.value) || 0)}
+                                                        min="0"
+                                                    />
+                                                    <span className="unit">{item.unit}</span>
+                                                </div>
                                             </div>
-                                            <input
-                                                type="text"
-                                                className="input note-input"
-                                                placeholder="비고 (선택)"
-                                                value={item.note}
-                                                onChange={(e) => updateItemNote(idx, e.target.value)}
-                                            />
+
+                                            {/* 단가 입력 (신규 추가) */}
+                                            <div className="price-input-group">
+                                                <label>최종 단가</label>
+                                                <div className="input-with-unit">
+                                                    <input
+                                                        type="number"
+                                                        className="input"
+                                                        value={item.finalPrice}
+                                                        onChange={(e) => updateFinalPrice(idx, parseInt(e.target.value) || 0)}
+                                                        min="0"
+                                                    />
+                                                    <span className="unit">원</span>
+                                                </div>
+                                                <div className="price-feedback">
+                                                    {item.finalPrice !== item.originalPrice && (
+                                                        <span className="original-price-strike">이전: ₩{item.originalPrice.toLocaleString()}</span>
+                                                    )}
+                                                    {item.finalPrice < item.costPrice && (
+                                                        <span className="loss-alert">
+                                                            <AlertTriangleIcon size={12} /> 손실 ₩{(item.costPrice - item.finalPrice).toLocaleString()} (매입: ₩{item.costPrice.toLocaleString()})
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* 비고 입력 */}
+                                            <div className="note-input-group">
+                                                <label>비고</label>
+                                                <input
+                                                    type="text"
+                                                    className="input note-input"
+                                                    placeholder="변경 사유 등"
+                                                    value={item.note}
+                                                    onChange={(e) => updateItemNote(idx, e.target.value)}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -441,16 +519,27 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                             </div>
                         </div>
 
-                        {/* 고객 전달 메모 */}
+                        {/* 관리자 변경 사유 및 자동 요약 */}
                         <div className="finalization-section">
-                            <h3>💬 고객 전달 메모</h3>
-                            <textarea
-                                className="input textarea"
-                                placeholder="협의사항, 변경사유, 특이사항 등을 입력하세요..."
-                                value={adminNote}
-                                onChange={(e) => setAdminNote(e.target.value)}
-                                rows={3}
-                            />
+                            <h3><SparklesIcon size={18} color="#8b5cf6" /> 주문 변경 관리</h3>
+                            <div className="change-summary-area">
+                                {autoSummary && (
+                                    <div className="auto-summary-box">
+                                        <pre>{autoSummary}</pre>
+                                    </div>
+                                )}
+                                <div className="admin-reason-box">
+                                    <label>변경 사유 (고객 전달용)</label>
+                                    <textarea
+                                        className="input textarea"
+                                        placeholder="가격 할인 적용, 재고 부족 등으로 인한 수량 조정 사유를 입력하세요..."
+                                        value={adminNote}
+                                        onChange={(e) => setAdminNote(e.target.value)}
+                                        rows={4}
+                                    />
+                                    <p className="hint">※ 변경 사유는 고객에게 발송되는 최종안에 포함됩니다.</p>
+                                </div>
+                            </div>
                         </div>
                     </section>
                 )}
@@ -471,13 +560,21 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                                 <h4><PackageIcon size={16} /> 확정 품목</h4>
                                 {finalizedItems.map((item, idx) => (
                                     <div key={idx} className="summary-item-row">
-                                        <span>{item.productName}</span>
-                                        <span className="qty">
-                                            {item.finalQty}{item.unit}
-                                            {item.originalQty !== item.finalQty && (
-                                                <span className="changed">(요청: {item.originalQty})</span>
+                                        <div className="item-details">
+                                            <span className="name">{item.productName}</span>
+                                            {item.originalPrice !== item.finalPrice && (
+                                                <span className="price-change">단가변경: ₩{item.originalPrice.toLocaleString()} → ₩{item.finalPrice.toLocaleString()}</span>
                                             )}
-                                        </span>
+                                        </div>
+                                        <div className="qty-details">
+                                            <span className="qty">
+                                                {item.finalQty}{item.unit}
+                                                {item.originalQty !== item.finalQty && (
+                                                    <span className="changed">(요청: {item.originalQty})</span>
+                                                )}
+                                            </span>
+                                            <span className="amount">₩{(item.finalQty * item.finalPrice).toLocaleString()}</span>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -511,6 +608,13 @@ ${adminNote ? `[관리자 메모]\n${adminNote}` : ''}
                                     </div>
                                 )}
                             </div>
+
+                            {autoSummary && (
+                                <div className="summary-section">
+                                    <h4><SparklesIcon size={16} /> 변경 요약 (AI)</h4>
+                                    <p className="admin-note ai-summary">{autoSummary.replace('🤖 AI 자동 요약:\n', '')}</p>
+                                </div>
+                            )}
 
                             {adminNote && (
                                 <div className="summary-section">

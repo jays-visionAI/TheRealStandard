@@ -35,6 +35,9 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
     const [saving, setSaving] = useState(false)
     const [bulkRows, setBulkRows] = useState<Record<string, number | null | undefined>>({})
     const [showPriceHistoryModal, setShowPriceHistoryModal] = useState(false)
+    const [showUploadModal, setShowUploadModal] = useState(false)
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [isDragging, setIsDragging] = useState(false)
     const [selectedProductForHistory, setSelectedProductForHistory] = useState<Product | null>(null)
     const csvInputRef = useRef<HTMLInputElement>(null)
 
@@ -354,14 +357,43 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
         URL.revokeObjectURL(url)
     }
 
-    // CSV 업로드
-    const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // CSV 업로드 핸들러
+    const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
-        if (!file) return
+        if (file) {
+            setSelectedFile(file)
+            setShowUploadModal(true)
+        }
+    }
+
+    // 드래그 앤 드롭 핸들러
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault()
+        setIsDragging(true)
+    }
+
+    const handleDragLeave = () => {
+        setIsDragging(false)
+    }
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault()
+        setIsDragging(false)
+        const file = e.dataTransfer.files?.[0]
+        if (file && file.name.endsWith('.csv')) {
+            setSelectedFile(file)
+        } else {
+            alert('CSV 파일만 업로드 가능합니다.')
+        }
+    }
+
+    // 실제 CSV 처리 로직
+    const processCsvUpload = async () => {
+        if (!selectedFile) return
 
         try {
             setSaving(true)
-            const text = await file.text()
+            const text = await selectedFile.text()
             const lines = text.split('\n').filter(line => line.trim())
 
             if (lines.length < 2) {
@@ -430,6 +462,8 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
 
             await loadProducts()
             alert(`CSV 업로드 완료!\n- 신규 추가: ${createCount}건\n- 업데이트: ${updateCount}건`)
+            setShowUploadModal(false)
+            setSelectedFile(null)
         } catch (err) {
             console.error('CSV upload failed:', err)
             alert('CSV 업로드에 실패했습니다.')
@@ -493,7 +527,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                     <button className="btn btn-ghost" onClick={handleCsvExport} title="CSV 내보내기">
                         <DownloadIcon size={18} /> CSV
                     </button>
-                    <button className="btn btn-ghost" onClick={() => csvInputRef.current?.click()} title="CSV 업로드">
+                    <button className="btn btn-ghost" onClick={() => setShowUploadModal(true)} title="CSV 업로드">
                         <UploadIcon size={18} /> 업로드
                     </button>
                     <button className="btn btn-secondary" onClick={openBulkModal}>
@@ -1060,6 +1094,79 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                         </div>
                         <div className="modal-footer">
                             <button className="btn btn-secondary" onClick={() => setShowPriceHistoryModal(false)}>닫기</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CSV Upload Modal */}
+            {showUploadModal && (
+                <div className="modal-backdrop" onClick={() => {
+                    setShowUploadModal(false)
+                    setSelectedFile(null)
+                }}>
+                    <div className="modal upload-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="flex items-center gap-2">
+                                <UploadIcon size={24} color="#3b82f6" />
+                                <h3>상품 데이터 일괄 업로드</h3>
+                            </div>
+                            <button className="btn btn-ghost" onClick={() => {
+                                setShowUploadModal(false)
+                                setSelectedFile(null)
+                            }}>✕</button>
+                        </div>
+                        <div className="modal-body">
+                            <div
+                                className={`drag-drop-area ${isDragging ? 'dragging' : ''} ${selectedFile ? 'has-file' : ''}`}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                onClick={() => csvInputRef.current?.click()}
+                            >
+                                <div className="upload-icon-wrapper">
+                                    <UploadIcon size={48} className="upload-icon" />
+                                </div>
+                                {selectedFile ? (
+                                    <div className="file-info-preview">
+                                        <p className="file-name">{selectedFile.name}</p>
+                                        <p className="file-size">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                                        <span className="change-link">다른 파일 선택하기</span>
+                                    </div>
+                                ) : (
+                                    <div className="upload-prompt">
+                                        <p className="main-prompt">CSV 파일을 이 곳에 드래그하거나 클릭하여 선택하세요</p>
+                                        <p className="sub-prompt">품목명, 카테고리, 단가 정보를 일괄 업데이트할 수 있습니다.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="upload-guide-box">
+                                <h4>💡 업로드 안내</h4>
+                                <ul>
+                                    <li>파일 확장자는 <strong>.csv</strong>여야 합니다.</li>
+                                    <li>헤더(첫 줄)에 <strong>'품목명'</strong> 컬럼이 반드시 포함되어야 합니다.</li>
+                                    <li>기존에 등록된 품목명은 정보가 업데이트되고, 새로운 품목명은 신규 등록됩니다.</li>
+                                    <li>단가 변경 시 가격 히스토리에 자동으로 기록됩니다.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => {
+                                setShowUploadModal(false)
+                                setSelectedFile(null)
+                            }}>취소</button>
+                            <button
+                                className="btn btn-primary"
+                                disabled={!selectedFile || saving}
+                                onClick={processCsvUpload}
+                            >
+                                {saving ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div className="spinner-sm"></div> 처리 중...
+                                    </span>
+                                ) : '업로드 시작'}
+                            </button>
                         </div>
                     </div>
                 </div>
