@@ -111,7 +111,7 @@ export default function PriceListGuestView() {
                 amount: 0
             }))
             await setOrderSheetItems(orderSheet.id, items)
-            navigate(`/order-sheet/${guestToken}`)
+            navigate(`/order/${guestToken}/edit`)
         } catch (err) {
             console.error('Failed to create guest order:', err)
             alert('주문서 생성에 실패했습니다.')
