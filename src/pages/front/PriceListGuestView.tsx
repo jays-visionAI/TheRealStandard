@@ -90,12 +90,12 @@ export default function PriceListGuestView() {
         }
     }
 
-    if (loading) return <div className="p-20 text-center text-white">불러오는 중...</div>
+    if (loading) return <div className="p-20 text-center text-secondary">불러오는 중...</div>
     if (error || !priceList) return (
         <div className="p-20 text-center">
             <div className="glass-card p-10 inline-block">
                 <InfoIcon size={48} color="#ef4444" className="mx-auto mb-4" />
-                <p className="text-white text-xl">{error || '단가표를 찾을 수 없습니다.'}</p>
+                <p className="text-primary text-xl font-bold">{error || '단가표를 찾을 수 없습니다.'}</p>
             </div>
         </div>
     )
@@ -108,13 +108,13 @@ export default function PriceListGuestView() {
                 <div className="inline-block p-4 bg-primary/10 rounded-2xl mb-4">
                     <ClipboardListIcon size={40} color="var(--color-primary)" />
                 </div>
-                <h1 className="text-3xl font-bold text-white mb-2">{priceList.title}</h1>
+                <h1 className="text-3xl font-bold text-primary mb-2">{priceList.title}</h1>
                 <p className="text-secondary">TRS에서 제안드리는 실시간 단가표입니다.</p>
             </header>
 
             <div className="glass-card overflow-hidden mb-8">
-                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <div className="p-6 border-b border-secondary flex justify-between items-center bg-tertiary/5">
+                    <h2 className="text-xl font-bold text-primary flex items-center gap-2">
                         <PackageIcon size={20} /> 품목 및 제안 단가
                     </h2>
                     <span className="badge badge-primary">{priceList.items.length}개 품목</span>
@@ -122,16 +122,16 @@ export default function PriceListGuestView() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-white/5 text-muted text-sm uppercase">
+                            <tr className="bg-tertiary text-muted text-sm uppercase">
                                 <th className="p-4">품목명</th>
                                 <th className="p-4">단위</th>
                                 <th className="p-4 text-right">제안 단가</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-secondary">
                             {priceList.items.map((item, idx) => (
-                                <tr key={idx} className="hover:bg-white/5">
-                                    <td className="p-4 text-white font-medium">{item.name}</td>
+                                <tr key={idx} className="hover:bg-secondary transition-colors">
+                                    <td className="p-4 text-primary font-medium">{item.name}</td>
                                     <td className="p-4 text-secondary">{item.unit}</td>
                                     <td className="p-4 text-right text-primary font-bold">{formatCurrency(item.supplyPrice)}원</td>
                                 </tr>
@@ -206,14 +206,19 @@ export default function PriceListGuestView() {
             )}
 
             <style>{`
-                .price-guest-view .glass-card {
-                    background: rgba(255, 255, 255, 0.03);
-                    backdrop-filter: blur(10px);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 20px;
+                .price-guest-view {
+                    min-height: 100vh;
+                    background: var(--bg-secondary);
                 }
-                .price-guest-view .text-secondary { color: rgba(255, 255, 255, 0.6); }
-                .price-guest-view .text-muted { color: rgba(255, 255, 255, 0.4); }
+                .price-guest-view .glass-card {
+                    background: var(--bg-card);
+                    border: 1px solid var(--border-primary);
+                    border-radius: 20px;
+                    box-shadow: var(--shadow-lg);
+                }
+                .price-guest-view h1 { color: var(--text-primary); }
+                .price-guest-view .text-secondary { color: var(--text-secondary); }
+                .price-guest-view .text-muted { color: var(--text-muted); }
                 .price-guest-view .badge {
                     padding: 4px 12px;
                     border-radius: 20px;
@@ -221,9 +226,19 @@ export default function PriceListGuestView() {
                     font-weight: 600;
                 }
                 .price-guest-view .badge-primary {
-                    background: rgba(37, 99, 235, 0.1);
+                    background: var(--color-primary-glow);
                     color: var(--color-primary);
-                    border: 1px solid rgba(37, 99, 235, 0.2);
+                    border: 1px solid rgba(37, 99, 235, 0.1);
+                }
+                .price-guest-view td.text-white {
+                    color: var(--text-primary) !important;
+                }
+                .price-guest-view th {
+                    color: var(--text-secondary);
+                    background: var(--bg-tertiary);
+                }
+                .price-guest-view tr:hover {
+                    background: var(--bg-secondary);
                 }
             `}</style>
         </div>
