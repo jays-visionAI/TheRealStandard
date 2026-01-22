@@ -483,3 +483,120 @@
     padding: var(--space-1) var(--space-2);
     font-size: var(--text-sm);
 }
+
+/* Price History Modal */
+.price-history-modal {
+    max-width: 900px;
+    width: 95%;
+}
+
+.history-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.chart-container {
+    background: #f8fafc;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+    position: relative;
+    min-height: 350px;
+}
+
+.chart-title {
+    font-size: var(--text-base);
+    font-weight: var(--font-bold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-4);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chart-legend {
+    display: flex;
+    gap: var(--space-4);
+    font-size: var(--text-xs);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}
+
+.price-history-table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+}
+
+.history-trend-up {
+    color: #ef4444;
+}
+
+.history-trend-down {
+    color: #10b981;
+}
+
+.chart-svg {
+    width: 100%;
+    height: 300px;
+    overflow: visible;
+}
+
+.chart-axis {
+    stroke: #e2e8f0;
+    stroke-width: 1;
+}
+
+.chart-label {
+    font-size: 10px;
+    fill: #94a3b8;
+}
+
+.chart-line-cost {
+    stroke: #94a3b8;
+    stroke-width: 2;
+    fill: none;
+    stroke-dasharray: 4;
+}
+
+.chart-line-wholesale {
+    stroke: #3b82f6;
+    stroke-width: 3;
+    fill: none;
+}
+
+.chart-point {
+    cursor: pointer;
+}
+
+.chart-point:hover {
+    r: 6;
+    stroke-width: 2;
+    stroke: white;
+}
+
+.chart-tooltip {
+    position: absolute;
+    background: white;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    pointer-events: none;
+    font-size: var(--text-xs);
+    z-index: 1000;
+}

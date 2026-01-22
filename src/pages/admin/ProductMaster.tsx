@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'
-import { PackageIcon, SearchIcon, EditIcon, XIcon, WalletIcon, FileTextIcon } from '../../components/Icons'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { PackageIcon, SearchIcon, EditIcon, XIcon, WalletIcon, FileTextIcon, UploadIcon, DownloadIcon, ChartIcon } from '../../components/Icons'
 import {
     getAllProducts,
     createProduct,
@@ -7,6 +7,7 @@ import {
     deleteProduct as deleteProductFirebase,
     type FirestoreProduct
 } from '../../lib/productService'
+import { checkAndRecordPriceChange, getPriceHistoryByProduct, type PriceHistoryEntry } from '../../lib/priceHistoryService'
 import { AlertTriangleIcon } from '../../components/Icons'
 import './ProductMaster.css'
 
@@ -33,6 +34,9 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
     const [showInactive, setShowInactive] = useState(false)
     const [saving, setSaving] = useState(false)
     const [bulkRows, setBulkRows] = useState<Record<string, number | null | undefined>>({})
+    const [showPriceHistoryModal, setShowPriceHistoryModal] = useState(false)
+    const [selectedProductForHistory, setSelectedProductForHistory] = useState<Product | null>(null)
+    const csvInputRef = useRef<HTMLInputElement>(null)
 
     // 폼 상태
     const [formData, setFormData] = useState<Partial<Product>>({
@@ -189,10 +193,28 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
             if (editingProduct) {
                 // 수정
                 await updateProductFirebase(editingProduct.id, cleanData)
+
+                // 가격 변동 기록 확인
+                await checkAndRecordPriceChange(
+                    editingProduct.id,
+                    cleanData.name,
+                    cleanData.costPrice,
+                    cleanData.wholesalePrice
+                )
+
                 alert('상품이 수정되었습니다.')
             } else {
                 // 신규 생성
-                await createProduct(cleanData)
+                const newProduct = await createProduct(cleanData)
+
+                // 최초 가격 기록
+                await checkAndRecordPriceChange(
+                    newProduct.id,
+                    cleanData.name,
+                    cleanData.costPrice,
+                    cleanData.wholesalePrice
+                )
+
                 alert('상품이 추가되었습니다.')
             }
 
@@ -287,6 +309,136 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
         }
     }
 
+    // 가격 히스토리 조회
+    const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([])
+    const [historyYear, setHistoryYear] = useState<number>(new Date().getFullYear())
+
+    const openPriceHistory = async (product: Product) => {
+        try {
+            setSelectedProductForHistory(product)
+            setShowPriceHistoryModal(true)
+            const history = await getPriceHistoryByProduct(product.id)
+            setPriceHistory(history)
+        } catch (err) {
+            console.error('Failed to load price history:', err)
+            alert('가격 변동 이력을 불러오는데 실패했습니다.')
+        }
+    }
+
+    // CSV 내보내기
+    const handleCsvExport = () => {
+        const headers = ['품목명', '카테고리1', '카테고리2', '단위', '예상중량/Box', '매입가', '도매가', '상태', '비고']
+        const rows = products.map(p => [
+            p.name,
+            p.category1,
+            p.category2,
+            p.unit,
+            p.boxWeight || '',
+            p.costPrice,
+            p.wholesalePrice,
+            p.isActive ? '활성' : '비활성',
+            p.memo || ''
+        ])
+
+        const csvContent = [headers, ...rows]
+            .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+            .join('\n')
+
+        // BOM for Korean encoding
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `상품목록_${new Date().toISOString().split('T')[0]}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+    }
+
+    // CSV 업로드
+    const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        try {
+            setSaving(true)
+            const text = await file.text()
+            const lines = text.split('\n').filter(line => line.trim())
+
+            if (lines.length < 2) {
+                alert('유효한 CSV 파일이 아닙니다.')
+                return
+            }
+
+            // Parse header
+            const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim())
+            const nameIdx = headers.findIndex(h => h.includes('품목명'))
+            const cat1Idx = headers.findIndex(h => h.includes('카테고리1'))
+            const cat2Idx = headers.findIndex(h => h.includes('카테고리2'))
+            const unitIdx = headers.findIndex(h => h.includes('단위'))
+            const boxWeightIdx = headers.findIndex(h => h.includes('예상중량'))
+            const costIdx = headers.findIndex(h => h.includes('매입가'))
+            const wholesaleIdx = headers.findIndex(h => h.includes('도매가'))
+            const memoIdx = headers.findIndex(h => h.includes('비고'))
+
+            if (nameIdx === -1) {
+                alert('품목명 컬럼을 찾을 수 없습니다.')
+                return
+            }
+
+            let createCount = 0
+            let updateCount = 0
+
+            for (let i = 1; i < lines.length; i++) {
+                const cells = lines[i].split(',').map(c => c.replace(/"/g, '').trim())
+                const name = cells[nameIdx]
+                if (!name) continue
+
+                const existingProduct = products.find(p => p.name === name)
+                const productData = {
+                    name,
+                    category1: (cells[cat1Idx] || '냉장') as '냉장' | '냉동' | '부산물',
+                    category2: (cells[cat2Idx] || 'B2B') as 'B2B' | 'B2C' | 'BOTH',
+                    unit: (cells[unitIdx]?.toLowerCase() || 'kg') as 'kg' | 'box',
+                    boxWeight: parseFloat(cells[boxWeightIdx]) || undefined,
+                    costPrice: parseFloat(cells[costIdx]) || 0,
+                    wholesalePrice: parseFloat(cells[wholesaleIdx]) || 0,
+                    taxFree: true,
+                    memo: cells[memoIdx] || '',
+                    isActive: true,
+                }
+
+                if (existingProduct) {
+                    await updateProductFirebase(existingProduct.id, productData)
+                    await checkAndRecordPriceChange(
+                        existingProduct.id,
+                        productData.name,
+                        productData.costPrice,
+                        productData.wholesalePrice
+                    )
+                    updateCount++
+                } else {
+                    const newProduct = await createProduct(productData)
+                    await checkAndRecordPriceChange(
+                        newProduct.id,
+                        productData.name,
+                        productData.costPrice,
+                        productData.wholesalePrice
+                    )
+                    createCount++
+                }
+            }
+
+            await loadProducts()
+            alert(`CSV 업로드 완료!\n- 신규 추가: ${createCount}건\n- 업데이트: ${updateCount}건`)
+        } catch (err) {
+            console.error('CSV upload failed:', err)
+            alert('CSV 업로드에 실패했습니다.')
+        } finally {
+            setSaving(false)
+            if (csvInputRef.current) csvInputRef.current.value = ''
+        }
+    }
+
     // 로딩 상태
     if (loading) {
         return (
@@ -324,13 +476,26 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
             <header className="page-header">
                 <div className="header-left">
                     <h2>
-                        <PackageIcon size={24} /> {channel === 'B2B' ? 'B2B 상품 관리' : channel === 'B2C' ? 'B2C 상품 관리' : '상품 관리'}
+                        <PackageIcon size={24} /> {channel === 'B2B' ? '상품 데이터 베이스 관리' : channel === 'B2C' ? 'B2C 상품 관리' : '상품 관리'}
                     </h2>
                     <p className="description">
                         {channel === 'B2B' ? 'B2B 및 공용 거래 품목을 관리합니다.' : channel === 'B2C' ? 'B2C 및 공용 거래 품목을 관리합니다.' : '전체 상품 리스트를 관리하고 단가를 설정합니다.'}
                     </p>
                 </div>
                 <div className="header-actions">
+                    <input
+                        type="file"
+                        ref={csvInputRef}
+                        accept=".csv"
+                        style={{ display: 'none' }}
+                        onChange={handleCsvUpload}
+                    />
+                    <button className="btn btn-ghost" onClick={handleCsvExport} title="CSV 내보내기">
+                        <DownloadIcon size={18} /> CSV
+                    </button>
+                    <button className="btn btn-ghost" onClick={() => csvInputRef.current?.click()} title="CSV 업로드">
+                        <UploadIcon size={18} /> 업로드
+                    </button>
                     <button className="btn btn-secondary" onClick={openBulkModal}>
                         <FileTextIcon size={18} /> 일괄 수정
                     </button>
@@ -358,10 +523,10 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                     <span className="stat-value">{stats.냉동}</span>
                     <span className="stat-label">냉동</span>
                 </div>
-            </div>
+            </div >
 
             {/* Filters bar */}
-            <div className="filters-bar glass-card">
+            < div className="filters-bar glass-card" >
                 <div className="search-box">
                     <span className="search-icon"><SearchIcon size={18} /></span>
                     <input
@@ -394,10 +559,10 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                         비활성 상품 표시
                     </label>
                 </div>
-            </div>
+            </div >
 
             {/* Product Table */}
-            <div className="table-container glass-card">
+            < div className="table-container glass-card" >
                 <table className="product-table">
                     <thead>
                         <tr>
@@ -449,6 +614,13 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                 <td className="actions">
                                     <button
                                         className="btn btn-ghost btn-sm"
+                                        onClick={() => openPriceHistory(product)}
+                                        title="가격 변동 추이"
+                                    >
+                                        <ChartIcon size={16} color="#3b82f6" />
+                                    </button>
+                                    <button
+                                        className="btn btn-ghost btn-sm"
                                         onClick={() => openModal(product)}
                                         title="수정"
                                     >
@@ -486,217 +658,413 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                     </tbody>
                 </table>
 
-                {filteredProducts.length === 0 && (
-                    <div className="empty-state">
-                        <p>조건에 맞는 상품이 없습니다.</p>
-                    </div>
-                )}
-            </div>
+                {
+                    filteredProducts.length === 0 && (
+                        <div className="empty-state">
+                            <p>조건에 맞는 상품이 없습니다.</p>
+                        </div>
+                    )
+                }
+            </div >
 
             {/* Add/Edit Modal */}
-            {showModal && (
-                <div className="modal-backdrop" onClick={closeModal}>
-                    <div className="modal product-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>{editingProduct ? '상품 수정' : '새 상품 추가'}</h3>
-                            <button className="btn btn-ghost" onClick={closeModal}>✕</button>
-                        </div>
+            {
+                showModal && (
+                    <div className="modal-backdrop" onClick={closeModal}>
+                        <div className="modal product-modal" onClick={e => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>{editingProduct ? '상품 수정' : '새 상품 추가'}</h3>
+                                <button className="btn btn-ghost" onClick={closeModal}>✕</button>
+                            </div>
 
-                        <div className="modal-body">
-                            {/* 기본 정보 */}
-                            <div className="form-section">
-                                <h4>기본 정보</h4>
-                                <div className="form-grid">
-                                    <div className="form-group full-width">
-                                        <label className="label">품목명 *</label>
-                                        <input
-                                            type="text"
-                                            className="input"
-                                            value={formData.name || ''}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            placeholder="예: 삼겹살(대패)"
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="label">카테고리1 (냉장/냉동)</label>
-                                        <select
-                                            className="input select"
-                                            value={formData.category1 || '냉장'}
-                                            onChange={(e) => setFormData({ ...formData, category1: e.target.value as '냉장' | '냉동' | '부산물' })}
-                                        >
-                                            <option value="냉장">🧊 냉장</option>
-                                            <option value="냉동">❄️ 냉동</option>
-                                            <option value="부산물">🦴 부산물</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="label">단위</label>
-                                        <select
-                                            className="input select"
-                                            value={formData.unit || 'kg'}
-                                            onChange={(e) => setFormData({ ...formData, unit: e.target.value as 'kg' | 'box' })}
-                                        >
-                                            <option value="kg">KG (중량)</option>
-                                            <option value="box">BOX (박스)</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="label">예상중량/Box (kg)</label>
-                                        <input
-                                            type="number"
-                                            className="input"
-                                            value={formData.boxWeight || ''}
-                                            onChange={(e) => setFormData({ ...formData, boxWeight: parseFloat(e.target.value) || undefined })}
-                                            placeholder="예: 20"
-                                        />
-                                        <span className="help-text">단위가 BOX일 경우 환산 기준으로 사용됩니다.</span>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="checkbox-label">
+                            <div className="modal-body">
+                                {/* 기본 정보 */}
+                                <div className="form-section">
+                                    <h4>기본 정보</h4>
+                                    <div className="form-grid">
+                                        <div className="form-group full-width">
+                                            <label className="label">품목명 *</label>
                                             <input
-                                                type="checkbox"
-                                                checked={formData.taxFree ?? true}
-                                                onChange={(e) => setFormData({ ...formData, taxFree: e.target.checked })}
+                                                type="text"
+                                                className="input"
+                                                value={formData.name || ''}
+                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                placeholder="예: 삼겹살(대패)"
                                             />
-                                            면세 상품
-                                        </label>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="label">카테고리1 (냉장/냉동)</label>
+                                            <select
+                                                className="input select"
+                                                value={formData.category1 || '냉장'}
+                                                onChange={(e) => setFormData({ ...formData, category1: e.target.value as '냉장' | '냉동' | '부산물' })}
+                                            >
+                                                <option value="냉장">🧊 냉장</option>
+                                                <option value="냉동">❄️ 냉동</option>
+                                                <option value="부산물">🦴 부산물</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="label">단위</label>
+                                            <select
+                                                className="input select"
+                                                value={formData.unit || 'kg'}
+                                                onChange={(e) => setFormData({ ...formData, unit: e.target.value as 'kg' | 'box' })}
+                                            >
+                                                <option value="kg">KG (중량)</option>
+                                                <option value="box">BOX (박스)</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="label">예상중량/Box (kg)</label>
+                                            <input
+                                                type="number"
+                                                className="input"
+                                                value={formData.boxWeight || ''}
+                                                onChange={(e) => setFormData({ ...formData, boxWeight: parseFloat(e.target.value) || undefined })}
+                                                placeholder="예: 20"
+                                            />
+                                            <span className="help-text">단위가 BOX일 경우 환산 기준으로 사용됩니다.</span>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.taxFree ?? true}
+                                                    onChange={(e) => setFormData({ ...formData, taxFree: e.target.checked })}
+                                                />
+                                                면세 상품
+                                            </label>
+                                        </div>
                                     </div>
+                                </div>
+
+                                {/* 가격 정보 */}
+                                <div className="form-section">
+                                    <h4><WalletIcon size={18} /> 가격 정보 (원/kg)</h4>
+                                    <div className="form-grid price-grid">
+                                        <div className="form-group">
+                                            <label className="label">매입가</label>
+                                            <div className="input-with-unit">
+                                                <input
+                                                    type="number"
+                                                    className="input"
+                                                    value={formData.costPrice || ''}
+                                                    onChange={(e) => setFormData({ ...formData, costPrice: parseFloat(e.target.value) || 0 })}
+                                                    placeholder="15000"
+                                                />
+                                                <span className="unit">원</span>
+                                            </div>
+                                            <span className="help-text">공급업체로부터 매입하는 가격</span>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="label">도매가 (B2B 공급가)</label>
+                                            <div className="input-with-unit">
+                                                <input
+                                                    type="number"
+                                                    className="input"
+                                                    value={formData.wholesalePrice || ''}
+                                                    onChange={(e) => setFormData({ ...formData, wholesalePrice: parseFloat(e.target.value) || 0 })}
+                                                    placeholder="17500"
+                                                />
+                                                <span className="unit">원</span>
+                                            </div>
+                                            <span className="help-text">거래처에 공급하는 가격</span>
+                                        </div>
+                                    </div>
+
+                                    {/* 마진 계산 */}
+                                    {(formData.costPrice !== undefined && formData.wholesalePrice !== undefined) && (
+                                        <div className="margin-info">
+                                            <span>도매 마진: </span>
+                                            <strong className={formData.wholesalePrice - formData.costPrice > 0 ? 'positive' : 'negative'}>
+                                                ₩{formatCurrency(formData.wholesalePrice - formData.costPrice)}
+                                                ({formData.costPrice > 0 ? ((formData.wholesalePrice - formData.costPrice) / formData.costPrice * 100).toFixed(1) : 0}%)
+                                            </strong>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* 비고 */}
+                                <div className="form-section">
+                                    <h4><FileTextIcon size={18} /> 비고</h4>
+                                    <textarea
+                                        className="input textarea"
+                                        value={formData.memo || ''}
+                                        onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
+                                        placeholder="추가 메모 (예: 특수 부위, 계절 상품 등)"
+                                        rows={2}
+                                    />
                                 </div>
                             </div>
 
-                            {/* 가격 정보 */}
-                            <div className="form-section">
-                                <h4><WalletIcon size={18} /> 가격 정보 (원/kg)</h4>
-                                <div className="form-grid price-grid">
-                                    <div className="form-group">
-                                        <label className="label">매입가</label>
-                                        <div className="input-with-unit">
-                                            <input
-                                                type="number"
-                                                className="input"
-                                                value={formData.costPrice || ''}
-                                                onChange={(e) => setFormData({ ...formData, costPrice: parseFloat(e.target.value) || 0 })}
-                                                placeholder="15000"
-                                            />
-                                            <span className="unit">원</span>
-                                        </div>
-                                        <span className="help-text">공급업체로부터 매입하는 가격</span>
-                                    </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={closeModal} disabled={saving}>
+                                    취소
+                                </button>
+                                <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                                    {saving ? '저장 중...' : (editingProduct ? '수정 완료' : '상품 추가')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
 
-                                    <div className="form-group">
-                                        <label className="label">도매가 (B2B 공급가)</label>
-                                        <div className="input-with-unit">
-                                            <input
-                                                type="number"
-                                                className="input"
-                                                value={formData.wholesalePrice || ''}
-                                                onChange={(e) => setFormData({ ...formData, wholesalePrice: parseFloat(e.target.value) || 0 })}
-                                                placeholder="17500"
-                                            />
-                                            <span className="unit">원</span>
+            {/* Bulk Edit Modal */}
+            {
+                showBulkModal && (
+                    <div className="modal-backdrop" onClick={() => setShowBulkModal(false)}>
+                        <div className="modal bulk-modal" onClick={e => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>📦 예상중량 일괄 수정</h3>
+                                <button className="btn btn-ghost" onClick={() => setShowBulkModal(false)}>✕</button>
+                            </div>
+                            <div className="modal-body">
+                                <p className="bulk-guide">모든 품목의 예상중량(kg/Box)을 한 화면에서 빠르게 수정할 수 있습니다.</p>
+                                <div className="bulk-table-container">
+                                    <table className="bulk-table">
+                                        <thead>
+                                            <tr>
+                                                <th>카테고리1</th>
+                                                <th>품목명</th>
+                                                <th>현재 단위</th>
+                                                <th>예상중량 (kg/Box)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {products.map(p => (
+                                                <tr key={p.id}>
+                                                    <td>
+                                                        <span className={`category-badge ${p.category1}`}>{p.category1}</span>
+                                                    </td>
+                                                    <td><strong>{p.name}</strong></td>
+                                                    <td>{p.unit.toUpperCase()}</td>
+                                                    <td>
+                                                        <input
+                                                            type="number"
+                                                            className="input input-sm"
+                                                            value={bulkRows[p.id] ?? ''}
+                                                            onChange={(e) => setBulkRows({
+                                                                ...bulkRows,
+                                                                [p.id]: parseFloat(e.target.value) || undefined
+                                                            })}
+                                                            placeholder="예: 20"
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={() => setShowBulkModal(false)} disabled={saving}>
+                                    취소
+                                </button>
+                                <button className="btn btn-primary" onClick={handleBulkSave} disabled={saving}>
+                                    {saving ? '저장 중...' : '전체 저장 (변경된 항목만)'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Price History Modal */}
+            {showPriceHistoryModal && selectedProductForHistory && (
+                <div className="modal-backdrop" onClick={() => setShowPriceHistoryModal(false)}>
+                    <div className="modal price-history-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="flex items-center gap-2">
+                                <ChartIcon size={24} color="#3b82f6" />
+                                <div>
+                                    <h3 className="text-xl font-bold">{selectedProductForHistory.name} 가격 변동 추이</h3>
+                                    <p className="text-xs text-slate-500">품목코드: {selectedProductForHistory.id}</p>
+                                </div>
+                            </div>
+                            <button className="btn btn-ghost" onClick={() => setShowPriceHistoryModal(false)}>✕</button>
+                        </div>
+
+                        <div className="modal-body overflow-visible">
+                            <div className="history-summary">
+                                <div className="stat-card glass-card">
+                                    <span className="stat-label">현재 매입가</span>
+                                    <span className="stat-value">₩{formatCurrency(selectedProductForHistory.costPrice)}</span>
+                                </div>
+                                <div className="stat-card glass-card">
+                                    <span className="stat-label">현재 도매가</span>
+                                    <span className="stat-value">₩{formatCurrency(selectedProductForHistory.wholesalePrice)}</span>
+                                </div>
+                                <div className="stat-card glass-card">
+                                    <span className="stat-label">조회 연도</span>
+                                    <select
+                                        className="input select sm mt-1"
+                                        value={historyYear}
+                                        onChange={(e) => setHistoryYear(Number(e.target.value))}
+                                    >
+                                        {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}년</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Custom SVG Chart */}
+                            <div className="chart-container">
+                                <div className="chart-title">
+                                    <span>연간 가격 변동 추이 ({historyYear}년)</span>
+                                    <div className="chart-legend">
+                                        <div className="legend-item">
+                                            <span className="legend-color" style={{ background: '#94a3b8', border: '1px dashed #475569' }}></span>
+                                            <span>매입가</span>
                                         </div>
-                                        <span className="help-text">거래처에 공급하는 가격</span>
+                                        <div className="legend-item">
+                                            <span className="legend-color" style={{ background: '#3b82f6' }}></span>
+                                            <span>도매가</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* 마진 계산 */}
-                                {(formData.costPrice !== undefined && formData.wholesalePrice !== undefined) && (
-                                    <div className="margin-info">
-                                        <span>도매 마진: </span>
-                                        <strong className={formData.wholesalePrice - formData.costPrice > 0 ? 'positive' : 'negative'}>
-                                            ₩{formatCurrency(formData.wholesalePrice - formData.costPrice)}
-                                            ({formData.costPrice > 0 ? ((formData.wholesalePrice - formData.costPrice) / formData.costPrice * 100).toFixed(1) : 0}%)
-                                        </strong>
+                                {priceHistory.length > 0 ? (
+                                    <div className="relative">
+                                        <svg className="chart-svg" viewBox="0 0 800 300">
+                                            {/* Grid Lines */}
+                                            {[0, 1, 2, 3, 4, 5].map(i => {
+                                                const y = 20 + i * 50;
+                                                return (
+                                                    <g key={i}>
+                                                        <line x1="50" y1={y} x2="780" y2={y} className="chart-axis" strokeDasharray="2,2" />
+                                                    </g>
+                                                )
+                                            })}
+
+                                            {/* Months x-axis labels */}
+                                            {Array.from({ length: 12 }).map((_, i) => {
+                                                const x = 50 + i * (730 / 11);
+                                                return <text key={i} x={x} y="290" className="chart-label" textAnchor="middle">{i + 1}월</text>
+                                            })}
+
+                                            {/* Draw Price Lines */}
+                                            {(() => {
+                                                const yearHistory = priceHistory.filter(h => h.changedAt.toDate().getFullYear() === historyYear);
+                                                if (yearHistory.length === 0) return null;
+
+                                                const allPrices = yearHistory.flatMap(h => [h.costPrice, h.wholesalePrice]);
+                                                const minPrice = Math.min(...allPrices) * 0.9;
+                                                const maxPrice = Math.max(...allPrices) * 1.1;
+                                                const range = maxPrice - minPrice || 1000;
+
+                                                const getY = (price: number) => 270 - ((price - minPrice) / range) * 250;
+                                                const getX = (date: Date) => {
+                                                    const start = new Date(historyYear, 0, 1).getTime();
+                                                    const end = new Date(historyYear, 11, 31).getTime();
+                                                    const total = end - start;
+                                                    const current = date.getTime() - start;
+                                                    return 50 + (current / total) * 730;
+                                                };
+
+                                                const costPoints = yearHistory.map(h => `${getX(h.changedAt.toDate())},${getY(h.costPrice)}`).join(' ');
+                                                const wholesalePoints = yearHistory.map(h => `${getX(h.changedAt.toDate())},${getY(h.wholesalePrice)}`).join(' ');
+
+                                                return (
+                                                    <>
+                                                        {/* Y-axis price labels */}
+                                                        {[0, 1, 2, 3, 4, 5].map(i => {
+                                                            const price = maxPrice - (i * range / 5);
+                                                            return <text key={i} x="45" y={20 + i * 50 + 5} className="chart-label" textAnchor="end">₩{formatCurrency(Math.floor(price / 100) * 100)}</text>
+                                                        })}
+                                                        <polyline points={costPoints} className="chart-line-cost" />
+                                                        <polyline points={wholesalePoints} className="chart-line-wholesale" />
+                                                        {yearHistory.map((h, i) => (
+                                                            <g key={i}>
+                                                                <circle
+                                                                    cx={getX(h.changedAt.toDate())}
+                                                                    cy={getY(h.wholesalePrice)}
+                                                                    r="4"
+                                                                    fill="#3b82f6"
+                                                                    className="chart-point"
+                                                                >
+                                                                    <title>{h.changedAt.toDate().toLocaleDateString()}: ₩{formatCurrency(h.wholesalePrice)}</title>
+                                                                </circle>
+                                                                <circle
+                                                                    cx={getX(h.changedAt.toDate())}
+                                                                    cy={getY(h.costPrice)}
+                                                                    r="3"
+                                                                    fill="#94a3b8"
+                                                                    className="chart-point"
+                                                                >
+                                                                    <title>{h.changedAt.toDate().toLocaleDateString()}: ₩{formatCurrency(h.costPrice)}</title>
+                                                                </circle>
+                                                            </g>
+                                                        ))}
+                                                    </>
+                                                )
+                                            })()}
+                                        </svg>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center p-20 text-slate-400 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+                                        <ChartIcon size={48} className="mb-4 opacity-20" />
+                                        <p>변동 이력이 아직 기록되지 않았습니다.</p>
+                                        <p className="text-xs mt-2">가격 정보가 수정될 때마다 자동으로 기록됩니다.</p>
                                     </div>
                                 )}
                             </div>
 
-                            {/* 비고 */}
-                            <div className="form-section">
-                                <h4><FileTextIcon size={18} /> 비고</h4>
-                                <textarea
-                                    className="input textarea"
-                                    value={formData.memo || ''}
-                                    onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
-                                    placeholder="추가 메모 (예: 특수 부위, 계절 상품 등)"
-                                    rows={2}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={closeModal} disabled={saving}>
-                                취소
-                            </button>
-                            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                                {saving ? '저장 중...' : (editingProduct ? '수정 완료' : '상품 추가')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Bulk Edit Modal */}
-            {showBulkModal && (
-                <div className="modal-backdrop" onClick={() => setShowBulkModal(false)}>
-                    <div className="modal bulk-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>📦 예상중량 일괄 수정</h3>
-                            <button className="btn btn-ghost" onClick={() => setShowBulkModal(false)}>✕</button>
-                        </div>
-                        <div className="modal-body">
-                            <p className="bulk-guide">모든 품목의 예상중량(kg/Box)을 한 화면에서 빠르게 수정할 수 있습니다.</p>
-                            <div className="bulk-table-container">
-                                <table className="bulk-table">
+                            {/* Price History Table */}
+                            <div className="price-history-table-container">
+                                <table className="product-table compact">
                                     <thead>
                                         <tr>
-                                            <th>카테고리1</th>
-                                            <th>품목명</th>
-                                            <th>현재 단위</th>
-                                            <th>예상중량 (kg/Box)</th>
+                                            <th>변경 일시</th>
+                                            <th className="price-col">매입가</th>
+                                            <th className="price-col">도매가</th>
+                                            <th>변동폭 (도매)</th>
+                                            <th>담당자</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {products.map(p => (
-                                            <tr key={p.id}>
-                                                <td>
-                                                    <span className={`category-badge ${p.category1}`}>{p.category1}</span>
-                                                </td>
-                                                <td><strong>{p.name}</strong></td>
-                                                <td>{p.unit.toUpperCase()}</td>
-                                                <td>
-                                                    <input
-                                                        type="number"
-                                                        className="input input-sm"
-                                                        value={bulkRows[p.id] ?? ''}
-                                                        onChange={(e) => setBulkRows({
-                                                            ...bulkRows,
-                                                            [p.id]: parseFloat(e.target.value) || undefined
-                                                        })}
-                                                        placeholder="예: 20"
-                                                    />
-                                                </td>
+                                        {priceHistory.slice().reverse().map((h, i, arr) => {
+                                            const prev = arr[i + 1];
+                                            const diff = prev ? h.wholesalePrice - prev.wholesalePrice : 0;
+                                            return (
+                                                <tr key={h.id || i}>
+                                                    <td>{h.changedAt.toDate().toLocaleString()}</td>
+                                                    <td className="price-col">₩{formatCurrency(h.costPrice)}</td>
+                                                    <td className="price-col font-bold">₩{formatCurrency(h.wholesalePrice)}</td>
+                                                    <td>
+                                                        {diff > 0 ? (
+                                                            <span className="history-trend-up">▲ ₩{formatCurrency(diff)}</span>
+                                                        ) : diff < 0 ? (
+                                                            <span className="history-trend-down">▼ ₩{formatCurrency(Math.abs(diff))}</span>
+                                                        ) : (
+                                                            <span className="text-slate-400">-</span>
+                                                        )}
+                                                    </td>
+                                                    <td>{h.changedBy || '시스템'}</td>
+                                                </tr>
+                                            )
+                                        })}
+                                        {priceHistory.length === 0 && (
+                                            <tr>
+                                                <td colSpan={5} className="text-center py-8">이력이 없습니다.</td>
                                             </tr>
-                                        ))}
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowBulkModal(false)} disabled={saving}>
-                                취소
-                            </button>
-                            <button className="btn btn-primary" onClick={handleBulkSave} disabled={saving}>
-                                {saving ? '저장 중...' : '전체 저장 (변경된 항목만)'}
-                            </button>
+                            <button className="btn btn-secondary" onClick={() => setShowPriceHistoryModal(false)}>닫기</button>
                         </div>
                     </div>
                 </div>
             )}
         </div>
+
     )
 }
