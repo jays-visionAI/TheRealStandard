@@ -300,7 +300,7 @@ export default function PriceListManager() {
             {/* Create / Edit Modal */}
             {showCreateModal && (
                 <div className="modal-backdrop" onClick={() => setShowCreateModal(false)}>
-                    <div className="modal product-modal" style={{ maxWidth: '1000px', width: '92vw' }} onClick={e => e.stopPropagation()}>
+                    <div className="modal product-modal" style={{ maxWidth: '1000px', width: '92vw', maxHeight: '95vh' }} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3><FileTextIcon size={20} /> {isEditing ? '단가표 수정' : '새 단가표 생성'}</h3>
                             <button className="btn btn-ghost" onClick={() => setShowCreateModal(false)}>✕</button>
@@ -345,7 +345,7 @@ export default function PriceListManager() {
                                 )}
                             </div>
 
-                            <div className="table-container-scroll" style={{ maxHeight: '520px', overflowY: 'auto' }}>
+                            <div className="table-container-scroll" style={{ maxHeight: '800px', overflowY: 'auto' }}>
                                 <table className="product-table price-selection-table compact-table">
                                     <thead>
                                         <tr>
