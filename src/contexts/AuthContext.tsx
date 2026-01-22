@@ -67,34 +67,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (fbUser && fbUser.email) {
                 try {
-                    // Firestore에서 사용자 정보 가져오기
+                    // 통합 users 컬렉션에서 사용자 정보 가져오기
                     const firestoreUser = await getUserByEmail(fbUser.email)
 
                     if (firestoreUser) {
                         setUser({
                             id: firestoreUser.id,
                             email: firestoreUser.email,
-                            name: firestoreUser.name,
+                            name: firestoreUser.business?.companyName || firestoreUser.name,
                             role: firestoreUser.role,
-                            orgId: firestoreUser.orgId,
+                            orgId: firestoreUser.id, // 통합 후에는 사용자 ID가 곧 조직 ID
                             firebaseUid: fbUser.uid
                         })
                     } else {
-                        // 고객 DB에서 확인 (전체 목록 대신 이메일로 직접 조회)
-                        const { getCustomerByEmail } = await import('../lib/customerService')
-                        const foundCustomer = await getCustomerByEmail(fbUser.email)
+                        // users 컬렉션에 없는 경우 - 신규 사용자로 자동 생성
+                        console.log('User not found in Firestore, creating new user...')
+                        const { createUser } = await import('../lib/userService')
+                        await createUser({
+                            email: fbUser.email.toLowerCase().trim(),
+                            name: fbUser.displayName || '신규 사용자',
+                            role: 'CUSTOMER',
+                            status: 'PENDING',
+                            firebaseUid: fbUser.uid
+                        })
 
-                        if (foundCustomer) {
+                        // 생성된 사용자 정보 다시 조회
+                        const newUser = await getUserByEmail(fbUser.email)
+                        if (newUser) {
                             setUser({
-                                id: foundCustomer.id,
-                                email: foundCustomer.email,
-                                name: foundCustomer.ceoName,
-                                role: 'CUSTOMER',
-                                orgId: foundCustomer.id,
+                                id: newUser.id,
+                                email: newUser.email,
+                                name: newUser.name,
+                                role: newUser.role,
+                                orgId: newUser.id,
                                 firebaseUid: fbUser.uid
                             })
                         } else {
-                            // 설정되지 않은 사용자 - 기본 고객으로 처리
+                            // fallback: 기본 정보로 설정
                             setUser({
                                 id: fbUser.uid,
                                 email: fbUser.email,
@@ -107,7 +116,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 } catch (error) {
                     console.error('Failed to fetch user data:', error)
                     // Firebase Auth는 성공했지만 Firestore 조회 실패 시
-                    // 기본 정보로 설정
                     setUser({
                         id: fbUser.uid,
                         email: fbUser.email,
