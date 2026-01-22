@@ -20,6 +20,43 @@ export default function PriceListGuestView() {
         address: '',
     })
     const [searchQuery, setSearchQuery] = useState('')
+    const [countdown, setCountdown] = useState('')
+
+    // Countdown timer for validity period (5 days from sharedAt)
+    useEffect(() => {
+        if (!priceList) return
+        const baseDate = priceList.sharedAt?.toDate?.() || priceList.createdAt?.toDate?.()
+        if (!baseDate) return
+
+        const expiryDate = new Date(baseDate.getTime() + 5 * 24 * 60 * 60 * 1000) // 5 days
+
+        const updateCountdown = () => {
+            const now = new Date()
+            const diff = expiryDate.getTime() - now.getTime()
+
+            if (diff <= 0) {
+                setCountdown('만료')
+                return
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+
+            if (days > 0) {
+                setCountdown(`${days}일 ${hours}시간 ${minutes}분 남음`)
+            } else if (hours > 0) {
+                setCountdown(`${hours}시간 ${minutes}분 ${seconds}초 남음`)
+            } else {
+                setCountdown(`${minutes}분 ${seconds}초 남음`)
+            }
+        }
+
+        updateCountdown()
+        const interval = setInterval(updateCountdown, 1000)
+        return () => clearInterval(interval)
+    }, [priceList])
 
     useEffect(() => {
         const loadPriceList = async () => {
@@ -126,9 +163,9 @@ export default function PriceListGuestView() {
                                         <span className="text-slate-400 mr-2">적용일자</span>
                                         <span className="font-bold">{priceList.sharedAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일') || priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일')}</span>
                                     </p>
-                                    <p className="text-slate-600">
-                                        <span className="text-slate-400 mr-2">유효기간</span>
-                                        <span className="font-bold">적용일로부터 5일</span>
+                                    <p className="text-slate-600 flex items-center gap-2">
+                                        <span className="text-slate-400">유효기간</span>
+                                        <span className={`font-bold ${countdown === '만료' ? 'text-red-600' : 'text-blue-600'}`}>{countdown || '계산중...'}</span>
                                     </p>
                                 </div>
                             </div>
