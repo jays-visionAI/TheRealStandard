@@ -17,6 +17,7 @@ export interface FirestoreOrderSheet {
     customerComment?: string
     discountAmount?: number
     status: 'DRAFT' | 'SENT' | 'SUBMITTED' | 'CONFIRMED' | 'REVISION' | 'CLOSED'
+    isGuest?: boolean
     createdAt: Timestamp
     updatedAt: Timestamp
 }

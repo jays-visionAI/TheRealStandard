@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon, CheckIcon, XIcon, AlertTriangleIcon, ChevronLeftIcon, ChevronRightIcon, InfoIcon } from '../../components/Icons'
+import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon, CheckIcon, XIcon, AlertTriangleIcon, ChevronLeftIcon, ChevronRightIcon, InfoIcon, PlusIcon } from '../../components/Icons'
 import { getAllCustomerUsers, type FirestoreUser, type BusinessProfile } from '../../lib/userService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import {
@@ -113,6 +113,10 @@ export default function OrderSheetCreate() {
     const [cutOffAt, setCutOffAt] = useState('')
     const [shipTo, setShipTo] = useState('')
     const [adminComment, setAdminComment] = useState('')
+
+    // 비회원(신규 고객) 관련 상태
+    const [isGuestCustomer, setIsGuestCustomer] = useState(false)
+    const [guestCustomerName, setGuestCustomerName] = useState('')
 
     const [skipShippingInfo, setSkipShippingInfo] = useState(true)
 
@@ -609,7 +613,8 @@ export default function OrderSheetCreate() {
             // Firebase에 발주서 생성
             const newOrderSheet = await createOrderSheetWithId(customOrderId, {
                 customerOrgId: selectedCustomer.id,
-                customerName: selectedCustomer.companyName || '',
+                customerName: selectedCustomer.companyName || selectedCustomer.name || '',
+                isGuest: isGuestCustomer,
                 shipDate: shipDate ? Timestamp.fromDate(new Date(shipDate)) : null,
                 cutOffAt: Timestamp.fromDate(new Date(cutOffAt)),
                 shipTo: shipTo || selectedCustomer.address || '',
@@ -814,6 +819,41 @@ export default function OrderSheetCreate() {
                                     </table>
                                 </div>
                             </>
+                        )}
+
+                        {filteredCustomers.length === 0 && customerSearch.trim() !== '' && (
+                            <div className="guest-entry-area p-10 text-center border-dashed border-2 border-gray-200 rounded-xl my-6">
+                                <BuildingIcon size={48} className="mx-auto mb-4 text-gray-300" />
+                                <p className="text-gray-600 mb-6">검색된 거래처가 없습니다. 신규 거래처로 직접 입력하시겠습니까?</p>
+                                <div className="flex flex-col items-center gap-4">
+                                    <input
+                                        type="text"
+                                        className="input text-center max-w-sm"
+                                        placeholder="신규 거래처명 입력"
+                                        value={guestCustomerName || customerSearch}
+                                        onChange={(e) => setGuestCustomerName(e.target.value)}
+                                    />
+                                    <button
+                                        className="btn btn-secondary btn-lg"
+                                        onClick={() => {
+                                            setIsGuestCustomer(true)
+                                            const name = guestCustomerName || customerSearch
+                                            setSelectedCustomer({
+                                                id: 'GUEST-' + Date.now(),
+                                                email: '',
+                                                name: name,
+                                                companyName: name,
+                                                role: 'CUSTOMER',
+                                                status: 'PENDING',
+                                                isActive: true
+                                            } as Customer)
+                                            setStep(2)
+                                        }}
+                                    >
+                                        <PlusIcon size={18} /> 신규 거래처로 발주 계속하기
+                                    </button>
+                                </div>
+                            </div>
                         )}
 
                         <div className="step-actions">

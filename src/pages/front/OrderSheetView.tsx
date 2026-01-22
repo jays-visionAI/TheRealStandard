@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { CheckCircleIcon, UserIcon, ChevronRightIcon } from '../../components/Icons'
-import { getOrderSheetByToken } from '../../lib/orderService'
+import { getOrderSheetByToken, updateOrderSheet, setOrderSheetItems, createSalesOrderFromSheet, getOrderSheetItems } from '../../lib/orderService'
 import { getUserById, type FirestoreUser } from '../../lib/userService'
 
 interface OrderItem {
@@ -23,6 +23,7 @@ export default function OrderSheetView() {
   const [revisionComment, setRevisionComment] = useState('')
   const [items, setItems] = useState<OrderItem[]>([])
   const [customer, setCustomer] = useState<FirestoreUser | null>(null)
+  const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
@@ -34,10 +35,31 @@ export default function OrderSheetView() {
       }
 
       try {
-        const order = await getOrderSheetByToken(token)
-        if (order) {
-          const customerData = await getUserById(order.customerOrgId)
-          setCustomer(customerData)
+        const orderData = await getOrderSheetByToken(token)
+        if (orderData) {
+          setOrder(orderData)
+          setStatus(orderData.status as any)
+
+          if (!orderData.isGuest) {
+            const customerData = await getUserById(orderData.customerOrgId)
+            setCustomer(customerData)
+          }
+
+          // Load items from Firestore instead of mock
+          const firestoreItems = await getOrderSheetItems(orderData.id)
+          if (firestoreItems && firestoreItems.length > 0) {
+            setItems(firestoreItems.map(item => ({
+              id: item.id,
+              productId: item.productId,
+              productName: item.productName,
+              unitPrice: item.unitPrice,
+              qtyKg: item.unit === 'kg' ? item.qtyRequested || 0 : 0,
+              qtyBox: item.unit === 'box' ? item.qtyRequested || 0 : 0,
+              estimatedKg: item.estimatedKg || 0,
+              amount: item.amount || 0,
+              boxToKg: 20 // Default or from product service
+            })))
+          }
         }
       } catch (err) {
         console.error('Failed to load order data:', err)
@@ -48,14 +70,7 @@ export default function OrderSheetView() {
 
     loadData()
 
-    // Mock Items loading
-    setItems([
-      { id: '1', productName: '한우 등심 1++', unitPrice: 85000, qtyKg: 0, qtyBox: 0, estimatedKg: 0, amount: 0 },
-      { id: '2', productName: '한우 안심 1++', unitPrice: 95000, qtyKg: 0, qtyBox: 0, estimatedKg: 0, amount: 0 },
-      { id: '3', productName: '한우 채끝 1+', unitPrice: 72000, qtyKg: 0, qtyBox: 0, estimatedKg: 0, amount: 0 },
-      { id: '4', productName: '한우 갈비 1+', unitPrice: 68000, qtyKg: 0, qtyBox: 0, estimatedKg: 0, amount: 0 },
-      { id: '5', productName: '수입 부채살', unitPrice: 35000, qtyKg: 0, qtyBox: 0, estimatedKg: 0, amount: 0, boxToKg: 20 },
-    ])
+
 
     if (token?.includes('revision')) {
       setStatus('REVISION')
@@ -65,8 +80,8 @@ export default function OrderSheetView() {
 
   if (loading) return <div className="p-20 text-center">불러오는 중...</div>
 
-  // Account Activation Guard
-  if (customer && customer.status !== 'ACTIVE') {
+  // Account Activation Guard (Skip for Guest Customers)
+  if (order && !order.isGuest && customer && customer.status !== 'ACTIVE') {
     return (
       <div className="order-view-container p-6 flex flex-col items-center justify-center min-h-[60vh]">
         <div className="glass-card p-10 text-center max-w-md shadow-2xl">
@@ -117,25 +132,75 @@ export default function OrderSheetView() {
     return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (totalKg === 0) {
       alert('최소 1개 이상의 품목을 주문해주세요.')
       return
     }
 
-    setStatus('SUBMITTED')
-    alert('주문이 제출되었습니다. 운영자 검토 후 확정됩니다.')
+    if (!order || !token) return
+
+    try {
+      setLoading(true)
+      // 1. Update items in Firestore
+      const updateItems = items.map(item => ({
+        productId: (item as any).productId || '',
+        productName: item.productName,
+        unit: item.qtyBox > 0 ? 'box' : 'kg',
+        unitPrice: item.unitPrice,
+        qtyRequested: item.qtyBox > 0 ? item.qtyBox : item.qtyKg,
+        estimatedKg: item.estimatedKg,
+        amount: item.amount,
+      }))
+      await setOrderSheetItems(order.id, updateItems)
+
+      // 2. Update status
+      await updateOrderSheet(order.id, { status: 'SUBMITTED' })
+
+      setStatus('SUBMITTED')
+      alert('주문이 제출되었습니다. 운영자 검토 후 확정됩니다.')
+    } catch (err) {
+      console.error(err)
+      alert('주문 제출에 실패했습니다.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleConfirm = () => {
     setShowConfirmModal(true)
   }
 
-  const confirmOrder = () => {
-    setStatus('CONFIRMED')
-    setShowConfirmModal(false)
-    alert('주문이 최종 확정되었습니다!')
-    navigate(`/order/${token}/tracking`)
+  const confirmOrder = async () => {
+    if (!order || !token) return
+
+    try {
+      setLoading(true)
+      // 1. Create Sales Order from Sheet
+      await createSalesOrderFromSheet(
+        { id: order.id, customerOrgId: order.customerOrgId, customerName: order.customerName },
+        items.map(i => ({
+          productId: (i as any).productId,
+          productName: i.productName,
+          estimatedKg: i.estimatedKg,
+          unitPrice: i.unitPrice,
+          amount: i.amount
+        }))
+      )
+
+      // 2. Update Sheet status
+      await updateOrderSheet(order.id, { status: 'CONFIRMED' })
+
+      setStatus('CONFIRMED')
+      setShowConfirmModal(false)
+      alert('주문이 최종 확정되었습니다!')
+      navigate(`/order/${token}/tracking`)
+    } catch (err) {
+      console.error(err)
+      alert('주문 확정에 실패했습니다.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -144,16 +209,16 @@ export default function OrderSheetView() {
       <div className="order-header glass-card mb-4">
         <div>
           <h1>주문서 작성</h1>
-          <p className="text-secondary">한우명가</p>
+          <p className="text-secondary">{order?.customerName || '알 수 없음'}</p>
         </div>
         <div className="order-meta">
           <div className="meta-item">
             <span className="label">배송일</span>
-            <span className="value">2024-01-16</span>
+            <span className="value">{order?.shipDate ? order.shipDate.toDate().toLocaleDateString() : '미지정'}</span>
           </div>
           <div className="meta-item">
             <span className="label">마감</span>
-            <span className="value warning">18:00까지</span>
+            <span className="value warning">{order?.cutOffAt ? order.cutOffAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}까지</span>
           </div>
         </div>
       </div>
