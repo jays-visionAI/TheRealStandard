@@ -67,6 +67,7 @@ export default function B2BOrderGrid() {
     const [saving, setSaving] = useState(false)
     const [customerComment, setCustomerComment] = useState('')
     const [orderUnit, setOrderUnit] = useState<'kg' | 'box'>('box')
+    const [showSignupModal, setShowSignupModal] = useState(false)
 
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
@@ -489,7 +490,13 @@ export default function B2BOrderGrid() {
             await setOrderSheetItems(orderInfo.id, updatedItems)
 
             setStatus('PENDING_APPROVAL')
-            alert('✅ 주문이 제출되었습니다.\n\n관리자 승인을 대기합니다.')
+
+            // Show signup modal for guest users
+            if (orderInfo.isGuest) {
+                setShowSignupModal(true)
+            } else {
+                alert('✅ 주문이 제출되었습니다.\n\n관리자 승인을 대기합니다.')
+            }
         } catch (err) {
             console.error('Submit failed:', err)
             alert('주문 제출에 실패했습니다.')
@@ -862,6 +869,79 @@ export default function B2BOrderGrid() {
                     </button>
                 </div>
             </footer>
+
+            {/* Guest Signup Promotion Modal */}
+            {showSignupModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/70 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+                        {/* Success Header */}
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-8 py-8 text-center">
+                            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </div>
+                            <h2 className="text-2xl font-bold text-white mb-1">주문이 접수되었습니다!</h2>
+                            <p className="text-white/80 text-sm">담당자가 확인 후 연락드리겠습니다.</p>
+                        </div>
+
+                        {/* Signup Promotion */}
+                        <div className="px-8 py-8">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 text-center">정식 거래처로 등록하시면</h3>
+
+                            <ul className="space-y-3 mb-6">
+                                <li className="flex items-start gap-3">
+                                    <span className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+                                    </span>
+                                    <span className="text-slate-700 text-sm"><strong>거래명세서/세금계산서</strong> 자동 발급</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                                    </span>
+                                    <span className="text-slate-700 text-sm"><strong>주문 이력 조회</strong> 및 간편 재주문</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" /><path d="M12 6v6l4 2" /></svg>
+                                    </span>
+                                    <span className="text-slate-700 text-sm"><strong>실시간 배송 추적</strong> 알림 서비스</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                                    </span>
+                                    <span className="text-slate-700 text-sm"><strong>맞춤 단가</strong> 적용 및 혜택</span>
+                                </li>
+                            </ul>
+
+                            <div className="space-y-3">
+                                <button
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold transition-colors shadow-lg shadow-blue-500/20"
+                                    onClick={() => {
+                                        setShowSignupModal(false)
+                                        // Navigate to signup or show signup form
+                                        alert('담당자가 회원가입 링크를 SMS로 발송해 드립니다.')
+                                    }}
+                                >
+                                    정식 거래처 등록 신청하기
+                                </button>
+                                <button
+                                    className="w-full text-slate-500 hover:text-slate-700 py-2 text-sm font-medium transition-colors"
+                                    onClick={() => setShowSignupModal(false)}
+                                >
+                                    나중에 하기
+                                </button>
+                            </div>
+
+                            <p className="text-xs text-slate-400 text-center mt-4">
+                                지금 신청하지 않으셔도 담당자가 안내해 드립니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
