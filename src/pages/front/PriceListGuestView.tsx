@@ -111,53 +111,63 @@ export default function PriceListGuestView() {
 
     return (
         <div className="price-guest-view min-h-screen bg-[#F0F2F5] pb-20 font-sans">
-            {/* Document Header Section - Simulating an official paper header */}
             <div className="doc-page-container mx-auto">
-                <header className="doc-header bg-white shadow-sm border-b-4 border-primary px-6 md:px-12 py-12 mb-8 rounded-b-[40px] relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-5">
-                        <FileTextIcon size={200} />
-                    </div>
-
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
-                        <div className="document-branding">
-                            <span className="badge badge-primary px-3 py-1 mb-4 font-black tracking-widest text-[10px]">TRS OFFICIAL DOCUMENT</span>
-                            <h1 className="text-3xl md:text-5xl font-black text-primary tracking-tighter leading-none mb-4">
-                                {priceList.title}
-                            </h1>
-                            <div className="h-1.5 w-24 bg-primary rounded-full mb-6"></div>
-                        </div>
-
-                        <div className="document-meta bg-secondary/30 p-6 rounded-3xl border border-primary/5 min-w-[200px]">
-                            <div className="grid grid-cols-2 md:grid-cols-1 gap-x-8 gap-y-4">
-                                <div>
-                                    <div className="text-[10px] text-muted mb-1 font-black uppercase tracking-widest">Date of Issue</div>
-                                    <div className="text-sm font-bold text-primary flex items-center gap-1.5">
-                                        <CalendarIcon size={14} /> {priceList.createdAt?.toDate?.()?.toLocaleDateString()}
-                                    </div>
-                                </div>
-                                {priceList.validUntil && (
-                                    <div>
-                                        <div className="text-[10px] text-muted mb-1 font-black uppercase tracking-widest">Expiration Date</div>
-                                        <div className={`text-sm flex items-center gap-1.5 font-bold ${isExpired ? 'text-error' : 'text-primary'}`}>
-                                            <CalendarIcon size={14} /> {priceList.validUntil.toDate().toLocaleDateString()}
-                                            {isExpired && <span className="text-[10px] bg-error text-white px-1.5 py-0.5 rounded ml-1">EXPIRED</span>}
-                                        </div>
-                                    </div>
-                                )}
+                <header className="doc-header bg-white shadow-2xl px-8 md:px-16 py-16 mb-8 rounded-b-[40px] relative">
+                    {/* Official Branding Top Bar */}
+                    <div className="flex justify-between items-start mb-12 border-b-2 border-black pb-8">
+                        <div>
+                            <h1 className="text-6xl font-black tracking-[0.3em] text-black">견 적 서</h1>
+                            <div className="text-xs text-muted mt-4 font-bold">
+                                우편번호 350-904 충남 홍성군 광천읍 상정리 539번지  TEL:041)642-7341~5  FAX:041)642-7346
                             </div>
                         </div>
+                        <div className="flex gap-4">
+                            {/* Placeholder for logos in image */}
+                            <div className="w-16 h-16 border-2 border-black rounded-xl flex items-center justify-center font-black text-[10px] text-center p-1 uppercase">내포원</div>
+                            <div className="w-16 h-16 border-2 border-black rounded-full flex items-center justify-center font-black text-[8px] text-center p-1 uppercase">우리도나</div>
+                            <div className="w-16 h-16 border-2 border-primary rounded-full flex items-center justify-center font-black text-[10px] text-primary text-center p-1">HACCP</div>
+                        </div>
                     </div>
 
-                    <div className="mt-8 pt-8 border-t border-secondary max-w-2xl">
-                        <p className="text-secondary text-base leading-relaxed font-medium">
-                            본 문서는 <strong className="text-primary">TRS 육류유통 통합 관리 시스템</strong>에서 발행된 정식 단가표입니다.
-                            시장 변동성에 따라 단가가 조정될 수 있으며, 상기 유효기간 내 확정된 주문에 한해 해당 공급가가 보장됩니다.
-                        </p>
+                    {/* Document Info Box (Grid Style) */}
+                    <div className="w-full md:w-1/2 border-2 border-black mb-10 overflow-hidden rounded-sm">
+                        <div className="grid grid-cols-4 border-b border-black">
+                            <div className="col-span-1 bg-secondary/20 p-3 text-sm font-black border-r border-black text-center">작성일자 :</div>
+                            <div className="col-span-3 p-3 text-sm font-bold pl-4">
+                                {priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 border-b border-black">
+                            <div className="col-span-1 bg-secondary/20 p-3 text-sm font-black border-r border-black text-center">수      신 :</div>
+                            <div className="col-span-3 p-3 text-sm font-bold pl-4">협력사 대표이사 귀하</div>
+                        </div>
+                        <div className="grid grid-cols-4 border-b border-black">
+                            <div className="col-span-1 bg-secondary/20 p-3 text-sm font-black border-r border-black text-center">참      조 :</div>
+                            <div className="col-span-3 p-3 text-sm font-bold pl-4">각 사업소 담당자</div>
+                        </div>
+                        <div className="grid grid-cols-4">
+                            <div className="col-span-1 bg-secondary/20 p-3 text-sm font-black border-r border-black text-center">제      목 :</div>
+                            <div className="col-span-3 p-3 text-sm font-bold pl-4">{priceList.title}</div>
+                        </div>
+                    </div>
+
+                    <div className="mb-10 text-lg leading-relaxed font-bold border-l-4 border-primary pl-6">
+                        <p>1. 귀사의 일익 번창하심을 기원합니다.</p>
+                        <p>2. 당사의 공급단가를 아래와 같이 안내하오니 업무에 참고하시기 바랍니다.</p>
+                    </div>
+
+                    {/* Highlighted Applicability Date */}
+                    <div className="flex items-baseline gap-6 mb-8 py-4 border-y border-dashed border-gray-300">
+                        <span className="text-xl font-black min-w-[120px]">1. 적용기간 :</span>
+                        <div className="relative">
+                            <span className="text-3xl font-black bg-yellow-200/60 px-4 py-1 rounded-sm relative z-10">
+                                {priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} 부터 ~ 미정
+                            </span>
+                        </div>
                     </div>
                 </header>
 
-                <div className="doc-content-body px-4 md:px-0">
-                    {/* Expiry Alert */}
+                <main className="doc-content-body px-4 md:px-0">
                     {isExpired && (
                         <div className="glass-card bg-error/5 border-2 border-error/20 p-5 mb-8 flex items-center gap-4 rounded-3xl">
                             <div className="bg-error p-2 rounded-xl">
@@ -170,147 +180,87 @@ export default function PriceListGuestView() {
                         </div>
                     )}
 
-                    {/* Controls Section */}
-                    <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-                        <div className="w-full sm:flex-1 relative">
-                            <SearchIcon size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-muted" />
-                            <input
-                                type="text"
-                                placeholder="품목명을 입력하여 검색..."
-                                className="input pl-14 pr-12 py-5 h-16 bg-white shadow-xl shadow-black/[0.03] border-none focus:ring-4 focus:ring-primary/10 rounded-[24px] text-lg font-medium"
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                            />
-                            {searchQuery && (
-                                <button
-                                    onClick={() => setSearchQuery('')}
-                                    className="absolute right-5 top-1/2 -translate-y-1/2 text-muted hover:text-primary p-1"
-                                >
-                                    <XIcon size={20} />
-                                </button>
-                            )}
-                        </div>
-                        <div className="w-full sm:w-auto px-6 py-5 bg-white rounded-[24px] shadow-xl shadow-black/[0.03] flex items-center justify-center gap-3 border border-primary/5">
-                            <span className="text-[10px] font-black text-muted uppercase tracking-widest">Current Items</span>
-                            <span className="text-xl font-black text-primary leading-none">{filteredItems.length}</span>
-                        </div>
+                    {/* Search - Keep for utility but style modestly */}
+                    <div className="mb-8 relative max-w-md">
+                        <SearchIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+                        <input
+                            type="text"
+                            placeholder="찾으시는 품목명 검색..."
+                            className="input pl-12 pr-10 py-3 bg-white/50 border-gray-200 focus:bg-white transition-all rounded-xl text-sm"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
                     </div>
 
-                    {/* Main Price Table Document Card */}
-                    <div className="bg-white shadow-2xl shadow-black/[0.05] rounded-[40px] overflow-hidden mb-12 border border-primary/5">
-                        <div className="bg-primary/5 px-8 py-6 border-b border-primary/10 flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-primary rounded-xl text-white">
-                                    <ClipboardListIcon size={18} />
-                                </div>
-                                <h2 className="text-sm font-black text-primary tracking-[0.2em] uppercase">
-                                    Price Quotation Detail
-                                </h2>
-                            </div>
-                            <div className="hidden md:block text-[10px] text-muted font-bold tracking-widest">TRS SYSTEM v1.0</div>
+                    {/* Formal Quotation Table */}
+                    <div className="bg-white shadow-2xl rounded-sm overflow-hidden mb-12 border-2 border-black">
+                        <div className="bg-black text-white px-8 py-4 flex justify-between items-center">
+                            <h2 className="text-sm font-black tracking-widest uppercase flex items-center gap-2">
+                                <PackageIcon size={16} /> 2. 공급단가 내역
+                            </h2>
+                            <span className="text-[10px] font-bold">(단위: 원/kg)</span>
                         </div>
 
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left min-w-[700px]">
+                            <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-secondary/20 text-muted text-[11px] font-black uppercase tracking-widest border-b border-secondary/50">
-                                        <th className="px-8 py-5">Product Information</th>
-                                        <th className="px-8 py-5 text-center">Spec (Box)</th>
-                                        <th className="px-8 py-5 text-center">Unit</th>
-                                        <th className="px-8 py-5 text-right">Unit Price</th>
+                                    <tr className="bg-secondary/10 text-black text-sm font-black text-center border-b-2 border-black">
+                                        <th className="px-6 py-4 border-r border-gray-300 w-1/3">품  명</th>
+                                        <th className="px-6 py-4 border-r border-gray-300">구  분</th>
+                                        <th className="px-6 py-4 border-r border-gray-300 text-right">공급단가</th>
+                                        <th className="px-6 py-4">비  고</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-secondary/40 font-medium">
+                                <tbody className="divide-y divide-gray-300">
                                     {filteredItems.length > 0 ? (
                                         filteredItems.map((item, idx) => (
-                                            <tr key={idx} className="hover:bg-primary/[0.01] transition-colors group">
-                                                <td className="px-8 py-6">
-                                                    <div className="text-lg font-bold text-primary mb-1 group-hover:translate-x-1 transition-transform">{item.name}</div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-black text-muted uppercase tracking-wider">{item.category1}</span>
-                                                        <div className="w-1 h-1 rounded-full bg-secondary"></div>
-                                                        <span className="text-[10px] text-muted font-bold">TRS Grade A</span>
-                                                    </div>
+                                            <tr key={idx} className="hover:bg-primary/[0.02]">
+                                                <td className="px-6 py-4 border-r border-gray-300 font-bold bg-secondary/[0.02]">{item.name}</td>
+                                                <td className="px-6 py-4 border-r border-gray-300 text-center font-bold text-muted">{item.category1}</td>
+                                                <td className="px-6 py-4 border-r border-gray-300 text-right font-black text-xl">
+                                                    {formatCurrency(item.supplyPrice)}
                                                 </td>
-                                                <td className="px-8 py-6 text-center">
-                                                    <div className="inline-flex items-center justify-center px-3 py-1 bg-secondary/30 rounded-lg text-sm font-bold text-secondary">
-                                                        {item.boxWeight ? `${item.boxWeight}kg` : '-'}
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-6 text-center">
-                                                    <span className="text-xs font-black text-muted uppercase tracking-tighter">{item.unit}</span>
-                                                </td>
-                                                <td className="px-8 py-6 text-right">
-                                                    <div className="text-2xl font-black text-primary">
-                                                        <span className="text-sm font-bold mr-1">₩</span>
-                                                        {formatCurrency(item.supplyPrice)}
-                                                    </div>
+                                                <td className="px-6 py-4 text-sm text-muted font-medium italic">
+                                                    {item.boxWeight ? `${item.boxWeight}kg/Box` : '-'}
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={4} className="p-32 text-center text-muted font-bold italic tracking-wide">
-                                                검색 결과와 일치하는 품목이 없습니다.
-                                            </td>
+                                            <td colSpan={4} className="p-20 text-center text-muted font-bold italic">데이터가 없습니다.</td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
                         </div>
+                    </div>
 
-                        <div className="p-8 bg-secondary/10 border-t border-secondary/40 flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div className="text-[10px] text-muted font-bold italic">This list is generated automatically by TRS Cloud. Any tampering voids the document.</div>
-                            <div className="flex items-center gap-4">
-                                <div className="text-[10px] font-black uppercase text-muted tracking-widest">Certified By</div>
-                                <div className="bg-white border-2 border-primary/20 p-2 rounded-full w-12 h-12 flex items-center justify-center font-black text-primary text-xs shadow-inner">TRS</div>
-                            </div>
+                    {/* Official Stamp Footer */}
+                    <div className="bg-white p-12 md:p-20 rounded-sm shadow-xl border-x-2 border-b-2 border-black text-center relative mb-16">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] scale-150 pointer-events-none">
+                            <ClipboardListIcon size={300} />
+                        </div>
+                        <h3 className="text-3xl md:text-5xl font-black text-black tracking-widest relative z-10 mb-8">
+                            (주) 남부미트 대표이사 이재우
+                        </h3>
+                        <div className="flex justify-center gap-12 text-sm font-bold text-muted relative z-10 uppercase tracking-widest">
+                            <span>Main Office: Chungcheongnam-do</span>
+                            <span>Direct: 041)642-7341</span>
                         </div>
                     </div>
 
-                    {/* Bottom Info Section */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-20">
-                        <div className="lg:col-span-7 p-10 bg-white rounded-[40px] shadow-xl shadow-black/[0.02] border border-primary/5">
-                            <h4 className="font-black text-xs text-primary mb-6 flex items-center gap-3 uppercase tracking-[0.3em]">
-                                <div className="w-2 h-2 rounded-full bg-primary pulse"></div>
-                                General Terms & Conditions
-                            </h4>
-                            <div className="space-y-4">
-                                {[
-                                    '시장 수급 상황이나 환율 변동에 따라 예고 없이 단가가 조정될 수 있습니다.',
-                                    '모든 단가는 주문서 제출 시점의 시장가를 기준으로 최종 확정됩니다.',
-                                    '특수 배송이나 대량 주문의 경우 별도의 유통 보조금이 적용될 수 있습니다.',
-                                    '본 단가표는 배포된 대상 업체에 한하여 효력이 발생하며 제3자 양도가 금지됩니다.'
-                                ].map((text, i) => (
-                                    <div key={i} className="flex gap-4 items-start text-secondary text-sm leading-relaxed font-semibold">
-                                        <div className="mt-1.5 w-1 h-1 rounded-full bg-primary/30 flex-shrink-0"></div>
-                                        <span>{text}</span>
-                                    </div>
-                                ))}
-                            </div>
+                    {/* Sticky Action Button for Guest Order */}
+                    {!isExpired && (
+                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
+                            <button
+                                className="w-full bg-primary text-white font-black py-5 rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 text-xl shadow-[0_20px_50px_rgba(37,99,235,0.4)]"
+                                onClick={() => setShowOrderModal(true)}
+                            >
+                                이 단가로 주문 시작하기 <ChevronRightIcon size={24} />
+                            </button>
                         </div>
-
-                        <div className="lg:col-span-5 p-10 bg-primary rounded-[40px] shadow-2xl shadow-primary/30 text-white relative overflow-hidden group">
-                            <div className="relative z-10">
-                                <span className="text-[10px] font-black tracking-widest uppercase opacity-70 mb-2 block">Quick Action</span>
-                                <h4 className="text-3xl font-black mb-4 leading-tight">실시간 주문 및<br />상담 시작하기</h4>
-                                <p className="text-white/80 text-base font-medium mb-8 leading-relaxed">
-                                    번거로운 가입 절차 없이 업체 정보 입력만으로<br />
-                                    즉시 전문 매입 서비스를 이용하실 수 있습니다.
-                                </p>
-                                <button
-                                    className="w-full bg-white text-primary font-black py-5 rounded-[24px] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 text-xl shadow-2xl shadow-black/20"
-                                    onClick={() => setShowOrderModal(true)}
-                                >
-                                    주문서 작성하러 가기 <ChevronRightIcon size={24} />
-                                </button>
-                            </div>
-                            <div className="absolute -right-16 -bottom-16 opacity-10 group-hover:scale-110 group-hover:rotate-12 transition-all duration-1000">
-                                <ClipboardListIcon size={300} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    )}
+                </main>
             </div>
 
             {showOrderModal && (
