@@ -117,9 +117,6 @@ export default function PriceListGuestView() {
                         </div>
                         <div className="text-right space-y-1">
                             <p className="text-[14px] text-slate-500 font-medium">
-                                <span className="text-slate-400">발행일자:</span> {priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
-                            </p>
-                            <p className="text-[14px] text-slate-500 font-medium">
                                 <span className="text-slate-400">적용일자:</span> {priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
                             </p>
                             <p className="text-[14px] text-slate-500 font-medium">
@@ -135,34 +132,34 @@ export default function PriceListGuestView() {
 
                     <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-10">
 
-                        {/* Supplier Info Box - Refined Alignment */}
+                        {/* Supplier Info Box - Visible Borders */}
                         <div className="w-full lg:w-auto min-w-[360px]">
-                            <table className="w-full border-collapse border border-slate-900 border-x-0 border-b-0 text-[13px] table-fixed">
+                            <table className="w-full border-collapse border-2 border-slate-800 text-[13px] table-fixed">
                                 <tbody>
                                     <tr>
-                                        <th rowSpan={5} className="w-10 bg-slate-100 border border-slate-200 font-bold text-slate-500 [writing-mode:vertical-lr] py-4 text-center tracking-[0.5em] text-[10px]">공급자</th>
-                                        <th className="w-[80px] bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">등록번호</th>
-                                        <td colSpan={3} className="border border-slate-200 px-4 py-2.5 font-black text-slate-900 tracking-wider text-[14px]">123-45-67890</td>
+                                        <th rowSpan={5} className="w-10 bg-slate-100 border border-slate-400 font-bold text-slate-600 [writing-mode:vertical-lr] py-4 text-center tracking-[0.5em] text-[10px]">공급자</th>
+                                        <th className="w-[80px] bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">등록번호</th>
+                                        <td colSpan={3} className="border border-slate-400 px-4 py-2.5 font-black text-slate-900 tracking-wider text-[14px]">123-45-67890</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-[80px] bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">상호</th>
-                                        <td className="w-[140px] border border-slate-200 px-4 py-2.5 font-bold text-slate-800">TRS 주식회사</td>
-                                        <th className="w-14 bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">성명</th>
-                                        <td className="border border-slate-200 px-4 py-2.5 font-bold text-slate-800 text-center whitespace-nowrap">홍길동 (인)</td>
+                                        <th className="w-[80px] bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">상호</th>
+                                        <td className="w-[140px] border border-slate-400 px-4 py-2.5 font-bold text-slate-800">TRS 주식회사</td>
+                                        <th className="w-14 bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">성명</th>
+                                        <td className="border border-slate-400 px-4 py-2.5 font-bold text-slate-800 text-center whitespace-nowrap">홍길동 (인)</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-[80px] bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">사업장 주소</th>
-                                        <td colSpan={3} className="border border-slate-200 px-4 py-2.5 text-[12px] font-medium leading-[1.4] text-slate-700">서울특별시 강남구 테헤란로 123, 45층 (TRS타워)</td>
+                                        <th className="w-[80px] bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">사업장 주소</th>
+                                        <td colSpan={3} className="border border-slate-400 px-4 py-2.5 text-[12px] font-medium leading-[1.4] text-slate-700">서울특별시 강남구 테헤란로 123, 45층 (TRS타워)</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-[80px] bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">업태</th>
-                                        <td className="border border-slate-200 px-4 py-2.5 font-medium text-slate-700">도매 및 소매업</td>
-                                        <th className="w-14 bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">종목</th>
-                                        <td className="border border-slate-200 px-4 py-2.5 font-medium text-slate-700 text-center">식육유통외</td>
+                                        <th className="w-[80px] bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">업태</th>
+                                        <td className="border border-slate-400 px-4 py-2.5 font-medium text-slate-700">도매 및 소매업</td>
+                                        <th className="w-14 bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">종목</th>
+                                        <td className="border border-slate-400 px-4 py-2.5 font-medium text-slate-700 text-center">식육유통외</td>
                                     </tr>
                                     <tr>
-                                        <th className="w-[80px] bg-slate-50 border border-slate-200 px-2 py-2.5 text-slate-500 text-center font-bold">연락처</th>
-                                        <td colSpan={3} className="border border-slate-200 px-4 py-2.5 font-bold text-slate-900">02-1234-5678</td>
+                                        <th className="w-[80px] bg-slate-50 border border-slate-400 px-2 py-2.5 text-slate-600 text-center font-bold">연락처</th>
+                                        <td colSpan={3} className="border border-slate-400 px-4 py-2.5 font-bold text-slate-900">02-1234-5678</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -271,15 +268,15 @@ export default function PriceListGuestView() {
                 </div>
             </div>
 
-            {/* Mobile-only Sticky Blue Button */}
+            {/* Mobile-only Sticky Blue Button - Matching provided style */}
             {!isExpired && (
-                <div className="md:hidden fixed bottom-10 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-48px)] max-w-sm px-6">
+                <div className="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-64px)] max-w-xs">
                     <button
-                        className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white py-5 rounded-2xl shadow-[0_15px_40px_-5px_rgba(37,99,235,0.4)] flex items-center justify-center gap-3 transition-all active:scale-95"
+                        className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white py-4 px-8 rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
                         onClick={() => setShowOrderModal(true)}
                     >
-                        <ClipboardListIcon size={24} />
-                        <span className="text-xl font-black tracking-tight tracking-widest">즉시 주문하기</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                        <span className="text-[17px] font-bold tracking-tight">즉시 주문하기</span>
                     </button>
                 </div>
             )}
