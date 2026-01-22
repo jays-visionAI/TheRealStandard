@@ -92,13 +92,14 @@ export async function createUser(userData: Omit<FirestoreUser, 'id' | 'createdAt
     return { id: created.id, ...created.data() } as FirestoreUser
 }
 
-// 특정 ID로 사용자 생성 (초기 데이터 시드용)
+// 특정 ID로 사용자 생성 (초기 데이터 시드용, 이메일 소문자 정규화)
 export async function createUserWithId(id: string, userData: Omit<FirestoreUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreUser> {
     const docRef = doc(db, USERS_COLLECTION, id)
     const now = serverTimestamp()
 
     const newUser = {
         ...cleanData(userData),
+        email: userData.email.toLowerCase().trim(),
         createdAt: now,
         updatedAt: now
     }

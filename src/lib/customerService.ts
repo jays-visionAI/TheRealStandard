@@ -68,7 +68,11 @@ export async function getCustomerByToken(token: string): Promise<FirestoreCustom
 export async function createCustomer(data: Omit<FirestoreCustomer, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreCustomer> {
     const newDocRef = doc(customersRef)
     const now = serverTimestamp()
-    await setDoc(newDocRef, { ...cleanData(data), createdAt: now, updatedAt: now })
+    const normalizedData = {
+        ...cleanData(data),
+        email: data.email.toLowerCase().trim()
+    }
+    await setDoc(newDocRef, { ...normalizedData, createdAt: now, updatedAt: now })
     const created = await getDoc(newDocRef)
     return { id: created.id, ...created.data() } as FirestoreCustomer
 }
@@ -76,14 +80,23 @@ export async function createCustomer(data: Omit<FirestoreCustomer, 'id' | 'creat
 export async function createCustomerWithId(id: string, data: Omit<FirestoreCustomer, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreCustomer> {
     const docRef = doc(db, CUSTOMERS_COLLECTION, id)
     const now = serverTimestamp()
-    await setDoc(docRef, { ...cleanData(data), createdAt: now, updatedAt: now })
+    const normalizedData = {
+        ...cleanData(data),
+        email: data.email.toLowerCase().trim()
+    }
+    await setDoc(docRef, { ...normalizedData, createdAt: now, updatedAt: now })
     const created = await getDoc(docRef)
     return { id: created.id, ...created.data() } as FirestoreCustomer
 }
 
 export async function updateCustomer(id: string, data: Partial<FirestoreCustomer>): Promise<void> {
     const docRef = doc(db, CUSTOMERS_COLLECTION, id)
-    await updateDoc(docRef, { ...cleanData(data), updatedAt: serverTimestamp() })
+    const updateData = { ...cleanData(data), updatedAt: serverTimestamp() }
+    // 이메일이 포함된 경우 소문자로 정규화
+    if (data.email) {
+        updateData.email = data.email.toLowerCase().trim()
+    }
+    await updateDoc(docRef, updateData)
 }
 
 export async function deleteCustomer(id: string): Promise<void> {
