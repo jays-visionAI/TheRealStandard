@@ -510,13 +510,13 @@ export default function PriceListManager() {
 
             <style>{`
                 .price-selection-table th, .price-selection-table td {
-                    padding: 12px 16px;
+                    padding: 8px 16px;
                 }
                 .checkbox-col { width: 40px; text-align: center; }
                 .name-col { min-width: 200px; }
                 .price-col { width: 150px; text-align: right; }
                 
-                .name-cell { display: flex; flex-direction: column; gap: 4px; }
+                .name-cell { display: flex; align-items: center; gap: 8px; }
                 .name-cell .name { font-weight: 600; color: var(--text-primary); }
                 .category-tag { 
                     font-size: 10px; 
@@ -537,7 +537,7 @@ export default function PriceListManager() {
                 .cell-edit-input {
                     width: 100%;
                     max-width: 120px;
-                    padding: 8px 12px;
+                    padding: 6px 12px;
                     border: 1px solid var(--border-color);
                     border-radius: 6px;
                     text-align: right;
