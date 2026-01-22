@@ -51,9 +51,10 @@ export async function getUserById(id: string): Promise<FirestoreUser | null> {
     return { id: snapshot.id, ...snapshot.data() } as FirestoreUser
 }
 
-// 이메일로 사용자 조회
+// 이메일로 사용자 조회 (소문자로 정규화)
 export async function getUserByEmail(email: string): Promise<FirestoreUser | null> {
-    const q = query(usersRef, where('email', '==', email))
+    const normalizedEmail = email.toLowerCase().trim()
+    const q = query(usersRef, where('email', '==', normalizedEmail))
     const snapshot = await getDocs(q)
     if (snapshot.empty) return null
     const doc = snapshot.docs[0]
@@ -72,13 +73,14 @@ export async function getUsersByRole(role: UserRole): Promise<FirestoreUser[]> {
 
 // ============ CREATE ============
 
-// 새 사용자 생성
+// 새 사용자 생성 (이메일 소문자 정규화)
 export async function createUser(userData: Omit<FirestoreUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreUser> {
     const newDocRef = doc(usersRef)
     const now = serverTimestamp()
 
     const newUser = {
         ...cleanData(userData),
+        email: userData.email.toLowerCase().trim(),
         createdAt: now,
         updatedAt: now
     }

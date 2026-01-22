@@ -127,12 +127,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [])
 
     const login: AuthContextType['login'] = async (email, password) => {
+        const normalizedEmail = email.toLowerCase().trim()
         try {
-            console.log('Attempting login for:', email)
+            console.log('Attempting login for:', normalizedEmail)
             // Firebase Auth로 로그인
-            await signInWithEmailAndPassword(auth, email, password)
+            await signInWithEmailAndPassword(auth, normalizedEmail, password)
             console.log('Login successful')
-            const updatedUser = await getUserByEmail(email)
+            const updatedUser = await getUserByEmail(normalizedEmail)
             if (!updatedUser) throw new Error('사용자 정보를 찾을 수 없습니다.')
             return {
                 id: updatedUser.id,
@@ -147,22 +148,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Firebase Auth 계정이 없으면 자동 생성 시도 (데모용)
             if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
                 try {
-                    console.log('Account not found, attempting to create demo account:', email)
+                    console.log('Account not found, attempting to create demo account:', normalizedEmail)
                     // 새 Firebase Auth 계정 생성
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+                    const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password)
                     console.log('Auth account created:', userCredential.user.uid)
 
                     // Firestore에 사용자 정보 저장 (데모 계정 확인)
-                    const demoAccount = Object.values(DEMO_ACCOUNTS).find(d => d.email === email)
+                    const demoAccount = Object.values(DEMO_ACCOUNTS).find(d => d.email === normalizedEmail)
 
                     await createUser({
-                        email: email,
+                        email: normalizedEmail,
                         name: demoAccount?.name || '신규 사용자',
                         role: demoAccount?.role || 'CUSTOMER',
                         status: 'ACTIVE',
                     })
                     console.log('Firestore user identity created')
-                    const newUser = await getUserByEmail(email)
+                    const newUser = await getUserByEmail(normalizedEmail)
                     if (!newUser) throw new Error('계정 생성 후 정보를 불러올 수 없습니다.')
                     return {
                         id: newUser.id,

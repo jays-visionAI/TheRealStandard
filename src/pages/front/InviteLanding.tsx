@@ -201,18 +201,19 @@ export default function InviteLanding() {
     setIsProcessing(true)
 
     try {
-      // 1. Firebase Auth 계정 생성
+      // 1. Firebase Auth 계정 생성 (이메일 소문자 정규화)
       const { createUserWithEmailAndPassword } = await import('firebase/auth')
       const { auth } = await import('../../lib/firebase')
       const { updateCustomer } = await import('../../lib/customerService')
 
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const normalizedEmail = email.toLowerCase().trim()
+      const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password)
       const firebaseUid = userCredential.user.uid
 
       // 2. Firestore 고객 데이터 업데이트 (활성화)
       if (customer) {
         await updateCustomer(customer.id, {
-          email: email,
+          email: normalizedEmail,
           status: 'ACTIVE',
           firebaseUid: firebaseUid // Link Auth UID
         })

@@ -49,7 +49,8 @@ export async function getCustomerById(id: string): Promise<FirestoreCustomer | n
 }
 
 export async function getCustomerByEmail(email: string): Promise<FirestoreCustomer | null> {
-    const q = query(customersRef, where('email', '==', email))
+    const normalizedEmail = email.toLowerCase().trim()
+    const q = query(customersRef, where('email', '==', normalizedEmail))
     const snapshot = await getDocs(q)
     if (snapshot.empty) return null
     const d = snapshot.docs[0]
