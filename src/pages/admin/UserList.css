@@ -380,6 +380,7 @@
 .text-center {
     text-align: center;
 }
+
 /* Pagination */
 .pagination {
     display: flex;
@@ -422,4 +423,38 @@
     color: var(--text-primary);
     min-width: 60px;
     text-align: center;
+}
+
+.page-numbers {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.page-number-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.page-number-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.page-number-btn.active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }

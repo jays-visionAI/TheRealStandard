@@ -52,6 +52,13 @@ export default function UserManagement() {
     const itemsPerPage = 20
 
     const [showModal, setShowModal] = useState(false)
+    const [showConfirmModal, setShowConfirmModal] = useState(false)
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string,
+        message: string,
+        onConfirm: () => void,
+        isDanger?: boolean
+    } | null>(null)
     const [editingUser, setEditingUser] = useState<UserAccount | null>(null)
     const [formData, setFormData] = useState<Partial<UserAccount>>({})
     const [saving, setSaving] = useState(false)
@@ -143,35 +150,50 @@ export default function UserManagement() {
         }
     }
 
-    const handleDelete = async (id: string) => {
-        if (confirm('이 사용자를 삭제하시겠습니까? 데이터베이스에서 영구히 삭제됩니다.')) {
-            try {
-                await deleteUserFirebase(id)
-                await loadData()
-            } catch (err) {
-                console.error('Delete failed:', err)
-                alert('삭제에 실패했습니다.')
+    const handleDelete = (id: string) => {
+        setConfirmConfig({
+            title: '사용자 삭제',
+            message: '이 사용자를 삭제하시겠습니까? 데이터베이스에서 영구히 삭제됩니다.',
+            isDanger: true,
+            onConfirm: async () => {
+                try {
+                    await deleteUserFirebase(id)
+                    await loadData()
+                } catch (err) {
+                    console.error('Delete failed:', err)
+                    alert('삭제에 실패했습니다.')
+                } finally {
+                    setShowConfirmModal(false)
+                }
             }
-        }
+        })
+        setShowConfirmModal(true)
     }
 
-    const handleMigrateSuppliers = async () => {
-        if (!confirm('기존 공급사 및 배송업체 데이터를 통합 users 컬렉션으로 복사하시겠습니까?')) return
-        setLoading(true)
-        try {
-            const result = await migrateLegacySuppliersToUsers()
-            let message = `공급사 마이그레이션 완료!\n성공: ${result.migrated}건\n제외: ${result.skipped}건\n오류: ${result.errors.length}건`
-            if (result.errors.length > 0) {
-                message += `\n\n최근 오류:\n${result.errors.slice(0, 3).join('\n')}`
+    const handleMigrateSuppliers = () => {
+        setConfirmConfig({
+            title: '공급사 데이터 마이그레이션',
+            message: '기존 공급사 및 배송업체 데이터를 통합 users 컬렉션으로 복사하시겠습니까?',
+            onConfirm: async () => {
+                setLoading(true)
+                try {
+                    const result = await migrateLegacySuppliersToUsers()
+                    let message = `공급사 마이그레이션 완료!\n성공: ${result.migrated}건\n제외: ${result.skipped}건\n오류: ${result.errors.length}건`
+                    if (result.errors.length > 0) {
+                        message += `\n\n최근 오류:\n${result.errors.slice(0, 3).join('\n')}`
+                    }
+                    alert(message)
+                    await loadData()
+                } catch (err) {
+                    console.error('Migration failed:', err)
+                    alert('마이그레이션 중 오류가 발생했습니다.')
+                } finally {
+                    setLoading(false)
+                    setShowConfirmModal(false)
+                }
             }
-            alert(message)
-            await loadData()
-        } catch (err) {
-            console.error('Migration failed:', err)
-            alert('마이그레이션 중 오류가 발생했습니다.')
-        } finally {
-            setLoading(false)
-        }
+        })
+        setShowConfirmModal(true)
     }
 
 
@@ -289,16 +311,28 @@ export default function UserManagement() {
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage(p => p - 1)}
                             className="page-btn"
+                            title="이전 페이지"
                         >
                             <ChevronLeftIcon size={18} />
                         </button>
-                        <span className="page-info">
-                            {currentPage} / {totalPages}
-                        </span>
+
+                        <div className="page-numbers">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                                <button
+                                    key={pageNum}
+                                    className={`page-number-btn ${currentPage === pageNum ? 'active' : ''}`}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                >
+                                    {pageNum}
+                                </button>
+                            ))}
+                        </div>
+
                         <button
                             disabled={currentPage === totalPages}
                             onClick={() => setCurrentPage(p => p + 1)}
                             className="page-btn"
+                            title="다음 페이지"
                         >
                             <ChevronRightIcon size={18} />
                         </button>
@@ -414,6 +448,40 @@ export default function UserManagement() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmation Modal */}
+            {showConfirmModal && confirmConfig && (
+                <div className="modal-overlay" onClick={() => setShowConfirmModal(false)}>
+                    <div className="modal-content glass-card" style={{ maxWidth: '450px' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {confirmConfig.isDanger ? (
+                                    <AlertTriangleIcon size={24} color="#ef4444" />
+                                ) : (
+                                    <UsersIcon size={24} color="var(--color-primary)" />
+                                )}
+                                {confirmConfig.title}
+                            </h2>
+                            <button className="close-btn" onClick={() => setShowConfirmModal(false)}>✕</button>
+                        </div>
+                        <div className="modal-body py-6">
+                            <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: 'var(--text-primary)' }}>
+                                {confirmConfig.message}
+                            </p>
+                        </div>
+                        <div className="modal-footer" style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '20px' }}>
+                            <button className="btn btn-secondary" onClick={() => setShowConfirmModal(false)}>취소</button>
+                            <button
+                                className={`btn ${confirmConfig.isDanger ? 'btn-danger' : 'btn-primary'}`}
+                                onClick={confirmConfig.onConfirm}
+                                style={confirmConfig.isDanger ? { backgroundColor: '#ef4444', color: 'white' } : {}}
+                            >
+                                확인
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

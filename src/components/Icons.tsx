@@ -694,3 +694,12 @@ export const SparklesIcon: FC<IconProps> = ({ size = 20, className = '', color =
         <path d="M17 19h4" />
     </svg>
 )
+
+export const MousePointerClickIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="m9 9 5 12 1.774-5.226L21 14 9 9z" />
+        <path d="m16.071 8.071 4.243-4.243" />
+        <path d="m7.188 2.239.777 2.897" />
+        <path d="m2.239 7.188 2.897.777" />
+    </svg>
+)

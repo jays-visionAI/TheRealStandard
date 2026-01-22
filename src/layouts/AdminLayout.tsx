@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
@@ -89,14 +90,17 @@ const navigation = [
 
 export default function AdminLayout() {
     const { user, logout } = useAuth()
+    const [showLogoutModal, setShowLogoutModal] = useState(false)
     const location = useLocation()
     const navigate = useNavigate()
 
-    const handleLogout = async () => {
-        if (confirm('로그아웃 하시겠습니까?')) {
-            await logout()
-            navigate('/login')
-        }
+    const handleLogoutClick = () => {
+        setShowLogoutModal(true)
+    }
+
+    const confirmLogout = async () => {
+        await logout()
+        navigate('/login')
     }
 
     return (
@@ -184,7 +188,7 @@ export default function AdminLayout() {
                             <span className="user-name">{user?.name || '관리자'}</span>
                             <span className="user-role">{user?.role || 'ADMIN'}</span>
                         </div>
-                        <button className="logout-btn" onClick={handleLogout} title="로그아웃">
+                        <button className="logout-btn" onClick={handleLogoutClick} title="로그아웃">
                             <LogOutIcon size={18} />
                         </button>
                     </div>
@@ -213,6 +217,36 @@ export default function AdminLayout() {
                     <Outlet />
                 </div>
             </main>
+
+            {/* Logout Confirmation Modal */}
+            {showLogoutModal && (
+                <div className="modal-backdrop" onClick={() => setShowLogoutModal(false)}>
+                    <div className="modal logout-confirmation-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-body text-center py-8">
+                            <div className="logout-icon-circle mb-6 mx-auto flex items-center justify-center bg-slate-100 rounded-full w-20 h-20">
+                                <LogOutIcon size={32} color="var(--color-primary)" />
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">로그아웃 하시겠습니까?</h3>
+                            <p className="text-secondary mb-8">안전하게 로그아웃하고 나중에 다시 시작하세요.</p>
+
+                            <div className="modal-actions-horizontal">
+                                <button
+                                    className="btn btn-secondary w-full"
+                                    onClick={() => setShowLogoutModal(false)}
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    className="btn btn-primary w-full"
+                                    onClick={confirmLogout}
+                                >
+                                    로그아웃
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

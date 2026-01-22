@@ -18,6 +18,7 @@ export interface FirestoreOrderSheet {
     discountAmount?: number
     status: 'DRAFT' | 'SENT' | 'SUBMITTED' | 'CONFIRMED' | 'REVISION' | 'CLOSED'
     isGuest?: boolean
+    sourcePriceListId?: string // 유입된 단가표 ID
     createdAt: Timestamp
     updatedAt: Timestamp
 }

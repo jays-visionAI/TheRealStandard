@@ -32,6 +32,8 @@ export interface FirestorePriceList {
     shareTokenId?: string
     sharedAt?: any // Timestamp - 고객에게 전송한 날짜
     validUntil?: any // Timestamp
+    reachCount?: number // 단가표 도달 수
+    conversionCount?: number // 발주서 전환 수
     createdAt: any
     updatedAt: any
 }
@@ -85,4 +87,22 @@ export async function getPriceListByShareToken(token: string): Promise<Firestore
     if (querySnapshot.empty) return null
     const d = querySnapshot.docs[0]
     return { id: d.id, ...d.data() } as FirestorePriceList
+}
+
+export async function incrementPriceListReach(id: string): Promise<void> {
+    const docRef = doc(db, PRICE_LISTS_COLLECTION, id)
+    const docSnap = await getDoc(docRef)
+    if (docSnap.exists()) {
+        const currentReach = docSnap.data().reachCount || 0
+        await updateDoc(docRef, { reachCount: currentReach + 1 })
+    }
+}
+
+export async function incrementPriceListConversion(id: string): Promise<void> {
+    const docRef = doc(db, PRICE_LISTS_COLLECTION, id)
+    const docSnap = await getDoc(docRef)
+    if (docSnap.exists()) {
+        const currentConversion = docSnap.data().conversionCount || 0
+        await updateDoc(docRef, { conversionCount: currentConversion + 1 })
+    }
 }

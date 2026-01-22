@@ -263,3 +263,27 @@
         margin-left: 0;
     }
 }
+
+/* Logout Confirmation Modal */
+.logout-confirmation-modal {
+    max-width: 400px;
+    border-radius: var(--radius-2xl);
+    overflow: hidden;
+}
+
+.logout-icon-circle {
+    width: 80px;
+    height: 80px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.modal-actions-horizontal {
+    display: flex;
+    gap: var(--space-3);
+    width: 100%;
+}

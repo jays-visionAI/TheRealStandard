@@ -13,9 +13,13 @@ import {
     CheckCircleIcon,
     AlertTriangleIcon,
     CopyIcon,
-    ExternalLinkIcon
+    ExternalLinkIcon,
+    TrendingUpIcon,
+    UsersIcon,
+    MousePointerClickIcon
 } from '../../components/Icons'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
+import { getAllOrderSheets, type FirestoreOrderSheet } from '../../lib/orderService'
 import {
     createPriceList,
     updatePriceList,
@@ -30,9 +34,11 @@ export default function PriceListManager() {
     const [priceLists, setPriceLists] = useState<FirestorePriceList[]>([])
     const [products, setProducts] = useState<FirestoreProduct[]>([])
     const [loading, setLoading] = useState(true)
+    const [orderSheets, setOrderSheets] = useState<FirestoreOrderSheet[]>([])
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     const [showDetailModal, setShowDetailModal] = useState(false)
+    const [showOrdersModal, setShowOrdersModal] = useState(false)
     const [selectedList, setSelectedList] = useState<FirestorePriceList | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
@@ -68,11 +74,13 @@ export default function PriceListManager() {
         try {
             setLoading(true)
             setError(null)
-            const [pLists, pData] = await Promise.all([
+            const [pLists, pData, oData] = await Promise.all([
                 getAllPriceLists(),
-                getAllProducts()
+                getAllProducts(),
+                getAllOrderSheets()
             ])
             setPriceLists(pLists)
+            setOrderSheets(oData)
 
             // Robustly filter products: default isActive to true and category2 to B2B if missing
             const b2bProducts = pData.map(p => ({
@@ -298,7 +306,13 @@ export default function PriceListManager() {
                         <ClipboardListIcon size={24} color="var(--color-primary)" className="mr-2" />
                         단가표 관리
                     </h2>
-                    <p className="description">고객사별 맞춤 공급가를 관리하는 단가표 리스트입니다.</p>
+                    <div className="header-tips glass-card mt-3">
+                        <ul className="tips-list">
+                            <li><TrendingUpIcon size={14} /> <strong>신규 거래처 확보</strong>: 단가표 공유를 통해 효율적으로 신규 고객을 발굴할 수 있습니다.</li>
+                            <li><CopyIcon size={14} /> <strong>빠른 운영</strong>: '단가표 복제하기'로 다양한 타겟용 단가표를 즉시 생성하세요.</li>
+                            <li><UsersIcon size={14} /> <strong>고객 추적</strong>: 단가 확인 후 발주서를 작성한 고객을 확인하고 개별 서포트가 가능합니다.</li>
+                        </ul>
+                    </div>
                 </div>
                 <div className="header-actions">
                     <button className="btn btn-primary" onClick={handleOpenCreateModal}>
@@ -309,8 +323,27 @@ export default function PriceListManager() {
 
             <div className="stats-grid">
                 <div className="stat-card glass-card">
-                    <span className="stat-value">{priceLists.length}</span>
                     <span className="stat-label">전체 단가표</span>
+                    <span className="stat-value">{priceLists.length}</span>
+                </div>
+                <div className="stat-card glass-card clickable" onClick={() => setShowOrdersModal(true)}>
+                    <span className="stat-label">발주서 전환 수</span>
+                    <span className="stat-value">{orderSheets.filter(o => o.sourcePriceListId).length}</span>
+                    <span className="stat-hint">클릭 시 리스트 확인</span>
+                </div>
+                <div className="stat-card glass-card">
+                    <span className="stat-label">누적 도달 수</span>
+                    <span className="stat-value">{priceLists.reduce((sum, l) => sum + (l.reachCount || 0), 0)}</span>
+                </div>
+                <div className="stat-card glass-card">
+                    <span className="stat-label">평균 전환율</span>
+                    <span className="stat-value">
+                        {(() => {
+                            const totalReach = priceLists.reduce((sum, l) => sum + (l.reachCount || 0), 0)
+                            const totalConv = priceLists.reduce((sum, l) => sum + (l.conversionCount || 0), 0)
+                            return totalReach > 0 ? ((totalConv / totalReach) * 100).toFixed(1) : 0
+                        })()}%
+                    </span>
                 </div>
             </div>
 
@@ -326,6 +359,7 @@ export default function PriceListManager() {
                             <tr>
                                 <th>제목</th>
                                 <th>품목 수</th>
+                                <th>도달 / 전환</th>
                                 <th>생성일</th>
                                 <th>관리</th>
                             </tr>
@@ -335,6 +369,24 @@ export default function PriceListManager() {
                                 <tr key={list.id}>
                                     <td><strong>{list.title}</strong></td>
                                     <td>{list.items.length}개 품목</td>
+                                    <td>
+                                        <div className="reach-stats">
+                                            <span className="reach" title="도달 수"><MousePointerClickIcon size={12} /> {list.reachCount || 0}</span>
+                                            <span className="divider">/</span>
+                                            <span
+                                                className={`conv ${list.conversionCount ? 'has-conv' : ''}`}
+                                                title="발주 전환 수"
+                                                onClick={() => {
+                                                    if (list.conversionCount) {
+                                                        setSelectedList(list)
+                                                        setShowOrdersModal(true)
+                                                    }
+                                                }}
+                                            >
+                                                <FileTextIcon size={12} /> {list.conversionCount || 0}
+                                            </span>
+                                        </div>
+                                    </td>
                                     <td>{list.createdAt?.toDate ? list.createdAt.toDate().toLocaleDateString() : '-'}</td>
                                     <td className="actions">
                                         <button
@@ -597,6 +649,85 @@ export default function PriceListManager() {
                 </div>
             )}
 
+            {/* Orders Modal (Converted from Price List) */}
+            {showOrdersModal && (
+                <div className="modal-backdrop" onClick={() => {
+                    setShowOrdersModal(false)
+                    setSelectedList(null)
+                }}>
+                    <div className="modal product-modal" style={{ maxWidth: '900px', width: '90vw' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div>
+                                <h3>
+                                    <TrendingUpIcon size={20} color="var(--color-primary)" className="mr-2" />
+                                    {selectedList ? `[${selectedList.title}] 유입 발주서 목록` : '단가표 유입 발주서 전체 목록'}
+                                </h3>
+                                <p className="text-sm text-secondary">단가표를 확인한 고객이 새로 생성한 발주서 리스트입니다.</p>
+                            </div>
+                            <button className="btn btn-ghost" onClick={() => {
+                                setShowOrdersModal(false)
+                                setSelectedList(null)
+                            }}>✕</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="table-container">
+                                <table className="product-table">
+                                    <thead>
+                                        <tr>
+                                            <th>고객명/업체명</th>
+                                            <th>상태</th>
+                                            <th>품목</th>
+                                            <th>작성일</th>
+                                            <th>유입 소스</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {orderSheets
+                                            .filter(o => selectedList ? o.sourcePriceListId === selectedList.id : o.sourcePriceListId)
+                                            .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
+                                            .map(order => {
+                                                const sourceList = priceLists.find(l => l.id === order.sourcePriceListId)
+                                                return (
+                                                    <tr key={order.id}>
+                                                        <td>
+                                                            <div className="name-cell">
+                                                                <span className="name">{order.customerName}</span>
+                                                                {order.isGuest && <span className="category-tag">비회원</span>}
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span className={`badge badge-${order.status.toLowerCase()}`}>
+                                                                {order.status}
+                                                            </span>
+                                                        </td>
+                                                        <td>{order.id}</td>
+                                                        <td>{order.createdAt.toDate().toLocaleDateString()}</td>
+                                                        <td>
+                                                            <span className="text-sm text-primary">{sourceList?.title || '삭제된 단가표'}</span>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            }
+                                            )}
+                                        {orderSheets.filter(o => selectedList ? o.sourcePriceListId === selectedList.id : o.sourcePriceListId).length === 0 && (
+                                            <tr>
+                                                <td colSpan={5} className="text-center py-10 text-muted">전환된 발주서가 없습니다.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => {
+                                setShowOrdersModal(false)
+                                setSelectedList(null)
+                            }}>닫기</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style>{`
                 .price-selection-table th, .price-selection-table td {
                     padding: 8px 16px;
@@ -675,6 +806,79 @@ export default function PriceListManager() {
                     border-radius: 12px;
                     margin: 0 16px;
                 }
+
+                .header-tips {
+                    padding: 12px 20px;
+                    background: rgba(59, 130, 246, 0.03);
+                    border: 1px solid rgba(59, 130, 246, 0.1);
+                    margin-bottom: 8px;
+                }
+
+                .tips-list {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+
+                .tips-list li {
+                    font-size: 13px;
+                    color: var(--text-secondary);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .tips-list li strong {
+                    color: var(--color-primary);
+                }
+
+                .stat-card.clickable {
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .stat-card.clickable:hover {
+                    border-color: var(--color-primary);
+                    background: rgba(59, 130, 246, 0.05);
+                    transform: translateY(-2px);
+                }
+                .stat-hint {
+                    font-size: 11px;
+                    color: var(--text-muted);
+                    margin-top: 4px;
+                }
+
+                .reach-stats {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 13px;
+                }
+                .reach-stats .reach { color: var(--text-muted); }
+                .reach-stats .divider { color: var(--border-color); }
+                .reach-stats .conv { 
+                    font-weight: 600; 
+                    color: var(--text-secondary);
+                }
+                .reach-stats .conv.has-conv {
+                    color: var(--color-primary);
+                    cursor: pointer;
+                    text-decoration: underline;
+                }
+
+                .badge {
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    font-size: 11px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                }
+                .badge-submitted { background: #dcfce7; color: #166534; }
+                .badge-draft { background: #f1f5f9; color: #475569; }
+                .badge-sent { background: #e0f2fe; color: #075985; }
+                .badge-confirmed { background: #ede9fe; color: #5b21b6; }
             `}</style>
         </div>
     )

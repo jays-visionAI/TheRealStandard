@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getPriceListByShareToken, type FirestorePriceList } from '../../lib/priceListService'
+import { getPriceListByShareToken, incrementPriceListReach, incrementPriceListConversion, type FirestorePriceList } from '../../lib/priceListService'
 import { createOrderSheetWithId, generateOrderSheetId, setOrderSheetItems } from '../../lib/orderService'
 import { ClipboardListIcon, ChevronRightIcon, InfoIcon, SearchIcon, XIcon, FileTextIcon, AlertTriangleIcon } from '../../components/Icons'
 import { Timestamp } from 'firebase/firestore'
@@ -65,6 +65,8 @@ export default function PriceListGuestView() {
                 const data = await getPriceListByShareToken(token)
                 if (data) {
                     setPriceList(data)
+                    // Increment reach count
+                    await incrementPriceListReach(data.id)
                 } else {
                     setError('유효하지 않은 링크이거나 삭제된 단가표입니다.')
                 }
@@ -98,8 +100,12 @@ export default function PriceListGuestView() {
                 cutOffAt: Timestamp.fromDate(new Date(Date.now() + 86400000)),
                 shipTo: orderForm.address,
                 adminComment: `단가표[${priceList.title}]를 통한 비회원 주문 시작`,
-                inviteTokenId: guestToken
+                inviteTokenId: guestToken,
+                sourcePriceListId: priceList.id
             })
+
+            // Increment conversion count
+            await incrementPriceListConversion(priceList.id)
 
             const items = priceList.items.map(item => ({
                 productId: item.productId,
