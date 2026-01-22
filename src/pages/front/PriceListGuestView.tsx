@@ -30,9 +30,13 @@ export default function PriceListGuestView() {
                 } else {
                     setError('유효하지 않은 링크이거나 삭제된 단가표입니다.')
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.error(err)
-                setError('데이터를 불러오는데 실패했습니다.')
+                if (err.code === 'permission-denied') {
+                    setError('데이터 읽기 권한이 없습니다 (보안 규칙 확인 필요).')
+                } else {
+                    setError('데이터를 불러오는데 실패했습니다: ' + (err.message || '알 수 없는 오류'))
+                }
             } finally {
                 setLoading(false)
             }

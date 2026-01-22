@@ -107,7 +107,7 @@ service cloud.firestore {
     }
     
     // ============ SYSTEM SETTINGS ============
-    match /systemSettings/{settingId} {
+    match /system/{document=**} {
       allow read: if true;
       allow create, update: if isAuthenticated();
       allow delete: if isAdmin();
@@ -129,8 +129,15 @@ service cloud.firestore {
     }
 
     // ============ PRICE LISTS ============
-    match /priceLists/{priceListId} {
+    match /priceLists/{document=**} {
       allow read: if true;
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // ============ CARRIER DRIVERS ============
+    match /carrierDrivers/{driverId} {
+      allow read: if isAuthenticated();
       allow create, update: if isAuthenticated();
       allow delete: if isAdmin();
     }
