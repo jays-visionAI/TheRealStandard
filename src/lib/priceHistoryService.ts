@@ -31,10 +31,19 @@ const priceHistoryCollection = collection(db, 'priceHistory')
  * 가격 변동 기록 추가
  */
 export async function addPriceHistory(entry: Omit<PriceHistoryEntry, 'id' | 'changedAt'>): Promise<string> {
-    const docRef = await addDoc(priceHistoryCollection, {
-        ...entry,
+    // undefined 필드 제거 (Firestore 에러 방지)
+    const data: any = {
+        productId: entry.productId,
+        productName: entry.productName,
+        costPrice: entry.costPrice,
+        wholesalePrice: entry.wholesalePrice,
         changedAt: Timestamp.now()
-    })
+    }
+
+    if (entry.changedBy) data.changedBy = entry.changedBy
+    if (entry.note) data.note = entry.note
+
+    const docRef = await addDoc(priceHistoryCollection, data)
     return docRef.id
 }
 

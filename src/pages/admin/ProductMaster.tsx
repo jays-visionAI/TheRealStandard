@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
 import { PackageIcon, SearchIcon, EditIcon, XIcon, WalletIcon, FileTextIcon, UploadIcon, DownloadIcon, ChartIcon } from '../../components/Icons'
 import {
     getAllProducts,
@@ -21,6 +22,7 @@ type Product = Omit<FirestoreProduct, 'createdAt' | 'updatedAt'> & {
 // 메인 컴포넌트
 // ============================================
 export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) {
+    const { user } = useAuth()
     // Firebase에서 직접 로드되는 상품 목록
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
@@ -242,10 +244,9 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                     editingProduct.id,
                     cleanData.name,
                     cleanData.costPrice,
-                    cleanData.wholesalePrice
+                    cleanData.wholesalePrice,
+                    user?.name || '시스템'
                 )
-
-
             } else {
                 // 신규 생성
                 const newProduct = await createProduct(cleanData)
@@ -255,10 +256,9 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                     newProduct.id,
                     cleanData.name,
                     cleanData.costPrice,
-                    cleanData.wholesalePrice
+                    cleanData.wholesalePrice,
+                    user?.name || '시스템'
                 )
-
-
             }
 
             // 목록 새로고침
@@ -483,7 +483,8 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                         existingProduct.id,
                         productData.name,
                         productData.costPrice,
-                        productData.wholesalePrice
+                        productData.wholesalePrice,
+                        user?.name || '시스템'
                     )
                     updateCount++
                 } else {
@@ -492,7 +493,8 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                         newProduct.id,
                         productData.name,
                         productData.costPrice,
-                        productData.wholesalePrice
+                        productData.wholesalePrice,
+                        user?.name || '시스템'
                     )
                     createCount++
                 }

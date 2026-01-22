@@ -131,8 +131,18 @@ service cloud.firestore {
     // ============ PRICE LISTS ============
     match /priceLists/{document=**} {
       allow read: if true;
-      allow create, update: if isAuthenticated();
+      allow create: if isAuthenticated();
+      // reachCount, conversionCount는 비회원(Guest)도 업데이트 가능해야 함
+      allow update: if isAuthenticated() || 
+                    (request.resource.data.diff(resource.data).affectedKeys().hasAny(['reachCount', 'conversionCount']));
       allow delete: if isAdmin();
+    }
+
+    // ============ PRICE HISTORY ============
+    match /priceHistory/{historyId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
     }
 
     // ============ CARRIER DRIVERS ============
