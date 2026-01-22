@@ -16,7 +16,7 @@ export default function LLMSettings() {
     const [formData, setFormData] = useState({
         openaiApiKey: settings.openaiApiKey || '',
         geminiApiKey: settings.geminiApiKey || '',
-        anthropicApiKey: settings.anthropicApiKey || '',
+        deepseekApiKey: settings.deepseekApiKey || '',
         activeLlmProvider: settings.activeLlmProvider || 'openai'
     })
     const [isSaving, setIsSaving] = useState(false)
@@ -60,7 +60,7 @@ export default function LLMSettings() {
                     </div>
                     <div className="card-body">
                         <div className="flex gap-4">
-                            {['openai', 'gemini', 'anthropic'].map((provider) => (
+                            {['openai', 'gemini', 'deepseek'].map((provider) => (
                                 <label key={provider} className={`provider-radio-card ${formData.activeLlmProvider === provider ? 'active' : ''}`}>
                                     <input
                                         type="radio"
@@ -71,7 +71,9 @@ export default function LLMSettings() {
                                         className="hidden"
                                     />
                                     <div className="provider-info">
-                                        <span className="capitalize font-bold">{provider === 'openai' ? 'OpenAI' : provider === 'gemini' ? 'Google Gemini' : 'Anthropic'}</span>
+                                        <span className="capitalize font-bold">
+                                            {provider === 'openai' ? 'OpenAI' : provider === 'gemini' ? 'Google Gemini' : 'DeepSeek'}
+                                        </span>
                                         {formData.activeLlmProvider === provider && <CheckCircleIcon size={16} className="text-primary" />}
                                     </div>
                                 </label>
@@ -121,19 +123,19 @@ export default function LLMSettings() {
 
                 <section className="settings-card glass-card">
                     <div className="card-header">
-                        <KeyIcon size={20} className="text-orange-500" />
-                        <h2>Anthropic Settings</h2>
+                        <KeyIcon size={20} className="text-indigo-500" />
+                        <h2>DeepSeek Settings</h2>
                     </div>
                     <div className="card-body">
                         <div className="form-group">
-                            <label>Claude API Key</label>
+                            <label>DeepSeek API Key</label>
                             <input
                                 type="password"
-                                value={formData.anthropicApiKey}
-                                onChange={e => setFormData({ ...formData, anthropicApiKey: e.target.value })}
-                                placeholder="sk-ant-..."
+                                value={formData.deepseekApiKey}
+                                onChange={e => setFormData({ ...formData, deepseekApiKey: e.target.value })}
+                                placeholder="sk-..."
                             />
-                            <p className="help-text">Claude 3.5 Sonnet, Claude 3 Opus 등을 사용하는 데 필요합니다.</p>
+                            <p className="help-text">DeepSeek-V3, DeepSeek-R1 등을 사용하는 데 필요합니다.</p>
                         </div>
                     </div>
                 </section>

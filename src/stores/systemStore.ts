@@ -9,8 +9,8 @@ interface SystemSettings {
     supportEmail: string
     openaiApiKey?: string
     geminiApiKey?: string
-    anthropicApiKey?: string
-    activeLlmProvider?: 'openai' | 'gemini' | 'anthropic'
+    deepseekApiKey?: string
+    activeLlmProvider?: 'openai' | 'gemini' | 'deepseek'
 }
 
 interface SystemStore {

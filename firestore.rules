@@ -39,7 +39,7 @@ service cloud.firestore {
     
     // ============ PRODUCTS ============
     match /products/{productId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create, update: if isAuthenticated();
       allow delete: if isAdmin();
     }
@@ -55,15 +55,17 @@ service cloud.firestore {
     match /orderSheets/{orderSheetId} {
       // 읽기: 공개 (토큰 기반 접근을 위해 필요)
       allow read: if true;
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      // 생성: 인증된 사용자이거나, 비회원 주문장인 경우 허용
+      allow create: if isAuthenticated() || request.resource.data.isGuest == true;
+      // 수정: 인증된 사용자이거나, 기존에 비회원 주문장인 경우 허용
+      allow update: if isAuthenticated() || resource.data.isGuest == true;
       allow delete: if isAuthenticated();
     }
     
     match /orderSheetItems/{itemId} {
       // 읽기: 공개 (토큰 기반 접근 시 품목 확인을 위해 필요)
       allow read: if true;
-      allow create, update, delete: if isAuthenticated();
+      allow create, update, delete: if true;
     }
     
     // ============ SALES ORDERS ============
@@ -106,7 +108,7 @@ service cloud.firestore {
     
     // ============ SYSTEM SETTINGS ============
     match /systemSettings/{settingId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create, update: if isAuthenticated();
       allow delete: if isAdmin();
     }
@@ -128,7 +130,7 @@ service cloud.firestore {
 
     // ============ PRICE LISTS ============
     match /priceLists/{priceListId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create, update: if isAuthenticated();
       allow delete: if isAdmin();
     }

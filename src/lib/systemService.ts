@@ -15,8 +15,8 @@ export interface SystemSettings {
     // LLM Settings
     openaiApiKey?: string
     geminiApiKey?: string
-    anthropicApiKey?: string
-    activeLlmProvider?: 'openai' | 'gemini' | 'anthropic'
+    deepseekApiKey?: string
+    activeLlmProvider?: 'openai' | 'gemini' | 'deepseek'
 }
 
 const SYSTEM_SETTINGS_DOC = 'settings'
@@ -50,6 +50,9 @@ export async function seedInitialSystemSettings(): Promise<void> {
         kakaoChannelId: '_zeXxjG',
         companyName: 'THE REAL STANDARD (TRS)',
         supportEmail: 'admin@trs.co.kr',
+        openaiApiKey: '',
+        geminiApiKey: '',
+        deepseekApiKey: '',
         activeLlmProvider: 'openai'
     }
 
