@@ -73,7 +73,7 @@ function App() {
         // Note: Firebase seed 데이터는 Firebase Console에서 직접 추가하거나
         // 관리자 로그인 후 수동으로 실행해야 합니다.
         // 자동 시드는 보안 규칙으로 인해 비활성화됨
-        console.log('TRS App initialized')
+        console.log('MEATGO App initialized')
     }, []);
 
     return (

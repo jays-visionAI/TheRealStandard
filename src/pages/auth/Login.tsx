@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { UserIcon, FactoryIcon, FilesIcon, ShoppingCartIcon, InfoIcon, PackageIcon, KakaoIcon, GoogleIcon } from '../../components/Icons'
 import { kakaoLogin } from '../../lib/kakaoService'
+import { LogoSmall } from '../../components/Logo'
 import { getDefaultPathForRole } from '../../components/ProtectedRoute'
 import './Login.css'
 
@@ -87,12 +88,11 @@ export default function Login() {
         <div className="login-page">
             <div className="login-container">
                 <div className="login-header">
-                    <div className="logo">
-                        <span className="logo-icon"><PackageIcon size={48} /></span>
-                        <span className="logo-text">TRS</span>
+                    <div className="logo p-4">
+                        <LogoSmall />
                     </div>
-                    <h1>물류 주문관리 솔루션</h1>
-                    <p className="tagline">Taeyoon Resource System</p>
+                    <h1>스마트 육류유통 솔루션</h1>
+                    <p className="tagline">Premium Meat Distribution Management</p>
                 </div>
 
                 <form className="login-form" onSubmit={handleLogin}>
@@ -202,7 +202,7 @@ export default function Login() {
                 </div>
 
                 <div className="login-footer">
-                    <p>© 2024 The Real Standard. All rights reserved.</p>
+                    <p>© 2026 MEATGO. All rights reserved.</p>
                 </div>
             </div>
         </div>

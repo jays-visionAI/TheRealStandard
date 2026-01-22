@@ -25,7 +25,7 @@ export const useSystemStore = create<SystemStore>()(
                 kakaoJsKey: '673898687a7442cae2d24608c0f5f7f3',
                 kakaoRestApiKey: '',
                 kakaoChannelId: '_zeXxjG',
-                companyName: 'THE REAL STANDARD (TRS)',
+                companyName: 'MEATGO (믿고)',
                 supportEmail: 'admin@trs.co.kr'
             },
             updateSettings: (data) => set((state) => ({

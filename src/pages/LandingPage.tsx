@@ -144,7 +144,7 @@ export default function LandingPage() {
                         </h1>
                         <p className="hero-desc">
                             데이터로 육류 밸류체인의 마진 구조를 혁신합니다.<br />
-                            수요 예측부터 재고 배분, 발주 실행까지. 완전히 새로운 산업 표준.
+                            믿고 쓰는 고기, MEATGO와 함께 완전히 새로운 산업 표준을 경험하세요.
                         </p>
                         <div className="hero-cta-group flex-wrap">
                             <button className="btn btn-accent h-12 px-8 text-lg" onClick={() => scrollToSection('contact')}>도입 문의하기</button>
@@ -294,7 +294,7 @@ export default function LandingPage() {
 
             <section id="solution">
                 <div className="container">
-                    <h2 className="mb-16 text-center text-4xl font-bold">How TRS Works</h2>
+                    <h2 className="mb-16 text-center text-4xl font-bold">How MEATGO Works</h2>
                     <div className="process-row">
                         <div className="process-line"></div>
                         <div className="process-step">
@@ -384,7 +384,7 @@ export default function LandingPage() {
                             <a href="#" className="hover:text-white">Contact</a>
                         </div>
                         <div className="text-sm text-gray-600">
-                            © 2024 TRS Inc.
+                            © 2026 MEATGO Inc.
                         </div>
                     </div>
                 </div>

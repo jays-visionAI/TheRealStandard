@@ -5,11 +5,11 @@
 
 /* CSS Variables - Design Tokens */
 :root {
-  /* Primary Colors - Professional Blue */
-  --color-primary: #2563EB;
-  --color-primary-light: #3B82F6;
-  --color-primary-dark: #1D4ED8;
-  --color-primary-glow: rgba(37, 99, 235, 0.15);
+  /* Primary Colors - Electric Indigo (MEATGO) */
+  --color-primary: #6366F1;
+  --color-primary-light: #818CF8;
+  --color-primary-dark: #4F46E5;
+  --color-primary-glow: rgba(99, 102, 241, 0.15);
 
   /* Secondary Colors - Teal */
   --color-secondary: #0891B2;

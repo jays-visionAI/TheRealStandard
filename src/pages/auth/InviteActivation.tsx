@@ -132,9 +132,9 @@ export default function InviteActivation() {
         <div className="activation-container">
             <div className="activation-card glass-card animate-fade-in">
                 <div className="header">
-                    <span className="brand">TRS Standard</span>
+                    <span className="brand">MEATGO</span>
                     <h1>파트너 계정 활성화</h1>
-                    <p className="text-secondary">아래 정보를 설정하여 TRS Standard를 시작하세요.</p>
+                    <p className="text-secondary">아래 정보를 설정하여 MEATGO 비즈니스를 시작하세요.</p>
                 </div>
 
                 <div className="customer-preview">

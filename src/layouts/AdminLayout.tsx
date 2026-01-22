@@ -12,6 +12,7 @@ import {
     MessageCircleIcon,
     LogOutIcon
 } from '../components/Icons'
+import { LogoSmall } from '../components/Logo'
 import { addKakaoChannel } from '../lib/kakaoService'
 import './AdminLayout.css'
 
@@ -108,11 +109,8 @@ export default function AdminLayout() {
             {/* Sidebar */}
             <aside className="admin-sidebar">
                 <div className="sidebar-header">
-                    <div className="logo">
-                        <div className="logo-text">
-                            <span className="logo-title">TRS</span>
-                            <span className="logo-subtitle">THE REAL STANDARD</span>
-                        </div>
+                    <div className="logo p-2">
+                        <LogoSmall />
                     </div>
                 </div>
 
@@ -281,5 +279,5 @@ function getPageTitle(pathname: string): string {
         '/admin/settings/system': '시스템 API 설정',
         '/admin/settings/llm': 'LLM API 및 모델 설정',
     }
-    return titles[pathname] || 'TRS 물류관리'
+    return titles[pathname] || 'MEATGO 물류관리'
 }

@@ -30,9 +30,9 @@ export const sendInviteMessage = (customerName: string, inviteUrl: string) => {
     window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-            title: '[TRS] 신규 거래처 초대장',
-            description: `${customerName}님, TRS 육류유통 통합 관리 시스템에 초대되었습니다. 아래 링크를 통해 주문장 작성을 시작하세요.`,
-            imageUrl: 'https://images.unsplash.com/photo-1544022613-e87ce7526a1b?q=80&w=1000&auto=format&fit=crop',
+            title: '[MEATGO] 신규 거래처 초대장',
+            description: `${customerName}님, MEATGO(믿고) 육류유통 통합 관리 시스템에 초대되었습니다. 아래 링크를 통해 주문장 작성을 시작하세요.`,
+            imageUrl: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?q=80&w=1000&auto=format&fit=crop',
             link: {
                 mobileWebUrl: inviteUrl,
                 webUrl: inviteUrl,
@@ -61,7 +61,7 @@ export const sendOrderMessage = (customerName: string, orderId: string, vehicleN
     window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-            title: '[TRS] 출고 및 배정 안내',
+            title: '[MEATGO] 출고 및 배정 안내',
             description: `${customerName}님, 주문(${orderId})의 배차가 완료되었습니다.\n차량: ${vehicleNo}\n도착예정: ${eta}`,
             imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1000&auto=format&fit=crop',
             link: {
@@ -145,7 +145,7 @@ export const shareDocument = (title: string, excerpt: string, docId: string) => 
     window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-            title: `[TRS 지식창고] ${title}`,
+            title: `[MEATGO 지식창고] ${title}`,
             description: excerpt || '상세 내용을 문서에서 확인하세요.',
             imageUrl: 'https://images.unsplash.com/photo-1456324504439-367cef3bafc3?q=80&w=1000&auto=format&fit=crop',
             link: {
@@ -190,7 +190,7 @@ export const sendDispatchRequestMessage = (carrierName: string, dispatchUrl: str
     window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-            title: '[TRS] 배차 요청',
+            title: '[MEATGO] 배차 요청',
             description: `${carrierName} 담당자님, 신규 배차 요청이 접수되었습니다. 아래 링크를 통해 배차 정보를 입력해 주세요.`,
             imageUrl: 'https://images.unsplash.com/photo-1590682680695-43b964a3ae17?q=80&w=1000&auto=format&fit=crop',
             link: {
@@ -219,7 +219,7 @@ export const sendDispatchConfirmedMessage = (driverName: string, vehicleNo: stri
     window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-            title: '[TRS] 배차 확정 알림',
+            title: '[MEATGO] 배차 확정 알림',
             description: `배차가 확정되었습니다.\n기사: ${driverName}\n차량: ${vehicleNo}`,
             imageUrl: 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?q=80&w=1000&auto=format&fit=crop',
             link: {

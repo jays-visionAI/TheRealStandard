@@ -8,9 +8,9 @@ import {
     TruckIcon,
     LogOutIcon,
     UserIcon,
-    TRSLogo,
     ClipboardCheckIcon
 } from '../components/Icons'
+import { LogoSmall } from '../components/Logo'
 import './FrontLayout.css'
 
 export default function FrontLayout() {
@@ -42,11 +42,7 @@ export default function FrontLayout() {
             {user && user.orgId && (
                 <aside className="front-sidebar glass-card">
                     <div className="sidebar-header">
-                        <TRSLogo size={32} />
-                        <div className="logo-text">
-                            <span className="logo-title">TRS</span>
-                            <span className="logo-subtitle">CUSTOMER</span>
-                        </div>
+                        <LogoSmall />
                     </div>
 
                     <nav className="sidebar-nav">
@@ -80,7 +76,7 @@ export default function FrontLayout() {
             <div className="front-main-container">
                 <header className="front-top-header glass-card">
                     <div className="header-breadcrumbs">
-                        <span>TRS</span>
+                        <span>MEATGO</span>
                         <span className="separator">/</span>
                         <span className="current">고객 서비스</span>
                     </div>
@@ -96,7 +92,7 @@ export default function FrontLayout() {
                 </main>
 
                 <footer className="front-footer-v2">
-                    <p>© 2024 TRS Solution. All rights reserved. | 02-1234-5678</p>
+                    <p>© 2026 MEATGO Solution. All rights reserved. | 1588-0000</p>
                 </footer>
             </div>
 
