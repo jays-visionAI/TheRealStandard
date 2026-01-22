@@ -117,7 +117,7 @@ export default function PriceListGuestView() {
                         </div>
                         <div className="text-right space-y-1">
                             <p className="text-[14px] text-slate-500 font-medium">
-                                <span className="text-slate-400">적용일자:</span> {priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                <span className="text-slate-400">적용일자:</span> {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
                             </p>
                             <p className="text-[14px] text-slate-500 font-medium">
                                 <span className="text-slate-400">유효기간:</span> 발행일로부터 5일
