@@ -30,6 +30,42 @@ export default function InviteLanding() {
   const [errorStatus, setErrorStatus] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
 
+  // Countdown timer state
+  const [countdown, setCountdown] = useState('')
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (!orderInfo?.cutOffAt) return
+
+    const updateCountdown = () => {
+      const now = new Date().getTime()
+      const cutOff = orderInfo.cutOffAt!.getTime()
+      const diff = cutOff - now
+
+      if (diff <= 0) {
+        setCountdown('마감됨')
+        return
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      const secs = Math.floor((diff % (1000 * 60)) / 1000)
+
+      if (days > 0) {
+        setCountdown(`${days}일 ${hours}시간 ${mins}분`)
+      } else if (hours > 0) {
+        setCountdown(`${hours}시간 ${mins}분 ${secs}초`)
+      } else {
+        setCountdown(`${mins}분 ${secs}초`)
+      }
+    }
+
+    updateCountdown()
+    const interval = setInterval(updateCountdown, 1000)
+    return () => clearInterval(interval)
+  }, [orderInfo?.cutOffAt])
+
   useEffect(() => {
     const loadOrder = async () => {
       if (!token) {
@@ -203,7 +239,7 @@ export default function InviteLanding() {
         {/* 1. Order Summary (Visible to Everyone) */}
         <div className="glass-card invite-card mb-4 min-h-0 bg-white/80 backdrop-blur-md border-white/50 shadow-xl">
           <div className="icon mb-2 opacity-60"><ClipboardListIcon size={40} /></div>
-          <h2 className="text-xl font-bold mb-1">발주서 초대 내역</h2>
+          <h2 className="text-xl font-bold mb-1">발주서</h2>
           <p className="customer-name mb-4 text-primary font-bold">{orderInfo.customerName} 파트너님</p>
 
           <div className="order-summary-box mb-6 bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
@@ -211,7 +247,7 @@ export default function InviteLanding() {
               <span className="text-secondary text-sm">주문번호</span>
               <span className="font-mono font-medium text-right text-sm">{orderInfo.id}</span>
 
-              <span className="text-secondary text-sm">발주서 생성일</span>
+              <span className="text-secondary text-sm">생성일</span>
               <span className="font-medium text-right text-sm">{orderInfo.createdAt ? formatDate(orderInfo.createdAt) : '-'}</span>
 
               <span className="text-secondary text-sm">품목</span>
@@ -225,14 +261,21 @@ export default function InviteLanding() {
               <span className="font-bold text-right text-sm">{orderInfo.shipDate ? formatDate(orderInfo.shipDate) : '-'}</span>
 
               <span className="text-secondary text-sm">주문마감</span>
-              <span className="font-bold text-right text-sm text-red-500">{orderInfo.cutOffAt ? formatDateTime(orderInfo.cutOffAt) : '-'}</span>
+              <div className="text-right">
+                <span className="font-bold text-sm text-red-500">{orderInfo.cutOffAt ? formatDateTime(orderInfo.cutOffAt) : '-'}</span>
+                {countdown && (
+                  <span className="block text-xs text-red-400 mt-1 font-mono">남은시간: {countdown}</span>
+                )}
+              </div>
 
               {orderInfo.items && orderInfo.items.reduce((sum, item) => sum + (item.amount || 0), 0) > 0 && (
-                <div className="col-span-2 pt-4 mt-2 border-t border-blue-100 flex justify-between items-center">
-                  <span className="font-bold text-primary">예상 주문 합계</span>
-                  <span className="text-xl font-black text-blue-600">
-                    {orderInfo.items.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString() + '원'}
-                  </span>
+                <div className="col-span-2 pt-4 mt-2 border-t border-blue-100">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-primary">예상 발주 합계</span>
+                    <span className="text-xl font-black text-blue-600">
+                      {orderInfo.items.reduce((sum, item) => sum + (item.amount || 0), 0).toLocaleString()}원
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -255,21 +298,14 @@ export default function InviteLanding() {
                   <LogInIcon size={24} />
                 </div>
                 <div className="text-left">
-                  <h4 className="font-bold text-blue-900 text-sm leading-tight">
-                    {mode === 'LOGIN' ? (
-                      <>로그인하거나 비회원인 경우<br />계정활성화가 필요합니다</>
-                    ) : (
-                      <>파트너 계정을 활성화하고<br />발주를 시작하세요</>
-                    )}
-                  </h4>
-                  <p className="text-[11px] text-blue-700/80 mt-1">안전한 거래를 위해 본인 인증된 계정으로만 접근이 가능합니다.</p>
+                  <p className="text-sm text-blue-700">안전한 거래를 위해 로그인 해주세요.</p>
                 </div>
               </div>
 
               {/* Inline Login/Signup Form */}
-              <form onSubmit={mode === 'LOGIN' ? handleInlineLogin : handleInlineSignup} className="inline-login-form mb-8 text-left">
-                <div className="form-group mb-3">
-                  <label className="text-[11px] font-bold text-gray-400 ml-1 mb-1 block">아이디(이메일)</label>
+              <form onSubmit={mode === 'LOGIN' ? handleInlineLogin : handleInlineSignup} className="inline-login-form mb-8">
+                <div className="form-group mb-3 text-left">
+                  <label className="text-[11px] font-bold text-gray-500 mb-1 block">아이디(이메일)</label>
                   <input
                     type="email"
                     className="input w-full py-3 px-4 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-sans"
@@ -280,8 +316,8 @@ export default function InviteLanding() {
                     required
                   />
                 </div>
-                <div className="form-group mb-3">
-                  <label className="text-[11px] font-bold text-gray-400 ml-1 mb-1 block">비밀번호</label>
+                <div className="form-group mb-3 text-left">
+                  <label className="text-[11px] font-bold text-gray-500 mb-1 block">비밀번호</label>
                   <input
                     type="password"
                     className="input w-full py-3 px-4 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
@@ -293,8 +329,8 @@ export default function InviteLanding() {
                 </div>
 
                 {mode === 'SIGNUP' && (
-                  <div className="form-group mb-1">
-                    <label className="text-[11px] font-bold text-gray-400 ml-1 mb-1 block">비밀번호 확인</label>
+                  <div className="form-group mb-1 text-left">
+                    <label className="text-[11px] font-bold text-gray-500 mb-1 block">비밀번호 확인</label>
                     <input
                       type="password"
                       className="input w-full py-3 px-4 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
@@ -328,9 +364,9 @@ export default function InviteLanding() {
               <div className="activation-link-box text-center">
                 {mode === 'LOGIN' ? (
                   <>
-                    <p className="text-xs text-secondary mb-3">아직 계정이 없으신가요?</p>
+                    <p className="text-xs text-secondary mb-3">비회원인 경우 가입하기</p>
                     <button
-                      className="w-full py-3 rounded-xl border-2 border-blue-100 text-blue-600 font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-blue-600 font-semibold hover:from-blue-100 hover:to-indigo-100 transition-all flex items-center justify-center gap-2"
                       onClick={() => {
                         setMode('SIGNUP')
                         setErrorStatus('')
