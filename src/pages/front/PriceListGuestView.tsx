@@ -110,21 +110,18 @@ export default function PriceListGuestView() {
     const isExpired = priceList?.validUntil ? priceList.validUntil.toDate() < new Date() : false
 
     return (
-        <div className="price-guest-view min-h-screen bg-[#F0F2F5] pb-20 font-sans">
-            <div className="doc-page-container mx-auto">
-                <header className="doc-header bg-white shadow-2xl px-8 md:px-16 py-16 mb-8 rounded-b-[40px] relative">
+        <div className="price-guest-view min-h-screen bg-[#F0F2F5] py-12 px-4 md:py-20 font-sans">
+            <div className="doc-page-container mx-auto bg-white shadow-2xl rounded-sm overflow-hidden flex flex-col">
+                <header className="doc-header px-8 md:px-16 py-16 border-b-2 border-black relative">
                     {/* Official Branding Top Bar */}
                     <div className="flex justify-between items-start mb-12 border-b-2 border-black pb-8">
                         <div>
                             <h1 className="text-6xl font-black tracking-[0.3em] text-black">견 적 서</h1>
                             <div className="text-xs text-muted mt-4 font-bold">
-                                우편번호 350-904 충남 홍성군 광천읍 상정리 539번지  TEL:041)642-7341~5  FAX:041)642-7346
+                                충청남도 아산시 배방읍 구령길52번길 29  TEL:041)642-7341~5  FAX:041)642-7346
                             </div>
                         </div>
                         <div className="flex gap-4">
-                            {/* Placeholder for logos in image */}
-                            <div className="w-16 h-16 border-2 border-black rounded-xl flex items-center justify-center font-black text-[10px] text-center p-1 uppercase">내포원</div>
-                            <div className="w-16 h-16 border-2 border-black rounded-full flex items-center justify-center font-black text-[8px] text-center p-1 uppercase">우리도나</div>
                             <div className="w-16 h-16 border-2 border-primary rounded-full flex items-center justify-center font-black text-[10px] text-primary text-center p-1">HACCP</div>
                         </div>
                     </div>
@@ -167,7 +164,7 @@ export default function PriceListGuestView() {
                     </div>
                 </header>
 
-                <main className="doc-content-body px-4 md:px-0">
+                <main className="doc-content-body px-8 md:px-16 py-12 flex-1">
                     {isExpired && (
                         <div className="glass-card bg-error/5 border-2 border-error/20 p-5 mb-8 flex items-center gap-4 rounded-3xl">
                             <div className="bg-error p-2 rounded-xl">
@@ -249,12 +246,9 @@ export default function PriceListGuestView() {
                     </div>
 
                     {/* Official Footer */}
-                    <div className="bg-white p-12 md:p-16 rounded-sm shadow-xl border-x-2 border-b-2 border-black text-center relative mb-16">
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] scale-150 pointer-events-none">
-                            <ClipboardListIcon size={300} />
-                        </div>
-                        <div className="flex justify-center gap-12 text-sm font-bold text-muted relative z-10 uppercase tracking-widest mt-10">
-                            <span>Main Office: Chungcheongnam-do</span>
+                    <div className="text-center py-12 border-t border-gray-100">
+                        <div className="flex justify-center gap-12 text-sm font-bold text-muted relative z-10 uppercase tracking-widest">
+                            <span>Main Office: Chungcheongnam-do, Asan-si</span>
                             <span>Direct: 041)642-7341</span>
                         </div>
                     </div>
@@ -273,81 +267,90 @@ export default function PriceListGuestView() {
                 </main>
             </div>
 
-            {showOrderModal && (
-                <div className="modal-backdrop" onClick={() => setShowOrderModal(false)}>
-                    <div className="modal p-0" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
-                        <div className="p-8">
-                            <h3 className="text-2xl font-bold mb-2 flex items-center gap-2">
-                                <BuildingIcon size={24} color="var(--color-primary)" /> 간단 정보 입력
-                            </h3>
-                            <p className="text-secondary mb-6">주문서 작성을 위해 업체 정보를 입력해주세요.</p>
+            {
+                showOrderModal && (
+                    <div className="modal-backdrop" onClick={() => setShowOrderModal(false)}>
+                        <div className="modal p-0" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+                            <div className="p-8">
+                                <h3 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                                    <BuildingIcon size={24} color="var(--color-primary)" /> 간단 정보 입력
+                                </h3>
+                                <p className="text-secondary mb-6">주문서 작성을 위해 업체 정보를 입력해주세요.</p>
 
-                            <form onSubmit={handleStartOrder} className="space-y-4">
-                                <div>
-                                    <label className="label">업체명 (상호)</label>
-                                    <input
-                                        type="text"
-                                        className="input"
-                                        required
-                                        placeholder="예: 대한정육점"
-                                        value={orderForm.companyName}
-                                        onChange={e => setOrderForm({ ...orderForm, companyName: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="label">연락처</label>
-                                    <input
-                                        type="tel"
-                                        className="input"
-                                        required
-                                        placeholder="010-0000-0000"
-                                        value={orderForm.tel}
-                                        onChange={e => setOrderForm({ ...orderForm, tel: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="label">배송 주소 (선택)</label>
-                                    <input
-                                        type="text"
-                                        className="input"
-                                        placeholder="상세 주소를 입력해주세요"
-                                        value={orderForm.address}
-                                        onChange={e => setOrderForm({ ...orderForm, address: e.target.value })}
-                                    />
-                                </div>
+                                <form onSubmit={handleStartOrder} className="space-y-4">
+                                    <div>
+                                        <label className="label">업체명 (상호)</label>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            required
+                                            placeholder="예: 대한정육점"
+                                            value={orderForm.companyName}
+                                            onChange={e => setOrderForm({ ...orderForm, companyName: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="label">연락처</label>
+                                        <input
+                                            type="tel"
+                                            className="input"
+                                            required
+                                            placeholder="010-0000-0000"
+                                            value={orderForm.tel}
+                                            onChange={e => setOrderForm({ ...orderForm, tel: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="label">배송 주소 (선택)</label>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            placeholder="상세 주소를 입력해주세요"
+                                            value={orderForm.address}
+                                            onChange={e => setOrderForm({ ...orderForm, address: e.target.value })}
+                                        />
+                                    </div>
 
-                                <div className="pt-4 flex gap-3">
-                                    <button type="button" className="btn btn-secondary flex-1" onClick={() => setShowOrderModal(false)}>취소</button>
-                                    <button type="submit" className="btn btn-primary flex-1" disabled={submitting}>
-                                        {submitting ? '생성 중...' : '주문서 이동'}
-                                    </button>
-                                </div>
-                            </form>
+                                    <div className="pt-4 flex gap-3">
+                                        <button type="button" className="btn btn-secondary flex-1" onClick={() => setShowOrderModal(false)}>취소</button>
+                                        <button type="submit" className="btn btn-primary flex-1" disabled={submitting}>
+                                            {submitting ? '생성 중...' : '주문서 이동'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <style>{`
+                .price-guest-view {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    padding: 0 20px;
+                }
+
                 .doc-page-container {
+                    width: 100%;
                     max-width: 1000px;
                     transition: all 0.4s ease;
                 }
                 
                 @media (max-width: 1024px) {
                     .doc-page-container {
-                        max-width: 90%;
+                        max-width: 100%;
                     }
                 }
                 
                 @media (max-width: 768px) {
-                    .doc-page-container {
-                        max-width: 100%;
-                    }
                     .doc-header {
                         border-radius: 0;
                         padding-top: 60px;
                         padding-bottom: 40px;
+                        padding-left: 20px;
+                        padding-right: 20px;
                     }
                 }
 
@@ -362,12 +365,12 @@ export default function PriceListGuestView() {
                 }
 
                 @media print {
-                    .price-guest-view { background: white; }
+                    .price-guest-view { background: white; padding: 0; }
                     .doc-page-container { max-width: 100%; margin: 0; }
                     .btn, .search-bar-container { display: none !important; }
                     .doc-header { border-radius: 0; box-shadow: none; border: none; border-bottom: 2px solid #000; }
                 }
             `}</style>
-        </div>
+        </div >
     )
 }
