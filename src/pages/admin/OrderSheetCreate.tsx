@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon, CheckIcon, XIcon, AlertTriangleIcon, ChevronLeftIcon, ChevronRightIcon, InfoIcon } from '../../components/Icons'
-import { getAllCustomers, type FirestoreCustomer } from '../../lib/customerService'
+import { getAllCustomerUsers, type FirestoreUser, type BusinessProfile } from '../../lib/userService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import {
     getAllOrderSheets,
@@ -16,10 +16,36 @@ import { getAllPriceLists, type FirestorePriceList } from '../../lib/priceListSe
 import './OrderSheetCreate.css'
 import { Timestamp } from 'firebase/firestore'
 
-// 로컬 타입
-type Customer = Omit<FirestoreCustomer, 'createdAt' | 'updatedAt'> & {
+// 로컬 타입 (FirestoreUser 기반)
+type Customer = Omit<FirestoreUser, 'createdAt' | 'updatedAt'> & {
     createdAt?: Date
     updatedAt?: Date
+    // 편의 필드 (business에서 추출)
+    companyName?: string
+    bizRegNo?: string
+    ceoName?: string
+    address?: string
+    shipAddress1?: string
+    phone?: string
+    isKeyAccount?: boolean
+    isActive?: boolean
+}
+
+// FirestoreUser를 Customer로 변환
+function toCustomer(user: FirestoreUser): Customer {
+    return {
+        ...user,
+        createdAt: user.createdAt?.toDate?.(),
+        updatedAt: user.updatedAt?.toDate?.(),
+        companyName: user.business?.companyName || user.name,
+        bizRegNo: user.business?.bizRegNo || '',
+        ceoName: user.business?.ceoName || '',
+        address: user.business?.address || '',
+        shipAddress1: user.business?.shipAddress1 || user.business?.address || '',
+        phone: user.business?.tel || user.phone || '',
+        isKeyAccount: user.business?.isKeyAccount || false,
+        isActive: user.status === 'ACTIVE',
+    }
 }
 
 interface Product extends Omit<FirestoreProduct, 'createdAt' | 'updatedAt'> {
@@ -122,24 +148,20 @@ export default function OrderSheetCreate() {
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-    // Firebase에서 데이터 로드
+    // Firebase에서 데이터 로드 (통합 users 컬렉션)
     const loadData = async () => {
         try {
             setLoading(true)
             setError(null)
 
             const [customersData, productsData, priceListsData, orderSheetsData] = await Promise.all([
-                getAllCustomers(),
+                getAllCustomerUsers(),
                 getAllProducts(),
                 getAllPriceLists(),
                 getAllOrderSheets()
             ])
 
-            setCustomers(customersData.map(c => ({
-                ...c,
-                createdAt: c.createdAt?.toDate?.(),
-                updatedAt: c.updatedAt?.toDate?.(),
-            })))
+            setCustomers(customersData.map(toCustomer))
 
             setProducts(productsData.map(p => ({
                 ...p,
@@ -195,7 +217,7 @@ export default function OrderSheetCreate() {
     // 고객 선택 시 배송지 자동 설정
     useEffect(() => {
         if (selectedCustomer) {
-            setShipTo(selectedCustomer.address)
+            setShipTo(selectedCustomer.address || selectedCustomer.shipAddress1 || '')
         }
     }, [selectedCustomer])
 
@@ -532,8 +554,8 @@ export default function OrderSheetCreate() {
         if (!customerSearch) return activeCustomers
         const q = customerSearch.toLowerCase()
         return activeCustomers.filter(c =>
-            c.companyName.toLowerCase().includes(q) ||
-            c.bizRegNo.includes(q)
+            (c.companyName || '').toLowerCase().includes(q) ||
+            (c.bizRegNo || '').includes(q)
         )
     }, [customerSearch, customers])
 
@@ -587,10 +609,10 @@ export default function OrderSheetCreate() {
             // Firebase에 발주서 생성
             const newOrderSheet = await createOrderSheetWithId(customOrderId, {
                 customerOrgId: selectedCustomer.id,
-                customerName: selectedCustomer.companyName,
+                customerName: selectedCustomer.companyName || '',
                 shipDate: shipDate ? Timestamp.fromDate(new Date(shipDate)) : null,
                 cutOffAt: Timestamp.fromDate(new Date(cutOffAt)),
-                shipTo: shipTo || selectedCustomer.address,
+                shipTo: shipTo || selectedCustomer.address || '',
                 adminComment: adminComment,
                 status: 'SENT',
                 inviteTokenId: token,
