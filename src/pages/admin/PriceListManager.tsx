@@ -11,7 +11,8 @@ import {
     ClipboardListIcon,
     CheckCircleIcon,
     AlertTriangleIcon,
-    CopyIcon
+    CopyIcon,
+    ExternalLinkIcon
 } from '../../components/Icons'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import {
@@ -217,6 +218,30 @@ export default function PriceListManager() {
         }
     }
 
+    const handleShare = async (list: FirestorePriceList) => {
+        let tokenId = list.shareTokenId
+        if (!tokenId) {
+            tokenId = 'PL-' + Math.random().toString(36).substr(2, 9)
+            try {
+                await updatePriceList(list.id, { shareTokenId: tokenId })
+                loadData()
+            } catch (err) {
+                console.error('Failed to generate share link:', err)
+                alert('링크 생성에 실패했습니다.')
+                return
+            }
+        }
+
+        const link = `${window.location.origin}/price-view/${tokenId}`
+        try {
+            await navigator.clipboard.writeText(link)
+            alert('단가표 공유 링크가 복사되었습니다.\n잠재 고객에게 전송하여 비회원 주문을 유도할 수 있습니다.')
+        } catch (err) {
+            console.error('Clipboard copy failed:', err)
+            prompt('아래 링크를 복사하세요:', link)
+        }
+    }
+
     const handleDelete = async (id: string) => {
         if (confirm('이 단가표를 삭제하시겠습니까?')) {
             try {
@@ -305,6 +330,13 @@ export default function PriceListManager() {
                                             }}
                                         >
                                             <EyeIcon size={16} />
+                                        </button>
+                                        <button
+                                            className="btn btn-ghost btn-sm text-primary"
+                                            title="단가표 공유"
+                                            onClick={() => handleShare(list)}
+                                        >
+                                            <ExternalLinkIcon size={16} />
                                         </button>
                                         <button
                                             className="btn btn-ghost btn-sm"

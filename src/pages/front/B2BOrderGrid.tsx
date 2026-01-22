@@ -86,25 +86,27 @@ export default function B2BOrderGrid() {
             ])
 
             if (osData) {
-                // Secondary Guard: Ensure customer is active before allowing order entry
-                const customerData = await getUserById(osData.customerOrgId)
-                if (customerData?.status !== 'ACTIVE') {
-                    console.warn('Customer not active. Redirecting to landing...')
-                    navigate(`/order/${token}`)
-                    return
-                }
+                if (!osData.isGuest) {
+                    // Secondary Guard: Ensure customer is active before allowing order entry
+                    const customerData = await getUserById(osData.customerOrgId)
+                    if (customerData?.status !== 'ACTIVE') {
+                        console.warn('Customer not active. Redirecting to landing...')
+                        navigate(`/order/${token}`)
+                        return
+                    }
 
-                // Authorization Guard: Only allow the correct user/org
-                if (!user) {
-                    console.warn('No user. Redirecting to landing...')
-                    navigate(`/order/${token}`)
-                    return
-                }
+                    // Authorization Guard: Only allow the correct user/org
+                    if (!user) {
+                        console.warn('No user. Redirecting to landing...')
+                        navigate(`/order/${token}`)
+                        return
+                    }
 
-                if (user.orgId !== osData.customerOrgId) {
-                    alert('해당 주문장에 대한 접근 권한이 없습니다. 올바른 파트너 계정으로 로그인해주세요.')
-                    navigate('/order/list')
-                    return
+                    if (user.orgId !== osData.customerOrgId) {
+                        alert('해당 주문장에 대한 접근 권한이 없습니다. 올바른 파트너 계정으로 로그인해주세요.')
+                        navigate('/order/list')
+                        return
+                    }
                 }
 
                 const orderSheet = {
@@ -454,7 +456,7 @@ export default function B2BOrderGrid() {
             return
         }
 
-        if (!user) {
+        if (!user && !orderInfo?.isGuest) {
             if (confirm('주문을 제출하려면 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?')) {
                 const currentUrl = location.pathname + location.search
                 navigate(`/login?redirect=${encodeURIComponent(currentUrl)}`)

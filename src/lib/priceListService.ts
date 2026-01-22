@@ -7,6 +7,7 @@ import {
     getDocs,
     getDoc,
     query,
+    where,
     orderBy,
     serverTimestamp,
     Timestamp
@@ -28,6 +29,7 @@ export interface FirestorePriceList {
     id: string
     title: string
     items: PriceListItem[]
+    shareTokenId?: string
     createdAt: any
     updatedAt: any
 }
@@ -73,4 +75,12 @@ export async function updatePriceList(id: string, data: Partial<Omit<FirestorePr
 export async function deletePriceList(id: string): Promise<void> {
     const docRef = doc(db, PRICE_LISTS_COLLECTION, id)
     await deleteDoc(docRef)
+}
+
+export async function getPriceListByShareToken(token: string): Promise<FirestorePriceList | null> {
+    const q = query(collection(db, PRICE_LISTS_COLLECTION), where('shareTokenId', '==', token))
+    const querySnapshot = await getDocs(q)
+    if (querySnapshot.empty) return null
+    const d = querySnapshot.docs[0]
+    return { id: d.id, ...d.data() } as FirestorePriceList
 }

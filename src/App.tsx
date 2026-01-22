@@ -53,6 +53,7 @@ import SystemSettings from './pages/admin/SystemSettings'
 import OrderSheetView from './pages/front/OrderSheetView'
 import PurchaseOrderView from './pages/front/PurchaseOrderView'
 import DispatchView from './pages/public/DispatchView'
+import PriceListGuestView from './pages/front/PriceListGuestView'
 
 // Front (Customer) Pages
 import FrontLayout from './layouts/FrontLayout'
@@ -85,6 +86,7 @@ function App() {
                     <Route path="/purchase-order/:token" element={<PurchaseOrderView />} />
                     <Route path="/dispatch/:token" element={<DispatchView />} />
                     <Route path="/invite/:token" element={<InviteActivation />} />
+                    <Route path="/price-view/:token" element={<PriceListGuestView />} />
 
 
                     {/* ========================================

@@ -12,6 +12,7 @@ type LocalOrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'sh
   shipDate?: Date
   cutOffAt?: Date
   items?: FirestoreOrderSheetItem[]
+  isGuest?: boolean
 }
 
 export default function InviteLanding() {
@@ -291,7 +292,26 @@ export default function InviteLanding() {
 
         {/* 2. Authentication Gate (Conditional) */}
         <div className="glass-card invite-card shadow-2xl border-2 border-blue-500/20">
-          {!user || user.orgId !== orderInfo.customerOrgId ? (
+          {orderInfo.isGuest ? (
+            /* Guest User - Directly allow order */
+            <div className="auth-success-box text-center py-4">
+              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ClipboardListIcon size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 mb-2 font-black">비회원 주문 시작</h3>
+              <p className="text-sm text-secondary mb-8">
+                <strong>{orderInfo.customerName}</strong> 님, 제안받으신 단가표로<br />
+                즉시 주문서를 작성하실 수 있습니다.
+              </p>
+
+              <button
+                className="btn btn-primary btn-lg w-full py-5 text-lg font-bold shadow-xl shadow-blue-500/20 animate-bounce-subtle"
+                onClick={() => navigate(`/order/${token}/edit`)}
+              >
+                주문서 작성 시작하기 →
+              </button>
+            </div>
+          ) : !user || user.orgId !== orderInfo.customerOrgId ? (
             <div className="auth-step-box">
               <div className="flex items-center gap-3 mb-8 bg-blue-50 p-4 rounded-xl border border-blue-100">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
