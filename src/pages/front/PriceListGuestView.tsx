@@ -193,13 +193,13 @@ export default function PriceListGuestView() {
                                     </tr>
                                     <tr>
                                         <th className="bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">상호</th>
-                                        <td className="w-32 border border-slate-300 px-4 py-2.5 font-semibold text-slate-800">TRS 주식회사</td>
+                                        <td className="w-32 border border-slate-300 px-4 py-2.5 font-semibold text-slate-800">주식회사 믿고 (MEATGO)</td>
                                         <th className="w-12 bg-slate-100 border border-slate-300 px-2 py-2.5 text-slate-600 text-center font-semibold">성명</th>
                                         <td className="border border-slate-300 px-4 py-2.5 font-semibold text-slate-800 text-center whitespace-nowrap">홍길동 (인)</td>
                                     </tr>
                                     <tr>
                                         <th className="bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">주소</th>
-                                        <td colSpan={3} className="border border-slate-300 px-4 py-2.5 text-[12px] text-slate-700">서울특별시 강남구 테헤란로 123, 45층 (TRS타워)</td>
+                                        <td colSpan={3} className="border border-slate-300 px-4 py-2.5 text-[12px] text-slate-700">서울특별시 강남구 테헤란로 123, 45층 (믿고타워)</td>
                                     </tr>
                                     <tr>
                                         <th className="bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">업태</th>
@@ -310,7 +310,7 @@ export default function PriceListGuestView() {
                                 <p className="text-xs text-slate-400">본 견적서는 전자문서로서 법적 효력을 갖습니다.</p>
                                 <p className="text-xs text-slate-400">문의사항은 위 연락처로 연락 바랍니다.</p>
                             </div>
-                            <p className="text-[11px] text-slate-400 tracking-wider uppercase">The Real Standard Co., Ltd.</p>
+                            <p className="text-[11px] text-slate-400 tracking-wider uppercase">MEATGO Co., Ltd.</p>
                         </div>
                     </div>
                 </div>
