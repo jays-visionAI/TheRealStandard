@@ -107,23 +107,33 @@ export default function PriceListGuestView() {
 
                 {/* Header Section */}
                 <div className="px-8 py-10 md:px-14 md:py-16 bg-white">
-                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-10">
-                        <div className="space-y-6">
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <span className="p-3 bg-blue-50 rounded-2xl text-blue-600 shadow-sm border border-blue-100">
-                                        <FileTextIcon size={32} />
-                                    </span>
-                                    <h1 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900 uppercase">견 적 서</h1>
-                                </div>
-                                <div className="flex flex-col gap-1 pl-1 md:pl-20">
-                                    <p className="text-xl md:text-2xl font-bold text-slate-800">{priceList.title}</p>
-                                    <p className="text-[15px] text-slate-400 font-medium tracking-tight">
-                                        발행일자: {priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).replace(/ /g, '. ')}
-                                    </p>
-                                </div>
-                            </div>
+                    {/* Top Row: Title Left, Date Info Right */}
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
+                        <div className="flex items-center gap-3">
+                            <span className="p-3 bg-blue-50 rounded-2xl text-blue-600 shadow-sm border border-blue-100">
+                                <FileTextIcon size={32} />
+                            </span>
+                            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900 uppercase">견 적 서</h1>
                         </div>
+                        <div className="text-right space-y-1">
+                            <p className="text-[14px] text-slate-500 font-medium">
+                                <span className="text-slate-400">발행일자:</span> {priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
+                            <p className="text-[14px] text-slate-500 font-medium">
+                                <span className="text-slate-400">적용일자:</span> {priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
+                            <p className="text-[14px] text-slate-500 font-medium">
+                                <span className="text-slate-400">유효기간:</span> 발행일로부터 5일
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Customer Name with 귀하 */}
+                    <div className="mb-10 pl-1 md:pl-[68px]">
+                        <p className="text-2xl md:text-3xl font-black text-slate-900">{priceList.title} <span className="font-bold text-slate-500">귀하</span></p>
+                    </div>
+
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-10">
 
                         {/* Supplier Info Box - Refined Alignment */}
                         <div className="w-full lg:w-auto min-w-[360px]">
