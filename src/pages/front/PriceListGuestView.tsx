@@ -173,7 +173,7 @@ export default function PriceListGuestView() {
                             <input
                                 type="text"
                                 placeholder="상세 품목명을 검색하세요"
-                                className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-2xl outline-none text-sm font-semibold text-slate-700 placeholder:text-slate-300 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
+                                className="w-full pl-12 pr-10 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl outline-none text-sm font-semibold text-slate-700 placeholder:text-slate-300 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                             />
