@@ -114,6 +114,10 @@ export default function OrderSheetCreate() {
         onConfirm: () => { }
     })
 
+    // Success Modal state (for link copy confirmation)
+    const [successModalOpen, setSuccessModalOpen] = useState(false)
+    const [successModalLink, setSuccessModalLink] = useState('')
+
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
     const dropdownRef = useRef<HTMLDivElement>(null)
@@ -607,8 +611,8 @@ export default function OrderSheetCreate() {
 
             const link = `${window.location.origin}/order/${token}`
             navigator.clipboard.writeText(link)
-            alert(`✅ 발주서가 생성되었습니다!\n\n고객 링크가 클립보드에 복사되었습니다.\n\n${link}`)
-            navigate('/admin/order-sheets')
+            setSuccessModalLink(link)
+            setSuccessModalOpen(true)
         } catch (err) {
             console.error('Failed to create purchase order:', err)
             alert('발주서 생성에 실패했습니다.')
@@ -1214,7 +1218,7 @@ export default function OrderSheetCreate() {
                                     disabled={(!skipShippingInfo && !shipDate) || !cutOffAt || saving}
                                     onClick={handleSubmit}
                                 >
-                                    {saving ? '생성 중...' : '주문장 발송 🔗'}
+                                    {saving ? '생성 중...' : '발주서 생성'}
                                 </button>
                             </div>
                         </div>
@@ -1359,6 +1363,51 @@ export default function OrderSheetCreate() {
                             <button
                                 className="btn btn-primary px-10 font-bold"
                                 onClick={confirmModalConfig.onConfirm}
+                            >
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Modal - Link Copied */}
+            {successModalOpen && (
+                <div className="modal-backdrop" onClick={() => {
+                    setSuccessModalOpen(false)
+                    navigate('/admin/order-sheets')
+                }}>
+                    <div className="modal" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header flex justify-between items-center">
+                            <h3 className="font-bold text-lg">발주서 생성 완료</h3>
+                            <button
+                                onClick={() => {
+                                    setSuccessModalOpen(false)
+                                    navigate('/admin/order-sheets')
+                                }}
+                                className="btn btn-ghost p-2"
+                            >
+                                <XIcon size={20} />
+                            </button>
+                        </div>
+                        <div className="modal-body py-8 text-center">
+                            <div className="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600">
+                                <CheckIcon size={32} />
+                            </div>
+                            <h4 className="text-xl font-bold text-gray-800 mb-2">발주서가 생성되었습니다!</h4>
+                            <p className="text-sm text-secondary mb-4">고객 링크가 클립보드에 복사되었습니다.</p>
+                            <div className="bg-gray-50 rounded-xl p-4 text-left">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1 block">복사된 링크</label>
+                                <p className="text-sm text-primary font-mono break-all">{successModalLink}</p>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                className="btn btn-primary w-full py-4 font-bold"
+                                onClick={() => {
+                                    setSuccessModalOpen(false)
+                                    navigate('/admin/order-sheets')
+                                }}
                             >
                                 확인
                             </button>
