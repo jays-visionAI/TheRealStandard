@@ -71,10 +71,22 @@ export default function LLMSettings() {
                                         className="hidden"
                                     />
                                     <div className="provider-info">
-                                        <span className="capitalize font-bold">
-                                            {provider === 'openai' ? 'OpenAI' : provider === 'gemini' ? 'Google Gemini' : 'DeepSeek'}
-                                        </span>
-                                        {formData.activeLlmProvider === provider && <CheckCircleIcon size={16} className="text-primary" />}
+                                        <div className="provider-main">
+                                            <span className="provider-name font-bold">
+                                                {provider === 'openai' ? 'OpenAI' : provider === 'gemini' ? 'Google Gemini' : 'DeepSeek'}
+                                            </span>
+                                            <div className="status-badges">
+                                                {formData[(`${provider}ApiKey` as keyof typeof formData)] ? (
+                                                    <span className="badge badge-success-outline">등록됨</span>
+                                                ) : (
+                                                    <span className="badge badge-gray-outline">미등록</span>
+                                                )}
+                                                {formData.activeLlmProvider === provider && (
+                                                    <span className="badge badge-primary">활성</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {formData.activeLlmProvider === provider && <CheckCircleIcon size={20} className="text-primary" />}
                                     </div>
                                 </label>
                             ))}
@@ -179,6 +191,30 @@ export default function LLMSettings() {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
+                    width: 100%;
+                }
+                .provider-main {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
+                .provider-name {
+                    font-size: 1.1rem;
+                    color: var(--text-primary);
+                }
+                .status-badges {
+                    display: flex;
+                    gap: 0.4rem;
+                }
+                .badge-success-outline {
+                    background: rgba(16, 185, 129, 0.05);
+                    color: #10b981;
+                    border: 1px solid rgba(16, 185, 129, 0.2);
+                }
+                .badge-gray-outline {
+                    background: rgba(107, 114, 128, 0.05);
+                    color: #6b7280;
+                    border: 1px solid rgba(107, 114, 128, 0.2);
                 }
                 .col-span-2 {
                     grid-column: span 2;
