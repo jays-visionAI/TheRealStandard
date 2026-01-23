@@ -563,10 +563,19 @@ export default function B2BOrderGrid() {
     const totalItems = vRows.length
     const totalWeight = vRows.reduce((sum, r) => sum + r.estimatedWeight, 0)
     const totalAmount = vRows.reduce((sum, r) => sum + r.totalAmount, 0)
+    const totalBoxes = vRows.reduce((sum, r) => {
+        const product = products.find(p => p.id === r.productId)
+        if (r.unit === 'box') return sum + r.quantity
+        if (product?.boxWeight && product.boxWeight > 0) {
+            return sum + (r.quantity / product.boxWeight)
+        }
+        return sum
+    }, 0)
     const checkedCount = rows.filter(r => r.checked).length
 
     // 통화 포맷
     const formatCurrency = (value: number) => new Intl.NumberFormat('ko-KR').format(value)
+    const formatNumber = (value: number) => new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 1 }).format(value)
 
     if (loading) {
         return (
@@ -702,6 +711,13 @@ export default function B2BOrderGrid() {
                                     ))}
                                 </tbody>
                                 <tfoot>
+                                    <tr className="po-summary-row no-print" style={{ background: '#f8fafc', color: '#64748b', fontSize: '13px' }}>
+                                        <td colSpan={4} style={{ padding: '12px 24px', textAlign: 'right' }}>
+                                            <span style={{ marginRight: '24px' }}>품목: <strong>{totalItems}</strong></span>
+                                            <span style={{ marginRight: '24px' }}>총 중량: <strong>{formatCurrency(totalWeight)}</strong> kg</span>
+                                            <span>총 박스: <strong>{formatNumber(totalBoxes)}</strong> box</span>
+                                        </td>
+                                    </tr>
                                     <tr className="po-total-row">
                                         <td colSpan={3} style={{ textAlign: 'right' }}>TOTAL AMOUNT (합계)</td>
                                         <td style={{ textAlign: 'right' }} className="po-total-amount">
@@ -773,6 +789,10 @@ export default function B2BOrderGrid() {
                         <div className="summary-row">
                             <span>주문 품목</span>
                             <span>{totalItems}개</span>
+                        </div>
+                        <div className="summary-row">
+                            <span>총 박스 수</span>
+                            <span>{formatNumber(totalBoxes)} box</span>
                         </div>
                         <div className="summary-row">
                             <span>예상 총 중량</span>
@@ -1048,10 +1068,23 @@ export default function B2BOrderGrid() {
                             </td>
                         </tr>
                         <tr className="total-row">
-                            <td colSpan={3} className="total-label">총계</td>
-                            <td className="total-items">{totalItems} 품목</td>
-                            <td className="total-weight mobile-hidden">{formatCurrency(totalWeight)} kg</td>
-                            <td className="total-amount mobile-hidden">₩{formatCurrency(totalAmount)}</td>
+                            <td colSpan={3} className="total-label">합계 집계</td>
+                            <td className="total-items-cell" style={{ textAlign: 'center' }}>
+                                <div className="total-val">{totalItems}</div>
+                                <div className="total-lb">품목수</div>
+                            </td>
+                            <td className="total-boxes-cell" style={{ textAlign: 'center' }}>
+                                <div className="total-val">{formatNumber(totalBoxes)}</div>
+                                <div className="total-lb">박스수</div>
+                            </td>
+                            <td className="total-weight-cell mobile-hidden" style={{ textAlign: 'right' }}>
+                                <div className="total-val">{formatCurrency(totalWeight)}kg</div>
+                                <div className="total-lb">총중량</div>
+                            </td>
+                            <td className="total-amount-cell mobile-hidden" style={{ textAlign: 'right' }}>
+                                <div className="total-val">₩{formatCurrency(totalAmount)}</div>
+                                <div className="total-lb">총금액</div>
+                            </td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -1126,15 +1159,25 @@ export default function B2BOrderGrid() {
             {/* Footer Actions */}
             <footer className="order-footer glass-card">
                 <div className="footer-summary">
-                    <span className="summary-item">
-                        <strong>{totalItems}</strong> 품목
-                    </span>
-                    <span className="summary-item">
-                        총 <strong>{formatCurrency(totalWeight)}</strong> kg
-                    </span>
-                    <span className="summary-item total">
-                        합계 <strong>₩{formatCurrency(totalAmount)}</strong>
-                    </span>
+                    <div className="footer-summary-item">
+                        <span className="label">품목</span>
+                        <span className="value"><strong>{totalItems}</strong></span>
+                    </div>
+                    <div className="footer-summary-item divider"></div>
+                    <div className="footer-summary-item">
+                        <span className="label">총 중량</span>
+                        <span className="value"><strong>{formatCurrency(totalWeight)}</strong> kg</span>
+                    </div>
+                    <div className="footer-summary-item divider"></div>
+                    <div className="footer-summary-item">
+                        <span className="label">총 박스</span>
+                        <span className="value"><strong>{formatNumber(totalBoxes)}</strong> box</span>
+                    </div>
+                    <div className="footer-summary-item divider"></div>
+                    <div className="footer-summary-item total">
+                        <span className="label">합계 금액</span>
+                        <span className="value"><strong>₩{formatCurrency(totalAmount)}</strong></span>
+                    </div>
                 </div>
 
                 <div className="flex gap-4">

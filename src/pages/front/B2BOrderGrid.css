@@ -349,33 +349,45 @@
 
 /* Total Row */
 .total-row {
-    background: var(--bg-tertiary);
-    font-weight: var(--font-semibold);
+    background: #f8fafc;
+    border-top: 2px solid #e2e8f0;
 }
 
 .total-row td {
     padding: var(--space-4);
-    border-bottom: none;
+    vertical-align: middle;
 }
 
 .total-row .total-label {
     text-align: left;
-    font-size: var(--text-base);
+    font-size: var(--text-sm);
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.total-row .total-items {
-    text-align: center;
-    color: var(--text-secondary);
-}
-
-.total-row .total-weight {
-    text-align: right;
-}
-
-.total-row .total-amount {
-    text-align: right;
+.total-row .total-val {
     font-size: var(--text-lg);
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1.2;
+}
+
+.total-row .total-lb {
+    font-size: 10px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+.total-row .total-amount-cell .total-val {
     color: var(--color-primary);
+}
+
+.total-row .total-items-cell,
+.total-row .total-boxes-cell {
+    border-left: 1px solid #f1f5f9;
 }
 
 /* Footer */
@@ -383,36 +395,62 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-4) var(--space-5);
+    padding: var(--space-4) var(--space-6);
     position: sticky;
-    bottom: var(--space-3);
-    background: var(--bg-glass);
+    bottom: var(--space-4);
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(12px);
     z-index: var(--z-sticky);
+    border: 1px solid rgba(37, 99, 235, 0.1);
+    box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius-2xl);
+    margin-bottom: var(--space-4);
 }
 
 .footer-summary {
     display: flex;
-    gap: var(--space-6);
+    align-items: center;
+    gap: var(--space-4);
 }
 
-.summary-item {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
+.footer-summary-item {
+    display: flex;
+    flex-direction: column;
 }
 
-.summary-item strong {
-    color: var(--text-primary);
-    font-weight: var(--font-semibold);
+.footer-summary-item .label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    margin-bottom: 2px;
 }
 
-.summary-item.total {
+.footer-summary-item .value {
     font-size: var(--text-base);
+    color: #334155;
+    line-height: 1.2;
 }
 
-.summary-item.total strong {
-    font-size: var(--text-lg);
+.footer-summary-item .value strong {
+    font-weight: 800;
+}
+
+.footer-summary-item.divider {
+    width: 1px;
+    height: 24px;
+    background: #e2e8f0;
+}
+
+.footer-summary-item.total .label {
     color: var(--color-primary);
+}
+
+.footer-summary-item.total .value {
+    color: var(--color-primary);
+    font-size: var(--text-xl);
 }
 
 /* Pending Approval View */
