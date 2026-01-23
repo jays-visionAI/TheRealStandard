@@ -279,5 +279,8 @@ function getPageTitle(pathname: string): string {
         '/admin/settings/system': '시스템 API 설정',
         '/admin/settings/llm': 'LLM API 및 모델 설정',
     }
+    if (pathname.includes('/order-sheets/') && pathname.endsWith('/review')) {
+        return '발주서 검토'
+    }
     return titles[pathname] || 'MEATGO 물류관리'
 }

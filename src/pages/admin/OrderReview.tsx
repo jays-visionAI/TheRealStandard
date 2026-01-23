@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { XIcon, AlertTriangleIcon, ClockIcon } from '../../components/Icons'
+import { XIcon, AlertTriangleIcon, ClockIcon, ClipboardListIcon } from '../../components/Icons'
 import {
     getOrderSheetById,
     getOrderSheetItems,
@@ -31,31 +31,30 @@ export default function OrderReview() {
 
     const [orderSheet, setOrderSheet] = useState<LocalOrderSheet | null>(null)
     const [items, setItems] = useState<FirestoreOrderSheetItem[]>([])
+    const [originalItems, setOriginalItems] = useState<FirestoreOrderSheetItem[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [revisionComment, setRevisionComment] = useState('')
+    const [changeReason, setChangeReason] = useState('')
     const [showRevisionModal, setShowRevisionModal] = useState(false)
+    const [showConfirmModal, setShowConfirmModal] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [discountAmount, setDiscountAmount] = useState(0)
     const [timeLeft, setTimeLeft] = useState<string>('')
     const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set())
 
-    // Firebase에서 데이터 로드
     const loadData = async () => {
         if (!id) {
             setLoading(false)
             return
         }
-
         try {
             setLoading(true)
             setError(null)
-
             const [osData, itemsData] = await Promise.all([
                 getOrderSheetById(id),
                 getOrderSheetItems(id)
             ])
-
             if (osData) {
                 setOrderSheet({
                     ...osData,
@@ -70,6 +69,7 @@ export default function OrderReview() {
                 setDiscountAmount(osData.discountAmount || 0)
             }
             setItems(itemsData)
+            setOriginalItems(JSON.parse(JSON.stringify(itemsData)))
         } catch (err) {
             console.error('Failed to load order:', err)
             setError('데이터를 불러오는데 실패했습니다.')
@@ -78,136 +78,111 @@ export default function OrderReview() {
         }
     }
 
-    useEffect(() => {
-        loadData()
-    }, [id])
+    useEffect(() => { loadData() }, [id])
 
-    // Countdown Timer
     useEffect(() => {
         if (!orderSheet?.cutOffAt) return
-
         const updateTimer = () => {
             const now = new Date().getTime()
             const cutOff = new Date(orderSheet.cutOffAt!).getTime()
             const distance = cutOff - now
-
-            if (distance < 0) {
-                setTimeLeft('마감됨')
-                return
-            }
-
+            if (distance < 0) { setTimeLeft('마감됨'); return }
             const days = Math.floor(distance / (1000 * 60 * 60 * 24))
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
             const seconds = Math.floor((distance % (1000 * 60)) / 1000)
-
             let str = ''
             if (days > 0) str += `${days}일 `
             str += `${hours}시간 ${minutes}분 ${seconds}초`
             setTimeLeft(str)
         }
-
-        updateTimer()
-        const timer = setInterval(updateTimer, 1000)
-        return () => clearInterval(timer)
+        updateTimer(); const timer = setInterval(updateTimer, 1000); return () => clearInterval(timer)
     }, [orderSheet?.cutOffAt])
 
     const totalKg = items.reduce((sum, item) => sum + (item.estimatedKg || 0), 0)
     const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0)
     const finalTotal = Math.max(0, totalAmount - (discountAmount || 0))
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
+    const formatCurrency = (value: number) => new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
+    const formatDateOnly = (date: Date | string | undefined) => date ? new Date(date).toLocaleDateString('ko-KR') : '-'
+    const formatDateTime = (date: Date | string | undefined) => date ? new Date(date).toLocaleString('ko-KR') : '-'
+
+    const updateItem = (index: number, field: keyof FirestoreOrderSheetItem, value: any) => {
+        const newItems = [...items]
+        const item = { ...newItems[index], [field]: value }
+        if (field === 'qtyRequested' || field === 'unitPrice') {
+            const qty = field === 'qtyRequested' ? value : item.qtyRequested || 0
+            const price = field === 'unitPrice' ? value : item.unitPrice || 0
+            const weightMultiplier = item.unit === 'box' ? 20 : 1
+            item.estimatedKg = qty * weightMultiplier
+            item.amount = item.estimatedKg * price
+        }
+        newItems[index] = item
+        setItems(newItems)
     }
 
-    const formatDateOnly = (date: Date | string | undefined) => {
-        if (!date) return '-'
-        return new Date(date).toLocaleDateString('ko-KR')
+    const getChangeSummary = () => {
+        const changes: string[] = []
+        items.forEach(item => {
+            const original = originalItems.find(oi => oi.productId === item.productId)
+            if (!original) { changes.push(`[추가] ${item.productName}`) }
+            else {
+                if (original.qtyRequested !== item.qtyRequested) changes.push(`${item.productName}: 수량 (${original.qtyRequested} -> ${item.qtyRequested}${item.unit.toUpperCase()})`)
+                if (original.unitPrice !== item.unitPrice) changes.push(`${item.productName}: 단가 (${formatCurrency(original.unitPrice)} -> ${formatCurrency(item.unitPrice)})`)
+            }
+        })
+        originalItems.forEach(original => { if (!items.find(i => i.productId === original.productId)) changes.push(`[삭제] ${original.productName}`) })
+        return changes
     }
 
-    const formatDateTime = (date: Date | string | undefined) => {
-        if (!date) return '-'
-        return new Date(date).toLocaleString('ko-KR')
-    }
+    const changeLogs = getChangeSummary()
+    const hasChanges = changeLogs.length > 0
 
     const handleConfirm = async () => {
         if (!orderSheet) return
-        if (!confirm('주문을 확정하시겠습니까? 확정 후에는 수정이 불가합니다.')) return
+        if (hasChanges && !changeReason.trim()) { alert('품목 변경 내역이 있습니다. 변경 사유를 입력해주세요.'); return }
+        setShowConfirmModal(true)
+    }
 
+    const executeConfirm = async () => {
+        if (!orderSheet) return
         try {
             setIsSubmitting(true)
-
             await updateOrderSheet(orderSheet.id, {
                 status: 'CONFIRMED',
-                discountAmount: discountAmount
+                discountAmount,
+                adminComment: changeReason ? `[품목변경 사유] ${changeReason}\n${orderSheet.adminComment || ''}` : orderSheet.adminComment
             })
-
-            // SalesOrder 생성
             await createSalesOrderFromSheet(orderSheet, items)
-
+            setShowConfirmModal(false)
             alert('주문이 확정되었습니다. 확정주문(SalesOrder)이 생성되었습니다.')
             navigate('/admin/order-sheets')
-        } catch (err) {
-            console.error('Failed to confirm order:', err)
-            alert('주문 확정에 실패했습니다.')
-        } finally {
-            setIsSubmitting(false)
-        }
+        } catch (err) { console.error(err); alert('주문 확정에 실패했습니다.') } finally { setIsSubmitting(false) }
     }
 
     const handleRevisionRequest = async () => {
-        if (!orderSheet) return
-        if (!revisionComment.trim()) {
-            alert('수정 요청 사유를 입력해주세요.')
-            return
-        }
-
+        if (!orderSheet || !revisionComment.trim()) { alert('수정 요청 사유를 입력해주세요.'); return }
         try {
             setIsSubmitting(true)
-
-            await updateOrderSheet(orderSheet.id, {
-                status: 'REVISION',
-            })
-
+            await updateOrderSheet(orderSheet.id, { status: 'REVISION' })
             alert('수정 요청이 전송되었습니다.')
             setShowRevisionModal(false)
             navigate('/admin/order-sheets')
-        } catch (err) {
-            console.error('Failed to request revision:', err)
-            alert('수정 요청에 실패했습니다.')
-        } finally {
-            setIsSubmitting(false)
-        }
+        } catch (err) { console.error(err); alert('수정 요청에 실패했습니다.') } finally { setIsSubmitting(false) }
     }
 
     const handleDelete = async () => {
-        if (!orderSheet) return
-        if (!confirm('정말로 이 발주서를 삭제하시겠습니까? 삭제된 발주서는 복구할 수 없습니다.')) return
-
+        if (!orderSheet || !confirm('정말로 이 발주서를 삭제하시겠습니까?')) return
         try {
             setIsSubmitting(true)
-
             await deleteOrderSheet(orderSheet.id)
-
             alert('발주서가 삭제되었습니다.')
             navigate('/admin/order-sheets')
-        } catch (err) {
-            console.error('Failed to delete order:', err)
-            alert('발주서 삭제에 실패했습니다.')
-        } finally {
-            setIsSubmitting(false)
-        }
+        } catch (err) { console.error(err); alert('발주서 삭제에 실패했습니다.') } finally { setIsSubmitting(false) }
     }
 
     if (loading) return <div className="p-8 text-center text-white">불러오는 중...</div>
-    if (error) return (
-        <div className="p-8 text-center text-white">
-            <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
-                <AlertTriangleIcon size={24} color="#ef4444" />
-            </span>
-            {error}
-        </div>
-    )
+    if (error) return <div className="p-8 text-center text-white"><AlertTriangleIcon size={24} color="#ef4444" /> {error}</div>
     if (!orderSheet) return <div className="p-8 text-center text-white">발주서를 찾을 수 없습니다.</div>
 
     return (
@@ -343,11 +318,38 @@ export default function OrderReview() {
                                         />
                                     </td>
                                     <td className="font-medium">{item.productName}</td>
-                                    <td className="text-right">
-                                        {item.qtyRequested} {item.unit === 'box' ? 'Box' : 'Kg'}
+                                    <td className="text-right" style={{ width: '120px' }}>
+                                        <div className="flex items-center justify-end gap-1">
+                                            <input
+                                                type="number"
+                                                className="table-input"
+                                                value={item.qtyRequested || 0}
+                                                onChange={(e) => updateItem(index, 'qtyRequested', parseFloat(e.target.value) || 0)}
+                                            />
+                                            <span className="text-xs text-muted font-bold ml-1">{item.unit.toUpperCase()}</span>
+                                        </div>
                                     </td>
-                                    <td className="text-right">{(item.estimatedKg || 0).toFixed(1)}</td>
-                                    <td className="text-right">{formatCurrency(item.unitPrice)}</td>
+                                    <td className="text-right">
+                                        <input
+                                            type="number"
+                                            className="table-input"
+                                            value={item.estimatedKg || 0}
+                                            onChange={(e) => updateItem(index, 'estimatedKg', parseFloat(e.target.value) || 0)}
+                                            style={{ width: '60px' }}
+                                        />
+                                    </td>
+                                    <td className="text-right" style={{ width: '140px' }}>
+                                        <div className="flex items-center justify-end gap-1">
+                                            <span className="text-xs text-muted">₩</span>
+                                            <input
+                                                type="number"
+                                                className="table-input"
+                                                value={item.unitPrice || 0}
+                                                onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                                style={{ width: '90px' }}
+                                            />
+                                        </div>
+                                    </td>
                                     <td className="text-right font-semibold">{formatCurrency(item.amount || 0)}</td>
                                 </tr>
                             ))}
@@ -393,6 +395,38 @@ export default function OrderReview() {
                     </table>
                 </div>
             </div>
+
+            {/* AI Change Tracking & Reason Section */}
+            {hasChanges && (
+                <div className="glass-card mb-4 overflow-hidden border-blue-200/50 bg-blue-50/10">
+                    <div className="grid grid-cols-1 md:grid-cols-2">
+                        <div className="p-6 border-r border-slate-100">
+                            <h4 className="text-sm font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-[10px]">✨</span>
+                                AI 자동 분석: 품목 변경내역
+                            </h4>
+                            <div className="space-y-2">
+                                {changeLogs.map((log, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 text-sm text-slate-600 font-bold">
+                                        <span className="w-1 h-1 bg-blue-400 rounded-full"></span>
+                                        {log}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="p-6 bg-white/40">
+                            <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">변경 사유 (필수 기입)</h4>
+                            <textarea
+                                className="w-full bg-white border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 rounded-xl p-4 text-sm font-bold outline-none transition-all placeholder:text-slate-300"
+                                placeholder="고객에게 안내할 품목 변경 또는 단가 조정 사유를 입력하세요."
+                                rows={3}
+                                value={changeReason}
+                                onChange={e => setChangeReason(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Actions */}
             <div className="glass-card">
@@ -453,6 +487,39 @@ export default function OrderReview() {
                             >
                                 요청 전송
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Confirm Modal */}
+            {showConfirmModal && (
+                <div className="modal-backdrop" onClick={() => setShowConfirmModal(false)}>
+                    <div className="modal max-w-sm rounded-[2rem] overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-10 text-center">
+                            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-500">
+                                <ClipboardListIcon size={40} />
+                            </div>
+                            <h3 className="text-2xl font-black text-slate-900 mb-2">주문을 확정하시겠습니까?</h3>
+                            <p className="text-slate-400 text-sm font-bold leading-relaxed mb-10">
+                                확정 후에는 매출전표가 생성되며 품목 수정이 불가합니다. <br />정말 진행하시겠습니까?
+                            </p>
+
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-blue-500/20 transition-all active:scale-95"
+                                    onClick={executeConfirm}
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? '확정 처리 중...' : '네, 확정하겠습니다'}
+                                </button>
+                                <button
+                                    className="w-full text-slate-400 hover:text-slate-600 py-3 font-bold transition-all"
+                                    onClick={() => setShowConfirmModal(false)}
+                                >
+                                    잠시 더 검토할게요
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -627,6 +694,32 @@ export default function OrderReview() {
           .comments-grid {
             grid-template-columns: 1fr;
           }
+        }
+
+        .table-input {
+          background: #f8f9fc;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 6px 10px;
+          font-size: 14px;
+          font-weight: 700;
+          color: #1e293b;
+          width: 80px;
+          text-align: right;
+          outline: none;
+          transition: all 0.2s;
+        }
+
+        .table-input:focus {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.05);
+          background: white;
+        }
+
+        .table-input::-webkit-outer-spin-button,
+        .table-input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
         }
       `}</style>
         </div>
