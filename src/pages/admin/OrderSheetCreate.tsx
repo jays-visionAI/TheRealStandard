@@ -720,7 +720,17 @@ export default function OrderSheetCreate() {
             {step === 1 && (
                 <div className="step-content">
                     <div className="glass-card">
-                        <h2 className="section-title"><BuildingIcon size={20} /> 고객사 선택</h2>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="section-title mb-0"><BuildingIcon size={20} /> 고객사 선택</h2>
+                            <button
+                                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1 text-slate-600 transition-colors"
+                                onClick={loadData}
+                                disabled={loading}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={loading ? 'animate-spin' : ''}><path d="M23 4v6h-6" /><path d="M1 20v-6h6" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg>
+                                목록 새로고침
+                            </button>
+                        </div>
 
                         <div className="search-box mb-4">
                             <span className="search-icon"><SearchIcon size={18} /></span>
@@ -741,7 +751,7 @@ export default function OrderSheetCreate() {
                                     {filteredCustomers.filter(c => c.isKeyAccount).map((customer) => (
                                         <div
                                             key={customer.id}
-                                            className={`customer - card key - account ${selectedCustomer?.id === customer.id ? 'selected' : ''} `}
+                                            className={`customer-card key-account ${selectedCustomer?.id === customer.id ? 'selected' : ''}`}
                                             onClick={() => setSelectedCustomer(customer)}
                                         >
                                             <div className="customer-name">
@@ -779,6 +789,7 @@ export default function OrderSheetCreate() {
                                                 <th>거래처명</th>
                                                 <th>사업자번호</th>
                                                 <th>대표자</th>
+                                                <th>이메일</th>
                                                 <th>가입상태</th>
                                                 <th>전화번호</th>
                                                 <th>주소</th>
@@ -804,6 +815,7 @@ export default function OrderSheetCreate() {
                                                     </td>
                                                     <td className="mono">{customer.bizRegNo}</td>
                                                     <td>{customer.ceoName}</td>
+                                                    <td className="text-secondary text-sm">{customer.email || '-'}</td>
                                                     <td>
                                                         {customer.status === 'ACTIVE' ? (
                                                             <span className="status-badge joined">가입완료</span>
