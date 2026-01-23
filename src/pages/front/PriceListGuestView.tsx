@@ -23,23 +23,11 @@ export default function PriceListGuestView() {
     const [priceList, setPriceList] = useState<FirestorePriceList | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [showOrderModal, setShowOrderModal] = useState(false)
     const [submitting, setSubmitting] = useState(false)
 
-    const [orderForm, setOrderForm] = useState({
-        companyName: '',
-        tel: '',
-        address: '',
-    })
     const [searchQuery, setSearchQuery] = useState('')
     const [countdown, setCountdown] = useState('')
 
-    // Scroll to top when modal opens
-    useEffect(() => {
-        if (showOrderModal) {
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-        }
-    }, [showOrderModal])
 
     // Countdown timer for validity period (5 days from sharedAt)
     useEffect(() => {
@@ -99,12 +87,8 @@ export default function PriceListGuestView() {
         loadPriceList()
     }, [token])
 
-    const handleStartOrder = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!priceList || !orderForm.companyName || !orderForm.tel) {
-            alert('필수 정보를 입력해주세요.')
-            return
-        }
+    const handleStartOrder = async () => {
+        if (!priceList) return
 
         try {
             setSubmitting(true)
@@ -113,11 +97,11 @@ export default function PriceListGuestView() {
 
             const orderSheet = await createOrderSheetWithId(orderId, {
                 customerOrgId: 'GUEST-PL-' + Date.now(),
-                customerName: orderForm.companyName,
+                customerName: '비회원 고객', // Placeholder - will be updated in next step
                 isGuest: true,
                 status: 'SENT',
                 cutOffAt: Timestamp.fromDate(new Date(Date.now() + 86400000)),
-                shipTo: orderForm.address,
+                shipTo: '',
                 adminComment: `단가표[${priceList.title}]를 통한 비회원 주문 시작`,
                 inviteTokenId: guestToken,
                 sourcePriceListId: priceList.id
@@ -334,93 +318,19 @@ export default function PriceListGuestView() {
             {!isExpired && (
                 <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-full max-w-[800px] px-6 z-[60] pointer-events-none">
                     <button
-                        className="w-full h-28 bg-[#FFDB00] border-4 border-slate-900 shadow-[0_30px_60px_-15px_rgba(255,219,0,0.5)] text-slate-900 font-black rounded-[3rem] flex items-center justify-center gap-4 transition-all active:scale-95 pointer-events-auto text-4xl"
-                        onClick={() => setShowOrderModal(true)}
+                        className="w-full h-28 bg-[#FFDB00] border-4 border-slate-900 shadow-[0_30px_60px_-15px_rgba(255,219,0,0.5)] text-slate-900 font-black rounded-[3rem] flex items-center justify-center gap-4 transition-all active:scale-95 pointer-events-auto text-4xl disabled:opacity-50"
+                        onClick={handleStartOrder}
+                        disabled={submitting}
                     >
-                        <span>주문하기</span>
+                        <span>{submitting ? '생성 중...' : '주문하기'}</span>
                         <SendIcon size={32} className="w-8 h-8" />
                     </button>
                 </div>
             )}
 
-            {/* Main View Supplier Info (Only show when modal is closed) */}
-            {!showOrderModal && <SupplierInfo />}
+            {/* Main View Supplier Info */}
+            <SupplierInfo />
 
-            {/* Modal - Full Screen Scrollable Style */}
-            {showOrderModal && (
-                <div className="fixed inset-0 z-[100] bg-[#f8f9fc] animate-in fade-in duration-300 overflow-y-auto">
-                    <div className="min-h-screen py-12 px-6">
-                        <div className="max-w-[600px] mx-auto">
-                            <div className="bg-white rounded-[50px] shadow-2xl border border-slate-100 overflow-hidden mb-12 animate-in zoom-in duration-300">
-                                <div className="p-10 md:p-14 pt-20">
-                                    <div className="mb-12 text-center">
-                                        <h3 className="text-4xl font-black text-slate-900">업체 정보 입력</h3>
-                                        <p className="text-base text-slate-400 font-bold mt-4 leading-relaxed">주문서 작성을 위해 귀사의 정보를 <br />한 번 더 확인해 주세요.</p>
-                                    </div>
-
-                                    <form onSubmit={handleStartOrder} className="space-y-8">
-                                        {/* Input Frame */}
-                                        <div className="bg-slate-50/50 border border-slate-100 p-8 rounded-[2.5rem] space-y-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">회사명</label>
-                                                <input
-                                                    type="text"
-                                                    className="w-full bg-white border border-slate-200 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-10 rounded-[2rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
-                                                    required
-                                                    placeholder="상호명을 입력하세요"
-                                                    value={orderForm.companyName}
-                                                    onChange={e => setOrderForm({ ...orderForm, companyName: e.target.value })}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">휴대전화번호</label>
-                                                <input
-                                                    type="tel"
-                                                    className="w-full bg-white border border-slate-200 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-10 rounded-[2rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
-                                                    required
-                                                    placeholder="010-0000-0000"
-                                                    value={orderForm.tel}
-                                                    onChange={e => setOrderForm({ ...orderForm, tel: e.target.value })}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">배송주소 (선택)</label>
-                                                <input
-                                                    type="text"
-                                                    className="w-full bg-white border border-slate-200 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-10 rounded-[2rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
-                                                    placeholder="배송지 주소를 입력해 주세요"
-                                                    value={orderForm.address}
-                                                    onChange={e => setOrderForm({ ...orderForm, address: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-8 flex gap-4">
-                                            <div className="flex-1">
-                                                <button type="button" className="w-full h-24 rounded-[2rem] font-black text-slate-400 border-2 border-slate-100 hover:bg-slate-50 active:scale-95 transition-all text-center text-xl" onClick={() => setShowOrderModal(false)}>취소</button>
-                                            </div>
-                                            <div className="flex-[2]">
-                                                <button
-                                                    type="submit"
-                                                    className="w-full h-24 bg-[#6366F1] text-white font-black rounded-[2rem] hover:bg-[#4F46E5] shadow-[0_25px_50px_-12px_rgba(99,102,241,0.5)] transition-all active:scale-95 disabled:opacity-50 text-2xl"
-                                                    disabled={submitting}
-                                                >
-                                                    {submitting ? '생성 중...' : '다음 단계로'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Supplier Info at the absolute bottom of the scrollable modal */}
-                        <div className="mt-20">
-                            <SupplierInfo />
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

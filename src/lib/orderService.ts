@@ -10,6 +10,7 @@ export interface FirestoreOrderSheet {
     inviteTokenId?: string
     customerOrgId: string
     customerName: string
+    tel?: string // 연락처
     shipDate?: Timestamp | null
     cutOffAt: Timestamp
     shipTo: string

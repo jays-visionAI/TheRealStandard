@@ -68,6 +68,11 @@ export default function B2BOrderGrid() {
     const [customerComment, setCustomerComment] = useState('')
     const [orderUnit, setOrderUnit] = useState<'kg' | 'box'>('box')
     const [showSignupModal, setShowSignupModal] = useState(false)
+    const [guestInfo, setGuestInfo] = useState({
+        name: '',
+        tel: '',
+        address: ''
+    })
 
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
@@ -180,6 +185,14 @@ export default function B2BOrderGrid() {
 
                 if (osData.customerComment) {
                     setCustomerComment(osData.customerComment)
+                }
+
+                if (osData.isGuest) {
+                    setGuestInfo({
+                        name: osData.customerName === '비회원 고객' ? '' : osData.customerName,
+                        tel: osData.tel || '',
+                        address: osData.shipTo || ''
+                    })
                 }
             }
 
@@ -471,10 +484,23 @@ export default function B2BOrderGrid() {
             setSaving(true)
 
             // 주문장 상태 업데이트
-            await updateOrderSheet(orderInfo.id, {
+            const updatePayload: any = {
                 status: 'SUBMITTED',
                 customerComment: customerComment,
-            })
+            }
+
+            if (orderInfo.isGuest) {
+                if (!guestInfo.name || !guestInfo.tel) {
+                    alert('발주자 성함과 연락처를 입력해주세요.')
+                    setSaving(false)
+                    return
+                }
+                updatePayload.customerName = guestInfo.name
+                updatePayload.tel = guestInfo.tel
+                updatePayload.shipTo = guestInfo.address
+            }
+
+            await updateOrderSheet(orderInfo.id, updatePayload)
 
             // 주문 아이템 업데이트
             const updatedItems = validRows.map(row => ({
@@ -844,6 +870,52 @@ export default function B2BOrderGrid() {
                     rows={3}
                 />
             </div>
+
+            {/* Guest Info Frame (ONLY for Guests) */}
+            {orderInfo.isGuest && (
+                <div className="guest-info-container glass-card mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="section-title-sm mb-6 flex items-center gap-2">
+                        <span className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm">👤</span>
+                        발주자 및 배송 정보
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">성함 / 업체명</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 px-4 py-4 rounded-xl outline-none font-bold text-slate-900 transition-all"
+                                    placeholder="이름을 입력하세요"
+                                    value={guestInfo.name}
+                                    onChange={e => setGuestInfo({ ...guestInfo, name: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">휴대전화번호</label>
+                                <input
+                                    type="tel"
+                                    className="w-full bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 px-4 py-4 rounded-xl outline-none font-bold text-slate-900 transition-all"
+                                    placeholder="010-0000-0000"
+                                    value={guestInfo.tel}
+                                    onChange={e => setGuestInfo({ ...guestInfo, tel: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">배송주소 (선택)</label>
+                                <textarea
+                                    className="w-full bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 px-4 py-4 rounded-xl outline-none font-bold text-slate-900 transition-all resize-none"
+                                    placeholder="물건을 받으실 주소를 입력하세요"
+                                    rows={4}
+                                    value={guestInfo.address}
+                                    onChange={e => setGuestInfo({ ...guestInfo, address: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Footer Actions */}
             <footer className="order-footer glass-card">
