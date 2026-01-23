@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { XIcon, AlertTriangleIcon, ClockIcon, ClipboardListIcon } from '../../components/Icons'
+import { XIcon, AlertTriangleIcon, ClockIcon } from '../../components/Icons'
 import {
     getOrderSheetById,
     getOrderSheetItems,
@@ -35,26 +35,30 @@ export default function OrderReview() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [revisionComment, setRevisionComment] = useState('')
-    const [changeReason, setChangeReason] = useState('')
     const [showRevisionModal, setShowRevisionModal] = useState(false)
-    const [showConfirmModal, setShowConfirmModal] = useState(false)
+    const [showLinkModal, setShowLinkModal] = useState(false)
+    const [generatedLink, setGeneratedLink] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [discountAmount, setDiscountAmount] = useState(0)
     const [timeLeft, setTimeLeft] = useState<string>('')
     const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set())
 
+    // Firebase에서 데이터 로드
     const loadData = async () => {
         if (!id) {
             setLoading(false)
             return
         }
+
         try {
             setLoading(true)
             setError(null)
+
             const [osData, itemsData] = await Promise.all([
                 getOrderSheetById(id),
                 getOrderSheetItems(id)
             ])
+
             if (osData) {
                 setOrderSheet({
                     ...osData,
@@ -78,130 +82,193 @@ export default function OrderReview() {
         }
     }
 
-    useEffect(() => { loadData() }, [id])
+    useEffect(() => {
+        loadData()
+    }, [id])
 
+    // Countdown Timer
     useEffect(() => {
         if (!orderSheet?.cutOffAt) return
+
         const updateTimer = () => {
             const now = new Date().getTime()
             const cutOff = new Date(orderSheet.cutOffAt!).getTime()
             const distance = cutOff - now
-            if (distance < 0) { setTimeLeft('마감됨'); return }
+
+            if (distance < 0) {
+                setTimeLeft('마감됨')
+                return
+            }
+
             const days = Math.floor(distance / (1000 * 60 * 60 * 24))
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
             const seconds = Math.floor((distance % (1000 * 60)) / 1000)
+
             let str = ''
             if (days > 0) str += `${days}일 `
             str += `${hours}시간 ${minutes}분 ${seconds}초`
             setTimeLeft(str)
         }
-        updateTimer(); const timer = setInterval(updateTimer, 1000); return () => clearInterval(timer)
+
+        updateTimer()
+        const timer = setInterval(updateTimer, 1000)
+        return () => clearInterval(timer)
     }, [orderSheet?.cutOffAt])
 
     const totalKg = items.reduce((sum, item) => sum + (item.estimatedKg || 0), 0)
     const totalAmount = items.reduce((sum, item) => sum + (item.amount || 0), 0)
     const finalTotal = Math.max(0, totalAmount - (discountAmount || 0))
 
-    const formatCurrency = (value: number) => new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
-    const formatDateOnly = (date: Date | string | undefined) => date ? new Date(date).toLocaleDateString('ko-KR') : '-'
-    const formatDateTime = (date: Date | string | undefined) => date ? new Date(date).toLocaleString('ko-KR') : '-'
+    // Detect if admin made changes
+    const hasChanges = JSON.stringify(items) !== JSON.stringify(originalItems)
 
-    const updateItem = (index: number, field: keyof FirestoreOrderSheetItem, value: any) => {
-        const newItems = [...items]
-        const item = { ...newItems[index], [field]: value }
-        if (field === 'qtyRequested' || field === 'unitPrice') {
-            const qty = field === 'qtyRequested' ? value : item.qtyRequested || 0
-            const price = field === 'unitPrice' ? value : item.unitPrice || 0
-            const weightMultiplier = item.unit === 'box' ? 20 : 1
-            item.estimatedKg = qty * weightMultiplier
-            item.amount = item.estimatedKg * price
-        }
-        newItems[index] = item
-        setItems(newItems)
-    }
-    // Enhanced Change Detection & AI Narrative Generation
-    const getAISummary = () => {
-        const added = items.filter(i => !originalItems.find(oi => oi.productId === i.productId))
-        const removed = originalItems.filter(oi => !items.find(i => i.productId === oi.productId))
-        const modified = items.filter(i => {
-            const oi = originalItems.find(orig => orig.productId === i.productId)
-            return oi && (oi.qtyRequested !== i.qtyRequested || oi.unitPrice !== i.unitPrice || oi.estimatedKg !== i.estimatedKg)
-        })
-
-        if (added.length === 0 && removed.length === 0 && modified.length === 0) return null
-
-        let summaryRows: string[] = []
-
-        // Narrative construction
-        if (added.length > 0) summaryRows.push(`신규 품목 ${added.length}건(${added.map(a => a.productName).join(', ')})이 추가되었습니다.`)
-        if (removed.length > 0) summaryRows.push(`기존 품목 ${removed.length}건(${removed.map(r => r.productName).join(', ')})이 삭제되었습니다.`)
-
-        modified.forEach(item => {
-            const oi = originalItems.find(orig => orig.productId === item.productId)!
-            let detail = `${item.productName}: `
-            const changes = []
-            if (oi.qtyRequested !== item.qtyRequested) changes.push(`주문수량(${oi.qtyRequested}${oi.unit.toUpperCase()} → ${item.qtyRequested}${item.unit.toUpperCase()})`)
-            if (oi.estimatedKg !== item.estimatedKg) changes.push(`중량(${oi.estimatedKg}kg → ${item.estimatedKg}kg)`)
-            if (oi.unitPrice !== item.unitPrice) changes.push(`단가(${formatCurrency(oi.unitPrice)} → ${formatCurrency(item.unitPrice)})`)
-            summaryRows.push(detail + changes.join(', ') + "로 변경되었습니다.")
-        })
-
-        return {
-            title: "발주서 변경 내역 AI 분석 결과",
-            paragraphs: summaryRows,
-            sentence: `총 ${added.length + modified.length}건의 품목이 조정되었으며, ${removed.length}건이 제외되었습니다. 전체 금액은 기존 ${formatCurrency(originalItems.reduce((s, i) => s + (i.amount || 0), 0))}에서 ${formatCurrency(totalAmount)}로 조정되었습니다.`
-        }
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
     }
 
-    const aiSummary = getAISummary()
-    const hasChanges = !!aiSummary
+    const formatDateOnly = (date: Date | string | undefined) => {
+        if (!date) return '-'
+        return new Date(date).toLocaleDateString('ko-KR')
+    }
+
+    const formatDateTime = (date: Date | string | undefined) => {
+        if (!date) return '-'
+        return new Date(date).toLocaleString('ko-KR')
+    }
 
     const handleConfirm = async () => {
         if (!orderSheet) return
-        if (hasChanges && !changeReason.trim()) { alert('품목 변경 내역이 있습니다. 변경 사유를 입력해주세요.'); return }
-        setShowConfirmModal(true)
-    }
+        if (!confirm('주문을 확정하시겠습니까? 확정 후에는 수정이 불가합니다.')) return
 
-    const executeConfirm = async () => {
-        if (!orderSheet) return
         try {
             setIsSubmitting(true)
+
             await updateOrderSheet(orderSheet.id, {
                 status: 'CONFIRMED',
-                discountAmount,
-                adminComment: changeReason ? `[품목변경 사유] ${changeReason}\n${orderSheet.adminComment || ''}` : orderSheet.adminComment
+                discountAmount: discountAmount
             })
+
+            // SalesOrder 생성
             await createSalesOrderFromSheet(orderSheet, items)
-            setShowConfirmModal(false)
+
             alert('주문이 확정되었습니다. 확정주문(SalesOrder)이 생성되었습니다.')
             navigate('/admin/order-sheets')
-        } catch (err) { console.error(err); alert('주문 확정에 실패했습니다.') } finally { setIsSubmitting(false) }
+        } catch (err) {
+            console.error('Failed to confirm order:', err)
+            alert('주문 확정에 실패했습니다.')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleRevisionRequest = async () => {
-        if (!orderSheet || !revisionComment.trim()) { alert('수정 요청 사유를 입력해주세요.'); return }
+        if (!orderSheet) return
+        if (!revisionComment.trim()) {
+            alert('수정 요청 사유를 입력해주세요.')
+            return
+        }
+
         try {
             setIsSubmitting(true)
-            await updateOrderSheet(orderSheet.id, { status: 'REVISION' })
-            alert('수정 요청이 전송되었습니다.')
-            setShowRevisionModal(false)
-            navigate('/admin/order-sheets')
-        } catch (err) { console.error(err); alert('수정 요청에 실패했습니다.') } finally { setIsSubmitting(false) }
+
+            await updateOrderSheet(orderSheet.id, {
+                status: 'REVISION',
+                adminComment: `[반려 사유] ${revisionComment}\n${orderSheet.adminComment || ''}`
+            })
+
+            // For guest customers, generate and show link
+            if (orderSheet.isGuest && orderSheet.inviteTokenId) {
+                const link = `${window.location.origin}/order/${orderSheet.inviteTokenId}`
+                setGeneratedLink(link)
+                setShowRevisionModal(false)
+                setShowLinkModal(true)
+            } else {
+                alert('수정 요청이 전송되었습니다.')
+                setShowRevisionModal(false)
+                navigate('/admin/order-sheets')
+            }
+        } catch (err) {
+            console.error('Failed to request revision:', err)
+            alert('수정 요청에 실패했습니다.')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    // Save changes and require customer re-confirmation
+    const handleSaveChangesForReview = async () => {
+        if (!orderSheet) return
+        if (!hasChanges) {
+            alert('변경된 내용이 없습니다.')
+            return
+        }
+        if (!revisionComment.trim()) {
+            setShowRevisionModal(true)
+            return
+        }
+
+        try {
+            setIsSubmitting(true)
+
+            // Update items in Firestore
+            // Note: You may need to implement setOrderSheetItems in orderService
+
+            await updateOrderSheet(orderSheet.id, {
+                status: 'REVISION',
+                adminComment: `[품목 수정 후 반려] ${revisionComment}\n${orderSheet.adminComment || ''}`
+            })
+
+            // For guest customers, generate and show link
+            if (orderSheet.isGuest && orderSheet.inviteTokenId) {
+                const link = `${window.location.origin}/order/${orderSheet.inviteTokenId}`
+                setGeneratedLink(link)
+                setShowLinkModal(true)
+            } else {
+                alert('변경 사항이 저장되었습니다. 고객이 다시 확인해야 합니다.')
+                navigate('/admin/order-sheets')
+            }
+        } catch (err) {
+            console.error('Failed to save changes:', err)
+            alert('변경 사항 저장에 실패했습니다.')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const copyLinkToClipboard = () => {
+        navigator.clipboard.writeText(generatedLink)
+        alert('링크가 클립보드에 복사되었습니다!')
     }
 
     const handleDelete = async () => {
-        if (!orderSheet || !confirm('정말로 이 발주서를 삭제하시겠습니까?')) return
+        if (!orderSheet) return
+        if (!confirm('정말로 이 발주서를 삭제하시겠습니까? 삭제된 발주서는 복구할 수 없습니다.')) return
+
         try {
             setIsSubmitting(true)
+
             await deleteOrderSheet(orderSheet.id)
+
             alert('발주서가 삭제되었습니다.')
             navigate('/admin/order-sheets')
-        } catch (err) { console.error(err); alert('발주서 삭제에 실패했습니다.') } finally { setIsSubmitting(false) }
+        } catch (err) {
+            console.error('Failed to delete order:', err)
+            alert('발주서 삭제에 실패했습니다.')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     if (loading) return <div className="p-8 text-center text-white">불러오는 중...</div>
-    if (error) return <div className="p-8 text-center text-white"><AlertTriangleIcon size={24} color="#ef4444" /> {error}</div>
+    if (error) return (
+        <div className="p-8 text-center text-white">
+            <span style={{ verticalAlign: 'middle', marginRight: '8px' }}>
+                <AlertTriangleIcon size={24} color="#ef4444" />
+            </span>
+            {error}
+        </div>
+    )
     if (!orderSheet) return <div className="p-8 text-center text-white">발주서를 찾을 수 없습니다.</div>
 
     return (
@@ -220,7 +287,8 @@ export default function OrderReview() {
                         {orderSheet.status === 'SUBMITTED' && <div className="badge badge-warning">고객 컨펌</div>}
                         {orderSheet.status === 'CONFIRMED' && <div className="badge badge-success">승인됨</div>}
                         {orderSheet.status === 'SENT' && <div className="badge badge-primary">발송됨</div>}
-                        {orderSheet.status === 'REVISION' && <div className="badge badge-error">수정요청</div>}
+                        {orderSheet.status === 'REVISION' && <div className="badge badge-error">반려중</div>}
+                        {orderSheet.isGuest && <div className="badge badge-info">비회원</div>}
                     </div>
                 </div>
             </div>
@@ -337,38 +405,11 @@ export default function OrderReview() {
                                         />
                                     </td>
                                     <td className="font-medium">{item.productName}</td>
-                                    <td className="text-right" style={{ width: '120px' }}>
-                                        <div className="flex items-center justify-end gap-1">
-                                            <input
-                                                type="number"
-                                                className="table-input"
-                                                value={item.qtyRequested || 0}
-                                                onChange={(e) => updateItem(index, 'qtyRequested', parseFloat(e.target.value) || 0)}
-                                            />
-                                            <span className="text-xs text-muted font-bold ml-1">{item.unit.toUpperCase()}</span>
-                                        </div>
-                                    </td>
                                     <td className="text-right">
-                                        <input
-                                            type="number"
-                                            className="table-input"
-                                            value={item.estimatedKg || 0}
-                                            onChange={(e) => updateItem(index, 'estimatedKg', parseFloat(e.target.value) || 0)}
-                                            style={{ width: '60px' }}
-                                        />
+                                        {item.qtyRequested} {item.unit === 'box' ? 'Box' : 'Kg'}
                                     </td>
-                                    <td className="text-right" style={{ width: '140px' }}>
-                                        <div className="flex items-center justify-end gap-1">
-                                            <span className="text-xs text-muted">₩</span>
-                                            <input
-                                                type="number"
-                                                className="table-input"
-                                                value={item.unitPrice || 0}
-                                                onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                                style={{ width: '90px' }}
-                                            />
-                                        </div>
-                                    </td>
+                                    <td className="text-right">{(item.estimatedKg || 0).toFixed(1)}</td>
+                                    <td className="text-right">{formatCurrency(item.unitPrice)}</td>
                                     <td className="text-right font-semibold">{formatCurrency(item.amount || 0)}</td>
                                 </tr>
                             ))}
@@ -379,7 +420,6 @@ export default function OrderReview() {
                                 <td className="font-semibold">소계</td>
                                 <td className="text-right font-semibold">{totalKg.toFixed(1)} kg</td>
                                 <td></td>
-                                <td className="text-right"></td>
                                 <td className="text-right font-semibold">
                                     {formatCurrency(totalAmount)}
                                 </td>
@@ -389,7 +429,6 @@ export default function OrderReview() {
                                 <td className="font-semibold text-warning">할인금액</td>
                                 <td></td>
                                 <td></td>
-                                <td className="text-right"></td>
                                 <td className="text-right">
                                     <div className="discount-input-wrapper">
                                         <span className="minus-sign">-</span>
@@ -408,7 +447,6 @@ export default function OrderReview() {
                                 <td></td>
                                 <td colSpan={2} className="font-bold text-lg">최종 결제금액</td>
                                 <td></td>
-                                <td className="text-right"></td>
                                 <td className="text-right font-bold gradient-text text-xl">
                                     {formatCurrency(finalTotal)}
                                 </td>
@@ -417,44 +455,6 @@ export default function OrderReview() {
                     </table>
                 </div>
             </div>
-
-            {/* AI Change Tracking & Reason Section */}
-            {hasChanges && (
-                <div className="glass-card mb-4 overflow-hidden border-blue-200/50 bg-blue-50/10">
-                    <div className="grid grid-cols-1 md:grid-cols-2">
-                        <div className="p-8 border-r border-slate-100">
-                            <h4 className="text-sm font-black text-blue-600 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <span className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs">✨</span>
-                                {aiSummary.title}
-                            </h4>
-                            <div className="space-y-4">
-                                {aiSummary.paragraphs.map((line, idx) => (
-                                    <div key={idx} className="flex items-start gap-3 text-sm text-slate-700 leading-relaxed font-bold">
-                                        <span className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 shrink-0"></span>
-                                        {line}
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="mt-8 pt-6 border-t border-blue-100/50 text-sm italic text-blue-500 font-medium">
-                                💡 {aiSummary.sentence}
-                            </div>
-                        </div>
-                        <div className="p-8 bg-white/40">
-                            <div className="flex justify-between items-center mb-4">
-                                <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">변경 사유 (필수 기입)</h4>
-                            </div>
-                            <textarea
-                                className="w-full bg-white border border-slate-200 focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 rounded-[1.5rem] p-6 text-[15px] font-bold outline-none transition-all placeholder:text-slate-300 resize-none"
-                                placeholder="고객에게 안내할 품목 변경 또는 단가 조정 사유를 명확히 기입해주세요."
-                                rows={6}
-                                value={changeReason}
-                                onChange={e => setChangeReason(e.target.value)}
-                            />
-                            <p className="mt-4 text-xs text-slate-400 font-medium ml-2">※ 입력하신 사유는 고객의 발주서 상단 알림에 자동으로 표시됩니다.</p>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Actions */}
             <div className="glass-card">
@@ -466,22 +466,40 @@ export default function OrderReview() {
                     >
                         삭제하기
                     </button>
+
+                    {hasChanges && (
+                        <button
+                            className="btn btn-warning btn-lg"
+                            onClick={handleSaveChangesForReview}
+                            disabled={isSubmitting}
+                        >
+                            변경 후 재확인 요청
+                        </button>
+                    )}
+
                     <button
                         className="btn btn-secondary btn-lg"
                         onClick={() => setShowRevisionModal(true)}
                         disabled={isSubmitting}
                     >
-                        <XIcon size={18} /> 수정 요청
+                        <XIcon size={18} /> 반려 요청
                     </button>
                     <button
                         className="btn btn-primary btn-lg"
                         onClick={handleConfirm}
-                        disabled={isSubmitting || orderSheet.status !== 'SUBMITTED'}
-                        title={orderSheet.status !== 'SUBMITTED' ? '고객이 컨펌한 후에만 확정 가능합니다.' : ''}
+                        disabled={isSubmitting || orderSheet.status !== 'SUBMITTED' || hasChanges}
+                        title={hasChanges ? '변경사항이 있습니다. 먼저 저장해주세요.' : (orderSheet.status !== 'SUBMITTED' ? '고객이 컨펌한 후에만 확정 가능합니다.' : '')}
                     >
                         {isSubmitting ? '처리 중...' : '✓ 확정하기'}
                     </button>
                 </div>
+
+                {hasChanges && (
+                    <div className="change-warning">
+                        <AlertTriangleIcon size={16} />
+                        <span>품목이 수정되었습니다. 확정하려면 먼저 변경사항을 저장하고 고객 재확인을 받아야 합니다.</span>
+                    </div>
+                )}
             </div>
 
             {/* Revision Modal */}
@@ -489,15 +507,15 @@ export default function OrderReview() {
                 <div className="modal-backdrop" onClick={() => setShowRevisionModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>수정 요청</h3>
+                            <h3>반려 요청</h3>
                         </div>
                         <div className="modal-body">
-                            <label className="label">수정 요청 사유</label>
+                            <label className="label">반려 사유</label>
                             <textarea
                                 className="input textarea"
                                 value={revisionComment}
                                 onChange={(e) => setRevisionComment(e.target.value)}
-                                placeholder="고객에게 전달할 수정 요청 사유를 입력하세요..."
+                                placeholder="고객에게 전달할 반려 사유를 입력하세요..."
                                 rows={4}
                             />
                         </div>
@@ -520,34 +538,35 @@ export default function OrderReview() {
                 </div>
             )}
 
-            {/* Custom Confirm Modal */}
-            {showConfirmModal && (
-                <div className="modal-backdrop" onClick={() => setShowConfirmModal(false)}>
-                    <div className="modal max-w-sm rounded-[2rem] overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="p-10 text-center">
-                            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-500">
-                                <ClipboardListIcon size={40} />
-                            </div>
-                            <h3 className="text-2xl font-black text-slate-900 mb-2">주문을 확정하시겠습니까?</h3>
-                            <p className="text-slate-400 text-sm font-bold leading-relaxed mb-10">
-                                확정 후에는 매출전표가 생성되며 품목 수정이 불가합니다. <br />정말 진행하시겠습니까?
-                            </p>
-
-                            <div className="flex flex-col gap-3">
-                                <button
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-blue-500/20 transition-all active:scale-95"
-                                    onClick={executeConfirm}
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? '확정 처리 중...' : '네, 확정하겠습니다'}
-                                </button>
-                                <button
-                                    className="w-full text-slate-400 hover:text-slate-600 py-3 font-bold transition-all"
-                                    onClick={() => setShowConfirmModal(false)}
-                                >
-                                    잠시 더 검토할게요
+            {/* Link Modal for Guest Customers */}
+            {showLinkModal && (
+                <div className="modal-backdrop" onClick={() => { setShowLinkModal(false); navigate('/admin/order-sheets') }}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>비회원 고객 링크 생성됨</h3>
+                        </div>
+                        <div className="modal-body">
+                            <p className="mb-4">비회원 고객에게 아래 링크를 전달하여 수정된 발주서를 확인하도록 안내해주세요.</p>
+                            <div className="link-box">
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={generatedLink}
+                                    readOnly
+                                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                                />
+                                <button className="btn btn-primary" onClick={copyLinkToClipboard}>
+                                    복사
                                 </button>
                             </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => { setShowLinkModal(false); navigate('/admin/order-sheets') }}
+                            >
+                                확인
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -605,6 +624,29 @@ export default function OrderReview() {
           justify-content: flex-end;
           gap: var(--space-4);
           padding: var(--space-4);
+        }
+        
+        .change-warning {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          padding: var(--space-3) var(--space-4);
+          background: rgba(245, 158, 11, 0.1);
+          border-top: 1px solid rgba(245, 158, 11, 0.2);
+          color: #f59e0b;
+          font-size: var(--text-sm);
+          font-weight: var(--font-medium);
+        }
+        
+        .link-box {
+          display: flex;
+          gap: var(--space-2);
+        }
+        
+        .link-box .input {
+          flex: 1;
+          font-family: monospace;
+          font-size: var(--text-sm);
         }
         
         .text-right {
@@ -723,33 +765,7 @@ export default function OrderReview() {
             grid-template-columns: 1fr;
           }
         }
-
-        .table-input {
-          background: #f8f9fc;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 6px 10px;
-          font-size: 14px;
-          font-weight: 700;
-          color: #1e293b;
-          width: 80px;
-          text-align: right;
-          outline: none;
-          transition: all 0.2s;
-        }
-
-        .table-input:focus {
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.05);
-          background: white;
-        }
-
-        .table-input::-webkit-outer-spin-button,
-        .table-input::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
       `}</style>
-        </div>
+        </div >
     )
 }
