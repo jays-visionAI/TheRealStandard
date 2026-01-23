@@ -137,18 +137,17 @@ export default function B2BOrderGrid() {
 
                 if (items && items.length > 0) {
                     // 첫 번째 아이템의 단위를 보고 전체 주문 단위를 추론 (모두 동일하다고 가정)
-                    const firstUnit = items[0].unit as 'kg' | 'box'
-                    if (firstUnit === 'box') {
-                        setOrderUnit('box')
-                    }
+                    const detectedUnit = items[0].unit as 'kg' | 'box' || 'kg'
+                    setOrderUnit(detectedUnit)
 
+                    // 모든 아이템을 감지된 단위로 통일
                     currentRows = items.map(item => ({
                         id: item.id,
                         productId: item.productId,
                         productName: item.productName || '',
                         unitPrice: item.unitPrice,
                         quantity: item.qtyRequested || 0,
-                        unit: item.unit as 'kg' | 'box' || 'kg',
+                        unit: detectedUnit, // 모든 아이템을 동일한 단위로 통일
                         estimatedWeight: item.estimatedKg || 0,
                         totalAmount: item.amount || 0,
                         checked: false
@@ -160,6 +159,9 @@ export default function B2BOrderGrid() {
                 // 2. 카탈로그에서 선택한 품목이 있으면 추가
                 const savedSelection = localStorage.getItem('trs_catalog_selection')
                 if (savedSelection) {
+                    // 이미 설정된 orderUnit 사용 (items가 있었다면 그 단위, 없었다면 기본값 'box')
+                    const currentUnit = items && items.length > 0 ? (items[0].unit as 'kg' | 'box' || 'kg') : 'box'
+
                     const selection = JSON.parse(savedSelection)
                     const newRowsFromCatalog = selection.filter((sel: any) =>
                         !currentRows.find((row) => row.productId === sel.productId)
@@ -169,7 +171,7 @@ export default function B2BOrderGrid() {
                         productName: sel.name,
                         unitPrice: sel.wholesalePrice,
                         quantity: 0,
-                        unit: sel.unit as 'kg' | 'box' || 'kg',
+                        unit: currentUnit, // 현재 주문 단위로 통일
                         estimatedWeight: 0,
                         totalAmount: 0,
                         checked: false
@@ -215,6 +217,14 @@ export default function B2BOrderGrid() {
     useEffect(() => {
         loadData()
     }, [token])
+
+    // 단위 변경 시 모든 행의 단위 동기화 강제
+    useEffect(() => {
+        setRows(prev => prev.map(row => ({
+            ...row,
+            unit: orderUnit
+        })));
+    }, [orderUnit]);
 
     // 빈 행 생성
     function createEmptyRow(): OrderRow & { checked?: boolean } {
@@ -619,7 +629,7 @@ export default function B2BOrderGrid() {
                                 {vRows.map(row => (
                                     <tr key={row.id}>
                                         <td>{row.productName}</td>
-                                        <td>{row.quantity} {row.unit.toUpperCase()}</td>
+                                        <td>{row.quantity} {orderUnit.toUpperCase()}</td>
                                         <td>{formatCurrency(row.estimatedWeight)} kg</td>
                                         <td>₩{formatCurrency(row.totalAmount)}</td>
                                     </tr>
@@ -824,7 +834,7 @@ export default function B2BOrderGrid() {
                                             disabled={!row.productId}
                                         />
                                         <span className="qty-unit">
-                                            {row.unit.toUpperCase()}
+                                            {orderUnit.toUpperCase()}
                                         </span>
                                     </div>
                                 </td>
