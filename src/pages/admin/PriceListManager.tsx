@@ -302,7 +302,7 @@ export default function PriceListManager() {
                 shareTokenId: tokenId,
                 sharedAt: now,
                 validUntil: selectedList.validUntil || null,
-                adminComment: selectedList.adminComment || undefined
+                adminComment: selectedList.adminComment || null
             })
 
             const link = `${window.location.origin}/price-view/${tokenId}`
