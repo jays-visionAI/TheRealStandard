@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
-import { PackageIcon, SearchIcon, PlusIcon, ListIcon, GridIcon } from '../../components/Icons'
+import { PackageIcon, SearchIcon, PlusIcon, ListIcon, GridIcon, ThermometerIcon, SnowflakeIcon, BoneIcon } from '../../components/Icons'
 import './ProductCatalog.css'
 
 export default function ProductCatalog() {
@@ -58,7 +58,7 @@ export default function ProductCatalog() {
     return (
         <div className="product-catalog">
             <header className="catalog-header">
-                <h2>🍖 상품 카탈로그</h2>
+                <h2 className="flex items-center justify-center gap-2"><PackageIcon size={28} /> 상품 카탈로그</h2>
                 <p>TRS에서 제공하는 최상급 육류 라인업입니다.</p>
             </header>
 
@@ -91,9 +91,9 @@ export default function ProductCatalog() {
                 <div className="categories">
                     {[
                         { id: 'all', label: '전체' },
-                        { id: '냉장', label: '🧊 냉장' },
-                        { id: '냉동', label: '❄️ 냉동' },
-                        { id: '부산물', label: '🦴 부산물' }
+                        { id: '냉장', label: <span className="flex items-center gap-1"><ThermometerIcon size={14} /> 냉장</span> },
+                        { id: '냉동', label: <span className="flex items-center gap-1"><SnowflakeIcon size={14} /> 냉동</span> },
+                        { id: '부산물', label: <span className="flex items-center gap-1"><BoneIcon size={14} /> 부산물</span> }
                     ].map(cat => (
                         <button
                             key={cat.id}
@@ -126,7 +126,7 @@ export default function ProductCatalog() {
                                     <p className="product-memo">{product.memo || '-'}</p>
                                     <p className="product-unit">판매단위: {product.unit.toUpperCase()}</p>
                                     {product.boxWeight && (
-                                        <p className="product-box">📦 중량: {product.boxWeight}kg/Box (예상)</p>
+                                        <p className="product-box"><PackageIcon size={14} className="inline mr-1" /> 중량: {product.boxWeight}kg/Box (예상)</p>
                                     )}
                                 </div>
                                 <div className="bottom">

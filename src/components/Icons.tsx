@@ -740,3 +740,47 @@ export const MousePointerClickIcon: FC<IconProps> = ({ size = 20, className = ''
         <path d="m2.239 7.188 2.897.777" />
     </svg>
 )
+
+// Bell
+export const BellIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+)
+
+// Printer
+export const PrinterIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="6 9 6 2 18 2 18 9" />
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+        <rect x="6" y="14" width="12" height="8" />
+    </svg>
+)
+
+// Snowflake
+export const SnowflakeIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <line x1="12" y1="2" x2="12" y2="22" />
+        <path d="m20 16-4-4 4-4" />
+        <path d="m4 8 4 4-4 4" />
+        <path d="m16 4-4 4-4-4" />
+        <path d="m8 20 4-4 4 4" />
+    </svg>
+)
+
+// Thermometer
+export const ThermometerIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z" />
+    </svg>
+)
+
+// Bone
+export const BoneIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M17 10c.7-.7 1.69 0 2.5 0 2.1 0 2.1 2.6 0 2.6-.81 0-1.8 1.1-2.5 1.8.7.7 0 1.69 0 2.5 0 2.1-2.6 2.1-2.6 0 0-.81-1.1-1.8-1.8-2.5-.7.7-1.69 0-2.5 0-2.1 0-2.1-2.6 0-2.6.81 0 1.8-1.1 2.5-1.8-.7-.7 0-1.69 0-2.5 0-2.1 2.6-2.1 2.6 0 0 .81 1.1 1.8 1.8 2.5Z" />
+    </svg>
+)
+

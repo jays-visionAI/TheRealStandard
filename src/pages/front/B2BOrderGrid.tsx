@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { ClipboardListIcon, UserIcon, TrashIcon } from '../../components/Icons'
+import { ClipboardListIcon, UserIcon, TrashIcon, PrinterIcon, ClockIcon, MegaphoneIcon, PackageIcon, MessageSquareIcon, MapPinIcon, InfoIcon, SparklesIcon, SendIcon } from '../../components/Icons'
 import { getOrderSheetByToken, getOrderSheetItems, updateOrderSheet, setOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import { getUserById } from '../../lib/userService'
@@ -318,7 +318,7 @@ export default function B2BOrderGrid() {
 
             // 전환 확인 모달
             const confirmed = confirm(
-                '📦 박스 단위 주문으로 전환\n\n주문 리스트 중 1박스 예상중량보다 적은 Kg으로 주문한 항목이 있는 경우 1박스당 주문수량으로 자동 보정합니다.\n\n확인을 눌러 전환하시겠습니까?'
+                '박스 단위 주문으로 전환\n\n주문 리스트 중 1박스 예상중량보다 적은 Kg으로 주문한 항목이 있는 경우 1박스당 주문수량으로 자동 보정합니다.\n\n확인을 눌러 전환하시겠습니까?'
             );
 
             if (!confirmed) return;
@@ -542,7 +542,7 @@ export default function B2BOrderGrid() {
             if (orderInfo.isGuest) {
                 setShowSignupModal(true)
             } else {
-                alert('✅ 주문이 제출되었습니다.\n\n관리자 승인을 대기합니다.')
+                alert('주문이 제출되었습니다.\n\n관리자 승인을 대기합니다.')
             }
         } catch (err) {
             console.error('Submit failed:', err)
@@ -735,10 +735,10 @@ export default function B2BOrderGrid() {
                 <div className="po-actions-container no-print">
                     <div className="action-button-group">
                         <button
-                            className="btn btn-primary btn-lg"
+                            className="btn btn-primary btn-lg flex items-center justify-center gap-2"
                             onClick={() => window.print()}
                         >
-                            🖨 발주확인서 출력 / PDF 저장
+                            <PrinterIcon size={18} /> 발주확인서 출력 / PDF 저장
                         </button>
                         <button
                             className="btn btn-secondary btn-lg"
@@ -757,7 +757,9 @@ export default function B2BOrderGrid() {
         return (
             <div className="b2b-order-grid">
                 <div className="pending-approval-view glass-card">
-                    <div className="pending-icon">⏳</div>
+                    <div className="pending-icon">
+                        <ClockIcon size={48} color="#94a3b8" />
+                    </div>
                     <h2>고객 컨펌 완료</h2>
                     <p>주문이 제출되었습니다. 관리자 승인을 대기합니다.</p>
 
@@ -802,10 +804,10 @@ export default function B2BOrderGrid() {
 
                     <div className="flex flex-col gap-3 mt-8">
                         <button
-                            className="btn btn-primary btn-lg w-full py-4 shadow-xl shadow-blue-500/20"
+                            className="btn btn-primary btn-lg w-full py-4 shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2"
                             onClick={() => setShowSignupModal(true)}
                         >
-                            정식 거래처(회원) 등록 신청하기 🚀
+                            정식 거래처(회원) 등록 신청하기 <SparklesIcon size={20} />
                         </button>
                         <p className="text-sm text-slate-400 text-center">
                             회원으로 등록하시면 거래명세서 자동발행 및 <br />이전 주문 내역 간편 재주문이 가능합니다.
@@ -828,7 +830,7 @@ export default function B2BOrderGrid() {
                             배송: {orderInfo.shipDate?.toLocaleDateString() || '-'}
                         </span>
                         <span className="meta-item warning">
-                            <span className="meta-icon">⏰</span>
+                            <span className="meta-icon"><ClockIcon size={14} /></span>
                             마감: {orderInfo.cutOffAt?.toLocaleString() || '-'}
                         </span>
                     </div>
@@ -841,7 +843,7 @@ export default function B2BOrderGrid() {
             {/* Admin Comment Section */}
             {orderInfo.adminComment && (
                 <div className="admin-comment-box glass-card animate-fade-in">
-                    <div className="comment-label">📢 관리자 한마디</div>
+                    <div className="comment-label flex items-center gap-1"><MegaphoneIcon size={16} /> 관리자 한마디</div>
                     <div className="comment-text">{orderInfo.adminComment}</div>
                 </div>
             )}
@@ -849,7 +851,7 @@ export default function B2BOrderGrid() {
             {/* Grid 안내 - 상단 바 (토글 및 버튼만 유지) */}
             <div className="grid-guide glass-card flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
                 <div className="flex items-center gap-2">
-                    <span className="guide-icon">📦</span>
+                    <span className="guide-icon"><PackageIcon size={18} /></span>
                     <span className="font-semibold">주문 품목 리스트</span>
                 </div>
 
@@ -893,11 +895,11 @@ export default function B2BOrderGrid() {
 
                     <div className="left-actions ml-3 md:ml-4">
                         <button
-                            className="btn btn-sm btn-outline-danger whitespace-nowrap"
+                            className="btn btn-sm btn-outline-danger whitespace-nowrap flex items-center gap-1"
                             disabled={checkedCount === 0}
                             onClick={deleteSelectedRows}
                         >
-                            🗑 삭제 ({checkedCount})
+                            <TrashIcon size={14} /> 삭제 ({checkedCount})
                         </button>
                     </div>
                 </div>
@@ -1058,7 +1060,7 @@ export default function B2BOrderGrid() {
 
             {/* Customer Comment Section */}
             <div className="customer-comment-container glass-card mb-4">
-                <div className="section-title-sm">💬 고객 요청사항 / 댓글</div>
+                <div className="section-title-sm flex items-center gap-2"><MessageSquareIcon size={16} /> 고객 요청사항 / 댓글</div>
                 <textarea
                     className="input textarea"
                     value={customerComment}
@@ -1131,11 +1133,15 @@ export default function B2BOrderGrid() {
 
                 <div className="flex gap-4">
                     <button
-                        className="btn btn-primary btn-lg"
+                        className="btn btn-primary btn-lg flex items-center justify-center gap-2"
                         onClick={handleSubmit}
                         disabled={totalItems === 0 || saving}
                     >
-                        {saving ? '제출 중...' : '주문 컨펌 및 승인 요청 📨'}
+                        {saving ? '제출 중...' : (
+                            <>
+                                주문 컨펌 및 승인 요청 <SendIcon size={18} />
+                            </>
+                        )}
                     </button>
                 </div>
             </footer>

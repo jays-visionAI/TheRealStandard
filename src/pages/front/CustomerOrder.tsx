@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ClipboardListIcon, PackageIcon, CheckCircleIcon } from '../../components/Icons'
+import { ClipboardListIcon, PackageIcon, CheckCircleIcon, CalendarIcon, ClockIcon, SparklesIcon, ArrowRightIcon, ArrowLeftIcon } from '../../components/Icons'
 import './CustomerOrder.css'
 import type { ReactNode } from 'react'
 
@@ -97,11 +97,13 @@ export default function CustomerOrder() {
     if (orderSubmitted) {
         return (
             <div className="customer-order">
-                <div className="submit-success glass-card animate-fade-in">
-                    <div className="success-icon">🎉</div>
-                    <h2>주문이 제출되었습니다!</h2>
-                    <p>운영팀 검토 후 확정됩니다.</p>
-                    <p className="redirect-text">배송 현황 페이지로 이동합니다...</p>
+                <div className="submit-success glass-card animate-fade-in text-center p-8">
+                    <div className="success-icon mb-4">
+                        <SparklesIcon size={48} color="#059669" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2">주문이 제출되었습니다!</h2>
+                    <p className="text-slate-500 mb-6 font-medium">운영팀 검토 후 확정됩니다.</p>
+                    <p className="redirect-text text-sm text-slate-400">배송 현황 페이지로 이동합니다...</p>
                 </div>
             </div>
         )
@@ -117,11 +119,11 @@ export default function CustomerOrder() {
                     <h1>{orderInfo.customerName}님의 주문서</h1>
                     <div className="order-meta">
                         <span className="meta-item">
-                            <span className="meta-icon">📅</span>
+                            <span className="meta-icon"><CalendarIcon size={14} /></span>
                             배송: {orderInfo.shipDate}
                         </span>
                         <span className="meta-item warning">
-                            <span className="meta-icon">⏰</span>
+                            <span className="meta-icon"><ClockIcon size={14} /></span>
                             마감: {orderInfo.cutOff}
                         </span>
                     </div>
@@ -165,11 +167,11 @@ export default function CustomerOrder() {
                         </div>
 
                         <div className="start-guide">
-                            <p>👉 주문을 시작하려면 아래 버튼을 눌러주세요</p>
+                            <p>주문을 시작하려면 아래 버튼을 눌러주세요</p>
                         </div>
 
-                        <button className="btn btn-primary btn-lg w-full mt-6" onClick={handleNext}>
-                            <PackageIcon size={18} /> 주문 품목 선택하기 →
+                        <button className="btn btn-primary btn-lg w-full mt-6 flex items-center justify-center gap-2" onClick={handleNext}>
+                            <PackageIcon size={18} /> 주문 품목 선택하기 <ArrowRightIcon size={18} />
                         </button>
                     </section>
                 )}
@@ -206,7 +208,7 @@ export default function CustomerOrder() {
                 {/* Step 3: 수량 입력 */}
                 {currentStep === 3 && (
                     <section className="step-section glass-card animate-slide-up">
-                        <div className="section-icon">🔢</div>
+                        <div className="section-icon"><ClipboardListIcon size={32} /></div>
                         <h2>수량 입력</h2>
                         <p className="section-desc">각 품목의 수량을 입력하세요.</p>
 
@@ -287,21 +289,21 @@ export default function CustomerOrder() {
             <footer className="order-footer glass-card">
                 {currentStep > 1 && (
                     <button
-                        className="btn btn-secondary"
+                        className="btn btn-secondary flex items-center gap-2"
                         onClick={() => setCurrentStep(currentStep - 1)}
                     >
-                        ← 이전
+                        <ArrowLeftIcon size={18} /> 이전
                     </button>
                 )}
                 {currentStep === 1 && <div />}
 
                 {currentStep < 4 ? (
-                    <button className="btn btn-primary btn-lg" onClick={handleNext}>
-                        다음 →
+                    <button className="btn btn-primary btn-lg flex items-center gap-2" onClick={handleNext}>
+                        다음 <ArrowRightIcon size={18} />
                     </button>
                 ) : (
-                    <button className="btn btn-primary btn-lg" onClick={handleSubmit}>
-                        주문 제출하기 🎉
+                    <button className="btn btn-primary btn-lg flex items-center gap-2" onClick={handleSubmit}>
+                        주문 제출하기 <SparklesIcon size={18} />
                     </button>
                 )}
             </footer>
