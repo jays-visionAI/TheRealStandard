@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { ClipboardListIcon } from '../../components/Icons'
+import { ClipboardListIcon, UserIcon } from '../../components/Icons'
 import { getOrderSheetByToken, getOrderSheetItems, updateOrderSheet, setOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import { getUserById } from '../../lib/userService'
@@ -591,6 +591,168 @@ export default function B2BOrderGrid() {
     }
 
     // 상태별 렌더링
+    if (status === 'APPROVED') {
+        const orderId = orderInfo.id.substring(0, 10).toUpperCase()
+
+        return (
+            <div className="b2b-order-grid-approved">
+                {/* Registration Guidance Banner */}
+                {!user && (
+                    <div className="registration-banner animate-fade-in no-print">
+                        <div className="banner-content">
+                            <div className="banner-icon-wrapper">
+                                <UserIcon size={32} />
+                            </div>
+                            <div className="banner-text">
+                                <h3>거래 진행을 위해 회원가입과 고객정보를 입력하세요.</h3>
+                                <p>정식 거래처로 등록 시 바로 거래명세서 발행 및 결제 관리가 가능합니다.</p>
+                            </div>
+                        </div>
+                        <button
+                            className="banner-action-btn font-bold"
+                            onClick={() => navigate('/order/profile-setup')}
+                        >
+                            회원가입/정보입력 시작하기 →
+                        </button>
+                    </div>
+                )}
+
+                {/* Formal Purchase Order Document */}
+                <div className="formal-po-document shadow-xl">
+                    <div className="po-header-watermark">CONFIRMED</div>
+
+                    <div className="po-content">
+                        {/* Title Section */}
+                        <div className="po-title-section">
+                            <div className="po-title">
+                                <div className="title-decoration"></div>
+                                <h1>발주확인서</h1>
+                                <p className="subtitle text-muted">Purchase Order Confirmation</p>
+                            </div>
+                            <div className="po-status-container">
+                                <div className="po-status-badge">승인 완료 (APPROVED)</div>
+                                <div className="po-meta mt-4 text-xs font-mono text-muted">
+                                    <div>ORDER ID: {orderId}</div>
+                                    <div>ISSUE DATE: {new Date().toLocaleDateString()}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Customer & Provider Section */}
+                        <div className="po-info-grid">
+                            <div className="po-info-box">
+                                <h4 className="info-label">공급받는자 (Receiver)</h4>
+                                <div className="info-content">
+                                    <h3 className="text-xl font-bold mb-2">{orderInfo.customerName}</h3>
+                                    <div className="text-sm text-secondary space-y-1">
+                                        <p>• 주문 토큰: {token?.substring(0, 12)}...</p>
+                                        <p>• 배송예정일: {orderInfo.shipDate?.toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="po-info-box">
+                                <h4 className="info-label">공급자 (Provider)</h4>
+                                <div className="info-content">
+                                    <h3 className="text-xl font-bold mb-2">(주) 미트고</h3>
+                                    <div className="text-sm text-secondary space-y-1">
+                                        <p>Meatgo Supply Chain Solution</p>
+                                        <p>고객센터: 02-1234-5678</p>
+                                        <p>홈페이지: www.meatgo.kr</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Items Table */}
+                        <div className="po-table-container">
+                            <table className="po-table">
+                                <thead>
+                                    <tr>
+                                        <th style={{ width: '40%' }}>품목명 (Description)</th>
+                                        <th style={{ width: '20%', textAlign: 'center' }}>수량 (Qty)</th>
+                                        <th style={{ width: '20%', textAlign: 'right' }}>단가 (Price)</th>
+                                        <th style={{ width: '20%', textAlign: 'right' }}>합계 (Total)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {vRows.map(row => (
+                                        <tr key={row.id}>
+                                            <td className="py-4">
+                                                <div className="font-bold text-slate-800">{row.productName}</div>
+                                                <div className="text-xs text-muted">VAT Included</div>
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <span className="badge badge-light px-2 py-1 rounded">
+                                                    {row.quantity.toLocaleString()} {orderUnit.toUpperCase()}
+                                                </span>
+                                            </td>
+                                            <td style={{ textAlign: 'right' }} className="text-muted">
+                                                ₩{formatCurrency(row.unitPrice)}
+                                            </td>
+                                            <td style={{ textAlign: 'right' }} className="font-bold">
+                                                ₩{formatCurrency(row.totalAmount)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                <tfoot>
+                                    <tr className="po-total-row">
+                                        <td colSpan={3} style={{ textAlign: 'right' }}>TOTAL AMOUNT (합계)</td>
+                                        <td style={{ textAlign: 'right' }} className="po-total-amount">
+                                            ₩{formatCurrency(totalAmount)}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        {/* Comments & Signatures */}
+                        <div className="po-footer">
+                            <div className="po-footer-left">
+                                {orderInfo.customerComment && (
+                                    <div className="po-comment-box bg-tertiary p-4 rounded-lg mb-4 border border-slate-200">
+                                        <h5 className="text-xs font-bold text-muted uppercase mb-1">고객 요청사항</h5>
+                                        <p className="italic text-sm">"{orderInfo.customerComment}"</p>
+                                    </div>
+                                )}
+                                <div className="po-legal-notice">
+                                    본 문서는 전산으로 발급되었으며, MEATGO 공급망 관리 시스템에 의해 관리됩니다.<br />
+                                    No physical signature required for electronic verification.
+                                </div>
+                            </div>
+                            <div className="po-footer-right">
+                                <div className="po-stamp">
+                                    <div className="stamp-text-top">APPROVED</div>
+                                    <div className="stamp-text-center">(주) 미트고</div>
+                                    <div className="stamp-circle-text">MEATGO INC.</div>
+                                    <div className="stamp-inner-box">인</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="po-actions-container no-print">
+                    <div className="action-button-group">
+                        <button
+                            className="btn btn-primary btn-lg"
+                            onClick={() => window.print()}
+                        >
+                            🖨 발주확인서 출력 / PDF 저장
+                        </button>
+                        <button
+                            className="btn btn-secondary btn-lg"
+                            onClick={() => navigate('/order/catalog')}
+                        >
+                            추가 상품 둘러보기
+                        </button>
+                    </div>
+                    <p className="text-muted text-sm mt-4">확정된 주문의 배송 및 상세 정보는 정식 거래처 등록 후 확인 가능합니다.</p>
+                </div>
+            </div>
+        )
+    }
+
     if (status === 'PENDING_APPROVAL') {
         return (
             <div className="b2b-order-grid">
