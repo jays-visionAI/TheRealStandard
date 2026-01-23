@@ -163,21 +163,21 @@ export default function PriceListGuestView() {
                             </div>
 
                             {/* Date Info - Right Aligned */}
-                            <div className="text-right space-y-2 pt-2">
-                                <div className="inline-flex flex-col items-end gap-1.5 text-[13px]">
-                                    <p className="text-slate-600">
-                                        <span className="text-slate-400 mr-2">적용일자</span>
+                            <div className="text-right pt-2">
+                                <div className="inline-flex flex-col gap-2 min-w-[200px]">
+                                    <div className="flex justify-between items-center text-[13px] border-b border-slate-100 pb-1">
+                                        <span className="text-slate-400 mr-6">적용일자</span>
                                         <span className="font-bold text-slate-900">
                                             {priceList.sharedAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일') ||
                                                 priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일')}
                                         </span>
-                                    </p>
-                                    <p className="text-slate-600 flex items-center justify-end gap-2">
-                                        <span className="text-slate-400">유효기간</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[13px]">
+                                        <span className="text-slate-400 mr-6">유효기간</span>
                                         <span className={`font-black ${countdown === '만료' ? 'text-red-500' : 'text-blue-600'}`}>
                                             {countdown || '계산중...'}
                                         </span>
-                                    </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -199,7 +199,7 @@ export default function PriceListGuestView() {
                                 <tbody>
                                     <tr>
                                         <th rowSpan={5} className="w-9 bg-slate-800 text-white font-bold [writing-mode:vertical-lr] text-center tracking-[0.3em] text-[11px] border border-slate-800">공급자</th>
-                                        <th className="w-20 bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">등록번호</th>
+                                        <th className="w-24 bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold whitespace-nowrap">등록번호</th>
                                         <td colSpan={3} className="border border-slate-300 px-4 py-2.5 font-bold text-slate-900 tracking-wide">123-45-67890</td>
                                     </tr>
                                     <tr>
@@ -227,14 +227,18 @@ export default function PriceListGuestView() {
                         </div>
                     </div>
 
-                    {/* Search and Action Bar */}
-                    <div className="px-8 py-6 md:px-12 bg-slate-100/50 border-y border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 bg-white border border-slate-300 rounded-xl px-5 py-4 w-full md:w-96 shadow-sm focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/5 transition-all">
-                            <SearchIcon size={20} className="text-slate-400" />
+                    {/* Divider and Search Bar */}
+                    <div className="px-8 mt-10 md:px-12">
+                        <div className="h-px bg-slate-200 w-full mb-8"></div>
+                    </div>
+
+                    <div className="px-8 py-8 md:px-12 bg-slate-100/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 bg-white border border-slate-300 rounded-xl px-5 py-5 w-full md:w-96 shadow-sm focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/5 transition-all">
+                            <SearchIcon size={22} className="text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="품목명을 검색하세요"
-                                className="flex-1 bg-transparent outline-none text-base font-medium text-slate-800 placeholder:text-slate-400"
+                                className="flex-1 bg-transparent outline-none text-lg font-medium text-slate-800 placeholder:text-slate-400"
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                             />
@@ -256,10 +260,10 @@ export default function PriceListGuestView() {
                         <table className="w-full text-left min-w-[600px]">
                             <thead>
                                 <tr className="bg-slate-900 border-b-2 border-slate-950">
-                                    <th className="px-8 py-5 text-[12px] font-black tracking-[0.1em] text-slate-400 uppercase">Product Name / 품목명</th>
-                                    <th className="px-4 py-5 text-[12px] font-black tracking-[0.1em] text-slate-400 uppercase text-center w-24">Unit / 단위</th>
-                                    <th className="px-6 py-5 text-[12px] font-black tracking-[0.1em] text-blue-400 uppercase text-right w-36">Chilled / 냉장</th>
-                                    <th className="px-8 py-5 text-[12px] font-black tracking-[0.1em] text-slate-400 uppercase text-right w-36">Frozen / 냉동</th>
+                                    <th className="px-8 py-5 text-[13px] font-black tracking-widest text-slate-400">품목명</th>
+                                    <th className="px-4 py-5 text-[13px] font-black tracking-widest text-slate-400 text-center w-24">단위</th>
+                                    <th className="px-6 py-5 text-[13px] font-black tracking-widest text-blue-400 text-right w-36">냉장</th>
+                                    <th className="px-8 py-5 text-[13px] font-black tracking-widest text-slate-400 text-right w-36">냉동</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -291,7 +295,6 @@ export default function PriceListGuestView() {
                                                         <span className="text-[17px] font-black text-blue-600 tabular-nums">
                                                             {formatCurrency(group.refrigerated)}
                                                         </span>
-                                                        <span className="text-[10px] text-blue-400 font-bold uppercase tracking-tight">Refrigerated</span>
                                                     </div>
                                                 ) : (
                                                     <span className="text-slate-200">-</span>
@@ -303,7 +306,6 @@ export default function PriceListGuestView() {
                                                         <span className="text-[17px] font-black text-slate-700 tabular-nums">
                                                             {formatCurrency(group.frozen)}
                                                         </span>
-                                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Frozen</span>
                                                     </div>
                                                 ) : (
                                                     <span className="text-slate-200">-</span>
@@ -381,40 +383,40 @@ export default function PriceListGuestView() {
                                     <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Name</label>
                                     <input
                                         type="text"
-                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[10px] focus:ring-blue-500/5 px-6 py-4 rounded-2xl outline-none font-bold text-[15px] text-slate-900 placeholder:text-slate-300 transition-all"
+                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[12px] focus:ring-blue-500/5 px-8 py-10 rounded-3xl outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all"
                                         required
                                         placeholder="상호명을 입력하세요"
                                         value={orderForm.companyName}
                                         onChange={e => setOrderForm({ ...orderForm, companyName: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-3">
-                                    <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest ml-1">Contact Number</label>
+                                <div className="space-y-4">
+                                    <label className="text-[13px] font-black text-slate-400 uppercase tracking-widest ml-2">Contact Number</label>
                                     <input
                                         type="tel"
-                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[10px] focus:ring-blue-500/5 px-6 py-4 rounded-2xl outline-none font-bold text-[15px] text-slate-900 placeholder:text-slate-300 transition-all"
+                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[12px] focus:ring-blue-500/5 px-8 py-10 rounded-3xl outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all"
                                         required
                                         placeholder="010-0000-0000"
                                         value={orderForm.tel}
                                         onChange={e => setOrderForm({ ...orderForm, tel: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-3">
-                                    <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest ml-1">Address (Optional)</label>
+                                <div className="space-y-4">
+                                    <label className="text-[13px] font-black text-slate-400 uppercase tracking-widest ml-2">Address (Optional)</label>
                                     <input
                                         type="text"
-                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[10px] focus:ring-blue-500/5 px-6 py-4 rounded-2xl outline-none font-bold text-[15px] text-slate-900 placeholder:text-slate-300 transition-all"
+                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[12px] focus:ring-blue-500/5 px-8 py-10 rounded-3xl outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all"
                                         placeholder="정확한 배송지를 입력해주세요"
                                         value={orderForm.address}
                                         onChange={e => setOrderForm({ ...orderForm, address: e.target.value })}
                                     />
                                 </div>
 
-                                <div className="pt-8 flex gap-4">
-                                    <button type="button" className="flex-[3] py-10 rounded-2xl font-black text-slate-400 border border-slate-100 hover:bg-slate-50 active:scale-95 transition-all" onClick={() => setShowOrderModal(false)}>취소</button>
+                                <div className="pt-10 flex gap-4 w-full">
+                                    <button type="button" className="flex-[3] py-12 rounded-2xl font-black text-slate-400 border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all" onClick={() => setShowOrderModal(false)}>취소</button>
                                     <button
                                         type="submit"
-                                        className="flex-[7] bg-[#2563EB] text-white font-black py-10 rounded-2xl hover:bg-[#1D4ED8] shadow-[0_15px_30px_-10px_rgba(37,99,235,0.4)] transition-all active:scale-95 disabled:opacity-50"
+                                        className="flex-[7] bg-[#2563EB] text-white font-black py-12 rounded-3xl hover:bg-[#1D4ED8] shadow-[0_25px_50px_-12px_rgba(37,99,235,0.5)] transition-all active:scale-95 disabled:opacity-50"
                                         disabled={submitting}
                                     >
                                         {submitting ? '생성 중...' : '다음 단계로'}
