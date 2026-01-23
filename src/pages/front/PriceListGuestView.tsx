@@ -352,55 +352,62 @@ export default function PriceListGuestView() {
                     <div className="min-h-screen py-12 px-6">
                         <div className="max-w-[600px] mx-auto">
                             <div className="bg-white rounded-[50px] shadow-2xl border border-slate-100 overflow-hidden mb-12 animate-in zoom-in duration-300">
-                                <div className="p-10 md:p-14">
+                                <div className="p-10 md:p-14 pt-20">
                                     <div className="mb-12 text-center">
                                         <h3 className="text-4xl font-black text-slate-900">업체 정보 입력</h3>
                                         <p className="text-base text-slate-400 font-bold mt-4 leading-relaxed">주문서 작성을 위해 귀사의 정보를 <br />한 번 더 확인해 주세요.</p>
                                     </div>
 
-                                    <form onSubmit={handleStartOrder} className="space-y-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">회사명</label>
-                                            <input
-                                                type="text"
-                                                className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
-                                                required
-                                                placeholder="상호명을 입력하세요"
-                                                value={orderForm.companyName}
-                                                onChange={e => setOrderForm({ ...orderForm, companyName: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">휴대전화번호</label>
-                                            <input
-                                                type="tel"
-                                                className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
-                                                required
-                                                placeholder="010-0000-0000"
-                                                value={orderForm.tel}
-                                                onChange={e => setOrderForm({ ...orderForm, tel: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">배송주소 (선택)</label>
-                                            <input
-                                                type="text"
-                                                className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
-                                                placeholder="배송지 주소를 입력해 주세요"
-                                                value={orderForm.address}
-                                                onChange={e => setOrderForm({ ...orderForm, address: e.target.value })}
-                                            />
+                                    <form onSubmit={handleStartOrder} className="space-y-8">
+                                        {/* Input Frame */}
+                                        <div className="bg-slate-50/50 border border-slate-100 p-8 rounded-[2.5rem] space-y-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">회사명</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full bg-white border border-slate-200 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-10 rounded-[2rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
+                                                    required
+                                                    placeholder="상호명을 입력하세요"
+                                                    value={orderForm.companyName}
+                                                    onChange={e => setOrderForm({ ...orderForm, companyName: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">휴대전화번호</label>
+                                                <input
+                                                    type="tel"
+                                                    className="w-full bg-white border border-slate-200 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-10 rounded-[2rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
+                                                    required
+                                                    placeholder="010-0000-0000"
+                                                    value={orderForm.tel}
+                                                    onChange={e => setOrderForm({ ...orderForm, tel: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">배송주소 (선택)</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full bg-white border border-slate-200 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-10 rounded-[2rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
+                                                    placeholder="배송지 주소를 입력해 주세요"
+                                                    value={orderForm.address}
+                                                    onChange={e => setOrderForm({ ...orderForm, address: e.target.value })}
+                                                />
+                                            </div>
                                         </div>
 
-                                        <div className="pt-12 flex flex-col gap-6">
-                                            <button
-                                                type="submit"
-                                                className="w-full h-28 bg-[#6366F1] text-white font-black rounded-[3rem] hover:bg-[#4F46E5] shadow-[0_25px_50px_-12px_rgba(99,102,241,0.5)] transition-all active:scale-95 disabled:opacity-50 text-3xl"
-                                                disabled={submitting}
-                                            >
-                                                {submitting ? '생성 중...' : '다음 단계로'}
-                                            </button>
-                                            <button type="button" className="w-full h-24 rounded-[2.5rem] font-black text-slate-400 border-2 border-slate-100 hover:bg-slate-50 active:scale-95 transition-all text-center text-2xl" onClick={() => setShowOrderModal(false)}>취소</button>
+                                        <div className="pt-8 flex gap-4">
+                                            <div className="flex-1">
+                                                <button type="button" className="w-full h-24 rounded-[2rem] font-black text-slate-400 border-2 border-slate-100 hover:bg-slate-50 active:scale-95 transition-all text-center text-xl" onClick={() => setShowOrderModal(false)}>취소</button>
+                                            </div>
+                                            <div className="flex-[2]">
+                                                <button
+                                                    type="submit"
+                                                    className="w-full h-24 bg-[#6366F1] text-white font-black rounded-[2rem] hover:bg-[#4F46E5] shadow-[0_25px_50px_-12px_rgba(99,102,241,0.5)] transition-all active:scale-95 disabled:opacity-50 text-2xl"
+                                                    disabled={submitting}
+                                                >
+                                                    {submitting ? '생성 중...' : '다음 단계로'}
+                                                </button>
+                                            </div>
                                         </div>
                                     </form>
                                 </div>
