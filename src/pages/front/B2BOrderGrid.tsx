@@ -892,6 +892,15 @@ export default function B2BOrderGrid() {
                                         <span className="font-bold text-slate-700 text-sm">맞춤 단가 적용 및<br />전용 혜택</span>
                                     </div>
                                 </div>
+
+                                <div className="mt-6">
+                                    <button
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-500/20 transition-all transform hover:scale-[1.01] flex items-center justify-center gap-2"
+                                        onClick={() => navigate('/signup', { state: { name: guestInfo.name, phone: guestInfo.tel, address: guestInfo.address, orderToken: token } })}
+                                    >
+                                        정식 거래처(회원) 등록 신청하기 <SparklesIcon size={20} />
+                                    </button>
+                                </div>
                             </div>
                         )}
                         {!orderInfo.isGuest && (
