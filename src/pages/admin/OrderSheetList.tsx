@@ -32,6 +32,15 @@ export default function OrderSheetList() {
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
 
+    // Link modal state
+    const [showLinkModal, setShowLinkModal] = useState(false)
+    const [linkModalData, setLinkModalData] = useState<{ link: string; message: string; isGuest: boolean } | null>(null)
+    const [copied, setCopied] = useState(false)
+
+    // Alert modal state
+    const [showAlertModal, setShowAlertModal] = useState(false)
+    const [alertModalData, setAlertModalData] = useState<{ title: string; message: string; isError?: boolean } | null>(null)
+
     // Firebase에서 발주서 목록 로드
     const loadOrderSheets = async () => {
         try {
@@ -91,10 +100,11 @@ export default function OrderSheetList() {
         })
     }
 
-    const copyInviteLink = async (order: OrderSheet) => {
+    const copyInviteLink = (order: OrderSheet) => {
         const token = order.inviteTokenId
         if (!token) {
-            alert('초대 토큰이 없습니다.')
+            setAlertModalData({ title: '오류', message: '초대 토큰이 없습니다.', isError: true })
+            setShowAlertModal(true)
             return
         }
         const link = `${window.location.origin}/order/${token}/edit`
@@ -105,12 +115,28 @@ export default function OrderSheetList() {
 아래 링크에서 확인해주세요.
 
 ${link}`
-            await navigator.clipboard.writeText(message)
-            alert('고객 안내 메시지와 링크가 복사되었습니다!\n\n고객에게 직접 전송해주세요.')
+            setLinkModalData({ link, message, isGuest: true })
         } else {
-            await navigator.clipboard.writeText(link)
-            alert('발주서 링크가 복사되었습니다!')
+            setLinkModalData({ link, message: link, isGuest: false })
         }
+        setShowLinkModal(true)
+    }
+
+    const handleCopyLink = async () => {
+        if (!linkModalData) return
+        try {
+            await navigator.clipboard.writeText(linkModalData.message)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        } catch (err) {
+            console.error('Copy failed:', err)
+        }
+    }
+
+    const closeLinkModal = () => {
+        setShowLinkModal(false)
+        setLinkModalData(null)
+        setCopied(false)
     }
 
     const handleDelete = (id: string) => {
@@ -128,7 +154,9 @@ ${link}`
             setDeleteTargetId(null)
         } catch (err) {
             console.error('Delete failed:', err)
-            alert('삭제에 실패했습니다.')
+            setShowDeleteModal(false)
+            setAlertModalData({ title: '삭제 실패', message: '발주서 삭제에 실패했습니다.', isError: true })
+            setShowAlertModal(true)
         } finally {
             setIsDeleting(false)
         }
@@ -334,6 +362,74 @@ ${link}`
                                 disabled={isDeleting}
                             >
                                 {isDeleting ? '삭제 중...' : '삭제'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Link Modal */}
+            {showLinkModal && linkModalData && (
+                <div className="modal-backdrop" onClick={closeLinkModal}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                        <div className="modal-header">
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <FileTextIcon size={20} color="#3b82f6" />
+                                {linkModalData.isGuest ? '비회원 고객 링크' : '발주서 링크'}
+                            </h3>
+                        </div>
+                        <div className="modal-body">
+                            {linkModalData.isGuest && (
+                                <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '14px' }}>
+                                    아래 메시지를 복사하여 고객에게 전송해주세요.
+                                </p>
+                            )}
+                            <div style={{
+                                background: 'var(--bg-tertiary)',
+                                padding: '12px',
+                                borderRadius: '8px',
+                                marginBottom: '16px',
+                                fontSize: '13px',
+                                lineHeight: '1.6',
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-all'
+                            }}>
+                                {linkModalData.message}
+                            </div>
+                        </div>
+                        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button className="btn btn-ghost" onClick={closeLinkModal}>
+                                닫기
+                            </button>
+                            <button
+                                className={`btn ${copied ? 'btn-success' : 'btn-primary'}`}
+                                onClick={handleCopyLink}
+                            >
+                                {copied ? '복사됨!' : '복사하기'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Alert Modal */}
+            {showAlertModal && alertModalData && (
+                <div className="modal-backdrop" onClick={() => setShowAlertModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: alertModalData.isError ? '#ef4444' : 'inherit' }}>
+                                {alertModalData.isError && <AlertTriangleIcon size={20} color="#ef4444" />}
+                                {alertModalData.title}
+                            </h3>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ color: 'var(--text-secondary)' }}>
+                                {alertModalData.message}
+                            </p>
+                        </div>
+                        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button className="btn btn-primary" onClick={() => setShowAlertModal(false)}>
+                                확인
                             </button>
                         </div>
                     </div>
