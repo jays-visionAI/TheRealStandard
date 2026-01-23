@@ -612,6 +612,15 @@ export const MessageCircleIcon: FC<IconProps> = ({ size = 20, className = '', co
     </svg>
 )
 
+// Mailbox
+export const MailboxIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M22 17V9a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2z" />
+        <path d="M2 9l10 7L22 9" />
+        <path d="M12 16V7" />
+    </svg>
+)
+
 // Kakao
 export const KakaoIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color} className={className}>
@@ -689,6 +698,18 @@ export const DownloadIcon: FC<IconProps> = ({ size = 20, className = '', color =
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
         <polyline points="7 10 12 15 17 10" />
         <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+)
+
+// Trophy
+export const TrophyIcon: FC<IconProps> = ({ size = 20, className = '', color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+        <path d="M4 22h16" />
+        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+        <path d="M18 2H6v7a6 6 0 0 0 12 0V2z" />
     </svg>
 )
 

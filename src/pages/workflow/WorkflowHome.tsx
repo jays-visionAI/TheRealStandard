@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileEditIcon, PencilIcon, CheckCircleIcon, TruckDeliveryIcon, FactoryIcon } from '../../components/Icons'
+import { FileEditIcon, PencilIcon, CheckCircleIcon, TruckDeliveryIcon, FactoryIcon, MailboxIcon, TrophyIcon, ZapIcon, AlertTriangleIcon } from '../../components/Icons'
 import {
     getAllOrderSheets,
     getAllSalesOrders,
@@ -15,11 +15,11 @@ import type { ReactNode } from 'react'
 // 파이프라인 단계 정의 (v1.0 단순화)
 const PIPELINE_STEPS: { id: string; label: string; icon: ReactNode; description: string }[] = [
     { id: 'create', label: '발주서 생성', icon: <FileEditIcon size={20} />, description: '고객별 발주서를 생성하고 링크를 발송합니다' },
-    { id: 'submit', label: '고객 제출', icon: '📬', description: '고객이 주문을 작성하고 제출합니다' },
+    { id: 'submit', label: '고객 제출', icon: <MailboxIcon size={20} />, description: '고객이 주문을 작성하고 제출합니다' },
     { id: 'finalize', label: '확정 입력', icon: <PencilIcon size={20} />, description: '최종 수량/배차 정보를 입력합니다' },
     { id: 'confirm', label: '고객 컨펌', icon: <CheckCircleIcon size={20} />, description: '고객이 최종안을 확인합니다' },
     { id: 'dispatch', label: '출고 준비', icon: <TruckDeliveryIcon size={20} />, description: '출고 및 배송을 준비합니다' },
-    { id: 'complete', label: '배송 완료', icon: '🎉', description: '고객에게 배송 완료' },
+    { id: 'complete', label: '배송 완료', icon: <TrophyIcon size={20} />, description: '고객에게 배송 완료' },
 ]
 
 interface PipelineItem {
@@ -256,7 +256,7 @@ export default function WorkflowHome() {
         return (
             <div className="workflow-home">
                 <div className="error-state">
-                    <p>❌ {error}</p>
+                    <p><AlertTriangleIcon className="inline-block mr-2" /> {error}</p>
                     <button className="btn btn-primary" onClick={loadData}>
                         다시 시도
                     </button>
@@ -270,7 +270,7 @@ export default function WorkflowHome() {
             {/* Header */}
             <header className="workflow-header">
                 <div className="header-content">
-                    <h1>TRS 주문-출고 워크플로우</h1>
+                    <h1>MEATGO 주문-출고 워크플로우</h1>
                     <p className="header-date">
                         {new Date().toLocaleDateString('ko-KR', {
                             year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
@@ -380,7 +380,7 @@ export default function WorkflowHome() {
             <section className="summary-section">
                 <div className="summary-grid">
                     <div className="summary-card glass-card" onClick={() => setSelectedStep('review')}>
-                        <div className="summary-icon urgent">⚡</div>
+                        <div className="summary-icon urgent"><ZapIcon size={24} /></div>
                         <div className="summary-content">
                             <span className="summary-value">{getStepItems('review').filter(i => i.urgent).length}</span>
                             <span className="summary-label">긴급 검토 필요</span>
