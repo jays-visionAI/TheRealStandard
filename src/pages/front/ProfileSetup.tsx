@@ -11,16 +11,22 @@ import {
     WalletIcon,
     FileTextIcon,
     CheckCircleIcon,
-    ArrowRightIcon
+    ArrowRightIcon,
+    LockIcon
 } from '../../components/Icons'
 import './ProfileSetup.css'
 
 export default function ProfileSetup() {
-    const { user } = useAuth()
+    const { user, updateUserPassword } = useAuth()
     const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isPasswordChanging, setIsPasswordChanging] = useState(false)
     const [isOnboarding, setIsOnboarding] = useState(false)
+
+    // 비밀번호 변경 관련 상태
+    const [newPassword, setNewPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
 
     const [formData, setFormData] = useState<Partial<BusinessProfile>>({
         companyName: '',
@@ -72,6 +78,33 @@ export default function ProfileSetup() {
             alert('저장에 실패했습니다. 다시 시도해주세요.')
         } finally {
             setIsSubmitting(false)
+        }
+    }
+
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (newPassword !== confirmPassword) {
+            alert('비밀번호가 일치하지 않습니다.')
+            return
+        }
+        if (newPassword.length < 6) {
+            alert('비밀번호는 최소 6자 이상이어야 합니다.')
+            return
+        }
+
+        setIsPasswordChanging(true)
+        try {
+            await updateUserPassword(newPassword)
+            alert('비밀번호가 성공적으로 변경되었습니다.')
+            setNewPassword('')
+            setConfirmPassword('')
+        } catch (err: any) {
+            alert(err.message)
+            if (err.message.includes('다시 로그인')) {
+                // 재로그인이 필요한 경우
+            }
+        } finally {
+            setIsPasswordChanging(false)
         }
     }
 
@@ -184,6 +217,46 @@ export default function ProfileSetup() {
                             />
                         </div>
                     </div>
+
+                    {/* 비밀번호 변경 섹션 (Onboarding이 아닐 때만 표시) */}
+                    {!isOnboarding && (
+                        <div className="form-section password-change-section" style={{ marginTop: '40px', borderTop: '1px solid var(--border-color)', paddingTop: '40px' }}>
+                            <h3 style={{ color: 'var(--color-primary)' }}><LockIcon size={18} /> 계정 비밀번호 변경</h3>
+                            <p className="description mb-4">보안을 위해 정기적인 비밀번호 변경을 권장합니다.</p>
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>새 비밀번호</label>
+                                    <input
+                                        type="password"
+                                        className="input"
+                                        placeholder="6자 이상 입력"
+                                        value={newPassword}
+                                        onChange={e => setNewPassword(e.target.value)}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>비밀번호 확인</label>
+                                    <input
+                                        type="password"
+                                        className="input"
+                                        placeholder="다시 한번 입력"
+                                        value={confirmPassword}
+                                        onChange={e => setConfirmPassword(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="mt-4">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={handlePasswordChange}
+                                    disabled={isPasswordChanging || !newPassword}
+                                >
+                                    {isPasswordChanging ? '변경 중...' : '비밀번호 변경하기'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="setup-footer">
                         <button

@@ -176,25 +176,25 @@ export default function Login() {
                     <div className="demo-buttons">
                         <button
                             className="demo-btn admin"
-                            onClick={() => handleQuickLogin('jays@visai.io', 'meatgo123!')}
+                            onClick={() => handleQuickLogin('jays@visai.io', '1q2w3e4r')}
                         >
                             <UserIcon size={16} /> 관리자
                         </button>
                         <button
                             className="demo-btn warehouse"
-                            onClick={() => handleQuickLogin('warehouse@meatgo.kr', 'meatgo123!')}
+                            onClick={() => handleQuickLogin('warehouse@meatgo.kr', '1q2w3e4r')}
                         >
                             <FactoryIcon size={16} /> 창고직원
                         </button>
                         <button
                             className="demo-btn accounting"
-                            onClick={() => handleQuickLogin('accounting@meatgo.kr', 'meatgo123!')}
+                            onClick={() => handleQuickLogin('accounting@meatgo.kr', '1q2w3e4r')}
                         >
                             <FilesIcon size={16} /> 경리직원
                         </button>
                         <button
                             className="demo-btn customer"
-                            onClick={() => handleQuickLogin('customer@meatgo.kr', 'meatgo123!')}
+                            onClick={() => handleQuickLogin('customer@meatgo.kr', '1q2w3e4r')}
                         >
                             <ShoppingCartIcon size={16} /> 고객
                         </button>

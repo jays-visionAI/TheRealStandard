@@ -4,6 +4,7 @@ import {
     createUserWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
+    updatePassword,
     User as FirebaseUser
 } from 'firebase/auth'
 import { auth } from '../lib/firebase'
@@ -33,6 +34,7 @@ interface AuthContextType {
     isCustomer: boolean
     isWarehouse: boolean
     isAccounting: boolean
+    updateUserPassword: (newPassword: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -42,11 +44,11 @@ const ADMIN_EMAILS = ['jays@visai.io', 'glcej@naver.com']
 
 // 데모 계정 정의 (Firebase Auth에 등록된 계정)
 const DEMO_ACCOUNTS: Record<string, { email: string; password: string; name: string; role: UserRole }> = {
-    'ADMIN': { email: 'jays@visai.io', password: 'meatgo123!', name: '서상재 관리자', role: 'ADMIN' },
-    'ADMIN2': { email: 'glcej@naver.com', password: 'meatgo123!', name: '이세종 관리자', role: 'ADMIN' },
-    'CUSTOMER': { email: 'customer@meatgo.kr', password: 'meatgo123!', name: '고객사', role: 'CUSTOMER' },
-    'WAREHOUSE': { email: 'warehouse@meatgo.kr', password: 'meatgo123!', name: '물류담당', role: 'WAREHOUSE' },
-    'ACCOUNTING': { email: 'accounting@meatgo.kr', password: 'meatgo123!', name: '정산담당', role: 'ACCOUNTING' },
+    'ADMIN': { email: 'jays@visai.io', password: '1q2w3e4r', name: '서상재 관리자', role: 'ADMIN' },
+    'ADMIN2': { email: 'glcej@naver.com', password: '1q2w3e4r', name: '이세종 관리자', role: 'ADMIN' },
+    'CUSTOMER': { email: 'customer@meatgo.kr', password: '1q2w3e4r', name: '고객사', role: 'CUSTOMER' },
+    'WAREHOUSE': { email: 'warehouse@meatgo.kr', password: '1q2w3e4r', name: '물류담당', role: 'WAREHOUSE' },
+    'ACCOUNTING': { email: 'accounting@meatgo.kr', password: '1q2w3e4r', name: '정산담당', role: 'ACCOUNTING' },
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -309,6 +311,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }
 
+    const updateUserPassword = async (newPassword: string) => {
+        if (!firebaseUser) throw new Error('로그인이 필요합니다.')
+        try {
+            await updatePassword(firebaseUser, newPassword)
+        } catch (error: any) {
+            console.error('Password Update Error:', error)
+            if (error.code === 'auth/requires-recent-login') {
+                throw new Error('보안을 위해 최근 로그인 기록이 필요합니다. 다시 로그인 후 시도해 주세요.')
+            }
+            throw new Error(`비밀번호 변경 실패: ${error.message}`)
+        }
+    }
+
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'OPS'
     const isCustomer = user?.role === 'CUSTOMER'
     const isWarehouse = user?.role === 'WAREHOUSE'
@@ -328,6 +343,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 isCustomer,
                 isWarehouse,
                 isAccounting,
+                updateUserPassword,
             }}
         >
             {children}
