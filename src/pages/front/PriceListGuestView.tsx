@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { getPriceListByShareToken, incrementPriceListReach, incrementPriceListConversion, type FirestorePriceList } from '../../lib/priceListService'
-import { createOrderSheetWithId, generateOrderSheetId, setOrderSheetItems } from '../../lib/orderService'
+import { getOrderSheetByToken, getOrderSheetItems, incrementOrderSheetReach, setOrderSheetItems, createOrderSheetWithId, generateOrderSheetId, type FirestoreOrderSheet, type FirestoreOrderSheetItem } from '../../lib/orderService'
 import {
     ClipboardListIcon,
     ChevronRightIcon,
@@ -23,6 +23,8 @@ export default function PriceListGuestView() {
     const [searchParams] = useSearchParams()
     const recipient = searchParams.get('recipient')
     const [priceList, setPriceList] = useState<FirestorePriceList | null>(null)
+    const [orderSheet, setOrderSheet] = useState<FirestoreOrderSheet | null>(null)
+    const [orderItems, setOrderItems] = useState<FirestoreOrderSheetItem[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [submitting, setSubmitting] = useState(false)
@@ -32,9 +34,11 @@ export default function PriceListGuestView() {
 
 
     // Countdown timer for validity period (5 days from sharedAt)
+    // Countdown timer for validity period
     useEffect(() => {
-        if (!priceList) return
-        const baseDate = priceList.sharedAt?.toDate?.() || priceList.createdAt?.toDate?.()
+        const baseDoc = orderSheet || priceList
+        if (!baseDoc) return
+        const baseDate = (baseDoc as any).sharedAt?.toDate?.() || (baseDoc as any).createdAt?.toDate?.()
         if (!baseDate) return
 
         const expiryDate = new Date(baseDate.getTime() + 5 * 24 * 60 * 60 * 1000) // 5 days
@@ -65,19 +69,31 @@ export default function PriceListGuestView() {
         updateCountdown()
         const interval = setInterval(updateCountdown, 1000)
         return () => clearInterval(interval)
-    }, [priceList])
+    }, [priceList, orderSheet])
 
     useEffect(() => {
-        const loadPriceList = async () => {
+        const loadData = async () => {
             if (!token) return
             try {
-                const data = await getPriceListByShareToken(token)
-                if (data) {
-                    setPriceList(data)
-                    // Increment reach count
-                    await incrementPriceListReach(data.id)
+                setLoading(true)
+                // 1. 먼저 발주서(OrderSheet) 토큰인지 확인
+                const osData = await getOrderSheetByToken(token)
+                if (osData) {
+                    setOrderSheet(osData)
+                    const items = await getOrderSheetItems(osData.id)
+                    setOrderItems(items)
+                    await incrementOrderSheetReach(osData.id)
+                    setLoading(false)
+                    return
+                }
+
+                // 2. 발주서가 없으면 기존 방식대로 단가표(PriceList) 직접 공유 토큰인지 확인
+                const plData = await getPriceListByShareToken(token)
+                if (plData) {
+                    setPriceList(plData)
+                    await incrementPriceListReach(plData.id)
                 } else {
-                    setError('유효하지 않은 링크이거나 삭제된 단가표입니다.')
+                    setError('유효하지 않은 링크이거나 만료된 문서입니다.')
                 }
             } catch (err: any) {
                 console.error(err)
@@ -86,53 +102,63 @@ export default function PriceListGuestView() {
                 setLoading(false)
             }
         }
-        loadPriceList()
+        loadData()
     }, [token])
 
     const handleStartOrder = async () => {
-        if (!priceList) return
+        if (!orderSheet && !priceList) return
 
         try {
             setSubmitting(true)
+
+            if (orderSheet) {
+                // 이미 생성된 예비 발주서가 있는 경우, 해당 발주서 편집 페이지로 이동
+                navigate(`/order/${token}/edit`)
+                return
+            }
+
+            // 구형 방식(단가표 직접 공유) 대응: 새로운 발주서 생성
             const orderId = await generateOrderSheetId()
             const guestToken = 'gt-' + Math.random().toString(36).substr(2, 9)
 
-            const orderSheet = await createOrderSheetWithId(orderId, {
+            const newOS = await createOrderSheetWithId(orderId, {
                 customerOrgId: 'GUEST-PL-' + Date.now(),
-                customerName: '비회원 고객', // Placeholder - will be updated in next step
+                customerName: recipient || priceList!.title || '비회원 고객',
                 isGuest: true,
                 status: 'SENT',
-                cutOffAt: Timestamp.fromDate(new Date(Date.now() + 86400000)),
+                cutOffAt: Timestamp.fromDate(new Date(Date.now() + 86400000)), // 24시간
                 shipTo: '',
-                adminComment: `단가표[${priceList.title}]를 통한 비회원 주문 시작`,
+                adminComment: `단가표[${priceList!.title}]를 통한 비회원 주문 시작`,
                 inviteTokenId: guestToken,
-                sourcePriceListId: priceList.id
+                sourcePriceListId: priceList!.id,
+                reachCount: 0
             })
 
-            // Increment conversion count
-            await incrementPriceListConversion(priceList.id)
+            // Increment conversion count for the price list
+            await incrementPriceListConversion(priceList!.id)
 
-            const items = priceList.items.map(item => ({
+            await setOrderSheetItems(newOS.id, priceList!.items.map(item => ({
                 productId: item.productId,
                 productName: item.name,
-                unit: 'box', // Default unit for order is now 'box'
+                category1: item.category1,
+                unit: 'box',
                 unitPrice: item.supplyPrice,
                 qtyRequested: 0,
                 estimatedKg: 0,
                 amount: 0
-            }))
-            await setOrderSheetItems(orderSheet.id, items)
+            })))
+
             navigate(`/order/${guestToken}/edit`)
         } catch (err) {
-            console.error('Failed to create guest order:', err)
-            alert('주문서 생성에 실패했습니다.')
+            console.error('Failed to start order:', err)
+            alert('주문서 페이지로 이동하는데 실패했습니다.')
         } finally {
             setSubmitting(false)
         }
     }
 
     if (loading) return <div className="p-20 text-center text-gray-400">데이터를 불러오는 중입니다...</div>
-    if (error || !priceList) return (
+    if (error || (!priceList && !orderSheet)) return (
         <div className="p-20 text-center flex flex-col items-center justify-center min-h-[400px]">
             <InfoIcon size={64} className="text-red-400 mb-6" />
             <p className="text-gray-900 text-2xl font-bold">{error || '단가표를 찾을 수 없습니다.'}</p>
@@ -142,11 +168,21 @@ export default function PriceListGuestView() {
 
     const formatCurrency = (val: number) => '₩' + new Intl.NumberFormat('ko-KR').format(val)
 
-    const filteredItems = priceList?.items.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || []
+    const itemsToDisplay = orderSheet
+        ? orderItems.map(oi => ({
+            productId: oi.productId,
+            name: oi.productName,
+            supplyPrice: oi.unitPrice,
+            category1: oi.category1 || '냉동' // Default to '냉동' if missing
+        }))
+        : priceList?.items || []
 
-    const isExpired = priceList?.validUntil ? priceList.validUntil.toDate() < new Date() : false
+    const filteredItems = itemsToDisplay.filter(item =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    const currentDoc = orderSheet || priceList
+    const isExpired = currentDoc?.validUntil ? (currentDoc as any).validUntil.toDate() < new Date() : false
 
     const SupplierInfo = () => (
         <div className="max-w-[800px] mx-auto px-10 pb-24">
@@ -211,7 +247,7 @@ export default function PriceListGuestView() {
                             <CalendarIcon size={18} className="text-slate-400" />
                             <span className="text-sm font-bold">
                                 견적서 생성일시: {(() => {
-                                    const d = priceList.sharedAt?.toDate?.() || priceList.createdAt?.toDate?.() || new Date();
+                                    const d = (currentDoc as any)?.sharedAt?.toDate?.() || (currentDoc as any)?.createdAt?.toDate?.() || new Date();
                                     const pad = (n: number) => n.toString().padStart(2, '0');
                                     return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}.${pad(d.getMinutes())}`;
                                 })()}
@@ -225,12 +261,12 @@ export default function PriceListGuestView() {
                 </div>
 
                 {/* Admin Message Card */}
-                {priceList.adminComment && (
+                {currentDoc?.adminComment && (
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-4 flex items-start gap-4">
                         <MegaphoneIcon size={20} className="text-slate-400 mt-0.5" />
                         <div>
                             <p className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-1.5 px-2 py-0.5 bg-blue-50 w-fit rounded">관리자 한마디</p>
-                            <p className="text-sm font-bold text-slate-600 leading-relaxed">{priceList.adminComment}</p>
+                            <p className="text-sm font-bold text-slate-600 leading-relaxed">{currentDoc.adminComment}</p>
                         </div>
                     </div>
                 )}
@@ -238,7 +274,7 @@ export default function PriceListGuestView() {
                 {/* Recipient Info Card */}
                 <div className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-12 mb-6 text-center">
                     <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-                        {recipient || priceList.title}
+                        {recipient || orderSheet?.customerName || (priceList as any)?.title || '고객'}
                         <span className="text-slate-400 font-medium ml-2 uppercase text-base">귀하</span>
                     </p>
                     <div className="w-12 h-1 bg-blue-500 mx-auto my-6 rounded-full opacity-20"></div>

@@ -19,7 +19,7 @@ import {
     MousePointerClickIcon
 } from '../../components/Icons'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
-import { getAllOrderSheets, type FirestoreOrderSheet } from '../../lib/orderService'
+import { getAllOrderSheets, createOrderSheet, setOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
 import {
     createPriceList,
     updatePriceList,
@@ -253,14 +253,14 @@ export default function PriceListManager() {
                 await updatePriceList(selectedList.id, {
                     title,
                     items,
-                    validUntil: validUntil ? new Date(validUntil) : null
+                    validUntil: validUntil ? Timestamp.fromDate(new Date(validUntil)) : null
                 })
                 showAlert('수정 완료', '단가표가 수정되었습니다.')
             } else {
                 await createPriceList({
                     title,
                     items,
-                    validUntil: validUntil ? new Date(validUntil) : null
+                    validUntil: validUntil ? Timestamp.fromDate(new Date(validUntil)) : null
                 })
                 showAlert('생성 완료', '단가표가 생성되었습니다.')
             }
@@ -292,32 +292,49 @@ export default function PriceListManager() {
 
         try {
             setSaving(true)
-            const tokenId = 'PL-' + Math.random().toString(36).substr(2, 9)
-            const now = Timestamp.now()
+            const tokenId = 'OS-' + Math.random().toString(36).substr(2, 9)
 
-            // 템플릿(현재 선택된 단가표)을 기반으로 새로운 발송용 단가표 생성
-            await createPriceList({
-                title: name,
-                items: selectedList.items,
-                shareTokenId: tokenId,
-                sharedAt: now,
-                validUntil: selectedList.validUntil || null,
-                adminComment: selectedList.adminComment || null
+            // 1. 단가표 템플릿 정보를 기반으로 예비발주서(OrderSheet) 생성
+            // 이제 개별 단가표를 새로 만들지 않고, 템플릿을 참조하는 발주서를 바로 만듭니다.
+            const newOrderSheet = await createOrderSheet({
+                customerOrgId: 'GUEST-PL-' + Date.now(),
+                customerName: name,
+                isGuest: true,
+                status: 'SENT', // 'SENT' 상태는 고객에게 발송되어 확인 대기 중임을 의미
+                inviteTokenId: tokenId,
+                sourcePriceListId: selectedList.id,
+                cutOffAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)), // 기본 1주일 뒤 마감
+                shipTo: '',
+                adminComment: selectedList.adminComment || `단가표[${selectedList.title}]를 통한 견적 발송`,
+                reachCount: 0
             })
+
+            // 2. 단가표의 품목들을 발주서 항목으로 복사
+            const orderItems = selectedList.items.map(item => ({
+                productId: item.productId,
+                productName: item.name,
+                category1: item.category1,
+                unit: 'box',
+                unitPrice: item.supplyPrice,
+                qtyRequested: 0,
+                estimatedKg: 0,
+                amount: 0
+            }))
+            await setOrderSheetItems(newOrderSheet.id, orderItems)
 
             const link = `${window.location.origin}/price-view/${tokenId}`
             const shareMessage = `안녕하세요, ${name} 귀하.\n요청하신 단가표(견적서) 링크입니다.\n\n${link}`
 
             try {
                 await navigator.clipboard.writeText(shareMessage)
-                showAlert('생성 및 복사 완료', `[${name} 귀하] 전용 단가표(견적서)가 생성되었으며 공유 메시지가 복사되었습니다.`)
+                showAlert('생성 및 복사 완료', `[${name} 귀하] 전용 견적(발주서) 링크가 생성되었으며 공유 메시지가 복사되었습니다.`)
                 setShowShareModal(false)
                 loadData()
             } catch (err) {
                 console.error('Clipboard copy failed:', err)
                 setConfirmConfig({
                     title: '링크 생성 완료',
-                    message: `[${name} 귀하] 전용 단가표가 생성되었습니다.\n아래 내용을 직접 복사해 주세요:`,
+                    message: `[${name} 귀하] 전용 견적 링크가 생성되었습니다.\n아래 내용을 직접 복사해 주세요:`,
                     type: 'copy',
                     confirmText: '확인',
                     cancelText: shareMessage
@@ -326,8 +343,8 @@ export default function PriceListManager() {
                 loadData()
             }
         } catch (err) {
-            console.error('Failed to create individual price list:', err)
-            showAlert('오류', '개별 단가표 생성에 실패했습니다.', true)
+            console.error('Failed to create preliminary order:', err)
+            showAlert('오류', '견적 생성에 실패했습니다.', true)
         } finally {
             setSaving(false)
         }
@@ -394,24 +411,32 @@ export default function PriceListManager() {
 
             <div className="stats-grid">
                 <div className="stat-card glass-card">
-                    <span className="stat-label">전체 단가표</span>
-                    <span className="stat-value">{priceLists.length}</span>
+                    <span className="stat-label">전체 단가표 템플릿</span>
+                    <span className="stat-value">{priceLists.filter(l => !l.shareTokenId).length}</span>
                 </div>
                 <div className="stat-card glass-card clickable" onClick={() => setShowOrdersModal(true)}>
-                    <span className="stat-label">발주서 전환 수</span>
-                    <span className="stat-value">{orderSheets.filter(o => o.sourcePriceListId).length}</span>
+                    <span className="stat-label">누적 발주 전환</span>
+                    <span className="stat-value">{orderSheets.filter(o => o.sourcePriceListId && o.status !== 'SENT').length}</span>
                     <span className="stat-hint">클릭 시 리스트 확인</span>
                 </div>
                 <div className="stat-card glass-card">
-                    <span className="stat-label">누적 도달 수</span>
-                    <span className="stat-value">{priceLists.reduce((sum, l) => sum + (l.reachCount || 0), 0)}</span>
+                    <span className="stat-label">누적 도달 수 (견적 확인)</span>
+                    <span className="stat-value">
+                        {(() => {
+                            const templateReach = priceLists.filter(l => !l.shareTokenId).reduce((sum, l) => sum + (l.reachCount || 0), 0)
+                            const orderReach = orderSheets.reduce((sum, o) => sum + (o.reachCount || 0), 0)
+                            return templateReach + orderReach
+                        })()}
+                    </span>
                 </div>
                 <div className="stat-card glass-card">
                     <span className="stat-label">평균 전환율</span>
                     <span className="stat-value">
                         {(() => {
-                            const totalReach = priceLists.reduce((sum, l) => sum + (l.reachCount || 0), 0)
-                            const totalConv = priceLists.reduce((sum, l) => sum + (l.conversionCount || 0), 0)
+                            const templateReach = priceLists.filter(l => !l.shareTokenId).reduce((sum, l) => sum + (l.reachCount || 0), 0)
+                            const orderReach = orderSheets.reduce((sum, o) => sum + (o.reachCount || 0), 0)
+                            const totalReach = templateReach + orderReach
+                            const totalConv = orderSheets.filter(o => o.sourcePriceListId && o.status !== 'SENT').length
                             return totalReach > 0 ? ((totalConv / totalReach) * 100).toFixed(1) : 0
                         })()}%
                     </span>
@@ -436,64 +461,71 @@ export default function PriceListManager() {
                             </tr>
                         </thead>
                         <tbody>
-                            {priceLists.map(list => (
-                                <tr key={list.id}>
-                                    <td><strong>{list.title}</strong></td>
-                                    <td>{list.items.length}개 품목</td>
-                                    <td>
-                                        <div className="reach-stats">
-                                            <span className="reach" title="도달 수"><MousePointerClickIcon size={12} /> {list.reachCount || 0}</span>
-                                            <span className="divider">/</span>
-                                            <span
-                                                className={`conv ${list.conversionCount ? 'has-conv' : ''}`}
-                                                title="발주 전환 수"
-                                                onClick={() => {
-                                                    if (list.conversionCount) {
+                            {priceLists
+                                .filter(l => !l.shareTokenId) // 공유용 인스턴스가 아닌 원본 템플릿만 표시
+                                .map(list => {
+                                    const linkedOrders = orderSheets.filter(o => o.sourcePriceListId === list.id)
+                                    const reach = (list.reachCount || 0) + linkedOrders.reduce((sum, o) => sum + (o.reachCount || 0), 0)
+                                    const conv = linkedOrders.filter(o => o.status !== 'SENT').length
+                                    return (
+                                        <tr key={list.id}>
+                                            <td><strong>{list.title}</strong></td>
+                                            <td>{list.items.length}개 품목</td>
+                                            <td>
+                                                <div className="reach-stats">
+                                                    <span className="reach" title="도달 수"><MousePointerClickIcon size={12} /> {reach}</span>
+                                                    <span className="divider">/</span>
+                                                    <span
+                                                        className={`conv ${conv ? 'has-conv' : ''}`}
+                                                        title="발주 전환 수"
+                                                        onClick={() => {
+                                                            if (conv) {
+                                                                setSelectedList(list)
+                                                                setShowOrdersModal(true)
+                                                            }
+                                                        }}
+                                                    >
+                                                        <FileTextIcon size={12} /> {conv}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td>{list.createdAt?.toDate ? list.createdAt.toDate().toLocaleDateString() : '-'}</td>
+                                            <td className="actions">
+                                                <button
+                                                    className="btn btn-ghost btn-sm"
+                                                    title="상세보기"
+                                                    onClick={() => {
                                                         setSelectedList(list)
-                                                        setShowOrdersModal(true)
-                                                    }
-                                                }}
-                                            >
-                                                <FileTextIcon size={12} /> {list.conversionCount || 0}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td>{list.createdAt?.toDate ? list.createdAt.toDate().toLocaleDateString() : '-'}</td>
-                                    <td className="actions">
-                                        <button
-                                            className="btn btn-ghost btn-sm"
-                                            title="상세보기"
-                                            onClick={() => {
-                                                setSelectedList(list)
-                                                setShowDetailModal(true)
-                                            }}
-                                        >
-                                            <EyeIcon size={16} />
-                                        </button>
-                                        <button
-                                            className="btn btn-ghost btn-sm text-primary"
-                                            title="단가표 공유"
-                                            onClick={() => handleShare(list)}
-                                        >
-                                            <ExternalLinkIcon size={16} />
-                                        </button>
-                                        <button
-                                            className="btn btn-ghost btn-sm"
-                                            title="수정"
-                                            onClick={() => handleOpenEditModal(list)}
-                                        >
-                                            <EditIcon size={16} />
-                                        </button>
-                                        <button
-                                            className="btn btn-ghost btn-sm danger"
-                                            title="삭제"
-                                            onClick={() => handleDelete(list.id)}
-                                        >
-                                            <TrashIcon size={16} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                                                        setShowDetailModal(true)
+                                                    }}
+                                                >
+                                                    <EyeIcon size={16} />
+                                                </button>
+                                                <button
+                                                    className="btn btn-ghost btn-sm text-primary"
+                                                    title="단가표 공유"
+                                                    onClick={() => handleShare(list)}
+                                                >
+                                                    <ExternalLinkIcon size={16} />
+                                                </button>
+                                                <button
+                                                    className="btn btn-ghost btn-sm"
+                                                    title="수정"
+                                                    onClick={() => handleOpenEditModal(list)}
+                                                >
+                                                    <EditIcon size={16} />
+                                                </button>
+                                                <button
+                                                    className="btn btn-ghost btn-sm danger"
+                                                    title="삭제"
+                                                    onClick={() => handleDelete(list.id)}
+                                                >
+                                                    <TrashIcon size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
                         </tbody>
                     </table>
                 )}

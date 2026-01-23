@@ -20,6 +20,8 @@ export interface FirestoreOrderSheet {
     status: 'DRAFT' | 'SENT' | 'SUBMITTED' | 'CONFIRMED' | 'REVISION' | 'CLOSED'
     isGuest?: boolean
     sourcePriceListId?: string // 유입된 단가표 ID
+    validUntil?: Timestamp | null // 견적/단가표 유효기간
+    reachCount?: number // 도달 수
     createdAt: Timestamp
     updatedAt: Timestamp
 }
@@ -29,6 +31,7 @@ export interface FirestoreOrderSheetItem {
     orderSheetId: string
     productId: string
     productName: string
+    category1?: string // 냉장/냉동/부산물 등
     unit: string
     unitPrice: number
     qtyRequested?: number
@@ -107,6 +110,15 @@ export async function generateOrderSheetId(): Promise<string> {
 export async function updateOrderSheet(id: string, data: Partial<FirestoreOrderSheet>): Promise<void> {
     const docRef = doc(db, ORDER_SHEETS_COLLECTION, id)
     await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() })
+}
+
+export async function incrementOrderSheetReach(id: string): Promise<void> {
+    const docRef = doc(db, ORDER_SHEETS_COLLECTION, id)
+    const docSnap = await getDoc(docRef)
+    if (docSnap.exists()) {
+        const currentReach = docSnap.data().reachCount || 0
+        await updateDoc(docRef, { reachCount: currentReach + 1 })
+    }
 }
 
 export async function deleteOrderSheet(id: string): Promise<void> {

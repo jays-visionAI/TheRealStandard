@@ -30,13 +30,13 @@ export interface FirestorePriceList {
     title: string
     items: PriceListItem[]
     shareTokenId?: string
-    sharedAt?: any // Timestamp - 고객에게 전송한 날짜
-    validUntil?: any // Timestamp
+    sharedAt?: Timestamp | null // 고객에게 전송한 날짜
+    validUntil?: Timestamp | null // 견적 유효기간
     reachCount?: number // 단가표 도달 수
     conversionCount?: number // 발주서 전환 수
     adminComment?: string | null // 관리자 한마디
-    createdAt: any
-    updatedAt: any
+    createdAt: Timestamp
+    updatedAt: Timestamp
 }
 
 const PRICE_LISTS_COLLECTION = 'priceLists'
