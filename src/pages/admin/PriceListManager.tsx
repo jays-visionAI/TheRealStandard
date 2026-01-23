@@ -44,6 +44,7 @@ export default function PriceListManager() {
     const [saving, setSaving] = useState(false)
     const [showShareModal, setShowShareModal] = useState(false)
     const [recipientName, setRecipientName] = useState('')
+    const [activeTab, setActiveTab] = useState<'templates' | 'history'>('templates')
 
     // 모달 통보 전용 상태
     const [confirmConfig, setConfirmConfig] = useState<{
@@ -392,22 +393,57 @@ export default function PriceListManager() {
                 <div className="header-left">
                     <h2>
                         <ClipboardListIcon size={24} color="var(--color-primary)" className="mr-2" />
-                        단가표 관리
+                        단가표 및 견적 관리
                     </h2>
                     <div className="header-tips glass-card mt-3">
                         <ul className="tips-list">
-                            <li><TrendingUpIcon size={14} /> <strong>신규 거래처 확보</strong>: 단가표 공유를 통해 효율적으로 신규 고객을 발굴할 수 있습니다.</li>
-                            <li><CopyIcon size={14} /> <strong>빠른 운영</strong>: '단가표 복제하기'로 다양한 타겟용 단가표를 즉시 생성하세요.</li>
-                            <li><UsersIcon size={14} /> <strong>고객 추적</strong>: 단가 확인 후 발주서를 작성한 고객을 확인하고 개별 서포트가 가능합니다.</li>
+                            <li><TrendingUpIcon size={14} /> <strong>템플릿 활용</strong>: 마스터 단가표를 만들어 복제해서 사용하세요.</li>
+                            <li><ExternalLinkIcon size={14} /> <strong>견적 발송</strong>: 공유 시마다 고객전용 견적서가 생성되어 개별 추적됩니다.</li>
+                            <li><UsersIcon size={14} /> <strong>도달/전환</strong>: 발송 내역 탭에서 고객별 반응을 실시간 확인하세요.</li>
                         </ul>
                     </div>
                 </div>
                 <div className="header-actions">
                     <button className="btn btn-primary" onClick={handleOpenCreateModal}>
-                        <PlusIcon size={18} /> 단가표 생성하기
+                        <PlusIcon size={18} /> 새 템플릿 생성
                     </button>
                 </div>
             </header>
+
+            <div className="tabs-container mb-8" style={{ borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '24px' }}>
+                <button
+                    className={`tab-item ${activeTab === 'templates' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('templates')}
+                    style={{
+                        padding: '12px 4px',
+                        fontSize: '15px',
+                        fontWeight: activeTab === 'templates' ? 'bold' : 'normal',
+                        color: activeTab === 'templates' ? 'var(--color-primary)' : 'var(--text-secondary)',
+                        borderBottom: activeTab === 'templates' ? '2px solid var(--color-primary)' : 'none',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                >
+                    마스터 템플릿 ({priceLists.filter(l => !l.shareTokenId).length})
+                </button>
+                <button
+                    className={`tab-item ${activeTab === 'history' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('history')}
+                    style={{
+                        padding: '12px 4px',
+                        fontSize: '15px',
+                        fontWeight: activeTab === 'history' ? 'bold' : 'normal',
+                        color: activeTab === 'history' ? 'var(--color-primary)' : 'var(--text-secondary)',
+                        borderBottom: activeTab === 'history' ? '2px solid var(--color-primary)' : 'none',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                >
+                    견적/공유 발송 내역 ({priceLists.filter(l => l.shareTokenId).length + orderSheets.filter(o => o.sourcePriceListId).length})
+                </button>
+            </div>
 
             <div className="stats-grid">
                 <div className="stat-card glass-card">
@@ -416,16 +452,22 @@ export default function PriceListManager() {
                 </div>
                 <div className="stat-card glass-card clickable" onClick={() => setShowOrdersModal(true)}>
                     <span className="stat-label">누적 발주 전환</span>
-                    <span className="stat-value">{orderSheets.filter(o => o.sourcePriceListId && o.status !== 'SENT').length}</span>
+                    <span className="stat-value">
+                        {(() => {
+                            const legacyPriceListConv = priceLists.filter(l => l.shareTokenId).reduce((sum, l) => sum + (l.conversionCount || 0), 0)
+                            const orderSheetConv = orderSheets.filter(o => o.sourcePriceListId && o.status !== 'SENT').length
+                            return legacyPriceListConv + orderSheetConv
+                        })()}
+                    </span>
                     <span className="stat-hint">클릭 시 리스트 확인</span>
                 </div>
                 <div className="stat-card glass-card">
                     <span className="stat-label">누적 도달 수 (견적 확인)</span>
                     <span className="stat-value">
                         {(() => {
-                            const templateReach = priceLists.filter(l => !l.shareTokenId).reduce((sum, l) => sum + (l.reachCount || 0), 0)
+                            const priceListReach = priceLists.reduce((sum, l) => sum + (l.reachCount || 0), 0)
                             const orderReach = orderSheets.reduce((sum, o) => sum + (o.reachCount || 0), 0)
-                            return templateReach + orderReach
+                            return priceListReach + orderReach
                         })()}
                     </span>
                 </div>
@@ -433,10 +475,14 @@ export default function PriceListManager() {
                     <span className="stat-label">평균 전환율</span>
                     <span className="stat-value">
                         {(() => {
-                            const templateReach = priceLists.filter(l => !l.shareTokenId).reduce((sum, l) => sum + (l.reachCount || 0), 0)
+                            const priceListReach = priceLists.reduce((sum, l) => sum + (l.reachCount || 0), 0)
                             const orderReach = orderSheets.reduce((sum, o) => sum + (o.reachCount || 0), 0)
-                            const totalReach = templateReach + orderReach
-                            const totalConv = orderSheets.filter(o => o.sourcePriceListId && o.status !== 'SENT').length
+                            const totalReach = priceListReach + orderReach
+
+                            const legacyPriceListConv = priceLists.filter(l => l.shareTokenId).reduce((sum, l) => sum + (l.conversionCount || 0), 0)
+                            const orderSheetConv = orderSheets.filter(o => o.sourcePriceListId && o.status !== 'SENT').length
+                            const totalConv = legacyPriceListConv + orderSheetConv
+
                             return totalReach > 0 ? ((totalConv / totalReach) * 100).toFixed(1) : 0
                         })()}%
                     </span>
@@ -444,88 +490,131 @@ export default function PriceListManager() {
             </div>
 
             <div className="table-container glass-card">
-                {priceLists.length === 0 ? (
-                    <div className="empty-state">
-                        <PackageIcon size={48} className="text-muted" />
-                        <p>등록된 단가표가 없습니다.</p>
-                    </div>
-                ) : (
+                {activeTab === 'templates' ? (
                     <table className="product-table">
                         <thead>
                             <tr>
-                                <th>제목</th>
+                                <th>단가표 템플릿 제목</th>
                                 <th>품목 수</th>
-                                <th>도달 / 전환</th>
-                                <th>생성일</th>
+                                <th>누적 발송 / 주문</th>
+                                <th>최종수정일</th>
                                 <th>관리</th>
                             </tr>
                         </thead>
                         <tbody>
                             {priceLists
-                                .filter(l => !l.shareTokenId) // 공유용 인스턴스가 아닌 원본 템플릿만 표시
+                                .filter(l => !l.shareTokenId)
                                 .map(list => {
                                     const linkedOrders = orderSheets.filter(o => o.sourcePriceListId === list.id)
                                     const reach = (list.reachCount || 0) + linkedOrders.reduce((sum, o) => sum + (o.reachCount || 0), 0)
-                                    const conv = linkedOrders.filter(o => o.status !== 'SENT').length
+                                    const conv = (list.conversionCount || 0) + linkedOrders.filter(o => o.status !== 'SENT').length
                                     return (
                                         <tr key={list.id}>
                                             <td><strong>{list.title}</strong></td>
                                             <td>{list.items.length}개 품목</td>
                                             <td>
                                                 <div className="reach-stats">
-                                                    <span className="reach" title="도달 수"><MousePointerClickIcon size={12} /> {reach}</span>
+                                                    <span className="reach" title="총 도달수"><MousePointerClickIcon size={12} /> {reach}</span>
                                                     <span className="divider">/</span>
-                                                    <span
-                                                        className={`conv ${conv ? 'has-conv' : ''}`}
-                                                        title="발주 전환 수"
-                                                        onClick={() => {
-                                                            if (conv) {
-                                                                setSelectedList(list)
-                                                                setShowOrdersModal(true)
-                                                            }
-                                                        }}
-                                                    >
-                                                        <FileTextIcon size={12} /> {conv}
-                                                    </span>
+                                                    <span className="conv"><FileTextIcon size={12} /> {conv}</span>
                                                 </div>
                                             </td>
-                                            <td>{list.createdAt?.toDate ? list.createdAt.toDate().toLocaleDateString() : '-'}</td>
+                                            <td>{list.updatedAt?.toDate ? list.updatedAt.toDate().toLocaleDateString() : '-'}</td>
                                             <td className="actions">
-                                                <button
-                                                    className="btn btn-ghost btn-sm"
-                                                    title="상세보기"
-                                                    onClick={() => {
-                                                        setSelectedList(list)
-                                                        setShowDetailModal(true)
-                                                    }}
-                                                >
+                                                <button className="btn btn-ghost btn-sm" title="상세보기" onClick={() => { setSelectedList(list); setShowDetailModal(true); }}>
                                                     <EyeIcon size={16} />
                                                 </button>
-                                                <button
-                                                    className="btn btn-ghost btn-sm text-primary"
-                                                    title="단가표 공유"
-                                                    onClick={() => handleShare(list)}
-                                                >
+                                                <button className="btn btn-ghost btn-sm text-primary" title="이 템플릿으로 견적 공유" onClick={() => handleShare(list)}>
                                                     <ExternalLinkIcon size={16} />
                                                 </button>
-                                                <button
-                                                    className="btn btn-ghost btn-sm"
-                                                    title="수정"
-                                                    onClick={() => handleOpenEditModal(list)}
-                                                >
+                                                <button className="btn btn-ghost btn-sm" title="템플릿 복제" onClick={() => handleDuplicate(list)}>
+                                                    <CopyIcon size={16} />
+                                                </button>
+                                                <button className="btn btn-ghost btn-sm" title="수정" onClick={() => handleOpenEditModal(list)}>
                                                     <EditIcon size={16} />
                                                 </button>
-                                                <button
-                                                    className="btn btn-ghost btn-sm danger"
-                                                    title="삭제"
-                                                    onClick={() => handleDelete(list.id)}
-                                                >
+                                                <button className="btn btn-ghost btn-sm danger" title="템플릿 삭제" onClick={() => handleDelete(list.id)}>
                                                     <TrashIcon size={16} />
                                                 </button>
                                             </td>
                                         </tr>
                                     )
                                 })}
+                        </tbody>
+                    </table>
+                ) : (
+                    <table className="product-table">
+                        <thead>
+                            <tr>
+                                <th>수신 고객/업체명</th>
+                                <th>원본 템플릿</th>
+                                <th>도달 / 상태</th>
+                                <th>발송일시</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {[
+                                ...priceLists.filter(l => l.shareTokenId).map(l => ({
+                                    id: l.id,
+                                    name: l.title,
+                                    templateName: '직속 공유',
+                                    reach: l.reachCount || 0,
+                                    status: l.conversionCount ? 'ORDERED' : 'SENT',
+                                    date: l.sharedAt || l.createdAt,
+                                    type: 'LEGACY',
+                                    token: l.shareTokenId
+                                })),
+                                ...orderSheets.filter(o => o.sourcePriceListId).map(o => ({
+                                    id: o.id,
+                                    name: o.customerName,
+                                    templateName: priceLists.find(l => l.id === o.sourcePriceListId)?.title || '삭제된 템플릿',
+                                    reach: o.reachCount || 0,
+                                    status: o.status === 'SENT' ? 'SENT' : 'ORDERED',
+                                    date: o.createdAt,
+                                    type: 'NEW',
+                                    token: o.inviteTokenId
+                                }))
+                            ].sort((a, b) => (b.date?.toMillis?.() || 0) - (a.date?.toMillis?.() || 0)).map(item => (
+                                <tr key={item.id}>
+                                    <td>
+                                        <div className="name-cell">
+                                            <strong>{item.name}</strong>
+                                            {item.type === 'LEGACY' && <span className="category-tag">이전방식</span>}
+                                        </div>
+                                    </td>
+                                    <td className="text-muted text-sm">{item.templateName}</td>
+                                    <td>
+                                        <div className="reach-stats">
+                                            <span className="reach"><MousePointerClickIcon size={12} /> {item.reach}</span>
+                                            <span className="divider">|</span>
+                                            <span className={`status-badge ${item.status === 'ORDERED' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'} text-[10px] font-bold px-2 py-0.5 rounded`}>
+                                                {item.status === 'ORDERED' ? '주문완료' : '확인중'}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td>{item.date?.toDate ? item.date.toDate().toLocaleString() : '-'}</td>
+                                    <td className="actions">
+                                        <button className="btn btn-ghost btn-sm" title="링크 복사" onClick={() => {
+                                            const link = `${window.location.origin}/price-view/${item.token}`;
+                                            navigator.clipboard.writeText(link);
+                                            showAlert('복사 완료', '견적서 링크가 복사되었습니다.');
+                                        }}>
+                                            <CopyIcon size={16} />
+                                        </button>
+                                        <button className="btn btn-ghost btn-sm danger" title="내역 삭제" onClick={() => {
+                                            if (item.type === 'LEGACY') handleDelete(item.id);
+                                            else {
+                                                showConfirm('내역 삭제', '발송 내역을 삭제하시겠습니까? (실제 주문서가 지워지지는 않습니다)', async () => {
+                                                    showAlert('참고', '발주서 삭제 기능은 발주 관리 메뉴를 이용해 주세요.');
+                                                });
+                                            }
+                                        }}>
+                                            <TrashIcon size={16} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 )}
