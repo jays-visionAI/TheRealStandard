@@ -22,6 +22,13 @@ export default function PriceListGuestView() {
     const [searchQuery, setSearchQuery] = useState('')
     const [countdown, setCountdown] = useState('')
 
+    // Scroll to top when modal opens
+    useEffect(() => {
+        if (showOrderModal) {
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+    }, [showOrderModal])
+
     // Countdown timer for validity period (5 days from sharedAt)
     useEffect(() => {
         if (!priceList) return
@@ -375,7 +382,7 @@ export default function PriceListGuestView() {
                                     <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Name</label>
                                     <input
                                         type="text"
-                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[12px] focus:ring-blue-500/5 px-8 py-10 rounded-3xl outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all"
+                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[15px] focus:ring-blue-500/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all shadow-sm"
                                         required
                                         placeholder="상호명을 입력하세요"
                                         value={orderForm.companyName}
@@ -386,7 +393,7 @@ export default function PriceListGuestView() {
                                     <label className="text-[13px] font-black text-slate-400 uppercase tracking-widest ml-2">Contact Number</label>
                                     <input
                                         type="tel"
-                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[12px] focus:ring-blue-500/5 px-8 py-10 rounded-3xl outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all"
+                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[15px] focus:ring-blue-500/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all shadow-sm"
                                         required
                                         placeholder="010-0000-0000"
                                         value={orderForm.tel}
@@ -397,7 +404,7 @@ export default function PriceListGuestView() {
                                     <label className="text-[13px] font-black text-slate-400 uppercase tracking-widest ml-2">Address (Optional)</label>
                                     <input
                                         type="text"
-                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[12px] focus:ring-blue-500/5 px-8 py-10 rounded-3xl outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all"
+                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[15px] focus:ring-blue-500/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all shadow-sm"
                                         placeholder="정확한 배송지를 입력해주세요"
                                         value={orderForm.address}
                                         onChange={e => setOrderForm({ ...orderForm, address: e.target.value })}
