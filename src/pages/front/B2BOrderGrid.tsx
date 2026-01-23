@@ -633,7 +633,7 @@ export default function B2BOrderGrid() {
             {/* Header */}
             <header className="order-header glass-card">
                 <div className="header-left">
-                    <h1><ClipboardListIcon size={24} /> {orderInfo.customerName} 주문서</h1>
+                    <h1><ClipboardListIcon size={24} /> {orderInfo.isGuest ? '비회원 발주서' : `${orderInfo.customerName} 주문서`}</h1>
                     <div className="order-meta">
                         <span className="meta-item">
                             <span className="meta-icon">📅</span>
@@ -658,11 +658,11 @@ export default function B2BOrderGrid() {
                 </div>
             )}
 
-            {/* Grid 안내 */}
+            {/* Grid 안내 - 상단 바 (토글 및 버튼만 유지) */}
             <div className="grid-guide glass-card flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                    <span className="guide-icon">💡</span>
-                    <span>상품명을 입력하면 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 품목으로 이동합니다.</span>
+                    <span className="guide-icon">📦</span>
+                    <span className="font-semibold">주문 품목 리스트</span>
                 </div>
 
                 <div className="order-unit-toggle flex items-center gap-3">
@@ -857,6 +857,12 @@ export default function B2BOrderGrid() {
                         </tr>
                     </tfoot>
                 </table>
+
+                {/* Grid 안내 - 하단으로 이동 */}
+                <div className="grid-footer-guide p-4 border-t border-slate-100 flex items-center gap-2 text-primary bg-blue-50/30">
+                    <span className="guide-icon">💡</span>
+                    <span className="text-sm">상품명을 입력하면 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 품목으로 이동합니다.</span>
+                </div>
             </div>
 
             {/* Customer Comment Section */}
@@ -873,28 +879,28 @@ export default function B2BOrderGrid() {
 
             {/* Guest Info Frame (ONLY for Guests) */}
             {orderInfo.isGuest && (
-                <div className="guest-info-container glass-card mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="section-title-sm mb-6 flex items-center gap-2">
-                        <span className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm">👤</span>
+                <div className="guest-info-container glass-card mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500 p-6">
+                    <div className="section-title-sm mb-4 flex items-center gap-2">
+                        <span className="text-blue-600">👤</span>
                         발주자 및 배송 정보
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <div>
-                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">성함 / 업체명</label>
+                                <label className="label">성함 / 업체명</label>
                                 <input
                                     type="text"
-                                    className="w-full bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 px-4 py-4 rounded-xl outline-none font-bold text-slate-900 transition-all"
-                                    placeholder="이름을 입력하세요"
+                                    className="input"
+                                    placeholder="성함 혹은 상호명을 입력하세요"
                                     value={guestInfo.name}
                                     onChange={e => setGuestInfo({ ...guestInfo, name: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">휴대전화번호</label>
+                                <label className="label">휴대전화번호</label>
                                 <input
                                     type="tel"
-                                    className="w-full bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 px-4 py-4 rounded-xl outline-none font-bold text-slate-900 transition-all"
+                                    className="input"
                                     placeholder="010-0000-0000"
                                     value={guestInfo.tel}
                                     onChange={e => setGuestInfo({ ...guestInfo, tel: e.target.value })}
@@ -903,11 +909,12 @@ export default function B2BOrderGrid() {
                         </div>
                         <div className="space-y-4">
                             <div>
-                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">배송주소 (선택)</label>
+                                <label className="label">배송주소 (선택)</label>
                                 <textarea
-                                    className="w-full bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 px-4 py-4 rounded-xl outline-none font-bold text-slate-900 transition-all resize-none"
-                                    placeholder="물건을 받으실 주소를 입력하세요"
+                                    className="input textarea"
+                                    placeholder="물건을 받으실 배송지 주소를 입력하세요"
                                     rows={4}
+                                    style={{ minHeight: '125px' }}
                                     value={guestInfo.address}
                                     onChange={e => setGuestInfo({ ...guestInfo, address: e.target.value })}
                                 />
