@@ -221,14 +221,14 @@ export default function PriceListGuestView() {
                 </div>
 
                 {/* Price Table Card */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-4">
-                    <div className="p-6 border-b border-slate-50 flex items-center gap-4">
-                        <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-center gap-3 focus-within:ring-4 focus-within:ring-blue-500/5 focus-within:border-blue-500 transition-all">
-                            <SearchIcon size={18} className="text-slate-300" />
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+                    <div className="p-6 border-b border-slate-100 bg-white">
+                        <div className="flex-1 bg-[#f8f9fc] border border-slate-200 rounded-xl px-5 py-4 flex items-center gap-4 focus-within:ring-4 focus-within:ring-blue-500/5 focus-within:border-blue-500 transition-all">
+                            <SearchIcon size={20} className="text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="품목명을 검색하세요"
-                                className="bg-transparent outline-none text-sm font-bold text-slate-900 w-full placeholder:text-slate-300"
+                                className="bg-transparent outline-none text-base font-bold text-slate-900 w-full placeholder:text-slate-400"
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                             />
@@ -238,11 +238,11 @@ export default function PriceListGuestView() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-slate-50/50">
-                                    <th className="px-6 py-4 text-[11px] font-black text-slate-400 uppercase tracking-wider">품목명</th>
-                                    <th className="px-4 py-4 text-[11px] font-black text-slate-400 uppercase tracking-wider text-center w-20">단위</th>
-                                    <th className="px-4 py-4 text-[11px] font-black text-blue-600 uppercase tracking-wider text-right w-28">냉장</th>
-                                    <th className="px-6 py-4 text-[11px] font-black text-slate-600 uppercase tracking-wider text-right w-28">냉동</th>
+                                <tr className="bg-[#f8f9fc] border-b border-slate-200/60">
+                                    <th className="px-8 py-5 text-sm font-medium text-slate-500">품목명</th>
+                                    <th className="px-4 py-5 text-sm font-medium text-slate-500 text-center w-24">단위</th>
+                                    <th className="px-6 py-5 text-sm font-medium text-slate-500 text-right w-32">냉장 단가</th>
+                                    <th className="px-8 py-5 text-sm font-medium text-slate-500 text-right w-32">냉동 단가</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -257,26 +257,26 @@ export default function PriceListGuestView() {
                                     const sortedGroups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
                                     return sortedGroups.length > 0 ? sortedGroups.map((group, idx) => (
-                                        <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-6 py-5">
-                                                <span className="text-sm font-bold text-slate-900">{group.name}</span>
+                                        <tr key={idx} className="group hover:bg-[#f8f9fc]/50 transition-colors">
+                                            <td className="px-8 py-6">
+                                                <span className="text-[15px] font-bold text-slate-900">{group.name}</span>
                                             </td>
-                                            <td className="px-4 py-5 text-center">
-                                                <span className="text-[11px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded uppercase">/kg</span>
+                                            <td className="px-4 py-6 text-center">
+                                                <span className="text-sm font-medium text-slate-500">/kg</span>
                                             </td>
-                                            <td className="px-4 py-5 text-right font-black text-blue-600 text-sm tabular-nums">
-                                                {group.refrigerated ? formatCurrency(group.refrigerated) : <span className="text-slate-200">-</span>}
+                                            <td className="px-6 py-6 text-right font-black text-blue-600 tabular-nums">
+                                                {group.refrigerated ? formatCurrency(group.refrigerated) : <span className="text-slate-200"> - </span>}
                                             </td>
-                                            <td className="px-6 py-5 text-right font-black text-slate-700 text-sm tabular-nums">
-                                                {group.frozen ? formatCurrency(group.frozen) : <span className="text-slate-200">-</span>}
+                                            <td className="px-8 py-6 text-right font-black text-slate-700 tabular-nums">
+                                                {group.frozen ? formatCurrency(group.frozen) : <span className="text-slate-200"> - </span>}
                                             </td>
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan={4} className="px-6 py-20 text-center">
+                                            <td colSpan={4} className="px-8 py-24 text-center">
                                                 <div className="flex flex-col items-center gap-3 text-slate-300">
-                                                    <SearchIcon size={32} />
-                                                    <p className="text-[13px] font-bold">검색 결과가 없습니다.</p>
+                                                    <SearchIcon size={40} />
+                                                    <p className="text-sm font-bold text-slate-400">검색 결과가 없습니다.</p>
                                                 </div>
                                             </td>
                                         </tr>
