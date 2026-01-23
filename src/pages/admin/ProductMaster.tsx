@@ -390,7 +390,14 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = `상품목록_${new Date().toISOString().split('T')[0]}.csv`
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
+        const hours = String(now.getHours()).padStart(2, '0')
+        const minutes = String(now.getMinutes()).padStart(2, '0')
+        const filename = `상품DB_${year}${month}${day}_${hours}${minutes}.csv`
+        link.download = filename
         link.click()
         URL.revokeObjectURL(url)
     }

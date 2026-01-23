@@ -406,7 +406,72 @@ export default function OrderReview() {
                                     </td>
                                     <td className="font-medium">{item.productName}</td>
                                     <td className="text-right">
-                                        {item.qtyRequested} {item.unit === 'box' ? 'Box' : 'Kg'}
+                                        <div className="qty-control" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                                            <button
+                                                type="button"
+                                                className="btn btn-xs btn-outline"
+                                                style={{ width: '28px', height: '28px', padding: 0, minWidth: 'unset' }}
+                                                onClick={() => {
+                                                    const currentQty = item.qtyRequested || 1
+                                                    if (currentQty <= 1) return
+                                                    const newItems = [...items]
+                                                    const newQty = currentQty - 1
+                                                    const kgPerUnit = currentQty > 0 && item.estimatedKg ? item.estimatedKg / currentQty : 1
+                                                    newItems[index] = {
+                                                        ...item,
+                                                        qtyRequested: newQty,
+                                                        estimatedKg: newQty * kgPerUnit,
+                                                        amount: newQty * kgPerUnit * item.unitPrice
+                                                    }
+                                                    setItems(newItems)
+                                                }}
+                                            >
+                                                -
+                                            </button>
+                                            <input
+                                                type="number"
+                                                className="input"
+                                                style={{ width: '60px', textAlign: 'center', padding: '4px 8px' }}
+                                                value={item.qtyRequested || 1}
+                                                min={1}
+                                                onChange={(e) => {
+                                                    const currentQty = item.qtyRequested || 1
+                                                    const newQty = Math.max(1, parseInt(e.target.value) || 1)
+                                                    const newItems = [...items]
+                                                    const kgPerUnit = currentQty > 0 && item.estimatedKg ? item.estimatedKg / currentQty : 1
+                                                    newItems[index] = {
+                                                        ...item,
+                                                        qtyRequested: newQty,
+                                                        estimatedKg: newQty * kgPerUnit,
+                                                        amount: newQty * kgPerUnit * item.unitPrice
+                                                    }
+                                                    setItems(newItems)
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn btn-xs btn-outline"
+                                                style={{ width: '28px', height: '28px', padding: 0, minWidth: 'unset' }}
+                                                onClick={() => {
+                                                    const currentQty = item.qtyRequested || 1
+                                                    const newItems = [...items]
+                                                    const newQty = currentQty + 1
+                                                    const kgPerUnit = currentQty > 0 && item.estimatedKg ? item.estimatedKg / currentQty : 1
+                                                    newItems[index] = {
+                                                        ...item,
+                                                        qtyRequested: newQty,
+                                                        estimatedKg: newQty * kgPerUnit,
+                                                        amount: newQty * kgPerUnit * item.unitPrice
+                                                    }
+                                                    setItems(newItems)
+                                                }}
+                                            >
+                                                +
+                                            </button>
+                                            <span style={{ marginLeft: '4px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                                                {item.unit === 'box' ? 'Box' : 'Kg'}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td className="text-right">{(item.estimatedKg || 0).toFixed(1)}</td>
                                     <td className="text-right">{formatCurrency(item.unitPrice)}</td>

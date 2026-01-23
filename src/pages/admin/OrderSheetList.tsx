@@ -27,6 +27,11 @@ export default function OrderSheetList() {
     const [filterStatus, setFilterStatus] = useState<OrderSheetStatus | 'ALL'>('ALL')
     const [searchTerm, setSearchTerm] = useState('')
 
+    // Delete confirmation modal state
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
+
     // Firebase에서 발주서 목록 로드
     const loadOrderSheets = async () => {
         try {
@@ -108,17 +113,30 @@ ${link}`
         }
     }
 
-    const handleDelete = async (id: string) => {
-        if (confirm('정말로 이 발주서를 삭제하시겠습니까?')) {
-            try {
-                await deleteOrderSheetFirebase(id)
-                await loadOrderSheets()
-                alert('삭제되었습니다.')
-            } catch (err) {
-                console.error('Delete failed:', err)
-                alert('삭제에 실패했습니다.')
-            }
+    const handleDelete = (id: string) => {
+        setDeleteTargetId(id)
+        setShowDeleteModal(true)
+    }
+
+    const confirmDelete = async () => {
+        if (!deleteTargetId) return
+        try {
+            setIsDeleting(true)
+            await deleteOrderSheetFirebase(deleteTargetId)
+            await loadOrderSheets()
+            setShowDeleteModal(false)
+            setDeleteTargetId(null)
+        } catch (err) {
+            console.error('Delete failed:', err)
+            alert('삭제에 실패했습니다.')
+        } finally {
+            setIsDeleting(false)
         }
+    }
+
+    const cancelDelete = () => {
+        setShowDeleteModal(false)
+        setDeleteTargetId(null)
     }
 
     // 로딩 상태
@@ -283,6 +301,44 @@ ${link}`
                     </table>
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="modal-backdrop" onClick={cancelDelete}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <TrashIcon size={20} color="#ef4444" />
+                                발주서 삭제
+                            </h3>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                                정말로 이 발주서를 삭제하시겠습니까?
+                            </p>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                                삭제된 발주서는 복구할 수 없습니다.
+                            </p>
+                        </div>
+                        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button
+                                className="btn btn-ghost"
+                                onClick={cancelDelete}
+                                disabled={isDeleting}
+                            >
+                                취소
+                            </button>
+                            <button
+                                className="btn btn-error"
+                                onClick={confirmDelete}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? '삭제 중...' : '삭제'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
