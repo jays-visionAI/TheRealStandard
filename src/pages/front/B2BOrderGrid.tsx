@@ -442,13 +442,24 @@ export default function B2BOrderGrid() {
             }
         } else if (field === 'qty' && e.key === 'Enter') {
             e.preventDefault()
-            const currentRow = rows.find(r => r.id === rowId)
-            if (currentRow && currentRow.productId && currentRow.quantity > 0) {
-                const currentIndex = rows.findIndex(r => r.id === rowId)
-                if (currentIndex === rows.length - 1) {
-                    addRow()
+            const currentIndex = rows.findIndex(r => r.id === rowId)
+
+            if (currentIndex === rows.length - 1) {
+                // Last row: add a new one (addRow automatically focuses the name field)
+                addRow()
+            } else {
+                const nextRow = rows[currentIndex + 1]
+                if (nextRow.productId) {
+                    // Next row has a product: focus its quantity field
+                    setTimeout(() => {
+                        const nextQtyInput = inputRefs.current.get(`qty-${nextRow.id}`)
+                        if (nextQtyInput) {
+                            nextQtyInput.focus()
+                            nextQtyInput.select()
+                        }
+                    }, 10)
                 } else {
-                    const nextRow = rows[currentIndex + 1]
+                    // Next row is empty: focus its name field
                     const nameInput = inputRefs.current.get(`name-${nextRow.id}`)
                     if (nameInput) nameInput.focus()
                 }
