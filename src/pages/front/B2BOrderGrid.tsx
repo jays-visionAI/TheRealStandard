@@ -504,10 +504,16 @@ export default function B2BOrderGrid() {
         try {
             setSaving(true)
 
+            const totalBoxesRows = vRows.reduce((sum, r) => sum + (r.unit === 'box' ? r.quantity : 0), 0)
+
             // 주문장 상태 업데이트
             const updatePayload: any = {
                 status: 'SUBMITTED',
                 customerComment: customerComment,
+                totalItems,
+                totalKg: totalWeight,
+                totalBoxes: totalBoxesRows,
+                totalAmount
             }
 
             if (orderInfo.isGuest) {

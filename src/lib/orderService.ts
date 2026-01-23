@@ -22,6 +22,10 @@ export interface FirestoreOrderSheet {
     sourcePriceListId?: string // 유입된 단가표 ID
     validUntil?: Timestamp | null // 견적/단가표 유효기간
     reachCount?: number // 도달 수
+    totalItems?: number
+    totalKg?: number
+    totalBoxes?: number
+    totalAmount?: number
     createdAt: Timestamp
     updatedAt: Timestamp
 }

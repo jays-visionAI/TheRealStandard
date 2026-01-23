@@ -549,6 +549,10 @@ export default function PriceListManager() {
                                 <th>수신 고객/업체명</th>
                                 <th>원본 템플릿</th>
                                 <th>도달 / 상태</th>
+                                <th className="text-right">품목수</th>
+                                <th className="text-right">무게수 (kg)</th>
+                                <th className="text-right">박스수</th>
+                                <th className="text-right">금액</th>
                                 <th>발송일시</th>
                                 <th>관리</th>
                             </tr>
@@ -563,7 +567,13 @@ export default function PriceListManager() {
                                     status: l.conversionCount ? 'ORDERED' : 'SENT',
                                     date: l.sharedAt || l.createdAt,
                                     type: 'LEGACY',
-                                    token: l.shareTokenId
+                                    token: l.shareTokenId,
+                                    stats: {
+                                        items: l.items.length,
+                                        kg: 0,
+                                        boxes: 0,
+                                        amount: 0
+                                    }
                                 })),
                                 ...orderSheets.filter(o => o.sourcePriceListId).map(o => ({
                                     id: o.id,
@@ -573,7 +583,13 @@ export default function PriceListManager() {
                                     status: o.status === 'SENT' ? 'SENT' : 'ORDERED',
                                     date: o.createdAt,
                                     type: 'NEW',
-                                    token: o.inviteTokenId
+                                    token: o.inviteTokenId,
+                                    stats: {
+                                        items: o.totalItems || 0,
+                                        kg: o.totalKg || 0,
+                                        boxes: o.totalBoxes || 0,
+                                        amount: o.totalAmount || 0
+                                    }
                                 }))
                             ].sort((a, b) => (b.date?.toMillis?.() || 0) - (a.date?.toMillis?.() || 0)).map(item => (
                                 <tr key={item.id}>
@@ -593,6 +609,10 @@ export default function PriceListManager() {
                                             </span>
                                         </div>
                                     </td>
+                                    <td className="text-right">{item.stats.items}</td>
+                                    <td className="text-right">{item.stats.kg > 0 ? formatCurrency(item.stats.kg) : '-'}</td>
+                                    <td className="text-right">{item.stats.boxes > 0 ? item.stats.boxes : '-'}</td>
+                                    <td className="text-right"><strong>{item.stats.amount > 0 ? `₩${formatCurrency(item.stats.amount)}` : '-'}</strong></td>
                                     <td>{item.date?.toDate ? item.date.toDate().toLocaleString() : '-'}</td>
                                     <td className="actions">
                                         <button className="btn btn-ghost btn-sm" title="링크 복사" onClick={() => {
