@@ -148,10 +148,10 @@ export default function PriceListGuestView() {
             {/* Subtle top accent bar */}
             <div className="h-1.5 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 max-w-[900px] mx-auto" />
 
-            {/* Main Document Container */}
-            <div className="max-w-[900px] mx-auto">
+            {/* Main Document Container with Frame */}
+            <div className="max-w-[940px] mx-auto p-1.5 md:p-3 bg-slate-300 rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-slate-400/50">
                 {/* Document Card - Premium Paper Effect */}
-                <div className="bg-white shadow-[0_8px_60px_-12px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden">
+                <div className="bg-white rounded-[1.8rem] md:rounded-[2.8rem] shadow-inner overflow-hidden border border-white">
 
                     {/* Document Header */}
                     <div className="px-8 pt-12 pb-8 md:px-12 md:pt-16 md:pb-10 border-b-2 border-slate-900">
