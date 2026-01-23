@@ -330,32 +330,32 @@ export default function PriceListGuestView() {
                 </div>
             </div>
 
-            {/* Supplier Info Section (Absolute Bottom for Main View) */}
-            <SupplierInfo />
-
             {/* Sticky Floating Action Button (FAB) */}
             {!isExpired && (
                 <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-full max-w-[800px] px-6 z-[60] pointer-events-none">
                     <button
-                        className="w-full h-24 bg-[#FFDB00] border-4 border-slate-900 shadow-[0_30px_60px_-15px_rgba(255,219,0,0.5)] text-slate-900 font-black rounded-[2.5rem] flex items-center justify-center gap-4 transition-all active:scale-95 pointer-events-auto text-2xl"
+                        className="w-full h-28 bg-[#FFDB00] border-4 border-slate-900 shadow-[0_30px_60px_-15px_rgba(255,219,0,0.5)] text-slate-900 font-black rounded-[3rem] flex items-center justify-center gap-4 transition-all active:scale-95 pointer-events-auto text-4xl"
                         onClick={() => setShowOrderModal(true)}
                     >
-                        <span>주문 컨펌 및 승인 요청</span>
-                        <SendIcon size={28} className="w-7 h-7" />
+                        <span>주문하기</span>
+                        <SendIcon size={32} className="w-8 h-8" />
                     </button>
                 </div>
             )}
+
+            {/* Main View Supplier Info (Only show when modal is closed) */}
+            {!showOrderModal && <SupplierInfo />}
 
             {/* Modal - Full Screen Scrollable Style */}
             {showOrderModal && (
                 <div className="fixed inset-0 z-[100] bg-[#f8f9fc] animate-in fade-in duration-300 overflow-y-auto">
                     <div className="min-h-screen py-12 px-6">
-                        <div className="max-w-[500px] mx-auto">
-                            <div className="bg-white rounded-[40px] shadow-2xl border border-slate-100 overflow-hidden mb-12 animate-in zoom-in duration-300">
+                        <div className="max-w-[600px] mx-auto">
+                            <div className="bg-white rounded-[50px] shadow-2xl border border-slate-100 overflow-hidden mb-12 animate-in zoom-in duration-300">
                                 <div className="p-10 md:p-14">
-                                    <div className="mb-10 text-center">
-                                        <h3 className="text-3xl font-black text-slate-900">업체 정보 입력</h3>
-                                        <p className="text-sm text-slate-400 font-bold mt-2 leading-relaxed">주문서 작성을 위해 귀사의 정보를 <br />한 번 더 확인해 주세요.</p>
+                                    <div className="mb-12 text-center">
+                                        <h3 className="text-4xl font-black text-slate-900">업체 정보 입력</h3>
+                                        <p className="text-base text-slate-400 font-bold mt-4 leading-relaxed">주문서 작성을 위해 귀사의 정보를 <br />한 번 더 확인해 주세요.</p>
                                     </div>
 
                                     <form onSubmit={handleStartOrder} className="space-y-6">
@@ -392,23 +392,23 @@ export default function PriceListGuestView() {
                                             />
                                         </div>
 
-                                        <div className="pt-8 flex gap-4">
-                                            <button type="button" className="flex-[3] h-20 rounded-3xl font-black text-slate-400 border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-center text-xl" onClick={() => setShowOrderModal(false)}>취소</button>
+                                        <div className="pt-12 flex flex-col gap-6">
                                             <button
                                                 type="submit"
-                                                className="flex-[7] h-24 bg-[#6366F1] text-white font-black rounded-[2.5rem] hover:bg-[#4F46E5] shadow-[0_25px_50px_-12px_rgba(99,102,241,0.5)] transition-all active:scale-95 disabled:opacity-50 text-2xl"
+                                                className="w-full h-28 bg-[#6366F1] text-white font-black rounded-[3rem] hover:bg-[#4F46E5] shadow-[0_25px_50px_-12px_rgba(99,102,241,0.5)] transition-all active:scale-95 disabled:opacity-50 text-3xl"
                                                 disabled={submitting}
                                             >
                                                 {submitting ? '생성 중...' : '다음 단계로'}
                                             </button>
+                                            <button type="button" className="w-full h-24 rounded-[2.5rem] font-black text-slate-400 border-2 border-slate-100 hover:bg-slate-50 active:scale-95 transition-all text-center text-2xl" onClick={() => setShowOrderModal(false)}>취소</button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Supplier Info at the bottom of the form as well */}
-                        <div className="mt-12">
+                        {/* Supplier Info at the absolute bottom of the scrollable modal */}
+                        <div className="mt-20">
                             <SupplierInfo />
                         </div>
                     </div>
