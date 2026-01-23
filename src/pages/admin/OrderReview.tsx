@@ -120,23 +120,42 @@ export default function OrderReview() {
         newItems[index] = item
         setItems(newItems)
     }
-
-    const getChangeSummary = () => {
-        const changes: string[] = []
-        items.forEach(item => {
-            const original = originalItems.find(oi => oi.productId === item.productId)
-            if (!original) { changes.push(`[추가] ${item.productName}`) }
-            else {
-                if (original.qtyRequested !== item.qtyRequested) changes.push(`${item.productName}: 수량 (${original.qtyRequested} -> ${item.qtyRequested}${item.unit.toUpperCase()})`)
-                if (original.unitPrice !== item.unitPrice) changes.push(`${item.productName}: 단가 (${formatCurrency(original.unitPrice)} -> ${formatCurrency(item.unitPrice)})`)
-            }
+    // Enhanced Change Detection & AI Narrative Generation
+    const getAISummary = () => {
+        const added = items.filter(i => !originalItems.find(oi => oi.productId === i.productId))
+        const removed = originalItems.filter(oi => !items.find(i => i.productId === oi.productId))
+        const modified = items.filter(i => {
+            const oi = originalItems.find(orig => orig.productId === i.productId)
+            return oi && (oi.qtyRequested !== i.qtyRequested || oi.unitPrice !== i.unitPrice || oi.estimatedKg !== i.estimatedKg)
         })
-        originalItems.forEach(original => { if (!items.find(i => i.productId === original.productId)) changes.push(`[삭제] ${original.productName}`) })
-        return changes
+
+        if (added.length === 0 && removed.length === 0 && modified.length === 0) return null
+
+        let summaryRows: string[] = []
+
+        // Narrative construction
+        if (added.length > 0) summaryRows.push(`신규 품목 ${added.length}건(${added.map(a => a.productName).join(', ')})이 추가되었습니다.`)
+        if (removed.length > 0) summaryRows.push(`기존 품목 ${removed.length}건(${removed.map(r => r.productName).join(', ')})이 삭제되었습니다.`)
+
+        modified.forEach(item => {
+            const oi = originalItems.find(orig => orig.productId === item.productId)!
+            let detail = `${item.productName}: `
+            const changes = []
+            if (oi.qtyRequested !== item.qtyRequested) changes.push(`주문수량(${oi.qtyRequested}${oi.unit.toUpperCase()} → ${item.qtyRequested}${item.unit.toUpperCase()})`)
+            if (oi.estimatedKg !== item.estimatedKg) changes.push(`중량(${oi.estimatedKg}kg → ${item.estimatedKg}kg)`)
+            if (oi.unitPrice !== item.unitPrice) changes.push(`단가(${formatCurrency(oi.unitPrice)} → ${formatCurrency(item.unitPrice)})`)
+            summaryRows.push(detail + changes.join(', ') + "로 변경되었습니다.")
+        })
+
+        return {
+            title: "발주서 변경 내역 AI 분석 결과",
+            paragraphs: summaryRows,
+            sentence: `총 ${added.length + modified.length}건의 품목이 조정되었으며, ${removed.length}건이 제외되었습니다. 전체 금액은 기존 ${formatCurrency(originalItems.reduce((s, i) => s + (i.amount || 0), 0))}에서 ${formatCurrency(totalAmount)}로 조정되었습니다.`
+        }
     }
 
-    const changeLogs = getChangeSummary()
-    const hasChanges = changeLogs.length > 0
+    const aiSummary = getAISummary()
+    const hasChanges = !!aiSummary
 
     const handleConfirm = async () => {
         if (!orderSheet) return
@@ -360,6 +379,7 @@ export default function OrderReview() {
                                 <td className="font-semibold">소계</td>
                                 <td className="text-right font-semibold">{totalKg.toFixed(1)} kg</td>
                                 <td></td>
+                                <td className="text-right"></td>
                                 <td className="text-right font-semibold">
                                     {formatCurrency(totalAmount)}
                                 </td>
@@ -369,6 +389,7 @@ export default function OrderReview() {
                                 <td className="font-semibold text-warning">할인금액</td>
                                 <td></td>
                                 <td></td>
+                                <td className="text-right"></td>
                                 <td className="text-right">
                                     <div className="discount-input-wrapper">
                                         <span className="minus-sign">-</span>
@@ -387,6 +408,7 @@ export default function OrderReview() {
                                 <td></td>
                                 <td colSpan={2} className="font-bold text-lg">최종 결제금액</td>
                                 <td></td>
+                                <td className="text-right"></td>
                                 <td className="text-right font-bold gradient-text text-xl">
                                     {formatCurrency(finalTotal)}
                                 </td>
@@ -400,29 +422,35 @@ export default function OrderReview() {
             {hasChanges && (
                 <div className="glass-card mb-4 overflow-hidden border-blue-200/50 bg-blue-50/10">
                     <div className="grid grid-cols-1 md:grid-cols-2">
-                        <div className="p-6 border-r border-slate-100">
-                            <h4 className="text-sm font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <span className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-[10px]">✨</span>
-                                AI 자동 분석: 품목 변경내역
+                        <div className="p-8 border-r border-slate-100">
+                            <h4 className="text-sm font-black text-blue-600 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <span className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs">✨</span>
+                                {aiSummary.title}
                             </h4>
-                            <div className="space-y-2">
-                                {changeLogs.map((log, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 text-sm text-slate-600 font-bold">
-                                        <span className="w-1 h-1 bg-blue-400 rounded-full"></span>
-                                        {log}
+                            <div className="space-y-4">
+                                {aiSummary.paragraphs.map((line, idx) => (
+                                    <div key={idx} className="flex items-start gap-3 text-sm text-slate-700 leading-relaxed font-bold">
+                                        <span className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 shrink-0"></span>
+                                        {line}
                                     </div>
                                 ))}
                             </div>
+                            <div className="mt-8 pt-6 border-t border-blue-100/50 text-sm italic text-blue-500 font-medium">
+                                💡 {aiSummary.sentence}
+                            </div>
                         </div>
-                        <div className="p-6 bg-white/40">
-                            <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">변경 사유 (필수 기입)</h4>
+                        <div className="p-8 bg-white/40">
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">변경 사유 (필수 기입)</h4>
+                            </div>
                             <textarea
-                                className="w-full bg-white border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 rounded-xl p-4 text-sm font-bold outline-none transition-all placeholder:text-slate-300"
-                                placeholder="고객에게 안내할 품목 변경 또는 단가 조정 사유를 입력하세요."
-                                rows={3}
+                                className="w-full bg-white border border-slate-200 focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 rounded-[1.5rem] p-6 text-[15px] font-bold outline-none transition-all placeholder:text-slate-300 resize-none"
+                                placeholder="고객에게 안내할 품목 변경 또는 단가 조정 사유를 명확히 기입해주세요."
+                                rows={6}
                                 value={changeReason}
                                 onChange={e => setChangeReason(e.target.value)}
                             />
+                            <p className="mt-4 text-xs text-slate-400 font-medium ml-2">※ 입력하신 사유는 고객의 발주서 상단 알림에 자동으로 표시됩니다.</p>
                         </div>
                     </div>
                 </div>
