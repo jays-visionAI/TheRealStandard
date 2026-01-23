@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { ClipboardListIcon, UserIcon } from '../../components/Icons'
+import { ClipboardListIcon, UserIcon, TrashIcon } from '../../components/Icons'
 import { getOrderSheetByToken, getOrderSheetItems, updateOrderSheet, setOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import { getUserById } from '../../lib/userService'
@@ -1025,7 +1025,7 @@ export default function B2BOrderGrid() {
                                         }}
                                         title="행 삭제"
                                     >
-                                        🗑
+                                        <TrashIcon size={18} />
                                     </button>
                                 </td>
                             </tr>
@@ -1051,7 +1051,7 @@ export default function B2BOrderGrid() {
 
                 {/* Grid 안내 - 하단으로 이동 */}
                 <div className="grid-footer-guide p-4 border-t border-slate-100 flex items-center gap-2 text-primary bg-blue-50/30">
-                    <span className="guide-icon">💡</span>
+                    <span className="guide-icon"><ClipboardListIcon size={14} /></span>
                     <span className="text-sm">상품명을 입력하면 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 품목으로 이동합니다.</span>
                 </div>
             </div>
@@ -1072,7 +1072,7 @@ export default function B2BOrderGrid() {
             {orderInfo.isGuest && (
                 <div className="guest-info-container glass-card mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500 p-6">
                     <div className="section-title-sm mb-4 flex items-center gap-2">
-                        <span className="text-blue-600">👤</span>
+                        <span className="text-blue-600"><UserIcon size={16} /></span>
                         발주자 및 배송 정보
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1191,8 +1191,7 @@ export default function B2BOrderGrid() {
                                     className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold transition-colors shadow-lg shadow-blue-500/20"
                                     onClick={() => {
                                         setShowSignupModal(false)
-                                        // Navigate to signup or show signup form
-                                        alert('담당자가 회원가입 링크를 SMS로 발송해 드립니다.')
+                                        navigate('/signup')
                                     }}
                                 >
                                     정식 거래처 등록 신청하기

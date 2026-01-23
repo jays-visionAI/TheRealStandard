@@ -35,6 +35,7 @@ interface AuthContextType {
     isWarehouse: boolean
     isAccounting: boolean
     updateUserPassword: (newPassword: string) => Promise<void>
+    signup: (email: string, password: string, name: string, businessData?: BusinessProfile) => Promise<User>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -324,6 +325,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }
 
+    const signup: AuthContextType['signup'] = async (email, password, name, businessData) => {
+        const normalizedEmail = email.toLowerCase().trim()
+        try {
+            // 1. Firebase Auth 계정 생성
+            const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password)
+            console.log('Signup Auth success:', userCredential.user.uid)
+
+            // 2. Firestore 사용자 정보 생성 (기본 role: CUSTOMER, status: PENDING)
+            const newUser = await createUser({
+                email: normalizedEmail,
+                name: name,
+                role: 'CUSTOMER',
+                status: 'PENDING',
+                firebaseUid: userCredential.user.uid,
+                business: businessData
+            })
+
+            return {
+                id: newUser.id,
+                email: newUser.email,
+                name: newUser.name,
+                role: newUser.role as UserRole,
+                orgId: newUser.id,
+                firebaseUid: userCredential.user.uid,
+                business: newUser.business
+            }
+        } catch (error: any) {
+            console.error('Signup error:', error)
+            if (error.code === 'auth/email-already-in-use') {
+                throw new Error('이미 사용 중인 이메일입니다.')
+            }
+            throw error
+        }
+    }
+
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'OPS'
     const isCustomer = user?.role === 'CUSTOMER'
     const isWarehouse = user?.role === 'WAREHOUSE'
@@ -344,6 +380,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 isWarehouse,
                 isAccounting,
                 updateUserPassword,
+                signup,
             }}
         >
             {children}

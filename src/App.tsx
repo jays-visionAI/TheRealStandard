@@ -7,6 +7,7 @@ import ProtectedRoute, { PublicRoute } from './components/ProtectedRoute'
 // Auth Pages
 import LandingPage from './pages/LandingPage'
 import Login from './pages/auth/Login'
+import Signup from './pages/auth/Signup'
 import InviteActivation from './pages/auth/InviteActivation'
 
 // Workflow Pages (ADMIN - v1.0)
@@ -85,6 +86,7 @@ function App() {
                     {/* Public Routes */}
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+                    <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
                     <Route path="/order-sheet/:token" element={<OrderSheetView />} />
                     <Route path="/purchase-order/:token" element={<PurchaseOrderView />} />
                     <Route path="/dispatch/:token" element={<DispatchView />} />
