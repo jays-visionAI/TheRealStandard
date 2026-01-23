@@ -474,7 +474,25 @@ export default function OrderReview() {
                                         </div>
                                     </td>
                                     <td className="text-right">{(item.estimatedKg || 0).toFixed(1)}</td>
-                                    <td className="text-right">{formatCurrency(item.unitPrice)}</td>
+                                    <td className="text-right">
+                                        <input
+                                            type="number"
+                                            className="input"
+                                            style={{ width: '100px', textAlign: 'right', padding: '4px 8px' }}
+                                            value={item.unitPrice}
+                                            min={0}
+                                            onChange={(e) => {
+                                                const newPrice = Math.max(0, parseInt(e.target.value) || 0)
+                                                const newItems = [...items]
+                                                newItems[index] = {
+                                                    ...item,
+                                                    unitPrice: newPrice,
+                                                    amount: (item.estimatedKg || 0) * newPrice
+                                                }
+                                                setItems(newItems)
+                                            }}
+                                        />
+                                    </td>
                                     <td className="text-right font-semibold">{formatCurrency(item.amount || 0)}</td>
                                 </tr>
                             ))}
