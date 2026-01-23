@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { UserIcon, BuildingIcon, MailIcon, KeyIcon, PhoneIcon, MapPinIcon, CheckCircleIcon, ClipboardListIcon } from '../../components/Icons'
 import { LogoSmall } from '../../components/Logo'
@@ -9,16 +9,19 @@ export default function Signup() {
     const navigate = useNavigate()
     const { signup } = useAuth()
 
+    const location = useLocation()
+    const prefillData = location.state || {}
+
     const [formData, setFormData] = useState({
         email: '',
         password: '',
         confirmPassword: '',
-        name: '',
-        companyName: '',
-        bizRegNo: '',
-        ceoName: '',
-        phone: '',
-        address: ''
+        name: prefillData.name || '',
+        companyName: prefillData.companyName || prefillData.name || '',
+        bizRegNo: prefillData.bizRegNo || '',
+        ceoName: prefillData.ceoName || '',
+        phone: prefillData.phone || prefillData.tel || '',
+        address: prefillData.address || prefillData.shipAddress || ''
     })
 
     const [error, setError] = useState('')
