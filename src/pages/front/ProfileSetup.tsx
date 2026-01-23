@@ -72,7 +72,8 @@ export default function ProfileSetup() {
 
             // 성공 후 대시보드로 이동
             alert('비즈니스 프로필이 저장되었습니다.')
-            navigate('/order/dashboard')
+            // AuthContext 상태 갱신을 위해 전체 페이지 리로드
+            window.location.href = '/order/dashboard'
         } catch (err) {
             console.error('Save failed:', err)
             alert('저장에 실패했습니다. 다시 시도해주세요.')
