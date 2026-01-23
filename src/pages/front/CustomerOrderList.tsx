@@ -294,20 +294,40 @@ export default function CustomerOrderList() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {salesOrders.map(order => (
-                                    <tr key={order.id} onClick={() => navigate(isHistoryPage ? `/order/tracking?id=${order.id}` : '#')} style={{ cursor: isHistoryPage ? 'pointer' : 'default' }}>
-                                        <td>{formatDate(order.createdAt)}</td>
-                                        <td className="order-link-cell">#{order.id.slice(0, 8)}</td>
-                                        <td>
-                                            <span className="weight-text">{order.totalsKg.toFixed(1)} kg</span>
-                                        </td>
-                                        <td className="amount-text">₩{order.totalsAmount.toLocaleString()}</td>
-                                        <td>
-                                            {getStatusBadge(order.status)}
-                                        </td>
-                                        <td className="text-right">{isHistoryPage && <ChevronRightIcon size={16} />}</td>
-                                    </tr>
-                                ))}
+                                {salesOrders.map(order => {
+                                    // Find matching order sheet to get token
+                                    // Heuristic: Match by customer and approximate timestamp, or just pick the latest confirmed one if simpler
+                                    const matchedSheet = orderSheets.find(s =>
+                                        s.status === 'CONFIRMED' &&
+                                        Math.abs((s.updatedAt?.seconds || 0) - (order.createdAt?.seconds || 0)) < 86400 // Within 24 hours
+                                    );
+
+                                    return (
+                                        <tr
+                                            key={order.id}
+                                            onClick={() => {
+                                                if (matchedSheet && !isHistoryPage) {
+                                                    navigate(`/order/${matchedSheet.inviteTokenId}/confirm`)
+                                                } else {
+                                                    navigate(`/order/tracking?id=${order.id}`)
+                                                }
+                                            }}
+                                            style={{ cursor: 'pointer' }}
+                                            className="hover:bg-slate-50/50 transition-colors"
+                                        >
+                                            <td>{formatDate(order.createdAt)}</td>
+                                            <td className="order-link-cell">#{order.id.slice(0, 8)}</td>
+                                            <td>
+                                                <span className="weight-text">{order.totalsKg.toFixed(1)} kg</span>
+                                            </td>
+                                            <td className="amount-text">₩{order.totalsAmount.toLocaleString()}</td>
+                                            <td>
+                                                {getStatusBadge(order.status)}
+                                            </td>
+                                            <td className="text-right"><ChevronRightIcon size={16} /></td>
+                                        </tr>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     ) : (
