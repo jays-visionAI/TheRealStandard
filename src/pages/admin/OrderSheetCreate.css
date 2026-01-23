@@ -448,8 +448,10 @@
     color: var(--text-muted);
 }
 
-.qty-input {
+.qty-input,
+.price-input {
     text-align: right;
+    font-weight: var(--font-semibold);
 }
 
 .qty-input-wrapper {

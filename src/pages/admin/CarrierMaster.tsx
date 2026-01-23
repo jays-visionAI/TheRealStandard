@@ -27,6 +27,8 @@ type CarrierVM = Omit<FirestoreUser, 'createdAt' | 'updatedAt'> & {
     phone: string
     email: string
     address: string
+    dispatcherName: string
+    dispatcherPhone: string
 }
 
 function toVM(user: FirestoreUser): CarrierVM {
@@ -40,6 +42,8 @@ function toVM(user: FirestoreUser): CarrierVM {
         phone: user.business?.tel || user.phone || '',
         email: user.email,
         address: user.business?.address || '',
+        dispatcherName: user.business?.dispatcherName || '',
+        dispatcherPhone: user.business?.dispatcherPhone || '',
     }
 }
 
@@ -148,13 +152,13 @@ export default function CarrierMaster() {
                 ceoName: carrierFormData.ceoName,
                 address: carrierFormData.address,
                 tel: carrierFormData.phone,
-                contactPerson: carrierFormData.contactPerson,
-                contactPhone: carrierFormData.contactPhone,
+                dispatcherName: carrierFormData.dispatcherName,
+                dispatcherPhone: carrierFormData.dispatcherPhone,
             }
 
             if (editingCarrier) {
                 await updateUserFirebase(editingCarrier.id, {
-                    name: carrierFormData.contactPerson || carrierFormData.companyName,
+                    name: carrierFormData.dispatcherName || carrierFormData.companyName,
                     email: carrierFormData.email,
                     status: carrierFormData.status,
                     business
@@ -162,7 +166,7 @@ export default function CarrierMaster() {
             } else {
                 await createUser({
                     email: carrierFormData.email,
-                    name: carrierFormData.contactPerson || carrierFormData.companyName,
+                    name: carrierFormData.dispatcherName || carrierFormData.companyName,
                     role: '3PL',
                     status: carrierFormData.status,
                     business
@@ -249,6 +253,8 @@ export default function CarrierMaster() {
                                 <div className="flex items-center gap-2 text-gray-600"><UserIcon size={14} /> <span>{activeCarrier.ceoName} (대표)</span></div>
                                 <div className="flex items-center gap-2 text-gray-600"><FileTextIcon size={14} /> <span>{activeCarrier.email}</span></div>
                                 <div className="flex items-center gap-2 text-gray-600"><PhoneIcon size={14} /> <span>{activeCarrier.phone}</span></div>
+                                <div className="flex items-center gap-2 text-blue-600 font-bold"><UserIcon size={14} /> <span>배차: {activeCarrier.dispatcherName || '(미지정)'}</span></div>
+                                <div className="flex items-center gap-2 text-blue-600 font-bold"><PhoneIcon size={14} /> <span>{activeCarrier.dispatcherPhone || '-'}</span></div>
                                 <div className="flex items-center gap-2 text-gray-600"><MapPinIcon size={14} /> <span className="line-clamp-1">{activeCarrier.address}</span></div>
                             </div>
                         </div>
@@ -303,6 +309,10 @@ export default function CarrierMaster() {
                                 <div className="form-group required"><label>사업자번호</label><input className="input" value={carrierFormData.bizRegNo || ''} onChange={e => setCarrierFormData({ ...carrierFormData, bizRegNo: e.target.value })} required /></div>
                                 <div className="form-group required"><label>대표자명</label><input className="input" value={carrierFormData.ceoName || ''} onChange={e => setCarrierFormData({ ...carrierFormData, ceoName: e.target.value })} required /></div>
                                 <div className="form-group required"><label>이메일</label><input className="input" type="email" value={carrierFormData.email || ''} onChange={e => setCarrierFormData({ ...carrierFormData, email: e.target.value })} required /></div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="form-group"><label>배차담당자</label><input className="input" value={carrierFormData.dispatcherName || ''} onChange={e => setCarrierFormData({ ...carrierFormData, dispatcherName: e.target.value })} placeholder="예: 홍길동 팀장" /></div>
+                                <div className="form-group"><label>담당자 연락처</label><input className="input" value={carrierFormData.dispatcherPhone || ''} onChange={e => setCarrierFormData({ ...carrierFormData, dispatcherPhone: e.target.value })} placeholder="예: 010-1234-5678" /></div>
                             </div>
                             <div className="form-group required"><label>주소</label><input className="input" value={carrierFormData.address || ''} onChange={e => setCarrierFormData({ ...carrierFormData, address: e.target.value })} required /></div>
                             <div className="modal-footer"><button type="submit" className="btn btn-primary">{isSubmitting ? '저장 중...' : '저장하기'}</button></div>

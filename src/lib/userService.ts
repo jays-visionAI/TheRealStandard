@@ -49,6 +49,8 @@ export interface BusinessProfile {
     // 배송업체 전용 (3PL)
     vehicleTypes?: string[]       // 보유 차량 유형
     serviceArea?: string[]        // 서비스 가능 지역
+    dispatcherName?: string       // 배차담당자
+    dispatcherPhone?: string      // 배차담당자 연락처
 }
 
 // ============ 통합 사용자 인터페이스 ============

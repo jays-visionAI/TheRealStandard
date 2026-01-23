@@ -66,6 +66,7 @@ import CustomerDashboard from './pages/front/CustomerDashboard'
 import CustomerOrderList from './pages/front/CustomerOrderList'
 import ProductCatalog from './pages/front/ProductCatalog'
 import ProfileSetup from './pages/front/ProfileSetup'
+import FleetManagement from './pages/front/FleetManagement'
 
 function App() {
     useEffect(() => {
@@ -210,8 +211,13 @@ function App() {
                         <Route path="catalog" element={<ProductCatalog />} />
                         <Route path="tracking" element={<DeliveryTracking />} />
                         <Route path="profile-setup" element={
-                            <ProtectedRoute allowedRoles={['CUSTOMER', 'ADMIN']}>
+                            <ProtectedRoute allowedRoles={['CUSTOMER', '3PL', 'ADMIN']}>
                                 <ProfileSetup />
+                            </ProtectedRoute>
+                        } />
+                        <Route path="fleet" element={
+                            <ProtectedRoute allowedRoles={['3PL', 'ADMIN']}>
+                                <FleetManagement />
                             </ProtectedRoute>
                         } />
 

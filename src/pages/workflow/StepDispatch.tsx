@@ -12,12 +12,14 @@ import './StepDispatch.css'
 import type { ReactNode } from 'react'
 import { Timestamp } from 'firebase/firestore'
 
-// 배차 프로세스의 단계
+import { getAll3PLUsers, type FirestoreUser } from '../../lib/userService'
+
+// 배차 프로세스의 단계 (3PL 요청 모드 포함)
 const DISPATCH_STEPS: { id: number; label: string; icon: ReactNode }[] = [
     { id: 1, label: '주문 확인', icon: <ClipboardListIcon size={20} /> },
-    { id: 2, label: '차량 선택', icon: <TruckDeliveryIcon size={20} /> },
-    { id: 3, label: '기사 배정', icon: <UserIcon size={20} /> },
-    { id: 4, label: '배차 완료', icon: <CheckCircleIcon size={20} /> },
+    { id: 2, label: '배차 방식 선택', icon: <TruckDeliveryIcon size={20} /> },
+    { id: 3, label: '정보 입력/요청', icon: <UserIcon size={20} /> },
+    { id: 4, label: '최종 확인', icon: <CheckCircleIcon size={20} /> },
 ]
 
 interface VehicleType {
@@ -26,19 +28,6 @@ interface VehicleType {
     capacityKg: number
     available: number
 }
-
-const vehicleTypes: VehicleType[] = [
-    { id: 'v1', name: '1.8톤', capacityKg: 1800, available: 3 },
-    { id: 'v2', name: '3.5톤', capacityKg: 3500, available: 2 },
-    { id: 'v3', name: '5톤', capacityKg: 5000, available: 1 },
-    { id: 'v4', name: '11톤', capacityKg: 11000, available: 1 },
-]
-
-const drivers = [
-    { id: 'd1', name: '김기사', phone: '010-1234-5678', vehicleNo: '서울12가3456' },
-    { id: 'd2', name: '이기사', phone: '010-2345-6789', vehicleNo: '경기34나7890' },
-    { id: 'd3', name: '박기사', phone: '010-3456-7890', vehicleNo: '서울56다1234' },
-]
 
 // 타입 정의
 type LocalSalesOrder = Omit<FirestoreSalesOrder, 'createdAt' | 'confirmedAt'> & {
@@ -59,11 +48,14 @@ export default function StepDispatch() {
     const [error, setError] = useState<string | null>(null)
 
     const [currentStep, setCurrentStep] = useState(1)
+    const [dispatchMode, setDispatchMode] = useState<'DIRECT' | '3PL'>('3PL')
+    const [carriers, setCarriers] = useState<FirestoreUser[]>([])
+    const [selectedCarrierId, setSelectedCarrierId] = useState<string | null>(null)
     const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null)
-    const [selectedDriver, setSelectedDriver] = useState<string | null>(null)
-    const [carrierName, setCarrierName] = useState('한국물류')
+    const [selectedDriver, setSelectedDriver] = useState<any>(null)
     const [etaTime, setEtaTime] = useState('14:00')
     const [saving, setSaving] = useState(false)
+    const [vTypes, setVTypes] = useState<VehicleType[]>([])
 
     // 모달 통보 전용 상태
     const [confirmConfig, setConfirmConfig] = useState<{
@@ -113,9 +105,10 @@ export default function StepDispatch() {
             setLoading(true)
             setError(null)
 
-            const [soData, itemsData] = await Promise.all([
+            const [soData, itemsData, carriersData] = await Promise.all([
                 getSalesOrderById(id),
-                getSalesOrderItems(id)
+                getSalesOrderItems(id),
+                getAll3PLUsers()
             ])
 
             if (soData) {
@@ -126,6 +119,15 @@ export default function StepDispatch() {
                 })
             }
             setSalesOrderItems(itemsData)
+            setCarriers(carriersData)
+
+            // Mock vehicle types for now if service not available
+            setVTypes([
+                { id: 'v1', name: '1.8톤', capacityKg: 1800, available: 3 },
+                { id: 'v2', name: '3.5톤', capacityKg: 3500, available: 2 },
+                { id: 'v3', name: '5톤', capacityKg: 5000, available: 1 },
+                { id: 'v4', name: '11톤', capacityKg: 11000, available: 1 },
+            ])
         } catch (err) {
             console.error('Failed to load data:', err)
             setError('데이터를 불러오는데 실패했습니다.')
@@ -151,16 +153,22 @@ export default function StepDispatch() {
         }))
     }
 
-    const recommendedVehicle = vehicleTypes.find(v => v.capacityKg >= order.totalKg) || vehicleTypes[vehicleTypes.length - 1]
+    const recommendedVehicle = vTypes.find(v => v.capacityKg >= order.totalKg) || vTypes[vTypes.length - 1]
 
     const handleNext = () => {
-        if (currentStep === 2 && !selectedVehicle) {
-            showAlert('선택 오류', '차량을 선택해주세요.', true)
+        if (currentStep === 2 && dispatchMode === '3PL' && !selectedCarrierId) {
+            showAlert('선택 오류', '배송업체를 선택해주세요.', true)
             return
         }
-        if (currentStep === 3 && !selectedDriver) {
-            showAlert('배정 오류', '기사를 배정해주세요.', true)
-            return
+        if (currentStep === 3) {
+            if (dispatchMode === 'DIRECT' && !selectedVehicle) {
+                showAlert('선택 오류', '차량을 선택해주세요.', true)
+                return
+            }
+            if (dispatchMode === 'DIRECT' && !selectedDriver) {
+                showAlert('배정 오류', '기사를 배정해주세요.', true)
+                return
+            }
         }
         if (currentStep < 4) {
             setCurrentStep(currentStep + 1)
@@ -168,8 +176,7 @@ export default function StepDispatch() {
     }
 
     const handleComplete = async () => {
-        const driver = drivers.find(d => d.id === selectedDriver)
-        const vehicle = vehicleTypes.find(v => v.id === selectedVehicle)
+        const vehicle = vTypes.find(v => v.id === selectedVehicle)
 
         if (!salesOrder) return
 
@@ -181,16 +188,20 @@ export default function StepDispatch() {
             const etaDate = new Date()
             etaDate.setHours(hours, minutes, 0, 0)
 
+            const carrier = carriers.find(c => c.id === selectedCarrierId)
+            const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+
             await createShipment({
                 sourceSalesOrderId: salesOrder.id,
-                vehicleTypeId: vehicle?.id,
-                driverName: driver?.name,
-                driverPhone: driver?.phone,
+                carrierOrgId: carrier?.id,
+                company: carrier?.business?.companyName || carrier?.name,
                 status: 'PREPARING',
+                dispatcherToken: token,
+                dispatchRequestedAt: Timestamp.now(),
                 etaAt: Timestamp.fromDate(etaDate),
             })
 
-            showAlert('배차 완료', `✅ 배차가 완료되었습니다!\n\n차량: ${vehicle?.name}\n기사: ${driver?.name}\n도착예정: ${etaTime}`)
+            showAlert('배차 요청 완료', `배송업체에 배차 요청을 성공적으로 보냈습니다.`)
             setTimeout(() => {
                 navigate('/admin/workflow')
             }, 1000)
@@ -248,7 +259,8 @@ export default function StepDispatch() {
                         </div>
                     </div>
                     <div className="order-weight">
-                        <span className="weight-value">{order.totalKg}</span>
+                        <span className="weight-label">총 배송 중량:</span>
+                        <span className="weight-value">{order.totalKg.toLocaleString()}</span>
                         <span className="weight-unit">kg</span>
                     </div>
                 </div>
@@ -281,7 +293,7 @@ export default function StepDispatch() {
 
                         <div className="info-cards">
                             <div className="info-card">
-                                <span className="info-icon">📅</span>
+                                <span className="info-icon"><ClipboardListIcon size={16} /></span>
                                 <div className="info-content">
                                     <span className="info-label">배송일</span>
                                     <span className="info-value">{order.shipDate}</span>
@@ -312,88 +324,99 @@ export default function StepDispatch() {
                     </section>
                 )}
 
-                {/* Step 2: 차량 선택 */}
+                {/* Step 2: 배차 방식 선택 */}
                 {currentStep === 2 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2><TruckDeliveryIcon size={20} /> 차량 선택</h2>
-                        <p className="section-desc">
-                            총 <strong>{order.totalKg}kg</strong>을 운송할 차량을 선택하세요.
-                            <span className="recommend-text">추천: {recommendedVehicle.name}</span>
-                        </p>
+                        <h2>배차 방식 선택</h2>
+                        <p className="section-desc">차량 및 기사를 직접 배정하거나, 배송업체(3PL)에 요청합니다.</p>
 
-                        <div className="vehicle-grid">
-                            {vehicleTypes.map(vehicle => {
-                                const isRecommended = vehicle.id === recommendedVehicle.id
-                                const isSelected = selectedVehicle === vehicle.id
-                                const isUnderCapacity = vehicle.capacityKg < order.totalKg
-
-                                return (
-                                    <div
-                                        key={vehicle.id}
-                                        className={`vehicle-card ${isSelected ? 'selected' : ''} ${isRecommended ? 'recommended' : ''} ${isUnderCapacity ? 'under-capacity' : ''}`}
-                                        onClick={() => !isUnderCapacity && setSelectedVehicle(vehicle.id)}
-                                    >
-                                        {isRecommended && <span className="recommend-badge">추천</span>}
-                                        <div className="vehicle-icon"><TruckDeliveryIcon size={32} /></div>
-                                        <div className="vehicle-name">{vehicle.name}</div>
-                                        <div className="vehicle-capacity">{vehicle.capacityKg.toLocaleString()} kg</div>
-                                        <div className="vehicle-available">가용: {vehicle.available}대</div>
-                                        {isUnderCapacity && <div className="capacity-warning">용량 부족</div>}
-                                    </div>
-                                )
-                            })}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                            <div
+                                className={`mode-card ${dispatchMode === '3PL' ? 'selected' : ''}`}
+                                onClick={() => setDispatchMode('3PL')}
+                            >
+                                <div className="mode-icon"><UserIcon size={32} /></div>
+                                <div className="mode-title">배송업체 요청</div>
+                                <p className="mode-desc">등록된 3PL 파트너사에게 배차 요청 링크를 보냅니다. 파트너사가 직접 차량/기사를 배정합니다.</p>
+                            </div>
+                            <div
+                                className={`mode-card ${dispatchMode === 'DIRECT' ? 'selected' : ''}`}
+                                onClick={() => setDispatchMode('DIRECT')}
+                            >
+                                <div className="mode-icon"><TruckDeliveryIcon size={32} /></div>
+                                <div className="mode-title">직접 배정</div>
+                                <p className="mode-desc">관리자가 차량과 기사를 즉시 직접 배정합니다. (회사 직영 또는 긴급 상황)</p>
+                            </div>
                         </div>
+
+                        {dispatchMode === '3PL' && (
+                            <div className="carrier-selection mt-8 animate-fade-in">
+                                <h3 className="mb-4">배송업체 선택</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {carriers.map(carrier => (
+                                        <div
+                                            key={carrier.id}
+                                            className={`carrier-card ${selectedCarrierId === carrier.id ? 'selected' : ''}`}
+                                            onClick={() => setSelectedCarrierId(carrier.id)}
+                                        >
+                                            <div className="carrier-info">
+                                                <span className="carrier-name">{carrier.business?.companyName || carrier.name}</span>
+                                                <span className="carrier-contact">{carrier.business?.dispatcherName || carrier.business?.ceoName} | {carrier.business?.dispatcherPhone || carrier.business?.tel}</span>
+                                            </div>
+                                            {selectedCarrierId === carrier.id && <div className="check">✓</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </section>
                 )}
 
-                {/* Step 3: 기사 배정 */}
+                {/* Step 3: 정보 입력/요청 */}
                 {currentStep === 3 && (
                     <section className="step-section glass-card animate-fade-in">
-                        <h2><UserIcon size={20} /> 기사 배정</h2>
-                        <p className="section-desc">배송을 담당할 기사를 배정합니다.</p>
-
-                        <div className="form-group mb-4">
-                            <label className="label">배송업체</label>
-                            <input
-                                type="text"
-                                className="input"
-                                value={carrierName}
-                                onChange={(e) => setCarrierName(e.target.value)}
-                            />
-                        </div>
-
-                        <h3 className="mb-3">기사 선택</h3>
-                        <div className="driver-list">
-                            {drivers.map(driver => (
-                                <div
-                                    key={driver.id}
-                                    className={`driver-card ${selectedDriver === driver.id ? 'selected' : ''}`}
-                                    onClick={() => setSelectedDriver(driver.id)}
-                                >
-                                    <div className="driver-avatar">
-                                        {driver.name.charAt(0)}
+                        {dispatchMode === '3PL' ? (
+                            <>
+                                <h2>배차 요청 확인</h2>
+                                <p className="section-desc">지정된 업체에 배송품목 리스트와 배차 요청이 전달됩니다.</p>
+                                <div className="request-preview mt-6 p-6 bg-blue-50 rounded-xl">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-sm font-bold text-blue-800">요청 대상 업체</span>
+                                        <span className="text-lg font-bold text-blue-600">{carriers.find(c => c.id === selectedCarrierId)?.business?.companyName}</span>
                                     </div>
-                                    <div className="driver-info">
-                                        <span className="driver-name">{driver.name}</span>
-                                        <span className="driver-phone">{driver.phone}</span>
-                                        <span className="driver-vehicle">{driver.vehicleNo}</span>
+                                    <div className="space-y-4">
+                                        <div className="form-group">
+                                            <label className="label">도착 요청 일시</label>
+                                            <input type="time" className="input" value={etaTime} onChange={e => setEtaTime(e.target.value)} />
+                                        </div>
+                                        <p className="text-xs text-gray-400 font-medium">* 요청 시 업체 담당자에게 실시간 알림과 전용 링크가 발송됩니다.</p>
                                     </div>
-                                    {selectedDriver === driver.id && (
-                                        <div className="selected-check">✓</div>
-                                    )}
                                 </div>
-                            ))}
-                        </div>
-
-                        <div className="form-group mt-6">
-                            <label className="label">예상 도착 시간</label>
-                            <input
-                                type="time"
-                                className="input"
-                                value={etaTime}
-                                onChange={(e) => setEtaTime(e.target.value)}
-                            />
-                        </div>
+                            </>
+                        ) : (
+                            <>
+                                <h2>직접 배정 정보 입력</h2>
+                                <p className="section-desc">차량과 기사 정보를 직접 입력하세요.</p>
+                                {/* Legacy direct assignment UI can go here if needed, or simplified for this MVP */}
+                                <div className="space-y-4 mt-6">
+                                    <div className="form-group">
+                                        <label className="label">차량 종류</label>
+                                        <select className="input" value={selectedVehicle || ''} onChange={e => setSelectedVehicle(e.target.value)}>
+                                            <option value="">선택하세요</option>
+                                            {vTypes.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="label">기사 성함</label>
+                                        <input type="text" className="input" onChange={e => setSelectedDriver({ ...selectedDriver, name: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="label">기사 연락처</label>
+                                        <input type="text" className="input" onChange={e => setSelectedDriver({ ...selectedDriver, phone: e.target.value })} />
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </section>
                 )}
 
@@ -405,27 +428,28 @@ export default function StepDispatch() {
 
                         <div className="summary-card">
                             <div className="summary-row">
-                                <span className="summary-label">고객</span>
-                                <span className="summary-value">{order.customerName}</span>
+                                <span className="summary-label">배차 방식</span>
+                                <span className="summary-value font-bold">{dispatchMode === '3PL' ? '배송업체(3PL) 요청' : '직접 배정'}</span>
                             </div>
+                            {dispatchMode === '3PL' ? (
+                                <div className="summary-row">
+                                    <span className="summary-label">요청 업체</span>
+                                    <span className="summary-value font-bold text-blue-600">{carriers.find(c => c.id === selectedCarrierId)?.business?.companyName}</span>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="summary-row">
+                                        <span className="summary-label">차량</span>
+                                        <span className="summary-value">{vTypes.find(v => v.id === selectedVehicle)?.name}</span>
+                                    </div>
+                                    <div className="summary-row">
+                                        <span className="summary-label">기사</span>
+                                        <span className="summary-value">{selectedDriver?.name}</span>
+                                    </div>
+                                </>
+                            )}
                             <div className="summary-row">
-                                <span className="summary-label">차량</span>
-                                <span className="summary-value">{vehicleTypes.find(v => v.id === selectedVehicle)?.name}</span>
-                            </div>
-                            <div className="summary-row">
-                                <span className="summary-label">기사</span>
-                                <span className="summary-value">{drivers.find(d => d.id === selectedDriver)?.name}</span>
-                            </div>
-                            <div className="summary-row">
-                                <span className="summary-label">차량번호</span>
-                                <span className="summary-value">{drivers.find(d => d.id === selectedDriver)?.vehicleNo}</span>
-                            </div>
-                            <div className="summary-row">
-                                <span className="summary-label">연락처</span>
-                                <span className="summary-value">{drivers.find(d => d.id === selectedDriver)?.phone}</span>
-                            </div>
-                            <div className="summary-row">
-                                <span className="summary-label">도착예정</span>
+                                <span className="summary-label">도착예정 요청</span>
                                 <span className="summary-value highlight">{etaTime}</span>
                             </div>
                         </div>

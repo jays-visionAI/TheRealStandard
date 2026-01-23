@@ -824,7 +824,7 @@ export default function B2BOrderGrid() {
                     <h1><ClipboardListIcon size={24} /> {orderInfo.isGuest ? '비회원 발주서' : `${orderInfo.customerName} 주문서`}</h1>
                     <div className="order-meta">
                         <span className="meta-item">
-                            <span className="meta-icon">📅</span>
+                            <span className="meta-icon"><ClipboardListIcon size={14} /></span>
                             배송: {orderInfo.shipDate?.toLocaleDateString() || '-'}
                         </span>
                         <span className="meta-item warning">

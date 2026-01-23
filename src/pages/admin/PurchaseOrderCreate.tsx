@@ -345,35 +345,31 @@ export default function PurchaseOrderCreate() {
                 return
             }
 
+            // 전체 주문 단위를 'box'로 강제 설정 (사용자 요청: 박스 단위로 가져오기)
+            setOrderUnit('box')
+
             const newRows: OrderRow[] = items.map(item => {
-                // 제품 정보 찾기 (매입 단가 확인용)
                 const product = products.find(p => p.id === item.productId)
                 const boxWeight = product?.boxWeight || 0
 
-                // 수량 계산 (Kg 단위 기준)
-                // 고객 주문이 Box단위여도 estimatedKg가 있다면 그것을 사용
-                let qty = item.estimatedKg || 0
-
-                // 만약 현재 발주 설정이 Box 단위라면 Box 수량으로 변환 시도
-                if (orderUnit === 'box') {
-                    if (boxWeight > 0) {
-                        qty = Math.ceil(qty / boxWeight)
-                    } else {
-                        // 박스 중량 정보 없으면 그냥 0 또는 1로? 
-                        // 여기서는 Kg 수량을 그대로 둠 (사용자가 수정하도록)
-                    }
+                let qty = 0
+                if (item.unit === 'box') {
+                    qty = item.qtyRequested || 0
+                } else {
+                    // 원래 Kg 주문이었다면 박스로 환산
+                    qty = boxWeight > 0 ? Math.ceil((item.estimatedKg || 0) / boxWeight) : (item.estimatedKg || 0)
                 }
 
                 return {
                     id: Math.random().toString(36).substr(2, 9),
                     productId: item.productId,
                     productName: product?.name || item.productName,
-                    unitPrice: product?.unitPrice || 0, // 매입단가(costPrice)
+                    unitPrice: product?.costPrice || 0, // 기본 매입단가(costPrice) 세팅
                     quantity: qty,
-                    unit: orderUnit,
+                    unit: 'box',
                     boxWeight: boxWeight,
-                    estimatedWeight: orderUnit === 'box' ? qty * boxWeight : qty,
-                    totalAmount: (product?.unitPrice || 0) * (orderUnit === 'box' ? qty * boxWeight : qty)
+                    estimatedWeight: qty * boxWeight,
+                    totalAmount: (product?.costPrice || 0) * (qty * boxWeight)
                 }
             })
 
@@ -671,7 +667,15 @@ export default function PurchaseOrderCreate() {
                                                     {row.boxWeight ? `${row.boxWeight}kg` : '-'}
                                                 </td>
                                                 <td className="col-price">
-                                                    {row.productId ? `₩${formatCurrency(row.unitPrice)}` : '-'}
+                                                    {row.productId ? (
+                                                        <input
+                                                            type="number"
+                                                            className="cell-input price-input"
+                                                            value={row.unitPrice || ''}
+                                                            onChange={(e) => handleRowUpdate(row.id, { unitPrice: Number(e.target.value) })}
+                                                            placeholder="0"
+                                                        />
+                                                    ) : '-'}
                                                 </td>
                                                 <td className="col-qty">
                                                     <input

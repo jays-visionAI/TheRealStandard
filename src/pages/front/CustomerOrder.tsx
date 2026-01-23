@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
 const ORDER_STEPS: { id: number; label: string; icon: ReactNode }[] = [
     { id: 1, label: '주문 정보', icon: <ClipboardListIcon size={20} /> },
     { id: 2, label: '품목 선택', icon: <PackageIcon size={20} /> },
-    { id: 3, label: '수량 입력', icon: '🔢' },
+    { id: 3, label: '수량 입력', icon: <PackageIcon size={20} /> },
     { id: 4, label: '주문 확인', icon: <CheckCircleIcon size={20} /> },
 ]
 

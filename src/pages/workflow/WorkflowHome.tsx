@@ -416,7 +416,7 @@ export default function WorkflowHome() {
             </section>
             {/* Today's Timeline */}
             <section className="timeline-section glass-card">
-                <h3>📅 오늘의 출고 일정</h3>
+                <h3>오늘의 출고 일정</h3>
                 <div className="timeline">
                     {shipments.filter(s => s.status === 'PREPARING' || s.status === 'IN_TRANSIT').length === 0 ? (
                         <div className="empty-timeline">

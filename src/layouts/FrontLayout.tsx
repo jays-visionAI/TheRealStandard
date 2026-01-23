@@ -28,13 +28,24 @@ export default function FrontLayout() {
         navigate('/login')
     }
 
-    const menus = [
-        { path: '/order/dashboard', label: '대시보드', icon: <DashboardIcon size={20} /> },
-        { path: '/order/catalog', label: '상품 카탈로그', icon: <PackageIcon size={20} /> },
-        { path: '/order/list', label: '발주서', icon: <ClipboardListIcon size={20} /> },
-        { path: '/order/history', label: '발주 내역', icon: <ClipboardCheckIcon size={20} /> },
-        { path: '/order/tracking', label: '배송 현황', icon: <TruckIcon size={20} /> },
-    ]
+    const getMenus = () => {
+        if (user?.role === '3PL') {
+            return [
+                { path: '/order/dashboard', label: '대시보드', icon: <DashboardIcon size={20} /> },
+                { path: '/order/fleet', label: '차량/기사 관리', icon: <UserIcon size={20} /> },
+                { path: '/order/tracking', label: '배송 현황', icon: <TruckIcon size={20} /> },
+            ]
+        }
+        return [
+            { path: '/order/dashboard', label: '대시보드', icon: <DashboardIcon size={20} /> },
+            { path: '/order/catalog', label: '상품 카탈로그', icon: <PackageIcon size={20} /> },
+            { path: '/order/list', label: '발주서', icon: <ClipboardListIcon size={20} /> },
+            { path: '/order/history', label: '발주 내역', icon: <ClipboardCheckIcon size={20} /> },
+            { path: '/order/tracking', label: '배송 현황', icon: <TruckIcon size={20} /> },
+        ]
+    }
+
+    const menus = getMenus()
 
     return (
         <div className="front-layout-v2">
