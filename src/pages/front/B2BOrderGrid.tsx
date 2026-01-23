@@ -563,10 +563,7 @@ export default function B2BOrderGrid() {
 
             setStatus('PENDING_APPROVAL')
 
-            // Show signup modal for guest users
-            if (orderInfo.isGuest) {
-                setShowSignupModal(true)
-            } else {
+            if (!orderInfo.isGuest) {
                 alert('주문이 제출되었습니다.\n\n관리자 승인을 대기합니다.')
             }
         } catch (err) {
@@ -801,66 +798,107 @@ export default function B2BOrderGrid() {
             return (
                 <div className="b2b-order-grid">
                     <div className="pending-approval-view glass-card">
-                        <div className="pending-icon">
-                            <ClockIcon size={48} color="#94a3b8" />
-                        </div>
-                        <h2>고객 컨펌 완료</h2>
-                        <p>주문이 제출되었습니다. 관리자 승인을 대기합니다.</p>
-
-                        <div className="order-summary-card">
-                            <div className="summary-row">
-                                <span>주문 품목</span>
-                                <span>{totalItems}개</span>
+                        <div className="text-center mb-8">
+                            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <ClockIcon size={40} className="text-green-600" />
                             </div>
-                            <div className="summary-row">
-                                <span>총 박스 수</span>
-                                <span>{formatNumber(totalBoxes)} box</span>
-                            </div>
-                            <div className="summary-row">
-                                <span>예상 총 중량</span>
-                                <span>{formatCurrency(totalWeight)} kg</span>
-                            </div>
-                            <div className="summary-row total">
-                                <span>예상 총 금액</span>
-                                <span className="total-amount">₩{formatCurrency(totalAmount)}</span>
-                            </div>
+                            <h2 className="text-3xl font-bold text-slate-900 mb-2">고객 컨펌 완료</h2>
+                            <p className="text-slate-500 text-lg">주문이 제출되었습니다. 관리자 승인을 대기합니다.</p>
                         </div>
 
-                        <div className="submitted-items">
-                            <h4>주문 내역</h4>
-                            <table className="mini-table">
-                                <thead>
-                                    <tr>
-                                        <th>품목</th>
-                                        <th>수량</th>
-                                        <th>예상중량</th>
-                                        <th>금액</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {vRows.map(row => (
-                                        <tr key={row.id}>
-                                            <td>{row.productName}</td>
-                                            <td>{row.quantity} {orderUnit.toUpperCase()}</td>
-                                            <td>{formatCurrency(row.estimatedWeight)} kg</td>
-                                            <td>₩{formatCurrency(row.totalAmount)}</td>
+                        <div className="order-summary-card mb-8">
+                            <div className="summary-row">
+                                <span className="text-slate-500">주문 품목</span>
+                                <span className="font-bold text-slate-800">{totalItems}개</span>
+                            </div>
+                            <div className="summary-row">
+                                <span className="text-slate-500">총 박스 수</span>
+                                <span className="font-bold text-slate-800">{formatNumber(totalBoxes)} box</span>
+                            </div>
+                            <div className="summary-row">
+                                <span className="text-slate-500">예상 총 중량</span>
+                                <span className="font-bold text-slate-800">{formatCurrency(totalWeight)} kg</span>
+                            </div>
+                            <div className="summary-row total pt-4 mt-4 border-t border-slate-200">
+                                <span className="text-xl font-bold text-slate-800">예상 총 금액</span>
+                                <span className="text-2xl font-black text-blue-600">₩{formatCurrency(totalAmount)}</span>
+                            </div>
+                        </div>
+
+                        {/* Order Items Table */}
+                        <div className="bg-slate-50 rounded-xl p-6 mb-10 border border-slate-100">
+                            <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                                <ClipboardListIcon size={18} /> 주문 내역
+                            </h4>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="text-xs text-slate-500 uppercase bg-slate-100 border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-4 py-3 rounded-tl-lg">품목</th>
+                                            <th className="px-4 py-3 text-center">수량</th>
+                                            <th className="px-4 py-3 text-right">예상중량</th>
+                                            <th className="px-4 py-3 text-right rounded-tr-lg">금액</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200">
+                                        {vRows.map(row => (
+                                            <tr key={row.id} className="bg-white hover:bg-slate-50 transition-colors">
+                                                <td className="px-4 py-3 font-medium text-slate-900">{row.productName}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <span className="badge badge-light px-2 py-0.5 rounded text-xs font-bold">
+                                                        {row.quantity} {orderUnit.toUpperCase()}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-slate-600">{formatCurrency(row.estimatedWeight)} kg</td>
+                                                <td className="px-4 py-3 text-right font-medium text-slate-900">₩{formatCurrency(row.totalAmount)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        <div className="flex flex-col gap-3 mt-8">
-                            <button
-                                className="btn btn-primary btn-lg w-full py-4 shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2"
-                                onClick={() => navigate('/signup', { state: { name: guestInfo.name, phone: guestInfo.tel, address: guestInfo.address, orderToken: token } })}
-                            >
-                                정식 거래처(회원) 등록 신청하기 <SparklesIcon size={20} />
-                            </button>
-                            <p className="text-sm text-slate-400 text-center">
-                                회원으로 등록하시면 거래명세서 자동발행 및 <br />이전 주문 내역 간편 재주문이 가능합니다.
-                            </p>
-                        </div>
+                        {/* Guest Promotion Section - Integrated */}
+                        {orderInfo.isGuest && (
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100 mt-8">
+                                <div className="text-center mb-8">
+                                    <h3 className="text-xl font-bold text-slate-800 mb-2">정식 거래처로 등록하고 혜택을 받으세요</h3>
+                                    <p className="text-slate-600">회원으로 등록하시면 거래명세서 자동발행 및 이전 주문 내역 간편 재주문이 가능합니다.</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                    <div className="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm border border-blue-50">
+                                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 flex-shrink-0">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+                                        </div>
+                                        <span className="font-bold text-slate-700 text-sm">거래명세서/세금계산서<br />자동 발급</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm border border-blue-50">
+                                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 flex-shrink-0">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                                        </div>
+                                        <span className="font-bold text-slate-700 text-sm">주문 이력 조회 및<br />간편 재주문</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm border border-blue-50">
+                                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 flex-shrink-0">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" /><path d="M12 6v6l4 2" /></svg>
+                                        </div>
+                                        <span className="font-bold text-slate-700 text-sm">실시간 배송 추적<br />알림 서비스</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm border border-blue-50">
+                                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 flex-shrink-0">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                                        </div>
+                                        <span className="font-bold text-slate-700 text-sm">맞춤 단가 적용 및<br />전용 혜택</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {!orderInfo.isGuest && (
+                            <div className="text-center mt-8 text-slate-500">
+                                <p>담당자가 주문을 확인 중입니다. 승인이 완료되면 알림을 보내드립니다.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )
