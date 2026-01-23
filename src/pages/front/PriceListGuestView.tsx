@@ -287,7 +287,29 @@ export default function PriceListGuestView() {
                     </div>
                 </div>
 
-                {/* Supplier Info Card */}
+                {/* Footer Info */}
+                <div className="mt-12 text-center pb-12">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        MEATGO Co., Ltd. All Rights Reserved.
+                    </p>
+                </div>
+            </div>
+
+            {/* Sticky Floating Action Button (FAB) for Mobile/All */}
+            {!isExpired && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-[800px] px-6 z-50 pointer-events-none">
+                    <button
+                        className="w-full bg-[#FFD600] border-2 border-slate-900 shadow-[0_25px_50px_-12px_rgba(255,214,0,0.4)] text-slate-900 font-black py-8 rounded-[2.5rem] flex items-center justify-center gap-4 transition-all active:scale-95 pointer-events-auto text-xl"
+                        onClick={() => setShowOrderModal(true)}
+                    >
+                        <span>주문 컨펌 및 승인 요청</span>
+                        <SendIcon size={24} className="w-6 h-6" />
+                    </button>
+                </div>
+            )}
+
+            {/* Supplier Info Section (Moved to bottom) */}
+            <div className="max-w-[800px] mx-auto px-4 pb-32">
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                         <InfoIcon size={14} /> 공급처 정보
@@ -319,27 +341,7 @@ export default function PriceListGuestView() {
                         </div>
                     </div>
                 </div>
-
-                {/* Footer Info */}
-                <div className="mt-12 text-center">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        MEATGO Co., Ltd. All Rights Reserved.
-                    </p>
-                </div>
             </div>
-
-            {/* Sticky Floating Action Button (FAB) for Mobile/All */}
-            {!isExpired && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-[800px] px-4 pointer-events-none">
-                    <button
-                        className="w-full bg-[#6366F1] shadow-[0_20px_40px_-10px_rgba(99,102,241,0.5)] text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-3 transition-all active:scale-95 pointer-events-auto"
-                        onClick={() => setShowOrderModal(true)}
-                    >
-                        <span>주문 검펌 및 승인 요청</span>
-                        <SendIcon size={20} className="w-5 h-5" />
-                    </button>
-                </div>
-            )}
 
             {/* Modal */}
             {showOrderModal && (
