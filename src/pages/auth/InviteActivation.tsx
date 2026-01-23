@@ -119,8 +119,8 @@ export default function InviteActivation() {
                     <p><strong>{customer.business?.companyName || customer.name}</strong>의 공식 계정이 생성되었습니다.</p>
                     <p className="text-secondary">설정하신 이메일과 비밀번호로 로그인해주세요.</p>
                     <div className="mt-8">
-                        <button className="btn btn-primary btn-lg w-full" onClick={() => navigate('/login')}>
-                            로그인하러 가기
+                        <button className="btn btn-primary btn-lg w-full" onClick={() => navigate('/order/dashboard')}>
+                            MEATGO 시작하기
                         </button>
                     </div>
                 </div>

@@ -10,11 +10,14 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // 관리자인지 확인 (users 컬렉션에서 role이 ADMIN인지)
+    // 관리자인지 확인 (users 컬렉션에서 role이 ADMIN인지 또는 승인된 관리자 이메일인지)
     function isAdmin() {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+      return isAuthenticated() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN') ||
+        request.auth.token.email == 'jays@visai.io' ||
+        request.auth.token.email == 'glcej@naver.com'
+      );
     }
     
     // ============ USERS ============

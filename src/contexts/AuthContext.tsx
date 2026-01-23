@@ -8,7 +8,7 @@ import {
 } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import type { UserRole } from '../types'
-import { getUserByEmail, createUser } from '../lib/userService'
+import { getUserByEmail, createUser, type BusinessProfile } from '../lib/userService'
 
 interface User {
     id: string
@@ -18,6 +18,7 @@ interface User {
     orgId?: string
     avatar?: string
     firebaseUid?: string
+    business?: BusinessProfile
 }
 
 interface AuthContextType {
@@ -36,12 +37,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// 관리자 권한을 가질 실제 이메일 목록
+const ADMIN_EMAILS = ['jays@visai.io', 'glcej@naver.com']
+
 // 데모 계정 정의 (Firebase Auth에 등록된 계정)
 const DEMO_ACCOUNTS: Record<string, { email: string; password: string; name: string; role: UserRole }> = {
-    'ADMIN': { email: 'admin@trs.com', password: 'admin123', name: '관리자', role: 'ADMIN' },
-    'CUSTOMER': { email: 'customer@trs.com', password: 'customer123', name: '고객사', role: 'CUSTOMER' },
-    'WAREHOUSE': { email: 'warehouse@trs.com', password: 'warehouse123', name: '물류담당', role: 'WAREHOUSE' },
-    'ACCOUNTING': { email: 'accounting@trs.com', password: 'accounting123', name: '정산담당', role: 'ACCOUNTING' },
+    'ADMIN': { email: 'jays@visai.io', password: 'meatgo123!', name: '서상재 관리자', role: 'ADMIN' },
+    'ADMIN2': { email: 'glcej@naver.com', password: 'meatgo123!', name: '이세종 관리자', role: 'ADMIN' },
+    'CUSTOMER': { email: 'customer@meatgo.kr', password: 'meatgo123!', name: '고객사', role: 'CUSTOMER' },
+    'WAREHOUSE': { email: 'warehouse@meatgo.kr', password: 'meatgo123!', name: '물류담당', role: 'WAREHOUSE' },
+    'ACCOUNTING': { email: 'accounting@meatgo.kr', password: 'meatgo123!', name: '정산담당', role: 'ACCOUNTING' },
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -70,13 +75,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const firestoreUser = await getUserByEmail(fbUser.email)
 
                     if (firestoreUser) {
+                        // 관리자 이메일 목록에 있으면 권한을 ADMIN으로 강제 설정
+                        const isAdminEmail = ADMIN_EMAILS.includes(fbUser.email.toLowerCase())
+                        const finalRole = isAdminEmail ? 'ADMIN' : firestoreUser.role
+
                         setUser({
                             id: firestoreUser.id,
                             email: firestoreUser.email,
                             name: firestoreUser.business?.companyName || firestoreUser.name,
-                            role: firestoreUser.role,
-                            orgId: firestoreUser.id, // 통합 후에는 사용자 ID가 곧 조직 ID
-                            firebaseUid: fbUser.uid
+                            role: finalRole as UserRole,
+                            orgId: firestoreUser.id,
+                            firebaseUid: fbUser.uid,
+                            business: firestoreUser.business
                         })
                     } else {
                         // users 컬렉션에 없는 경우 - 신규 사용자로 자동 생성
@@ -120,7 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         email: fbUser.email,
                         name: fbUser.displayName || '사용자',
                         role: 'CUSTOMER',
-                        firebaseUid: fbUser.uid
+                        firebaseUid: fbUser.uid,
+                        business: undefined // No business profile on error fallback
                     })
                 }
             } else {
@@ -142,12 +153,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('Login successful')
             const updatedUser = await getUserByEmail(normalizedEmail)
             if (!updatedUser) throw new Error('사용자 정보를 찾을 수 없습니다.')
+
+            // 관리자 권한 강제 부여
+            const isAdminEmail = ADMIN_EMAILS.includes(normalizedEmail)
+            const finalRole = isAdminEmail ? 'ADMIN' : updatedUser.role
+
             return {
                 id: updatedUser.id,
                 email: updatedUser.email,
                 name: updatedUser.name,
-                role: updatedUser.role,
+                role: finalRole as UserRole,
                 orgId: updatedUser.orgId,
+                business: updatedUser.business
             }
         } catch (error: any) {
             console.error('Firebase Login Error Object:', error)
@@ -178,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         name: newUser.name,
                         role: newUser.role,
                         orgId: newUser.orgId,
+                        business: newUser.business
                     }
                 } catch (createError: any) {
                     console.error('Account Creation Error:', createError)
@@ -232,6 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: updatedUser.name,
             role: updatedUser.role,
             orgId: updatedUser.orgId,
+            business: updatedUser.business
         }
     }
 
@@ -263,6 +282,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 name: updatedUser.name,
                 role: updatedUser.role,
                 orgId: updatedUser.orgId,
+                business: updatedUser.business
             }
         } catch (error: any) {
             console.warn('Google Popup Login failed, checking for popup-blocked error:', error)

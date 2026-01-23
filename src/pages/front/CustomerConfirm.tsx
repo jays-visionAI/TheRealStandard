@@ -107,7 +107,7 @@ export default function CustomerConfirm() {
         <div className="customer-confirm">
             {/* Header */}
             <header className="confirm-header">
-                <div className="header-logo">TRS 주문시스템</div>
+                <div className="header-logo">MEATGO 주문시스템</div>
                 <div className="header-info">
                     <h1>{finalizedOrder.customerName}님</h1>
                     <p>최종 확정안을 확인해주세요</p>
@@ -264,8 +264,8 @@ export default function CustomerConfirm() {
 
             {/* Footer */}
             <footer className="confirm-footer">
-                <p>문의: 02-1234-5678 | help@trs.co.kr</p>
-                <p className="copyright">© 2024 TRS Solution</p>
+                <p>문의: 02-1234-5678 | help@meatgo.kr</p>
+                <p className="copyright">© 2026 MEATGO Solution</p>
             </footer>
         </div>
     )

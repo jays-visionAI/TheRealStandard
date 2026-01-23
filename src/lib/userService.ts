@@ -199,10 +199,10 @@ export async function seedInitialUsers(): Promise<void> {
     }
 
     const initialUsers = [
-        { id: 'admin-1', email: 'admin@trs.co.kr', name: '김관리', role: 'ADMIN' as UserRole, status: 'ACTIVE' as const },
-        { id: 'acc-1', email: 'accounting@trs.co.kr', name: '이경리', role: 'ACCOUNTING' as UserRole, status: 'ACTIVE' as const },
-        { id: 'wh-1', email: 'warehouse@trs.co.kr', name: '박창고', role: 'WAREHOUSE' as UserRole, status: 'ACTIVE' as const },
-        { id: 'sales-1', email: 'sales@trs.co.kr', name: '최영업', role: 'OPS' as UserRole, status: 'ACTIVE' as const },
+        { id: 'admin-1', email: 'admin@meatgo.kr', name: '김관리', role: 'ADMIN' as UserRole, status: 'ACTIVE' as const },
+        { id: 'acc-1', email: 'accounting@meatgo.kr', name: '이경리', role: 'ACCOUNTING' as UserRole, status: 'ACTIVE' as const },
+        { id: 'wh-1', email: 'warehouse@meatgo.kr', name: '박창고', role: 'WAREHOUSE' as UserRole, status: 'ACTIVE' as const },
+        { id: 'sales-1', email: 'sales@meatgo.kr', name: '최영업', role: 'OPS' as UserRole, status: 'ACTIVE' as const },
     ]
 
     for (const user of initialUsers) {
@@ -337,7 +337,7 @@ export async function migrateLegacySuppliersToUsers(): Promise<{ migrated: numbe
                 }
 
                 const role: UserRole = data.supplyCategory === 'logistics' ? '3PL' : 'SUPPLIER'
-                
+
                 const newUserData: Omit<FirestoreUser, 'id' | 'createdAt' | 'updatedAt'> = {
                     email: (data.email || '').toLowerCase().trim(),
                     name: data.contactPerson || data.ceoName || data.companyName,

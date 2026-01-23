@@ -26,14 +26,14 @@ export const useSystemStore = create<SystemStore>()(
                 kakaoRestApiKey: '',
                 kakaoChannelId: '_zeXxjG',
                 companyName: 'MEATGO (믿고)',
-                supportEmail: 'admin@trs.co.kr'
+                supportEmail: 'admin@meatgo.kr'
             },
             updateSettings: (data) => set((state) => ({
                 settings: { ...state.settings, ...data }
             }))
         }),
         {
-            name: 'trs-system-storage'
+            name: 'meatgo-system-storage'
         }
     )
 )

@@ -65,6 +65,7 @@ import DeliveryTracking from './pages/front/DeliveryTracking'
 import CustomerDashboard from './pages/front/CustomerDashboard'
 import CustomerOrderList from './pages/front/CustomerOrderList'
 import ProductCatalog from './pages/front/ProductCatalog'
+import ProfileSetup from './pages/front/ProfileSetup'
 
 function App() {
     useEffect(() => {
@@ -208,6 +209,11 @@ function App() {
                         } />
                         <Route path="catalog" element={<ProductCatalog />} />
                         <Route path="tracking" element={<DeliveryTracking />} />
+                        <Route path="profile-setup" element={
+                            <ProtectedRoute allowedRoles={['CUSTOMER', 'ADMIN']}>
+                                <ProfileSetup />
+                            </ProtectedRoute>
+                        } />
 
                         {/* 토큰 기반 개별 주문서 접근 */}
                         <Route path=":token" element={<InviteLanding />} />

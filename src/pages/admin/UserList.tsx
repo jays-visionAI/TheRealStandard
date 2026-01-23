@@ -9,7 +9,7 @@ import {
     getAllSupplierUsers,
     type FirestoreUser
 } from '../../lib/userService'
-import { UsersIcon, SearchIcon, MailIcon, BuildingIcon, PlusIcon, TrashIcon as Trash2Icon, EditIcon, AlertTriangleIcon } from '../../components/Icons'
+import { UsersIcon, SearchIcon, MailIcon, BuildingIcon, PlusIcon, TrashIcon as Trash2Icon, EditIcon, AlertTriangleIcon, CheckCircleIcon } from '../../components/Icons'
 import './UserList.css'
 
 // UserAccount 타입 정의
@@ -55,6 +55,13 @@ export default function UserList() {
     const [editingUser, setEditingUser] = useState<UserAccount | null>(null)
     const [formData, setFormData] = useState<Partial<UserAccount>>({})
     const [saving, setSaving] = useState(false)
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        onCancel: () => void;
+        isDanger?: boolean;
+    } | null>(null)
 
     // Firebase에서 데이터 로드
     const loadData = async () => {
@@ -173,16 +180,24 @@ export default function UserList() {
         }
     }
 
-    const handleDelete = async (id: string) => {
-        if (confirm('이 계정을 삭제하시겠습니까?')) {
-            try {
-                await deleteUserFirebase(id)
-                await loadData()
-            } catch (err) {
-                console.error('Delete failed:', err)
-                alert('삭제에 실패했습니다.')
-            }
-        }
+    const handleDelete = (id: string) => {
+        setConfirmConfig({
+            title: '계정 삭제 확인',
+            message: '정말로 이 계정을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.',
+            isDanger: true,
+            onConfirm: async () => {
+                try {
+                    await deleteUserFirebase(id)
+                    await loadData()
+                    setConfirmConfig(null)
+                } catch (err) {
+                    console.error('Delete failed:', err)
+                    alert('삭제에 실패했습니다.')
+                    setConfirmConfig(null)
+                }
+            },
+            onCancel: () => setConfirmConfig(null)
+        })
     }
 
     // 로딩 상태
@@ -425,6 +440,46 @@ export default function UserList() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Confirm Modal */}
+            {confirmConfig && (
+                <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={confirmConfig.onCancel}>
+                    <div className="modal-content notification-modal" style={{ maxWidth: '400px', width: '90%' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-body text-center py-8" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                            <div className={`notification-icon-wrapper mb-6 mx-auto ${confirmConfig.isDanger ? 'bg-red-50' : 'bg-indigo-50'} rounded-full w-20 h-20 flex items-center justify-center`} style={{
+                                width: '80px',
+                                height: '80px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '0 auto 1.5rem',
+                                backgroundColor: confirmConfig.isDanger ? 'rgba(239, 68, 68, 0.1)' : 'rgba(99, 102, 241, 0.1)'
+                            }}>
+                                {confirmConfig.isDanger ? (
+                                    <AlertTriangleIcon size={40} color="#ef4444" />
+                                ) : (
+                                    <CheckCircleIcon size={40} color="#6366f1" />
+                                )}
+                            </div>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>{confirmConfig.title}</h3>
+                            <p style={{ color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{confirmConfig.message}</p>
+                        </div>
+                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '12px', borderTop: 'none', paddingTop: 0 }}>
+                            <button className="btn btn-ghost px-8" onClick={confirmConfig.onCancel}>
+                                취소
+                            </button>
+                            <button
+                                className={`btn ${confirmConfig.isDanger ? 'btn-danger' : 'btn-primary'} px-8`}
+                                onClick={confirmConfig.onConfirm}
+                                style={confirmConfig.isDanger ? { backgroundColor: '#ef4444', color: 'white', border: 'none' } : {}}
+                            >
+                                삭제하기
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

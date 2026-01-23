@@ -36,6 +36,11 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
         return <Navigate to={defaultPath} replace />
     }
 
+    // 고객사 프로필 미완성 체크 (온보딩 강제)
+    if (user.role === 'CUSTOMER' && !user.business?.companyName && location.pathname !== '/order/profile-setup') {
+        return <Navigate to="/order/profile-setup" replace />
+    }
+
     return <>{children}</>
 }
 
