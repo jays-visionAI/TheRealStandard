@@ -42,6 +42,7 @@ export default function OrderReview() {
     const [discountAmount, setDiscountAmount] = useState(0)
     const [timeLeft, setTimeLeft] = useState<string>('')
     const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set())
+    const [changeReason, setChangeReason] = useState('')
 
     // Firebase에서 데이터 로드
     const loadData = async () => {
@@ -127,6 +128,59 @@ export default function OrderReview() {
         return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
     }
 
+    // Generate AI change summary
+    const generateChangeSummary = () => {
+        if (!hasChanges) return null
+
+        const changes: string[] = []
+        const originalMap = new Map(originalItems.map(item => [item.productId, item]))
+        const currentMap = new Map(items.map(item => [item.productId, item]))
+
+        // Check for removed items
+        originalItems.forEach(origItem => {
+            if (!currentMap.has(origItem.productId)) {
+                changes.push(`[삭제] ${origItem.productName}`)
+            }
+        })
+
+        // Check for added items
+        items.forEach(item => {
+            if (!originalMap.has(item.productId)) {
+                changes.push(`[추가] ${item.productName} (${item.qtyRequested || 0}${item.unit === 'box' ? 'Box' : 'Kg'})`)
+            }
+        })
+
+        // Check for modified items
+        items.forEach(item => {
+            const origItem = originalMap.get(item.productId)
+            if (origItem) {
+                const qtyChanged = (item.qtyRequested || 0) !== (origItem.qtyRequested || 0)
+                const priceChanged = item.unitPrice !== origItem.unitPrice
+
+                if (qtyChanged) {
+                    changes.push(`[수량 변경] ${item.productName}: ${origItem.qtyRequested || 0} → ${item.qtyRequested || 0}${item.unit === 'box' ? 'Box' : 'Kg'}`)
+                }
+                if (priceChanged) {
+                    changes.push(`[단가 조정] ${item.productName}: ${formatCurrency(origItem.unitPrice)} → ${formatCurrency(item.unitPrice)}`)
+                }
+            }
+        })
+
+        if (changes.length === 0) return null
+
+        // Calculate amount difference
+        const originalTotal = originalItems.reduce((sum, item) => sum + (item.amount || 0), 0)
+        const currentTotal = items.reduce((sum, item) => sum + (item.amount || 0), 0)
+        const diff = currentTotal - originalTotal
+
+        return {
+            changes,
+            summary: `총 ${changes.length}건의 변경사항이 발견되었습니다. 최종 금액이 ${diff >= 0 ? '+' : ''}${formatCurrency(diff)} ${diff >= 0 ? '증가' : '감소'}하였습니다.`
+        }
+    }
+
+    const changeSummary = generateChangeSummary()
+
     const formatDateOnly = (date: Date | string | undefined) => {
         if (!date) return '-'
         return new Date(date).toLocaleDateString('ko-KR')
@@ -139,14 +193,29 @@ export default function OrderReview() {
 
     const handleConfirm = async () => {
         if (!orderSheet) return
+
+        // If there are changes, require change reason
+        if (hasChanges && !changeReason.trim()) {
+            alert('변경사항이 있습니다. 변경 사유를 입력해주세요.')
+            return
+        }
+
         if (!confirm('주문을 확정하시겠습니까? 확정 후에는 수정이 불가합니다.')) return
 
         try {
             setIsSubmitting(true)
 
+            // Build admin comment with change summary if there are changes
+            let adminComment = orderSheet.adminComment || ''
+            if (hasChanges && changeSummary) {
+                const changeLog = `[변경 사유] ${changeReason}\n[변경 내역]\n${changeSummary.changes.join('\n')}\n${changeSummary.summary}\n\n`
+                adminComment = changeLog + adminComment
+            }
+
             await updateOrderSheet(orderSheet.id, {
                 status: 'CONFIRMED',
-                discountAmount: discountAmount
+                discountAmount: discountAmount,
+                adminComment: adminComment
             })
 
             // SalesOrder 생성
@@ -203,20 +272,27 @@ export default function OrderReview() {
             alert('변경된 내용이 없습니다.')
             return
         }
-        if (!revisionComment.trim()) {
-            setShowRevisionModal(true)
+        if (!changeReason.trim()) {
+            alert('변경 사유를 입력해주세요.')
             return
         }
 
         try {
             setIsSubmitting(true)
 
+            // Build admin comment with change summary
+            let adminComment = orderSheet.adminComment || ''
+            if (changeSummary) {
+                const changeLog = `[품목 수정 후 반려] ${changeReason}\n[변경 내역]\n${changeSummary.changes.join('\n')}\n${changeSummary.summary}\n\n`
+                adminComment = changeLog + adminComment
+            }
+
             // Update items in Firestore
             // Note: You may need to implement setOrderSheetItems in orderService
 
             await updateOrderSheet(orderSheet.id, {
                 status: 'REVISION',
-                adminComment: `[품목 수정 후 반려] ${revisionComment}\n${orderSheet.adminComment || ''}`
+                adminComment: adminComment
             })
 
             // For guest customers, generate and show link
@@ -538,6 +614,61 @@ export default function OrderReview() {
                     </table>
                 </div>
             </div>
+
+            {/* AI Change Summary & Change Reason */}
+            {hasChanges && changeSummary && (
+                <div className="glass-card mb-4" style={{ borderLeft: '4px solid #f59e0b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                        <AlertTriangleIcon size={20} color="#f59e0b" />
+                        <h3 style={{ margin: 0, color: '#f59e0b' }}>AI 자동 분석: 품목 변경내역</h3>
+                    </div>
+
+                    <div style={{
+                        background: 'var(--bg-tertiary)',
+                        padding: '16px',
+                        borderRadius: '8px',
+                        marginBottom: '16px'
+                    }}>
+                        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8' }}>
+                            {changeSummary.changes.map((change, idx) => (
+                                <li key={idx} style={{
+                                    color: change.startsWith('[삭제]') ? '#ef4444' :
+                                        change.startsWith('[추가]') ? '#10b981' :
+                                            '#3b82f6'
+                                }}>
+                                    {change}
+                                </li>
+                            ))}
+                        </ul>
+                        <p style={{
+                            marginTop: '12px',
+                            marginBottom: 0,
+                            padding: '8px 12px',
+                            background: 'rgba(59, 130, 246, 0.1)',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            color: 'var(--text-secondary)'
+                        }}>
+                            {changeSummary.summary}
+                        </p>
+                    </div>
+
+                    <div style={{ marginTop: '16px' }}>
+                        <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ color: '#ef4444' }}>*</span>
+                            변경 사유 (필수 기입)
+                        </label>
+                        <textarea
+                            className="input textarea"
+                            value={changeReason}
+                            onChange={(e) => setChangeReason(e.target.value)}
+                            placeholder="변경 사유를 입력해주세요. (예: 고객 요청으로 수량 조정, 재고 부족으로 품목 제외 등)"
+                            rows={3}
+                            style={{ width: '100%', resize: 'vertical' }}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Actions */}
             <div className="glass-card">
