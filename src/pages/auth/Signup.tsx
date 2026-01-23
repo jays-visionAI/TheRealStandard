@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { UserIcon, BuildingIcon, MailIcon, KeyIcon, PhoneIcon, MapPinIcon, CheckCircleIcon, ClipboardListIcon } from '../../components/Icons'
 import { LogoSmall } from '../../components/Logo'
+import { claimOrderSheetByToken } from '../../lib/orderService'
 import './Signup.css'
 
 export default function Signup() {
@@ -50,7 +51,7 @@ export default function Signup() {
         setIsLoading(true)
 
         try {
-            await signup(
+            const newUser = await signup(
                 formData.email,
                 formData.password,
                 formData.name || formData.companyName,
@@ -62,6 +63,17 @@ export default function Signup() {
                     address: formData.address
                 }
             )
+
+            // 만약 이전 페이지에서 전달된 발주서 토큰이 있다면, 해당 발주서를 이 계정에 연결
+            if (prefillData.orderToken) {
+                try {
+                    await claimOrderSheetByToken(prefillData.orderToken, newUser.orgId || newUser.id)
+                    console.log('Linked guest order sheet to new user:', prefillData.orderToken)
+                } catch (linkErr) {
+                    console.error('Failed to link order sheet:', linkErr)
+                }
+            }
+
             setIsSuccess(true)
         } catch (err: any) {
             console.error(err)

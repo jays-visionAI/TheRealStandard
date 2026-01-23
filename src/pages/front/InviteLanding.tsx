@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { XIcon, ClipboardListIcon, UserIcon, AlertTriangleIcon, ChevronRightIcon, InfoIcon, LogInIcon } from '../../components/Icons'
-import { getOrderSheetByToken, getOrderSheetItems, type FirestoreOrderSheet, type FirestoreOrderSheetItem } from '../../lib/orderService'
+import { getOrderSheetByToken, getOrderSheetItems, updateOrderSheet, type FirestoreOrderSheet, type FirestoreOrderSheetItem } from '../../lib/orderService'
 import { getUserById, updateUser, type FirestoreUser } from '../../lib/userService'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -119,6 +119,47 @@ export default function InviteLanding() {
 
     loadOrder()
   }, [token])
+
+  // Auto-claim logic for logged-in users
+  useEffect(() => {
+    const checkAndClaimOrder = async () => {
+      // 조건: 유저 로그인됨, 유저 orgId 존재, 주문정보 로드됨, 현재 주문이 Guest 상태임, 유저가 관리자가 아님
+      if (user && user.orgId && orderInfo && orderInfo.isGuest && !loading && user.role !== 'ADMIN') {
+        console.log('Auto-claiming guest order for user:', user.orgId)
+        try {
+          // User 타입 안전하게 접근
+          const safeUser = user as any
+          const companyName = safeUser.companyName || safeUser.business?.companyName || user.name || orderInfo.customerName
+          const phone = safeUser.phone || safeUser.business?.tel || orderInfo.tel || ''
+
+          // 1. 주문서 업데이트 (Guest -> Member)
+          await updateOrderSheet(orderInfo.id, {
+            isGuest: false,
+            customerOrgId: user.orgId,
+            customerName: companyName,
+            tel: phone
+          })
+
+          // 2. 로컬 상태 업데이트
+          setOrderInfo(prev => {
+            if (!prev) return null
+            return {
+              ...prev,
+              isGuest: false,
+              customerOrgId: user.orgId!,
+              customerName: companyName
+            }
+          })
+
+          console.log('Order successfully claimed')
+        } catch (err) {
+          console.error('Failed to auto-claim order:', err)
+        }
+      }
+    }
+
+    checkAndClaimOrder()
+  }, [user, orderInfo, loading])
 
   // Prefill email if customer info is loaded
   useEffect(() => {

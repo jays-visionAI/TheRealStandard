@@ -116,6 +116,22 @@ export async function updateOrderSheet(id: string, data: Partial<FirestoreOrderS
     await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() })
 }
 
+/**
+ * 비회원 발주서를 가입한 회원의 OrgId로 연결합니다.
+ */
+export async function claimOrderSheetByToken(token: string, customerOrgId: string): Promise<void> {
+    const q = query(collection(db, ORDER_SHEETS_COLLECTION), where('inviteTokenId', '==', token))
+    const snapshot = await getDocs(q)
+    if (!snapshot.empty) {
+        const d = snapshot.docs[0]
+        await updateDoc(d.ref, {
+            customerOrgId,
+            isGuest: false,
+            updatedAt: serverTimestamp()
+        })
+    }
+}
+
 export async function incrementOrderSheetReach(id: string): Promise<void> {
     const docRef = doc(db, ORDER_SHEETS_COLLECTION, id)
     const docSnap = await getDoc(docRef)

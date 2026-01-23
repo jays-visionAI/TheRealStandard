@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { ClipboardListIcon, UserIcon, TrashIcon, PrinterIcon, ClockIcon, MegaphoneIcon, PackageIcon, MessageSquareIcon, MapPinIcon, InfoIcon, SparklesIcon, SendIcon } from '../../components/Icons'
+import { ClipboardListIcon, UserIcon, TrashIcon, PrinterIcon, ClockIcon, MegaphoneIcon, PackageIcon, MessageSquareIcon, MapPinIcon, InfoIcon, SparklesIcon, SendIcon, AlertTriangleIcon } from '../../components/Icons'
 import { getOrderSheetByToken, getOrderSheetItems, updateOrderSheet, setOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import { getUserById } from '../../lib/userService'
@@ -33,7 +33,7 @@ interface OrderRow {
 // ============================================
 // 주문 상태
 // ============================================
-type OrderStatus = 'DRAFT' | 'SUBMITTED' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED'
+type OrderStatus = 'DRAFT' | 'SUBMITTED' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'REVISION'
 
 // ============================================
 // 메인 컴포넌트
@@ -129,6 +129,8 @@ export default function B2BOrderGrid() {
                     setStatus('PENDING_APPROVAL')
                 } else if (osData.status === 'CONFIRMED') {
                     setStatus('APPROVED')
+                } else if (osData.status === 'REVISION') {
+                    setStatus('REVISION')
                 }
 
                 // 기존 아이템 로드
@@ -628,7 +630,7 @@ export default function B2BOrderGrid() {
                             </div>
                             <button
                                 className="banner-action-btn font-bold"
-                                onClick={() => navigate('/signup', { state: { name: guestInfo.name, phone: guestInfo.tel, address: guestInfo.address } })}
+                                onClick={() => navigate('/signup', { state: { name: guestInfo.name, phone: guestInfo.tel, address: guestInfo.address, orderToken: token } })}
                             >
                                 회원가입 시작하기 →
                             </button>
@@ -834,7 +836,7 @@ export default function B2BOrderGrid() {
                         <div className="flex flex-col gap-3 mt-8">
                             <button
                                 className="btn btn-primary btn-lg w-full py-4 shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2"
-                                onClick={() => navigate('/signup', { state: { name: guestInfo.name, phone: guestInfo.tel, address: guestInfo.address } })}
+                                onClick={() => navigate('/signup', { state: { name: guestInfo.name, phone: guestInfo.tel, address: guestInfo.address, orderToken: token } })}
                             >
                                 정식 거래처(회원) 등록 신청하기 <SparklesIcon size={20} />
                             </button>
@@ -865,15 +867,27 @@ export default function B2BOrderGrid() {
                         </div>
                     </div>
                     <div className="header-right">
-                        <div className="status-badge draft">주문 작성 중</div>
+                        {status === 'REVISION' ? (
+                            <div className="status-badge revision">수정 요청됨</div>
+                        ) : (
+                            <div className="status-badge draft">주문 작성 중</div>
+                        )}
                     </div>
                 </header>
 
                 {/* Admin Comment Section */}
                 {orderInfo.adminComment && (
-                    <div className="admin-comment-box glass-card animate-fade-in">
-                        <div className="comment-label flex items-center gap-1"><MegaphoneIcon size={16} /> 관리자 한마디</div>
+                    <div className={`admin-comment-box glass-card animate-fade-in ${status === 'REVISION' ? 'priority' : ''}`}>
+                        <div className="comment-label flex items-center gap-1">
+                            {status === 'REVISION' ? <AlertTriangleIcon size={16} /> : <MegaphoneIcon size={16} />}
+                            {status === 'REVISION' ? '관리자 수정 요청사항' : '관리자 한마디'}
+                        </div>
                         <div className="comment-text">{orderInfo.adminComment}</div>
+                        {status === 'REVISION' && (
+                            <div className="mt-4 text-sm text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                                <strong>💡 안내:</strong> 관리자의 요청사항을 확인하신 후, 리스트를 수정하여 다시 <strong>[주문 컨펌 및 승인 요청]</strong> 버튼을 눌러주세요.
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -1256,7 +1270,7 @@ export default function B2BOrderGrid() {
                                     className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold transition-colors shadow-lg shadow-blue-500/20"
                                     onClick={() => {
                                         setShowSignupModal(false)
-                                        navigate('/signup', { state: { name: guestInfo.name, phone: guestInfo.tel, address: guestInfo.address } })
+                                        navigate('/signup', { state: { name: guestInfo.name, phone: guestInfo.tel, address: guestInfo.address, orderToken: token } })
                                     }}
                                 >
                                     정식 거래처 등록 신청하기
