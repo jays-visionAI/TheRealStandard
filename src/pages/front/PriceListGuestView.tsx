@@ -115,7 +115,7 @@ export default function PriceListGuestView() {
             const items = priceList.items.map(item => ({
                 productId: item.productId,
                 productName: item.name,
-                unit: item.unit || 'kg',
+                unit: 'box', // Default unit for order is now 'box'
                 unitPrice: item.supplyPrice,
                 qtyRequested: 0,
                 estimatedKg: 0,
@@ -199,7 +199,7 @@ export default function PriceListGuestView() {
                             <ClipboardListIcon size={36} />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black mb-2 tracking-tight">상세 단가표</h2>
+                            <h2 className="text-2xl font-black mb-2 tracking-tight">견적서</h2>
                             <div className="flex items-center gap-2">
                                 <span className="bg-blue-50 text-blue-600 text-[11px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">단가표 조회 중</span>
                             </div>
@@ -209,7 +209,13 @@ export default function PriceListGuestView() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-1">
                         <div className="flex items-center gap-3 text-slate-500 bg-slate-50/50 p-4 rounded-xl border border-slate-50">
                             <CalendarIcon size={18} className="text-slate-400" />
-                            <span className="text-sm font-bold">배송 예정: -</span>
+                            <span className="text-sm font-bold">
+                                견적서 생성일시: {(() => {
+                                    const d = priceList.sharedAt?.toDate?.() || priceList.createdAt?.toDate?.() || new Date();
+                                    const pad = (n: number) => n.toString().padStart(2, '0');
+                                    return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}.${pad(d.getMinutes())}`;
+                                })()}
+                            </span>
                         </div>
                         <div className={`flex items-center gap-3 p-4 rounded-xl border ${countdown === '만료' ? 'text-red-500 bg-red-50/50 border-red-50' : 'text-slate-500 bg-slate-50/50 border-slate-50'}`}>
                             <ClockIcon size={18} className={countdown === '만료' ? 'text-red-400' : 'text-slate-400'} />
