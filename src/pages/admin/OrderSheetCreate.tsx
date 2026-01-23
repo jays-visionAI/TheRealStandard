@@ -554,10 +554,10 @@ export default function OrderSheetCreate() {
 
     // 고객 필터링
     const filteredCustomers = useMemo(() => {
-        const activeCustomers = customers.filter(c => c.isActive)
-        if (!customerSearch) return activeCustomers
+        // PENDING 상태인 고객(신규가입 등)도 포함하여 검색 가능하도록 수정
+        if (!customerSearch) return customers
         const q = customerSearch.toLowerCase()
-        return activeCustomers.filter(c =>
+        return customers.filter(c =>
             (c.companyName || '').toLowerCase().includes(q) ||
             (c.bizRegNo || '').includes(q)
         )
