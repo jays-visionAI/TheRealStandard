@@ -75,6 +75,23 @@
     font-size: 1.2rem;
 }
 
+.order-unit-toggle-container {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .order-unit-toggle-container {
+        flex-direction: column;
+        gap: var(--space-4);
+        padding: var(--space-2) 0;
+    }
+
+    .order-unit-toggle {
+        width: 100% !important;
+        justify-content: space-around !important;
+    }
+}
+
 /* Grid Container */
 .grid-container {
     overflow: visible;
@@ -508,12 +525,43 @@
     }
 
     .grid-container {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow-x: hidden;
     }
 
     .order-table {
-        min-width: 700px;
+        min-width: auto;
+        table-layout: fixed;
+    }
+
+    .order-table th,
+    .order-table td {
+        padding: var(--space-2) var(--space-1);
+    }
+
+    .col-product {
+        min-width: 0;
+        width: 40%;
+    }
+
+    .col-unit {
+        width: 15%;
+    }
+
+    .col-price {
+        width: 20%;
+    }
+
+    .col-qty {
+        width: 20%;
+    }
+
+    .qty-input {
+        width: 100% !important;
+        padding-right: 2px !important;
+    }
+
+    .qty-unit {
+        display: none;
     }
 
     .b2b-order-grid .order-footer {

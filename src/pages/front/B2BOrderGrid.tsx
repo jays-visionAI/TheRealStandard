@@ -638,12 +638,17 @@ export default function B2BOrderGrid() {
                         </table>
                     </div>
 
-                    <button
-                        className="btn btn-secondary mt-6"
-                        onClick={() => navigate(`/order/${token}/tracking`)}
-                    >
-                        배송 현황 보기 →
-                    </button>
+                    <div className="flex flex-col gap-3 mt-8">
+                        <button
+                            className="btn btn-primary btn-lg w-full py-4 shadow-xl shadow-blue-500/20"
+                            onClick={() => setShowSignupModal(true)}
+                        >
+                            정식 거래처(회원) 등록 신청하기 🚀
+                        </button>
+                        <p className="text-sm text-slate-400 text-center">
+                            회원으로 등록하시면 거래명세서 자동발행 및 <br />이전 주문 내역 간편 재주문이 가능합니다.
+                        </p>
+                    </div>
                 </div>
             </div>
         )
@@ -680,57 +685,59 @@ export default function B2BOrderGrid() {
             )}
 
             {/* Grid 안내 - 상단 바 (토글 및 버튼만 유지) */}
-            <div className="grid-guide glass-card flex justify-between items-center">
+            <div className="grid-guide glass-card flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
                 <div className="flex items-center gap-2">
                     <span className="guide-icon">📦</span>
                     <span className="font-semibold">주문 품목 리스트</span>
                 </div>
 
-                <div className="order-unit-toggle flex items-center gap-3">
-                    <span className="text-sm text-secondary">주문 단위:</span>
-                    <div className="ios-toggle-wrapper flex items-center gap-2">
-                        <span className={`text-sm font-medium ${orderUnit === 'box' ? 'text-primary' : 'text-gray-400'}`}>Box 단위</span>
-                        <button
-                            className={`ios-toggle ${orderUnit === 'kg' ? 'active' : ''}`}
-                            onClick={() => handleUnitChange(orderUnit === 'kg' ? 'box' : 'kg')}
-                            style={{
-                                width: '51px',
-                                height: '31px',
-                                borderRadius: '31px',
-                                backgroundColor: orderUnit === 'kg' ? '#34c759' : '#e5e5ea',
-                                border: 'none',
-                                cursor: 'pointer',
-                                position: 'relative',
-                                transition: 'background-color 0.2s ease',
-                                padding: 0,
-                            }}
-                        >
-                            <span
+                <div className="order-unit-toggle-container flex flex-1 items-center">
+                    <div className="order-unit-toggle flex items-center justify-between gap-3 bg-white px-4 py-2.5 rounded-xl shadow-sm border border-blue-100 w-full md:w-auto">
+                        <span className="text-sm font-bold text-slate-500 whitespace-nowrap">주문 단위</span>
+                        <div className="ios-toggle-wrapper flex items-center gap-3">
+                            <span className={`text-[13px] font-bold ${orderUnit === 'box' ? 'text-primary' : 'text-gray-300'}`}>Box 단위</span>
+                            <button
+                                className={`ios-toggle ${orderUnit === 'kg' ? 'active' : ''}`}
+                                onClick={() => handleUnitChange(orderUnit === 'kg' ? 'box' : 'kg')}
                                 style={{
-                                    position: 'absolute',
-                                    top: '2px',
-                                    left: orderUnit === 'kg' ? '22px' : '2px',
-                                    width: '27px',
-                                    height: '27px',
-                                    borderRadius: '50%',
-                                    backgroundColor: '#fff',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                                    transition: 'left 0.2s ease',
+                                    width: '46px',
+                                    height: '26px',
+                                    borderRadius: '26px',
+                                    backgroundColor: orderUnit === 'kg' ? '#34c759' : '#e5e5ea',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    position: 'relative',
+                                    transition: 'background-color 0.2s ease',
+                                    padding: 0,
                                 }}
-                            />
-                        </button>
-                        <span className={`text-sm font-medium ${orderUnit === 'kg' ? 'text-primary' : 'text-gray-400'}`}>Kg 단위</span>
+                            >
+                                <span
+                                    style={{
+                                        position: 'absolute',
+                                        top: '2px',
+                                        left: orderUnit === 'kg' ? '22px' : '2px',
+                                        width: '22px',
+                                        height: '22px',
+                                        borderRadius: '50%',
+                                        backgroundColor: '#fff',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                        transition: 'left 0.2s ease',
+                                    }}
+                                />
+                            </button>
+                            <span className={`text-[13px] font-bold ${orderUnit === 'kg' ? 'text-primary' : 'text-gray-300'}`}>Kg 단위</span>
+                        </div>
                     </div>
-                </div>
 
-                <div className="left-actions ml-4">
-                    <button
-                        className="btn btn-xs btn-outline-danger"
-                        disabled={checkedCount === 0}
-                        onClick={deleteSelectedRows}
-                    >
-                        🗑 선택 삭제 ({checkedCount})
-                    </button>
+                    <div className="left-actions ml-3 md:ml-4">
+                        <button
+                            className="btn btn-sm btn-outline-danger whitespace-nowrap"
+                            disabled={checkedCount === 0}
+                            onClick={deleteSelectedRows}
+                        >
+                            🗑 삭제 ({checkedCount})
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -746,13 +753,13 @@ export default function B2BOrderGrid() {
                                     checked={rows.length > 0 && rows.every(r => r.checked)}
                                 />
                             </th>
-                            <th className="col-no">No</th>
+                            <th className="col-no mobile-hidden">No</th>
                             <th className="col-product">품목</th>
-                            <th className="col-unit mobile-hidden" style={{ width: '100px', fontSize: '13px' }}>예상중량/Box</th>
-                            <th className="col-price">단가(원/kg)</th>
-                            <th className="col-qty">수량 ({orderUnit === 'kg' ? 'Kg' : 'Box'})</th>
-                            <th className="col-weight">예상중량(kg)</th>
-                            <th className="col-amount">금액(원)</th>
+                            <th className="col-unit" style={{ width: '80px', fontSize: '12px' }}>Box</th>
+                            <th className="col-price">단가</th>
+                            <th className="col-qty">수량({orderUnit.toUpperCase()})</th>
+                            <th className="col-weight mobile-hidden">예상중량</th>
+                            <th className="col-amount mobile-hidden">금액</th>
                             <th className="col-action"></th>
                         </tr>
                     </thead>
@@ -766,7 +773,7 @@ export default function B2BOrderGrid() {
                                         onChange={() => toggleCheck(row.id)}
                                     />
                                 </td>
-                                <td className="col-no">{index + 1}</td>
+                                <td className="col-no mobile-hidden">{index + 1}</td>
                                 <td className="col-product">
                                     <div className="product-input-wrapper" ref={activeRowId === row.id ? dropdownRef : null}>
                                         <input
@@ -802,23 +809,24 @@ export default function B2BOrderGrid() {
                                                         onClick={() => selectProduct(row.id, product)}
                                                         onMouseEnter={() => setHighlightIndex(idx)}
                                                     >
-                                                        <span className="product-name">{product.name}</span>
-                                                        <span className="product-category">{product.category1}</span>
-                                                        <span className="product-price">₩{formatCurrency(product.unitPrice)}/kg</span>
+                                                        <div className="flex flex-col">
+                                                            <span className="product-name text-sm">{product.name}</span>
+                                                            <span className="product-price text-xs text-blue-600">₩{formatCurrency(product.unitPrice)}</span>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
                                     </div>
                                 </td>
-                                <td className="col-unit text-muted mobile-hidden" style={{ fontSize: '13px', textAlign: 'center' }}>
+                                <td className="col-unit text-muted" style={{ fontSize: '11px', textAlign: 'center' }}>
                                     {(() => {
                                         const p = products.find(prod => prod.id === row.productId);
-                                        return p ? (p.boxWeight ? `${p.boxWeight}kg/Box` : 'kg') : '-';
+                                        return p ? (p.boxWeight ? `${p.boxWeight}k` : 'kg') : '-';
                                     })()}
                                 </td>
                                 <td className="col-price">
-                                    {row.unitPrice > 0 ? `₩${formatCurrency(row.unitPrice)}` : '-'}
+                                    {row.unitPrice > 0 ? formatCurrency(row.unitPrice) : '-'}
                                 </td>
                                 <td className="col-qty">
                                     <div className="qty-input-wrapper">
@@ -838,11 +846,11 @@ export default function B2BOrderGrid() {
                                         </span>
                                     </div>
                                 </td>
-                                <td className="col-weight">
+                                <td className="col-weight mobile-hidden">
                                     {row.estimatedWeight > 0 ? formatCurrency(row.estimatedWeight) : '-'}
                                 </td>
-                                <td className="col-amount">
-                                    {row.totalAmount > 0 ? `₩${formatCurrency(row.totalAmount)}` : '-'}
+                                <td className="col-amount mobile-hidden">
+                                    {row.totalAmount > 0 ? formatCurrency(row.totalAmount) : '-'}
                                 </td>
                                 <td className="col-action">
                                     <button
@@ -870,10 +878,10 @@ export default function B2BOrderGrid() {
                             </td>
                         </tr>
                         <tr className="total-row">
-                            <td colSpan={5} className="total-label">총계</td>
+                            <td colSpan={3} className="total-label">총계</td>
                             <td className="total-items">{totalItems} 품목</td>
-                            <td className="total-weight">{formatCurrency(totalWeight)} kg</td>
-                            <td className="total-amount">₩{formatCurrency(totalAmount)}</td>
+                            <td className="total-weight mobile-hidden">{formatCurrency(totalWeight)} kg</td>
+                            <td className="total-amount mobile-hidden">₩{formatCurrency(totalAmount)}</td>
                             <td></td>
                         </tr>
                     </tfoot>
