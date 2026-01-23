@@ -691,13 +691,15 @@ export default function OrderReview() {
                         </button>
                     )}
 
-                    <button
-                        className="btn btn-secondary btn-lg"
-                        onClick={() => setShowRevisionModal(true)}
-                        disabled={isSubmitting}
-                    >
-                        <XIcon size={18} /> 반려 요청
-                    </button>
+                    {!hasChanges && (
+                        <button
+                            className="btn btn-secondary btn-lg"
+                            onClick={() => setShowRevisionModal(true)}
+                            disabled={isSubmitting}
+                        >
+                            <XIcon size={18} /> 반려 요청
+                        </button>
+                    )}
                     <button
                         className="btn btn-primary btn-lg"
                         onClick={handleConfirm}
