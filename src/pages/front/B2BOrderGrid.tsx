@@ -519,14 +519,31 @@ export default function B2BOrderGrid() {
             }
 
             if (orderInfo.isGuest) {
-                if (!guestInfo.name || !guestInfo.tel) {
-                    alert('발주자 성함과 연락처를 입력해주세요.')
-                    setSaving(false)
-                    return
+                if (user) {
+                    // Logged in user submitting: Auto-claim and use profile info
+                    const safeUser = user as any
+                    const uName = safeUser.companyName || safeUser.business?.companyName || user.name || guestInfo.name
+                    const uPhone = safeUser.phone || safeUser.business?.tel || guestInfo.tel
+                    const uAddress = safeUser.address || safeUser.business?.address || guestInfo.address || ''
+
+                    updatePayload.customerName = uName
+                    updatePayload.tel = uPhone
+                    updatePayload.shipTo = uAddress
+
+                    // Convert to member order
+                    updatePayload.isGuest = false
+                    updatePayload.customerOrgId = user.orgId
+                } else {
+                    // Guest user submitting: Require manual input
+                    if (!guestInfo.name || !guestInfo.tel) {
+                        alert('발주자 성함과 연락처를 입력해주세요.')
+                        setSaving(false)
+                        return
+                    }
+                    updatePayload.customerName = guestInfo.name
+                    updatePayload.tel = guestInfo.tel
+                    updatePayload.shipTo = guestInfo.address
                 }
-                updatePayload.customerName = guestInfo.name
-                updatePayload.tel = guestInfo.tel
-                updatePayload.shipTo = guestInfo.address
             }
 
             await updateOrderSheet(orderInfo.id, updatePayload)
@@ -1126,8 +1143,8 @@ export default function B2BOrderGrid() {
                     />
                 </div>
 
-                {/* Guest Info Frame (ONLY for Guests) */}
-                {orderInfo.isGuest && (
+                {/* Guest Info Frame (ONLY for Guests who are NOT logged in) */}
+                {orderInfo.isGuest && !user && (
                     <div className="guest-info-container glass-card mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500 p-6">
                         <div className="section-title-sm mb-4 flex items-center gap-2">
                             <span className="text-blue-600"><UserIcon size={16} /></span>

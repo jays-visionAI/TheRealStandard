@@ -7,6 +7,7 @@ import {
     updateOrderSheet,
     deleteOrderSheet,
     createSalesOrderFromSheet,
+    setOrderSheetItems,
     type FirestoreOrderSheet,
     type FirestoreOrderSheetItem
 } from '../../lib/orderService'
@@ -298,11 +299,20 @@ export default function OrderReview() {
             }
 
             // Update items in Firestore
-            // Note: You may need to implement setOrderSheetItems in orderService
+            const itemsToSave = items.map(item => {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { id, orderSheetId, ...rest } = item
+                return rest
+            })
+            await setOrderSheetItems(orderSheet.id, itemsToSave)
 
             await updateOrderSheet(orderSheet.id, {
                 status: 'REVISION',
-                adminComment: adminComment
+                adminComment: adminComment,
+                // Update totals
+                totalItems: items.length,
+                totalKg: items.reduce((sum, item) => sum + (item.estimatedKg || 0), 0),
+                totalAmount: items.reduce((sum, item) => sum + (item.amount || 0), 0)
             })
 
             // For guest customers, generate and show link
