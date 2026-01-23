@@ -44,6 +44,12 @@ export default function OrderReview() {
     const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set())
     const [changeReason, setChangeReason] = useState('')
 
+    // Custom modal states
+    const [alertModal, setAlertModal] = useState<{ show: boolean; title: string; message: string; isError?: boolean; onClose?: () => void }>({ show: false, title: '', message: '' })
+    const [confirmModal, setConfirmModal] = useState<{ show: boolean; title: string; message: string; onConfirm: () => void }>({ show: false, title: '', message: '', onConfirm: () => { } })
+    const [copied, setCopied] = useState(false)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
     // Firebase에서 데이터 로드
     const loadData = async () => {
         if (!id) {
@@ -196,45 +202,50 @@ export default function OrderReview() {
 
         // If there are changes, require change reason
         if (hasChanges && !changeReason.trim()) {
-            alert('변경사항이 있습니다. 변경 사유를 입력해주세요.')
+            setAlertModal({ show: true, title: '주의', message: '변경사항이 있습니다. 변경 사유를 입력해주세요.', isError: true })
             return
         }
 
-        if (!confirm('주문을 확정하시겠습니까? 확정 후에는 수정이 불가합니다.')) return
+        setConfirmModal({
+            show: true,
+            title: '주문 확정',
+            message: '주문을 확정하시겠습니까? 확정 후에는 수정이 불가합니다.',
+            onConfirm: async () => {
+                setConfirmModal({ show: false, title: '', message: '', onConfirm: () => { } })
+                try {
+                    setIsSubmitting(true)
 
-        try {
-            setIsSubmitting(true)
+                    // Build admin comment with change summary if there are changes
+                    let adminComment = orderSheet.adminComment || ''
+                    if (hasChanges && changeSummary) {
+                        const changeLog = `[변경 사유] ${changeReason}\n[변경 내역]\n${changeSummary.changes.join('\n')}\n${changeSummary.summary}\n\n`
+                        adminComment = changeLog + adminComment
+                    }
 
-            // Build admin comment with change summary if there are changes
-            let adminComment = orderSheet.adminComment || ''
-            if (hasChanges && changeSummary) {
-                const changeLog = `[변경 사유] ${changeReason}\n[변경 내역]\n${changeSummary.changes.join('\n')}\n${changeSummary.summary}\n\n`
-                adminComment = changeLog + adminComment
+                    await updateOrderSheet(orderSheet.id, {
+                        status: 'CONFIRMED',
+                        discountAmount: discountAmount,
+                        adminComment: adminComment
+                    })
+
+                    // SalesOrder 생성
+                    await createSalesOrderFromSheet(orderSheet, items)
+
+                    setAlertModal({ show: true, title: '확정 완료', message: '주문이 확정되었습니다. 확정주문(SalesOrder)이 생성되었습니다.', onClose: () => navigate('/admin/order-sheets') })
+                } catch (err) {
+                    console.error('Failed to confirm order:', err)
+                    setAlertModal({ show: true, title: '오류', message: '주문 확정에 실패했습니다.', isError: true })
+                } finally {
+                    setIsSubmitting(false)
+                }
             }
-
-            await updateOrderSheet(orderSheet.id, {
-                status: 'CONFIRMED',
-                discountAmount: discountAmount,
-                adminComment: adminComment
-            })
-
-            // SalesOrder 생성
-            await createSalesOrderFromSheet(orderSheet, items)
-
-            alert('주문이 확정되었습니다. 확정주문(SalesOrder)이 생성되었습니다.')
-            navigate('/admin/order-sheets')
-        } catch (err) {
-            console.error('Failed to confirm order:', err)
-            alert('주문 확정에 실패했습니다.')
-        } finally {
-            setIsSubmitting(false)
-        }
+        })
     }
 
     const handleRevisionRequest = async () => {
         if (!orderSheet) return
         if (!revisionComment.trim()) {
-            alert('수정 요청 사유를 입력해주세요.')
+            setAlertModal({ show: true, title: '주의', message: '수정 요청 사유를 입력해주세요.', isError: true })
             return
         }
 
@@ -253,13 +264,12 @@ export default function OrderReview() {
                 setShowRevisionModal(false)
                 setShowLinkModal(true)
             } else {
-                alert('수정 요청이 전송되었습니다.')
                 setShowRevisionModal(false)
-                navigate('/admin/order-sheets')
+                setAlertModal({ show: true, title: '전송 완료', message: '수정 요청이 전송되었습니다.', onClose: () => navigate('/admin/order-sheets') })
             }
         } catch (err) {
             console.error('Failed to request revision:', err)
-            alert('수정 요청에 실패했습니다.')
+            setAlertModal({ show: true, title: '오류', message: '수정 요청에 실패했습니다.', isError: true })
         } finally {
             setIsSubmitting(false)
         }
@@ -269,11 +279,11 @@ export default function OrderReview() {
     const handleSaveChangesForReview = async () => {
         if (!orderSheet) return
         if (!hasChanges) {
-            alert('변경된 내용이 없습니다.')
+            setAlertModal({ show: true, title: '알림', message: '변경된 내용이 없습니다.' })
             return
         }
         if (!changeReason.trim()) {
-            alert('변경 사유를 입력해주세요.')
+            setAlertModal({ show: true, title: '주의', message: '변경 사유를 입력해주세요.', isError: true })
             return
         }
 
@@ -301,12 +311,11 @@ export default function OrderReview() {
                 setGeneratedLink(link)
                 setShowLinkModal(true)
             } else {
-                alert('변경 사항이 저장되었습니다. 고객이 다시 확인해야 합니다.')
-                navigate('/admin/order-sheets')
+                setAlertModal({ show: true, title: '저장 완료', message: '변경 사항이 저장되었습니다. 고객이 다시 확인해야 합니다.', onClose: () => navigate('/admin/order-sheets') })
             }
         } catch (err) {
             console.error('Failed to save changes:', err)
-            alert('변경 사항 저장에 실패했습니다.')
+            setAlertModal({ show: true, title: '오류', message: '변경 사항 저장에 실패했습니다.', isError: true })
         } finally {
             setIsSubmitting(false)
         }
@@ -314,23 +323,28 @@ export default function OrderReview() {
 
     const copyLinkToClipboard = () => {
         navigator.clipboard.writeText(generatedLink)
-        alert('링크가 클립보드에 복사되었습니다!')
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
     }
 
-    const handleDelete = async () => {
+    const handleDelete = () => {
         if (!orderSheet) return
-        if (!confirm('정말로 이 발주서를 삭제하시겠습니까? 삭제된 발주서는 복구할 수 없습니다.')) return
+        setShowDeleteConfirm(true)
+    }
+
+    const confirmDeleteOrder = async () => {
+        if (!orderSheet) return
+        setShowDeleteConfirm(false)
 
         try {
             setIsSubmitting(true)
 
             await deleteOrderSheet(orderSheet.id)
 
-            alert('발주서가 삭제되었습니다.')
-            navigate('/admin/order-sheets')
+            setAlertModal({ show: true, title: '삭제 완료', message: '발주서가 삭제되었습니다.', onClose: () => navigate('/admin/order-sheets') })
         } catch (err) {
             console.error('Failed to delete order:', err)
-            alert('발주서 삭제에 실패했습니다.')
+            setAlertModal({ show: true, title: '오류', message: '발주서 삭제에 실패했습니다.', isError: true })
         } finally {
             setIsSubmitting(false)
         }
@@ -762,8 +776,11 @@ export default function OrderReview() {
                                     readOnly
                                     onClick={(e) => (e.target as HTMLInputElement).select()}
                                 />
-                                <button className="btn btn-primary" onClick={copyLinkToClipboard}>
-                                    복사
+                                <button
+                                    className={`btn ${copied ? 'btn-success' : 'btn-primary'}`}
+                                    onClick={copyLinkToClipboard}
+                                >
+                                    {copied ? '복사됨!' : '복사'}
                                 </button>
                             </div>
                         </div>
@@ -773,6 +790,97 @@ export default function OrderReview() {
                                 onClick={() => { setShowLinkModal(false); navigate('/admin/order-sheets') }}
                             >
                                 확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Alert Modal */}
+            {alertModal.show && (
+                <div className="modal-backdrop" onClick={() => { setAlertModal({ ...alertModal, show: false }); alertModal.onClose?.() }}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: alertModal.isError ? '#ef4444' : 'inherit' }}>
+                                {alertModal.isError && <AlertTriangleIcon size={20} color="#ef4444" />}
+                                {alertModal.title}
+                            </h3>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ color: 'var(--text-secondary)' }}>{alertModal.message}</p>
+                        </div>
+                        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => { setAlertModal({ ...alertModal, show: false }); alertModal.onClose?.() }}
+                            >
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Modal */}
+            {confirmModal.show && (
+                <div className="modal-backdrop" onClick={() => setConfirmModal({ ...confirmModal, show: false })}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h3>{confirmModal.title}</h3>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ color: 'var(--text-secondary)' }}>{confirmModal.message}</p>
+                        </div>
+                        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button
+                                className="btn btn-ghost"
+                                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                            >
+                                취소
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={confirmModal.onConfirm}
+                            >
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirm Modal */}
+            {showDeleteConfirm && (
+                <div className="modal-backdrop" onClick={() => setShowDeleteConfirm(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}>
+                                <AlertTriangleIcon size={20} color="#ef4444" />
+                                발주서 삭제
+                            </h3>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                                정말로 이 발주서를 삭제하시겠습니까?
+                            </p>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                                삭제된 발주서는 복구할 수 없습니다.
+                            </p>
+                        </div>
+                        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button
+                                className="btn btn-ghost"
+                                onClick={() => setShowDeleteConfirm(false)}
+                                disabled={isSubmitting}
+                            >
+                                취소
+                            </button>
+                            <button
+                                className="btn btn-error"
+                                onClick={confirmDeleteOrder}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? '삭제 중...' : '삭제'}
                             </button>
                         </div>
                     </div>
