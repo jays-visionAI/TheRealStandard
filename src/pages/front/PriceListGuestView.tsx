@@ -162,6 +162,38 @@ export default function PriceListGuestView() {
 
     const isExpired = priceList?.validUntil ? priceList.validUntil.toDate() < new Date() : false
 
+    const SupplierInfo = () => (
+        <div className="max-w-[800px] mx-auto px-4 pb-24">
+            <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-8">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                    <InfoIcon size={14} /> 공급처 정보 (Supplier Information)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="space-y-6">
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">등록번호</p>
+                            <p className="text-[15px] font-black text-slate-900 tracking-wider">123-45-67890</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">상호 / 대표자</p>
+                            <p className="text-[15px] font-bold text-slate-800">주식회사 믿고 (MEATGO) / 홍길동 <span className="text-slate-300 text-[10px] ml-1 uppercase">(인)</span></p>
+                        </div>
+                    </div>
+                    <div className="space-y-6">
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">주소</p>
+                            <p className="text-[14px] font-bold text-slate-800 leading-relaxed">서울특별시 강남구 테헤란로 123, 45층 (믿고타워)</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">연락처</p>
+                            <p className="text-[15px] font-black text-slate-900">02-1234-5678</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+
     return (
         <div className="price-guest-view min-h-screen bg-[#f8f9fc] text-slate-900 pb-24">
             {/* Header Content Wrapper */}
@@ -288,116 +320,96 @@ export default function PriceListGuestView() {
                 </div>
 
                 {/* Footer Info */}
-                <div className="mt-12 text-center pb-12">
+                <div className="mt-20 text-center border-t border-slate-100 pt-12 pb-8">
+                    <p className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.3em] mb-2">
+                        Official Price List
+                    </p>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                         MEATGO Co., Ltd. All Rights Reserved.
                     </p>
                 </div>
             </div>
 
-            {/* Sticky Floating Action Button (FAB) for Mobile/All */}
+            {/* Supplier Info Section (Absolute Bottom for Main View) */}
+            <SupplierInfo />
+
+            {/* Sticky Floating Action Button (FAB) */}
             {!isExpired && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-[800px] px-6 z-50 pointer-events-none">
+                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-full max-w-[800px] px-6 z-[60] pointer-events-none">
                     <button
-                        className="w-full bg-[#FFD600] border-2 border-slate-900 shadow-[0_25px_50px_-12px_rgba(255,214,0,0.4)] text-slate-900 font-black py-8 rounded-[2.5rem] flex items-center justify-center gap-4 transition-all active:scale-95 pointer-events-auto text-xl"
+                        className="w-full h-24 bg-[#FFDB00] border-4 border-slate-900 shadow-[0_30px_60px_-15px_rgba(255,219,0,0.5)] text-slate-900 font-black rounded-[2.5rem] flex items-center justify-center gap-4 transition-all active:scale-95 pointer-events-auto text-2xl"
                         onClick={() => setShowOrderModal(true)}
                     >
                         <span>주문 컨펌 및 승인 요청</span>
-                        <SendIcon size={24} className="w-6 h-6" />
+                        <SendIcon size={28} className="w-7 h-7" />
                     </button>
                 </div>
             )}
 
-            {/* Supplier Info Section (Moved to bottom) */}
-            <div className="max-w-[800px] mx-auto px-4 pb-32">
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                        <InfoIcon size={14} /> 공급처 정보
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">등록번호 (Registration No.)</p>
-                                <p className="text-sm font-black text-slate-900 tracking-wider">123-45-67890</p>
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">상호 (Company Name)</p>
-                                <p className="text-sm font-bold text-slate-800">주식회사 믿고 (MEATGO)</p>
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">대표자 (CEO)</p>
-                                <p className="text-sm font-bold text-slate-800 tracking-wide">홍길동 <span className="text-slate-300 text-[10px] ml-1 uppercase">(인)</span></p>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">주소 (Address)</p>
-                                <p className="text-sm font-bold text-slate-800 leading-relaxed">서울특별시 강남구 테헤란로 123, 45층 (믿고타워)</p>
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">연락처 (Contact Number)</p>
-                                <p className="text-sm font-black text-slate-900">02-1234-5678</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Modal */}
+            {/* Modal - Full Screen Scrollable Style */}
             {showOrderModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowOrderModal(false)}>
-                    <div className="bg-white w-full max-w-[500px] rounded-[40px] shadow-2xl border border-white/20 overflow-hidden animate-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
-                        <div className="p-10 md:p-14">
-                            <div className="mb-10 text-center">
-                                <h3 className="text-3xl font-black text-slate-900">업체 정보 입력</h3>
-                                <p className="text-sm text-slate-400 font-bold mt-2 leading-relaxed">주문서 작성을 위해 귀사의 정보를 <br />한 번 더 확인해 주세요.</p>
+                <div className="fixed inset-0 z-[100] bg-[#f8f9fc] animate-in fade-in duration-300 overflow-y-auto">
+                    <div className="min-h-screen py-12 px-6">
+                        <div className="max-w-[500px] mx-auto">
+                            <div className="bg-white rounded-[40px] shadow-2xl border border-slate-100 overflow-hidden mb-12 animate-in zoom-in duration-300">
+                                <div className="p-10 md:p-14">
+                                    <div className="mb-10 text-center">
+                                        <h3 className="text-3xl font-black text-slate-900">업체 정보 입력</h3>
+                                        <p className="text-sm text-slate-400 font-bold mt-2 leading-relaxed">주문서 작성을 위해 귀사의 정보를 <br />한 번 더 확인해 주세요.</p>
+                                    </div>
+
+                                    <form onSubmit={handleStartOrder} className="space-y-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">회사명</label>
+                                            <input
+                                                type="text"
+                                                className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
+                                                required
+                                                placeholder="상호명을 입력하세요"
+                                                value={orderForm.companyName}
+                                                onChange={e => setOrderForm({ ...orderForm, companyName: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">휴대전화번호</label>
+                                            <input
+                                                type="tel"
+                                                className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
+                                                required
+                                                placeholder="010-0000-0000"
+                                                value={orderForm.tel}
+                                                onChange={e => setOrderForm({ ...orderForm, tel: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">배송주소 (선택)</label>
+                                            <input
+                                                type="text"
+                                                className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
+                                                placeholder="배송지 주소를 입력해 주세요"
+                                                value={orderForm.address}
+                                                onChange={e => setOrderForm({ ...orderForm, address: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div className="pt-8 flex gap-4">
+                                            <button type="button" className="flex-[3] h-20 rounded-3xl font-black text-slate-400 border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all text-center text-xl" onClick={() => setShowOrderModal(false)}>취소</button>
+                                            <button
+                                                type="submit"
+                                                className="flex-[7] h-24 bg-[#6366F1] text-white font-black rounded-[2.5rem] hover:bg-[#4F46E5] shadow-[0_25px_50px_-12px_rgba(99,102,241,0.5)] transition-all active:scale-95 disabled:opacity-50 text-2xl"
+                                                disabled={submitting}
+                                            >
+                                                {submitting ? '생성 중...' : '다음 단계로'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
+                        </div>
 
-                            <form onSubmit={handleStartOrder} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">회사명</label>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
-                                        required
-                                        placeholder="상호명을 입력하세요"
-                                        value={orderForm.companyName}
-                                        onChange={e => setOrderForm({ ...orderForm, companyName: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">휴대전화번호</label>
-                                    <input
-                                        type="tel"
-                                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
-                                        required
-                                        placeholder="010-0000-0000"
-                                        value={orderForm.tel}
-                                        onChange={e => setOrderForm({ ...orderForm, tel: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">배송주소 (선택)</label>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
-                                        placeholder="배송지 주소를 입력해 주세요"
-                                        value={orderForm.address}
-                                        onChange={e => setOrderForm({ ...orderForm, address: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="pt-8 flex gap-4">
-                                    <button type="button" className="flex-[3] py-18 rounded-[2rem] font-black text-slate-400 border border-slate-100 hover:bg-slate-50 active:scale-95 transition-all text-center text-xl" onClick={() => setShowOrderModal(false)}>취소</button>
-                                    <button
-                                        type="submit"
-                                        className="flex-[7] bg-[#6366F1] text-white font-black py-18 rounded-[2.5rem] hover:bg-[#4F46E5] shadow-[0_25px_50px_-12px_rgba(99,102,241,0.5)] transition-all active:scale-95 disabled:opacity-50 text-2xl"
-                                        disabled={submitting}
-                                    >
-                                        {submitting ? '생성 중...' : '다음 단계로'}
-                                    </button>
-                                </div>
-                            </form>
+                        {/* Supplier Info at the bottom of the form as well */}
+                        <div className="mt-12">
+                            <SupplierInfo />
                         </div>
                     </div>
                 </div>
