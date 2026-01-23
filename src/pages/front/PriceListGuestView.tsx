@@ -2,7 +2,19 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getPriceListByShareToken, incrementPriceListReach, incrementPriceListConversion, type FirestorePriceList } from '../../lib/priceListService'
 import { createOrderSheetWithId, generateOrderSheetId, setOrderSheetItems } from '../../lib/orderService'
-import { ClipboardListIcon, ChevronRightIcon, InfoIcon, SearchIcon, XIcon, FileTextIcon, AlertTriangleIcon } from '../../components/Icons'
+import {
+    ClipboardListIcon,
+    ChevronRightIcon,
+    InfoIcon,
+    SearchIcon,
+    XIcon,
+    FileTextIcon,
+    AlertTriangleIcon,
+    CalendarIcon,
+    ClockIcon,
+    MegaphoneIcon,
+    SendIcon
+} from '../../components/Icons'
 import { Timestamp } from 'firebase/firestore'
 
 export default function PriceListGuestView() {
@@ -151,123 +163,86 @@ export default function PriceListGuestView() {
     const isExpired = priceList?.validUntil ? priceList.validUntil.toDate() < new Date() : false
 
     return (
-        <div className="price-guest-view min-h-screen bg-gradient-to-b from-slate-100 to-slate-200 font-sans text-slate-800 p-4 md:p-10 lg:p-16">
-            {/* Subtle top accent bar */}
-            <div className="h-1.5 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 max-w-[900px] mx-auto" />
+        <div className="price-guest-view min-h-screen bg-[#f8f9fc] text-slate-900 pb-24">
+            {/* Header Content Wrapper */}
+            <div className="max-w-[800px] mx-auto px-4 pt-8 md:pt-12">
 
-            {/* Main Document Container with Frame */}
-            <div className="max-w-[940px] mx-auto p-1.5 md:p-3 bg-slate-300 rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-slate-400/50">
-                {/* Document Card - Premium Paper Effect */}
-                <div className="bg-white rounded-[1.8rem] md:rounded-[2.8rem] shadow-inner overflow-hidden border border-white">
+                {/* Breadcrumbs */}
+                <div className="flex items-center gap-2 text-slate-400 text-sm mb-8 font-medium">
+                    <span>MEATGO</span>
+                    <ChevronRightIcon size={14} />
+                    <span className="text-slate-500">단가표 조회</span>
+                </div>
 
-                    {/* Document Header */}
-                    <div className="px-8 pt-12 pb-8 md:px-12 md:pt-16 md:pb-10 border-b-2 border-slate-900">
-                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
-                            {/* Title Section */}
-                            <div>
-                                <h1 className="text-4xl md:text-5xl font-black tracking-[0.2em] text-slate-900 mb-3">견 적 서</h1>
-                                <p className="text-sm text-slate-400 font-medium tracking-wide">QUOTATION</p>
-                            </div>
-
-                            <div className="flex flex-col items-end pt-2 w-full md:w-1/2">
-                                <div className="grid grid-cols-[80px_1fr] gap-x-4 text-[13px] border-b border-slate-100 pb-2 mb-2 w-full max-w-[240px]">
-                                    <span className="text-slate-400 text-left">적용일자</span>
-                                    <span className="font-bold text-slate-900 text-right">
-                                        {priceList.sharedAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일') ||
-                                            priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일')}
-                                    </span>
-                                </div>
-                                <div className="grid grid-cols-[80px_1fr] gap-x-4 text-[13px] w-full max-w-[240px]">
-                                    <span className="text-slate-400 text-left">유효기간</span>
-                                    <span className={`font-black text-right ${countdown === '만료' ? 'text-red-500' : 'text-blue-600'}`}>
-                                        {countdown || '계산중...'}
-                                    </span>
-                                </div>
+                {/* Main Status Header Card */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 mb-4">
+                    <div className="flex items-start gap-4 mb-6">
+                        <div className="w-14 h-14 bg-slate-50 rounded-xl flex items-center justify-center text-slate-800">
+                            <ClipboardListIcon size={32} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-black mb-1">상세 단가표</h2>
+                            <div className="flex items-center gap-2">
+                                <span className="bg-blue-50 text-blue-600 text-[11px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">단가표 조회 중</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Recipient Section */}
-                    <div className="px-8 py-8 md:px-12 md:py-10 bg-slate-50/50 border-b border-slate-200">
-                        <p className="text-2xl md:text-3xl font-bold text-slate-900">
-                            {priceList.title}
-                            <span className="ml-2 text-slate-500 font-medium"> 귀하</span>
-                        </p>
-                        <p className="text-sm text-slate-400 mt-2">아래와 같이 견적합니다.</p>
-                    </div>
-
-                    {/* Supplier Info Table */}
-                    <div className="px-8 py-8 md:px-12 md:py-10">
-                        <div className="max-w-[480px]">
-                            <table className="w-full border-collapse text-[13px]">
-                                <tbody>
-                                    <tr>
-                                        <th rowSpan={5} className="w-9 bg-slate-800 text-white font-bold [writing-mode:vertical-lr] text-center tracking-[0.3em] text-[11px] border border-slate-800">공급자</th>
-                                        <th className="w-24 bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold whitespace-nowrap">등록번호</th>
-                                        <td colSpan={3} className="border border-slate-300 px-4 py-2.5 font-bold text-slate-900 tracking-wide">123-45-67890</td>
-                                    </tr>
-                                    <tr>
-                                        <th className="bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">상호</th>
-                                        <td className="w-32 border border-slate-300 px-4 py-2.5 font-semibold text-slate-800">주식회사 믿고 (MEATGO)</td>
-                                        <th className="w-12 bg-slate-100 border border-slate-300 px-2 py-2.5 text-slate-600 text-center font-semibold">성명</th>
-                                        <td className="border border-slate-300 px-4 py-2.5 font-semibold text-slate-800 text-center whitespace-nowrap">홍길동 (인)</td>
-                                    </tr>
-                                    <tr>
-                                        <th className="bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">주소</th>
-                                        <td colSpan={3} className="border border-slate-300 px-4 py-2.5 text-[12px] text-slate-700">서울특별시 강남구 테헤란로 123, 45층 (믿고타워)</td>
-                                    </tr>
-                                    <tr>
-                                        <th className="bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">업태</th>
-                                        <td className="border border-slate-300 px-4 py-2.5 text-slate-700">도매 및 소매업</td>
-                                        <th className="bg-slate-100 border border-slate-300 px-2 py-2.5 text-slate-600 text-center font-semibold">종목</th>
-                                        <td className="border border-slate-300 px-4 py-2.5 text-slate-700 text-center">식육유통</td>
-                                    </tr>
-                                    <tr>
-                                        <th className="bg-slate-100 border border-slate-300 px-3 py-2.5 text-slate-600 text-center font-semibold">연락처</th>
-                                        <td colSpan={3} className="border border-slate-300 px-4 py-2.5 font-semibold text-slate-900">02-1234-5678</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    <div className="space-y-3 pl-1">
+                        <div className="flex items-center gap-3 text-slate-500">
+                            <CalendarIcon size={18} className="text-slate-300" />
+                            <span className="text-sm font-bold">배송: -</span>
+                        </div>
+                        <div className={`flex items-center gap-3 ${countdown === '만료' ? 'text-red-500' : 'text-slate-500'}`}>
+                            <ClockIcon size={18} className={countdown === '만료' ? 'text-red-300' : 'text-slate-300'} />
+                            <span className="text-sm font-bold">마감: {countdown || '계산중...'}</span>
                         </div>
                     </div>
+                </div>
 
-                    {/* Divider and Search Bar */}
-                    <div className="px-8 mt-10 md:px-12">
-                        <div className="h-px bg-slate-200 w-full mb-8"></div>
+                {/* Admin Message Card */}
+                {priceList.adminComment && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-4 flex items-start gap-4">
+                        <MegaphoneIcon size={20} className="text-slate-400 mt-0.5" />
+                        <div>
+                            <p className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-1.5 px-2 py-0.5 bg-blue-50 w-fit rounded">관리자 한마디</p>
+                            <p className="text-sm font-bold text-slate-600 leading-relaxed">{priceList.adminComment}</p>
+                        </div>
                     </div>
+                )}
 
-                    <div className="px-8 py-8 md:px-12 bg-slate-100/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 bg-white border border-slate-300 rounded-xl px-5 py-5 w-full md:w-96 shadow-sm focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/5 transition-all">
-                            <SearchIcon size={22} className="text-slate-400" />
+                {/* Recipient Info Card */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 mb-4 text-center">
+                    <p className="text-xl md:text-2xl font-black text-slate-900">
+                        {priceList.title}
+                        <span className="text-slate-400 font-medium ml-2 uppercase text-sm">귀하</span>
+                    </p>
+                    <p className="text-xs text-slate-400 font-bold mt-2 uppercase tracking-widest">본 단가표는 아래와 같이 제안되었습니다.</p>
+                </div>
+
+                {/* Price Table Card */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-4">
+                    <div className="p-6 border-b border-slate-50 flex items-center gap-4">
+                        <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-center gap-3 focus-within:ring-4 focus-within:ring-blue-500/5 focus-within:border-blue-500 transition-all">
+                            <SearchIcon size={18} className="text-slate-300" />
                             <input
                                 type="text"
                                 placeholder="품목명을 검색하세요"
-                                className="flex-1 bg-transparent outline-none text-lg font-medium text-slate-800 placeholder:text-slate-400"
+                                className="bg-transparent outline-none text-sm font-bold text-slate-900 w-full placeholder:text-slate-300"
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                             />
                         </div>
-
-                        {!isExpired && (
-                            <button
-                                className="hidden md:flex bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-slate-900 px-6 py-3 rounded-lg shadow-lg shadow-blue-500/20 items-center gap-2.5 transition-all hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98] font-bold"
-                                onClick={() => setShowOrderModal(true)}
-                            >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
-                                <span>즉시 주문하기</span>
-                            </button>
-                        )}
                     </div>
 
-                    {/* Price Table */}
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left min-w-[600px]">
+                        <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-slate-900 border-b-2 border-slate-950">
-                                    <th className="px-8 py-5 text-[13px] font-black tracking-widest text-slate-400">품목명</th>
-                                    <th className="px-4 py-5 text-[13px] font-black tracking-widest text-slate-400 text-center w-24">단위</th>
-                                    <th className="px-6 py-5 text-[13px] font-black tracking-widest text-blue-400 text-right w-36">냉장</th>
-                                    <th className="px-8 py-5 text-[13px] font-black tracking-widest text-slate-400 text-right w-36">냉동</th>
+                                <tr className="bg-slate-50/50">
+                                    <th className="px-6 py-4 text-[11px] font-black text-slate-400 uppercase tracking-wider">품목명</th>
+                                    <th className="px-4 py-4 text-[11px] font-black text-slate-400 uppercase tracking-wider text-center w-20">단위</th>
+                                    <th className="px-4 py-4 text-[11px] font-black text-blue-600 uppercase tracking-wider text-right w-28">냉장</th>
+                                    <th className="px-6 py-4 text-[11px] font-black text-slate-600 uppercase tracking-wider text-right w-28">냉동</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -282,140 +257,139 @@ export default function PriceListGuestView() {
                                     const sortedGroups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
                                     return sortedGroups.length > 0 ? sortedGroups.map((group, idx) => (
-                                        <tr key={idx} className={`group transition-colors border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                                            <td className="px-8 py-6">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[16px] font-bold text-slate-900 flex items-center gap-2">
-                                                        {group.name}
-                                                    </span>
-                                                </div>
+                                        <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-6 py-5">
+                                                <span className="text-sm font-bold text-slate-900">{group.name}</span>
                                             </td>
-                                            <td className="px-4 py-6 text-center">
-                                                <span className="text-[12px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">/kg</span>
+                                            <td className="px-4 py-5 text-center">
+                                                <span className="text-[11px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded uppercase">/kg</span>
                                             </td>
-                                            <td className="px-6 py-6 text-right">
-                                                {group.refrigerated !== undefined ? (
-                                                    <div className="flex flex-col items-end">
-                                                        <span className="text-[17px] font-black text-blue-600 tabular-nums">
-                                                            {formatCurrency(group.refrigerated)}
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-200">-</span>
-                                                )}
+                                            <td className="px-4 py-5 text-right font-black text-blue-600 text-sm tabular-nums">
+                                                {group.refrigerated ? formatCurrency(group.refrigerated) : <span className="text-slate-200">-</span>}
                                             </td>
-                                            <td className="px-8 py-6 text-right">
-                                                {group.frozen !== undefined ? (
-                                                    <div className="flex flex-col items-end">
-                                                        <span className="text-[17px] font-black text-slate-700 tabular-nums">
-                                                            {formatCurrency(group.frozen)}
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-200">-</span>
-                                                )}
+                                            <td className="px-6 py-5 text-right font-black text-slate-700 text-sm tabular-nums">
+                                                {group.frozen ? formatCurrency(group.frozen) : <span className="text-slate-200">-</span>}
                                             </td>
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan={4} className="px-8 py-32 text-center">
-                                                <div className="flex flex-col items-center gap-2">
-                                                    <SearchIcon size={32} className="text-slate-200" />
-                                                    <p className="text-slate-400 font-bold">검색 결과가 없습니다.</p>
+                                            <td colSpan={4} className="px-6 py-20 text-center">
+                                                <div className="flex flex-col items-center gap-3 text-slate-300">
+                                                    <SearchIcon size={32} />
+                                                    <p className="text-[13px] font-bold">검색 결과가 없습니다.</p>
                                                 </div>
                                             </td>
                                         </tr>
-                                    )
+                                    );
                                 })()}
                             </tbody>
                         </table>
                     </div>
+                </div>
 
-                    {isExpired && (
-                        <div className="mx-8 my-8 md:mx-12 p-6 bg-red-50 border border-red-200 rounded-lg flex items-start gap-4">
-                            <AlertTriangleIcon size={24} className="text-red-500 flex-shrink-0 mt-0.5" />
+                {/* Supplier Info Card */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                        <InfoIcon size={14} /> 공급처 정보
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
                             <div>
-                                <p className="text-sm font-bold text-red-800">견적 유효기간 만료</p>
-                                <p className="text-sm text-red-600 mt-1">본 견적서는 유효기간이 만료되었습니다. 최신 견적을 요청해 주세요.</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">등록번호 (Registration No.)</p>
+                                <p className="text-sm font-black text-slate-900 tracking-wider">123-45-67890</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">상호 (Company Name)</p>
+                                <p className="text-sm font-bold text-slate-800">주식회사 믿고 (MEATGO)</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">대표자 (CEO)</p>
+                                <p className="text-sm font-bold text-slate-800 tracking-wide">홍길동 <span className="text-slate-300 text-[10px] ml-1 uppercase">(인)</span></p>
                             </div>
                         </div>
-                    )}
-
-                    {/* Footer */}
-                    <div className="px-8 py-10 md:px-12 bg-slate-50 border-t border-slate-200">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="space-y-1">
-                                <p className="text-xs text-slate-400">본 견적서는 전자문서로서 법적 효력을 갖습니다.</p>
-                                <p className="text-xs text-slate-400">문의사항은 위 연락처로 연락 바랍니다.</p>
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">주소 (Address)</p>
+                                <p className="text-sm font-bold text-slate-800 leading-relaxed">서울특별시 강남구 테헤란로 123, 45층 (믿고타워)</p>
                             </div>
-                            <p className="text-[11px] text-slate-400 tracking-wider uppercase">MEATGO Co., Ltd.</p>
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">연락처 (Contact Number)</p>
+                                <p className="text-sm font-black text-slate-900">02-1234-5678</p>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Footer Info */}
+                <div className="mt-12 text-center">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        MEATGO Co., Ltd. All Rights Reserved.
+                    </p>
+                </div>
             </div>
 
-            {/* Mobile-only Sticky Button */}
+            {/* Sticky Floating Action Button (FAB) for Mobile/All */}
             {!isExpired && (
-                <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-48px)] max-w-sm">
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-[800px] px-4 pointer-events-none">
                     <button
-                        className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-slate-900 py-4 px-6 rounded-lg shadow-xl shadow-blue-500/30 flex items-center justify-center gap-3 transition-all active:scale-[0.98] font-bold"
+                        className="w-full bg-[#6366F1] shadow-[0_20px_40px_-10px_rgba(99,102,241,0.5)] text-white font-black py-6 rounded-[2rem] flex items-center justify-center gap-3 transition-all active:scale-95 pointer-events-auto"
                         onClick={() => setShowOrderModal(true)}
                     >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
-                        <span>즉시 주문하기</span>
+                        <span>주문 검펌 및 승인 요청</span>
+                        <SendIcon size={20} className="w-5 h-5" />
                     </button>
                 </div>
             )}
 
-            {/* Modal - Modern & Simple Admin Style */}
+            {/* Modal */}
             {showOrderModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowOrderModal(false)}>
                     <div className="bg-white w-full max-w-[500px] rounded-[40px] shadow-2xl border border-white/20 overflow-hidden animate-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
                         <div className="p-10 md:p-14">
-                            <div className="mb-10">
+                            <div className="mb-10 text-center">
                                 <h3 className="text-3xl font-black text-slate-900">업체 정보 입력</h3>
-                                <p className="text-sm text-slate-400 font-bold">주문서 작성을 위한 기본 정보를 입력해 주세요.</p>
+                                <p className="text-sm text-slate-400 font-bold mt-2 leading-relaxed">주문서 작성을 위해 귀사의 정보를 <br />한 번 더 확인해 주세요.</p>
                             </div>
 
-                            <form onSubmit={handleStartOrder} className="space-y-8 text-left">
-                                <div className="space-y-3">
-                                    <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Name</label>
+                            <form onSubmit={handleStartOrder} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">회사명</label>
                                     <input
                                         type="text"
-                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[15px] focus:ring-blue-500/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all shadow-sm"
+                                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
                                         required
                                         placeholder="상호명을 입력하세요"
                                         value={orderForm.companyName}
                                         onChange={e => setOrderForm({ ...orderForm, companyName: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-4">
-                                    <label className="text-[13px] font-black text-slate-400 uppercase tracking-widest ml-2">Contact Number</label>
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">휴대전화번호</label>
                                     <input
                                         type="tel"
-                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[15px] focus:ring-blue-500/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all shadow-sm"
+                                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
                                         required
                                         placeholder="010-0000-0000"
                                         value={orderForm.tel}
                                         onChange={e => setOrderForm({ ...orderForm, tel: e.target.value })}
                                     />
                                 </div>
-                                <div className="space-y-4">
-                                    <label className="text-[13px] font-black text-slate-400 uppercase tracking-widest ml-2">Address (Optional)</label>
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-4">배송주소 (선택)</label>
                                     <input
                                         type="text"
-                                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-[#2563EB] focus:ring-[15px] focus:ring-blue-500/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all shadow-sm"
-                                        placeholder="정확한 배송지를 입력해주세요"
+                                        className="w-full bg-slate-50 border border-slate-100 focus:border-[#6366F1] focus:ring-[15px] focus:ring-[#6366F1]/5 px-10 py-12 rounded-[2.5rem] outline-none font-black text-2xl text-slate-900 placeholder:text-slate-300 transition-all text-center"
+                                        placeholder="배송지 주소를 입력해 주세요"
                                         value={orderForm.address}
                                         onChange={e => setOrderForm({ ...orderForm, address: e.target.value })}
                                     />
                                 </div>
 
-                                <div className="pt-10 flex gap-4 w-full">
-                                    <button type="button" className="flex-[3] py-12 rounded-2xl font-black text-slate-400 border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all" onClick={() => setShowOrderModal(false)}>취소</button>
+                                <div className="pt-8 flex gap-4">
+                                    <button type="button" className="flex-[3] py-18 rounded-[2rem] font-black text-slate-400 border border-slate-100 hover:bg-slate-50 active:scale-95 transition-all text-center text-xl" onClick={() => setShowOrderModal(false)}>취소</button>
                                     <button
                                         type="submit"
-                                        className="flex-[7] bg-[#2563EB] text-white font-black py-12 rounded-3xl hover:bg-[#1D4ED8] shadow-[0_25px_50px_-12px_rgba(37,99,235,0.5)] transition-all active:scale-95 disabled:opacity-50"
+                                        className="flex-[7] bg-[#6366F1] text-white font-black py-18 rounded-[2.5rem] hover:bg-[#4F46E5] shadow-[0_25px_50px_-12px_rgba(99,102,241,0.5)] transition-all active:scale-95 disabled:opacity-50 text-2xl"
                                         disabled={submitting}
                                     >
                                         {submitting ? '생성 중...' : '다음 단계로'}

@@ -34,6 +34,7 @@ export interface FirestorePriceList {
     validUntil?: any // Timestamp
     reachCount?: number // 단가표 도달 수
     conversionCount?: number // 발주서 전환 수
+    adminComment?: string // 관리자 한마디
     createdAt: any
     updatedAt: any
 }
