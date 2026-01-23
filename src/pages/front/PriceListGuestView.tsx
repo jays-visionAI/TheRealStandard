@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { getPriceListByShareToken, incrementPriceListReach, incrementPriceListConversion, type FirestorePriceList } from '../../lib/priceListService'
 import { createOrderSheetWithId, generateOrderSheetId, setOrderSheetItems } from '../../lib/orderService'
 import {
@@ -20,6 +20,8 @@ import { Timestamp } from 'firebase/firestore'
 export default function PriceListGuestView() {
     const { token } = useParams()
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
+    const recipient = searchParams.get('recipient')
     const [priceList, setPriceList] = useState<FirestorePriceList | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -230,78 +232,78 @@ export default function PriceListGuestView() {
                 {/* Recipient Info Card */}
                 <div className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-12 mb-6 text-center">
                     <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-                        {priceList.title}
+                        {recipient || priceList.title}
                         <span className="text-slate-400 font-medium ml-2 uppercase text-base">귀하</span>
                     </p>
                     <div className="w-12 h-1 bg-blue-500 mx-auto my-6 rounded-full opacity-20"></div>
                     <p className="text-xs text-slate-400 font-bold uppercase tracking-[0.2em] leading-relaxed">본 단가표는 귀사를 위해 아래와 같이 정성껏 제안되었습니다. <br />내용을 확인하신 후 하단 버튼을 통해 주문을 진행해 주세요.</p>
                 </div>
+            </div>
 
-                {/* Price Table Card */}
-                <div className="bg-white rounded-[2.5rem] shadow-[0_15px_50px_rgb(0,0,0,0.04)] border border-slate-200/60 overflow-hidden mb-12">
-                    <div className="p-8 md:p-10">
-                        {/* Search Bar Frame */}
-                        <div className="bg-[#f8f9fc] border border-slate-200 rounded-2xl px-6 py-5 flex items-center gap-4 focus-within:ring-8 focus-within:ring-blue-500/5 focus-within:border-blue-300 transition-all mb-10">
-                            <SearchIcon size={24} className="text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="어떤 품목을 찾으시나요?"
-                                className="bg-transparent outline-none text-lg font-bold text-slate-900 w-full placeholder:text-slate-300"
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                            />
-                        </div>
+            {/* Price Table Card */}
+            <div className="bg-white rounded-[2.5rem] shadow-[0_15px_50px_rgb(0,0,0,0.04)] border border-slate-200/60 overflow-hidden mb-12">
+                <div className="p-8 md:p-10">
+                    {/* Search Bar Frame */}
+                    <div className="bg-[#f8f9fc] border border-slate-200 rounded-2xl px-6 py-5 flex items-center gap-4 focus-within:ring-8 focus-within:ring-blue-500/5 focus-within:border-blue-300 transition-all mb-10">
+                        <SearchIcon size={24} className="text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="어떤 품목을 찾으시나요?"
+                            className="bg-transparent outline-none text-lg font-bold text-slate-900 w-full placeholder:text-slate-300"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                    </div>
 
-                        <div className="overflow-x-auto -mx-2">
-                            <table className="w-full text-left min-w-[600px]">
-                                <thead>
-                                    <tr className="bg-slate-50/50 rounded-xl overflow-hidden">
-                                        <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">품목명</th>
-                                        <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center w-24">단위</th>
-                                        <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right w-32 border-l border-white">냉장 단가</th>
-                                        <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right w-32 border-l border-white">냉동 단가</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {(() => {
-                                        const grouped: Record<string, { name: string, refrigerated?: number, frozen?: number }> = {};
-                                        filteredItems.forEach(item => {
-                                            const baseName = item.name.replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').replace(/\s*(냉장|냉동|냉장육|냉동육)\s*$/g, '').trim();
-                                            if (!grouped[baseName]) grouped[baseName] = { name: baseName };
-                                            if (item.category1 === '냉장') grouped[baseName].refrigerated = item.supplyPrice;
-                                            else if (item.category1 === '냉동') grouped[baseName].frozen = item.supplyPrice;
-                                        });
-                                        const sortedGroups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+                    <div className="overflow-x-auto -mx-2">
+                        <table className="w-full text-left min-w-[600px]">
+                            <thead>
+                                <tr className="bg-slate-50/50 rounded-xl overflow-hidden">
+                                    <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">품목명</th>
+                                    <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center w-24">단위</th>
+                                    <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right w-32 border-l border-white">냉장 단가</th>
+                                    <th className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right w-32 border-l border-white">냉동 단가</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {(() => {
+                                    const grouped: Record<string, { name: string, refrigerated?: number, frozen?: number }> = {};
+                                    filteredItems.forEach(item => {
+                                        const baseName = item.name.replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').replace(/\s*(냉장|냉동|냉장육|냉동육)\s*$/g, '').trim();
+                                        if (!grouped[baseName]) grouped[baseName] = { name: baseName };
+                                        if (item.category1 === '냉장') grouped[baseName].refrigerated = item.supplyPrice;
+                                        else if (item.category1 === '냉동') grouped[baseName].frozen = item.supplyPrice;
+                                    });
+                                    const sortedGroups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
-                                        return sortedGroups.length > 0 ? sortedGroups.map((group, idx) => (
-                                            <tr key={idx} className="group hover:bg-[#f8f9fc]/80 transition-all cursor-default">
-                                                <td className="px-8 py-7">
-                                                    <span className="text-[17px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{group.name}</span>
-                                                </td>
-                                                <td className="px-4 py-7 text-center">
-                                                    <span className="text-sm font-bold text-slate-300">kg</span>
-                                                </td>
-                                                <td className="px-6 py-7 text-right font-black text-blue-600 tabular-nums text-lg">
-                                                    {group.refrigerated ? formatCurrency(group.refrigerated) : <span className="text-slate-100">-</span>}
-                                                </td>
-                                                <td className="px-8 py-7 text-right font-black text-slate-800 tabular-nums text-lg border-l border-slate-50/50">
-                                                    {group.frozen ? formatCurrency(group.frozen) : <span className="text-slate-100">-</span>}
-                                                </td>
-                                            </tr>
-                                        )) : (
-                                            <tr>
-                                                <td colSpan={4} className="px-8 py-32 text-center">
-                                                    <div className="flex flex-col items-center gap-4 text-slate-200">
-                                                        <SearchIcon size={48} />
-                                                        <p className="text-base font-bold text-slate-400">"{searchQuery}" 에 대한 검색 결과가 없습니다.</p>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })()}
-                                </tbody>
-                            </table>
-                        </div>
+                                    return sortedGroups.length > 0 ? sortedGroups.map((group, idx) => (
+                                        <tr key={idx} className="group hover:bg-[#f8f9fc]/80 transition-all cursor-default">
+                                            <td className="px-8 py-7">
+                                                <span className="text-[17px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{group.name}</span>
+                                            </td>
+                                            <td className="px-4 py-7 text-center">
+                                                <span className="text-sm font-bold text-slate-300">kg</span>
+                                            </td>
+                                            <td className="px-6 py-7 text-right font-black text-blue-600 tabular-nums text-lg">
+                                                {group.refrigerated ? formatCurrency(group.refrigerated) : <span className="text-slate-100">-</span>}
+                                            </td>
+                                            <td className="px-8 py-7 text-right font-black text-slate-800 tabular-nums text-lg border-l border-slate-50/50">
+                                                {group.frozen ? formatCurrency(group.frozen) : <span className="text-slate-100">-</span>}
+                                            </td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={4} className="px-8 py-32 text-center">
+                                                <div className="flex flex-col items-center gap-4 text-slate-200">
+                                                    <SearchIcon size={48} />
+                                                    <p className="text-base font-bold text-slate-400">"{searchQuery}" 에 대한 검색 결과가 없습니다.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })()}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -332,7 +334,6 @@ export default function PriceListGuestView() {
 
             {/* Main View Supplier Info */}
             <SupplierInfo />
-
         </div>
     )
 }

@@ -42,6 +42,8 @@ export default function PriceListManager() {
     const [selectedList, setSelectedList] = useState<FirestorePriceList | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
+    const [showShareModal, setShowShareModal] = useState(false)
+    const [recipientName, setRecipientName] = useState('')
 
     // 모달 통보 전용 상태
     const [confirmConfig, setConfirmConfig] = useState<{
@@ -273,44 +275,65 @@ export default function PriceListManager() {
         }
     }
 
-    const handleShare = async (list: FirestorePriceList) => {
-        let tokenId = list.shareTokenId
-        const now = Timestamp.now()
-        if (!tokenId) {
-            tokenId = 'PL-' + Math.random().toString(36).substr(2, 9)
-            try {
-                await updatePriceList(list.id, { shareTokenId: tokenId, sharedAt: now })
-                loadData()
-            } catch (err) {
-                console.error('Failed to generate share link:', err)
-                showAlert('링크 생성 실패', '링크 생성에 실패했습니다.', true)
-                return
-            }
-        } else {
-            // Update sharedAt every time the link is shared
-            try {
-                await updatePriceList(list.id, { sharedAt: now })
-                loadData()
-            } catch (err) {
-                console.error('Failed to update sharedAt:', err)
-            }
+    const handleShare = (list: FirestorePriceList) => {
+        setSelectedList(list)
+        setRecipientName('')
+        setShowShareModal(true)
+    }
+
+    const confirmShare = async () => {
+        if (!selectedList) return
+
+        const name = recipientName.trim()
+        if (!name) {
+            showAlert('입력 오류', '수신 고객명을 입력해 주세요.', true)
+            return
         }
 
-        const link = `${window.location.origin}/price-view/${tokenId}`
         try {
-            await navigator.clipboard.writeText(link)
-            showAlert('링크 복사 완료', '단가표 공유 링크가 복사되었습니다.\n잠재 고객에게 전송하여 비회원 주문을 유도할 수 있습니다.')
-        } catch (err) {
-            console.error('Clipboard copy failed:', err)
-            setConfirmConfig({
-                title: '링크 복사',
-                message: '브라우저 설정으로 인해 자동 복사가 실패했습니다.\n아래 링크를 직접 복사해 주세요:',
-                type: 'copy',
-                confirmText: '확인',
-                cancelText: link // Reuse this field to store the link
+            setSaving(true)
+            const tokenId = 'PL-' + Math.random().toString(36).substr(2, 9)
+            const now = Timestamp.now()
+
+            // 템플릿(현재 선택된 단가표)을 기반으로 새로운 발송용 단가표 생성
+            await createPriceList({
+                title: name,
+                items: selectedList.items,
+                shareTokenId: tokenId,
+                sharedAt: now,
+                validUntil: selectedList.validUntil || null,
+                adminComment: selectedList.adminComment || undefined
             })
+
+            const link = `${window.location.origin}/price-view/${tokenId}`
+            const shareMessage = `안녕하세요, ${name} 귀하.\n요청하신 단가표(견적서) 링크입니다.\n\n${link}`
+
+            try {
+                await navigator.clipboard.writeText(shareMessage)
+                showAlert('생성 및 복사 완료', `[${name} 귀하] 전용 단가표(견적서)가 생성되었으며 공유 메시지가 복사되었습니다.`)
+                setShowShareModal(false)
+                loadData()
+            } catch (err) {
+                console.error('Clipboard copy failed:', err)
+                setConfirmConfig({
+                    title: '링크 생성 완료',
+                    message: `[${name} 귀하] 전용 단가표가 생성되었습니다.\n아래 내용을 직접 복사해 주세요:`,
+                    type: 'copy',
+                    confirmText: '확인',
+                    cancelText: shareMessage
+                })
+                setShowShareModal(false)
+                loadData()
+            }
+        } catch (err) {
+            console.error('Failed to create individual price list:', err)
+            showAlert('오류', '개별 단가표 생성에 실패했습니다.', true)
+        } finally {
+            setSaving(false)
         }
     }
+
+
 
     const handleDelete = (id: string) => {
         showConfirm('단가표 삭제', '이 단가표를 정말 삭제하시겠습니까? 관련 데이터가 모두 삭제됩니다.', async () => {
@@ -771,6 +794,40 @@ export default function PriceListManager() {
                                 setShowOrdersModal(false)
                                 setSelectedList(null)
                             }}>닫기</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Share Modal */}
+            {showShareModal && (
+                <div className="modal-backdrop" onClick={() => setShowShareModal(false)}>
+                    <div className="modal" style={{ maxWidth: '450px' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3><ExternalLinkIcon size={20} color="var(--color-primary)" /> 단가표 공유</h3>
+                            <button className="btn btn-ghost" onClick={() => setShowShareModal(false)}>✕</button>
+                        </div>
+                        <div className="modal-body p-6">
+                            <div className="form-group mb-4">
+                                <label className="label">수신 고객명 (선택)</label>
+                                <input
+                                    className="input"
+                                    placeholder="고객명 또는 업체명을 입력하세요"
+                                    value={recipientName}
+                                    onChange={e => setRecipientName(e.target.value)}
+                                    autoFocus
+                                    onKeyDown={e => e.key === 'Enter' && confirmShare()}
+                                />
+                                <p className="description mt-2" style={{ fontSize: '13px' }}>
+                                    고객명을 입력하면 링크 접속 시 <strong>"{recipientName || '고객'} 귀하"</strong>로 개인화된 단가표가 표시됩니다.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="modal-footer p-4" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button className="btn btn-secondary" onClick={() => setShowShareModal(false)}>취소</button>
+                            <button className="btn btn-primary px-6" onClick={confirmShare}>
+                                <CopyIcon size={16} /> 링크 및 메시지 복사
+                            </button>
                         </div>
                     </div>
                 </div>
