@@ -162,22 +162,19 @@ export default function PriceListGuestView() {
                                 <p className="text-sm text-slate-400 font-medium tracking-wide">QUOTATION</p>
                             </div>
 
-                            {/* Date Info - Right Aligned */}
-                            <div className="text-right pt-2">
-                                <div className="inline-flex flex-col gap-2 min-w-[200px]">
-                                    <div className="flex justify-between items-center text-[13px] border-b border-slate-100 pb-1">
-                                        <span className="text-slate-400 mr-6">적용일자</span>
-                                        <span className="font-bold text-slate-900">
-                                            {priceList.sharedAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일') ||
-                                                priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일')}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-[13px]">
-                                        <span className="text-slate-400 mr-6">유효기간</span>
-                                        <span className={`font-black ${countdown === '만료' ? 'text-red-500' : 'text-blue-600'}`}>
-                                            {countdown || '계산중...'}
-                                        </span>
-                                    </div>
+                            <div className="flex flex-col items-end pt-2 w-full md:w-1/2">
+                                <div className="grid grid-cols-[80px_1fr] gap-x-4 text-[13px] border-b border-slate-100 pb-2 mb-2 w-full max-w-[240px]">
+                                    <span className="text-slate-400 text-left">적용일자</span>
+                                    <span className="font-bold text-slate-900 text-right">
+                                        {priceList.sharedAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일') ||
+                                            priceList.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', '년 ').replace('.', '월 ').replace('.', '일')}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-[80px_1fr] gap-x-4 text-[13px] w-full max-w-[240px]">
+                                    <span className="text-slate-400 text-left">유효기간</span>
+                                    <span className={`font-black text-right ${countdown === '만료' ? 'text-red-500' : 'text-blue-600'}`}>
+                                        {countdown || '계산중...'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -368,14 +365,9 @@ export default function PriceListGuestView() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowOrderModal(false)}>
                     <div className="bg-white w-full max-w-[500px] rounded-[40px] shadow-2xl border border-white/20 overflow-hidden animate-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
                         <div className="p-10 md:p-14">
-                            <div className="flex items-center justify-between mb-10">
-                                <div className="space-y-1">
-                                    <h3 className="text-3xl font-black text-slate-900">업체 정보 입력</h3>
-                                    <p className="text-sm text-slate-400 font-bold">주문서 작성을 위한 기본 정보를 입력해 주세요.</p>
-                                </div>
-                                <button onClick={() => setShowOrderModal(false)} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-full transition-all group">
-                                    <XIcon size={24} className="text-slate-400 group-hover:rotate-90 transition-transform" />
-                                </button>
+                            <div className="mb-10">
+                                <h3 className="text-3xl font-black text-slate-900">업체 정보 입력</h3>
+                                <p className="text-sm text-slate-400 font-bold">주문서 작성을 위한 기본 정보를 입력해 주세요.</p>
                             </div>
 
                             <form onSubmit={handleStartOrder} className="space-y-8 text-left">
