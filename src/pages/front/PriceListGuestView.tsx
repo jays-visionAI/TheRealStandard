@@ -147,7 +147,7 @@ export default function PriceListGuestView() {
     const isExpired = priceList?.validUntil ? priceList.validUntil.toDate() < new Date() : false
 
     const SupplierInfo = () => (
-        <div className="max-w-[800px] mx-auto px-4 pb-24">
+        <div className="max-w-[800px] mx-auto px-10 pb-24">
             <div className="bg-slate-50/50 rounded-2xl border border-slate-100 p-8">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
                     <InfoIcon size={14} /> 공급처 정보 (Supplier Information)
@@ -181,7 +181,7 @@ export default function PriceListGuestView() {
     return (
         <div className="price-guest-view min-h-screen bg-[#f8f9fc] text-slate-900 pb-24">
             {/* Header Content Wrapper */}
-            <div className="max-w-[800px] mx-auto px-4 pt-8 md:pt-12">
+            <div className="max-w-[800px] mx-auto px-10 pt-8 md:pt-12">
 
                 {/* Breadcrumbs */}
                 <div className="flex items-center gap-2 text-slate-400 text-sm mb-8 font-medium">
