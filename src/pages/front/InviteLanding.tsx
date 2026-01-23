@@ -349,7 +349,7 @@ export default function InviteLanding() {
                 className="btn btn-primary btn-lg w-full py-5 text-lg font-bold shadow-xl shadow-blue-500/20 animate-bounce-subtle"
                 onClick={() => navigate(`/order/${token}/edit`)}
               >
-                주문서 작성 시작하기 →
+                발주서 작성 시작하기 →
               </button>
             </div>
           ) : !user || user.orgId !== orderInfo.customerOrgId ? (
@@ -468,7 +468,7 @@ export default function InviteLanding() {
                 className="btn btn-primary btn-lg w-full py-5 text-lg font-bold shadow-xl shadow-blue-500/20 animate-bounce-subtle"
                 onClick={() => navigate(`/order/${token}/edit`)}
               >
-                주문서 작성하러 가기 →
+                발주서 작성하러 가기 →
               </button>
             </div>
           )}
