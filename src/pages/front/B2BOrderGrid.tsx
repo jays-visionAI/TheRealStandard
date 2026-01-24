@@ -1160,7 +1160,7 @@ export default function B2BOrderGrid() {
                                 </td>
                                 <td className="total-weight-cell mobile-hidden" style={{ textAlign: 'right' }}>
                                     <div className="total-val">{formatCurrency(totalWeight)}kg</div>
-                                    <div className="total-lb">총중량</div>
+                                    <div className="total-lb">예상중량</div>
                                 </td>
                                 <td className="total-amount-cell mobile-hidden" style={{ textAlign: 'right' }}>
                                     <div className="total-val">₩{formatCurrency(totalAmount)}</div>
@@ -1172,9 +1172,14 @@ export default function B2BOrderGrid() {
                     </table>
 
                     {/* Grid 안내 - 하단으로 이동 */}
-                    <div className="grid-footer-guide p-4 border-t border-slate-100 flex items-center gap-2 text-primary bg-blue-50/30">
-                        <span className="guide-icon"><ClipboardListIcon size={14} /></span>
-                        <span className="text-sm">상품명을 입력하면 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 품목으로 이동합니다.</span>
+                    <div className="grid-footer-guide p-4 border-t border-slate-100 flex flex-col gap-1 text-primary bg-blue-50/30">
+                        <div className="flex items-center gap-2">
+                            <span className="guide-icon"><ClipboardListIcon size={14} /></span>
+                            <span className="text-sm font-medium">상품명을 입력하면 자동완성됩니다. 수량 입력 후 Enter를 누르면 다음 품목으로 이동합니다.</span>
+                        </div>
+                        <p className="text-xs text-slate-500 pl-6">
+                            중량 및 금액은 예상이며, 출고 시 발행되는 거래명세서의 중량과 금액을 확인바랍니다.
+                        </p>
                     </div>
                 </div>
 
@@ -1246,7 +1251,7 @@ export default function B2BOrderGrid() {
                         </div>
                         <div className="footer-summary-item divider"></div>
                         <div className="footer-summary-item">
-                            <span className="label">총 중량</span>
+                            <span className="label">예상중량</span>
                             <span className="value"><strong>{formatCurrency(totalWeight)}</strong> kg</span>
                         </div>
                         <div className="footer-summary-item divider"></div>
