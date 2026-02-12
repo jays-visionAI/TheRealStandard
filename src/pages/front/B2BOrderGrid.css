@@ -664,6 +664,44 @@
     .mobile-hidden {
         display: none !important;
     }
+
+    .desktop-total {
+        display: none !important;
+    }
+
+    .mobile-total {
+        display: table-row !important;
+    }
+}
+
+/* Mobile total grid */
+.mobile-total {
+    display: none;
+}
+
+.mobile-total-grid {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 12px 8px;
+    gap: 8px;
+}
+
+.mobile-total-item {
+    text-align: center;
+    flex: 1;
+}
+
+.mobile-total-item .total-val {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.mobile-total-item .total-lb {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
 }
 
 /* Comments Styling */

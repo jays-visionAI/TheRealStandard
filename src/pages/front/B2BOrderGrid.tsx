@@ -1149,7 +1149,7 @@ export default function B2BOrderGrid() {
                                     </button>
                                 </td>
                             </tr>
-                            <tr className="total-row">
+                            <tr className="total-row desktop-total">
                                 <td colSpan={3} className="total-label">합계 집계</td>
                                 <td className="total-items-cell" style={{ textAlign: 'center' }}>
                                     <div className="total-val">{totalItems}</div>
@@ -1159,15 +1159,33 @@ export default function B2BOrderGrid() {
                                     <div className="total-val">{formatNumber(totalBoxes)}</div>
                                     <div className="total-lb">박스수</div>
                                 </td>
-                                <td className="total-weight-cell mobile-hidden" style={{ textAlign: 'right' }}>
+                                <td className="total-weight-cell" style={{ textAlign: 'right' }}>
                                     <div className="total-val">{formatCurrency(totalWeight)}kg</div>
                                     <div className="total-lb">예상중량</div>
                                 </td>
-                                <td className="total-amount-cell mobile-hidden" style={{ textAlign: 'right' }}>
+                                <td className="total-amount-cell" style={{ textAlign: 'right' }}>
                                     <div className="total-val">₩{formatCurrency(totalAmount)}</div>
                                     <div className="total-lb">총금액</div>
                                 </td>
                                 <td></td>
+                            </tr>
+                            <tr className="total-row mobile-total">
+                                <td colSpan={9}>
+                                    <div className="mobile-total-grid">
+                                        <div className="mobile-total-item">
+                                            <div className="total-val">{totalItems}</div>
+                                            <div className="total-lb">품목수</div>
+                                        </div>
+                                        <div className="mobile-total-item">
+                                            <div className="total-val">{formatNumber(totalBoxes)}</div>
+                                            <div className="total-lb">박스수</div>
+                                        </div>
+                                        <div className="mobile-total-item">
+                                            <div className="total-val">{formatCurrency(totalWeight)}kg</div>
+                                            <div className="total-lb">예상중량</div>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                         </tfoot>
                     </table>
