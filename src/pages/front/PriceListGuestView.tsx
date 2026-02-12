@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { compareGroupOrder } from '../../lib/productSortOrder'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { getPriceListByShareToken, incrementPriceListReach, incrementPriceListConversion, type FirestorePriceList } from '../../lib/priceListService'
 import { getOrderSheetByToken, getOrderSheetItems, incrementOrderSheetReach, setOrderSheetItems, createOrderSheetWithId, generateOrderSheetId, type FirestoreOrderSheet, type FirestoreOrderSheetItem } from '../../lib/orderService'
@@ -316,7 +317,7 @@ export default function PriceListGuestView() {
                                         if (item.category1 === '냉장') grouped[baseName].refrigerated = item.supplyPrice;
                                         else if (item.category1 === '냉동') grouped[baseName].frozen = item.supplyPrice;
                                     });
-                                    const sortedGroups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+                                    const sortedGroups = Object.values(grouped).sort(compareGroupOrder);
 
                                     return sortedGroups.length > 0 ? sortedGroups.map((group, idx) => (
                                         <tr key={idx} className="group hover:bg-[#f8f9fc]/80 transition-all cursor-default">

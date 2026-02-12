@@ -9,6 +9,7 @@ import {
     type FirestoreProduct
 } from '../../lib/productService'
 import { checkAndRecordPriceChange, getPriceHistoryByProduct, type PriceHistoryEntry } from '../../lib/priceHistoryService'
+import { compareProductOrder } from '../../lib/productSortOrder'
 import { AlertTriangleIcon } from '../../components/Icons'
 import './ProductMaster.css'
 
@@ -151,7 +152,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                 return false
             }
             return true
-        }).sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+        }).sort(compareProductOrder)
     }, [products, searchQuery, categoryFilter, showInactive, channel])
 
     // 통계

@@ -18,6 +18,7 @@ import {
 } from '../../components/Icons'
 import { getAllSupplierUsers, type FirestoreUser } from '../../lib/userService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
+import { compareProductOrder } from '../../lib/productSortOrder'
 import {
     createPurchaseOrder,
     getAllPurchaseOrders,
@@ -123,7 +124,7 @@ export default function PurchaseOrderCreate() {
                 unitPrice: p.costPrice,
                 createdAt: p.createdAt?.toDate?.(),
                 updatedAt: p.updatedAt?.toDate?.(),
-            })).sort((a, b) => a.name.localeCompare(b.name, 'ko')))
+            })).sort(compareProductOrder))
 
             setPastPurchaseOrders(poData)
             setCustomerOrders(orderSheetsData)

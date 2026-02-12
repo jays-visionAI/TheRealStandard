@@ -19,6 +19,7 @@ import {
     MousePointerClickIcon
 } from '../../components/Icons'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
+import { compareProductOrder } from '../../lib/productSortOrder'
 import { getAllOrderSheets, createOrderSheet, setOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
 import {
     createPriceList,
@@ -109,7 +110,7 @@ export default function PriceListManager() {
             const aSelected = selectedProductIds.has(a.id) ? 1 : 0
             const bSelected = selectedProductIds.has(b.id) ? 1 : 0
             if (aSelected !== bSelected) return bSelected - aSelected
-            return a.name.localeCompare(b.name, 'ko')
+            return compareProductOrder(a, b)
         })
     }, [products, productSearch, selectedProductIds])
 
@@ -133,7 +134,7 @@ export default function PriceListManager() {
                 category1: p.category1 || (p as any).category || '냉장'
             }))
                 .filter(p => p.isActive && (p.category2 === 'B2B' || p.category2 === 'BOTH'))
-                .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+                .sort(compareProductOrder)
 
             setProducts(b2bProducts)
         } catch (err) {
