@@ -697,6 +697,12 @@
     .mobile-total {
         display: table-row !important;
     }
+
+    /* 모바일 키보드 열림 시 sticky footer 숨김 */
+    .b2b-order-grid:has(input:focus) .order-footer,
+    .b2b-order-grid:has(textarea:focus) .order-footer {
+        display: none !important;
+    }
 }
 
 /* Mobile total grid */
