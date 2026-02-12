@@ -568,13 +568,14 @@
 
     .order-table {
         min-width: auto;
-        table-layout: fixed;
+        table-layout: auto;
         width: 100%;
     }
 
     .order-table th,
     .order-table td {
         padding: var(--space-2) 2px;
+        white-space: nowrap;
     }
 
     .col-check {
@@ -583,6 +584,20 @@
 
     .col-product {
         min-width: 0;
+        width: auto;
+        white-space: normal !important;
+    }
+
+    .col-product .product-input-wrapper {
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .col-product .cell-input.product-input {
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 2px !important;
     }
 
     .col-unit {
@@ -595,7 +610,7 @@
     }
 
     .col-qty {
-        width: 60px;
+        width: 55px;
     }
 
     .col-action {
