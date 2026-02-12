@@ -470,30 +470,6 @@
     font-size: var(--text-xl);
 }
 
-.footer-total-row {
-    display: flex;
-    justify-content: center;
-    align-items: baseline;
-    gap: var(--space-3);
-    width: 100%;
-    padding: var(--space-2) 0;
-    border-top: 1px solid #e2e8f0;
-}
-
-.footer-total-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--color-primary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.footer-total-value {
-    font-size: 22px;
-    font-weight: 800;
-    color: var(--color-primary);
-}
-
 /* Pending Approval View */
 .pending-approval-view {
     padding: var(--space-8);
