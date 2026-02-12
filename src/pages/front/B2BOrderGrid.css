@@ -721,6 +721,29 @@
     margin-top: 2px;
 }
 
+.mobile-total-amount {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 10px;
+    padding: 10px 8px 4px;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 8px;
+}
+
+.mobile-total-amount-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-primary);
+    letter-spacing: 0.03em;
+}
+
+.mobile-total-amount-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--color-primary);
+}
+
 /* Comments Styling */
 .admin-comment-box {
     padding: var(--space-4);

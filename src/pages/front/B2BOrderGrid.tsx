@@ -1200,6 +1200,10 @@ export default function B2BOrderGrid() {
                                             <div className="total-lb">예상중량</div>
                                         </div>
                                     </div>
+                                    <div className="mobile-total-amount">
+                                        <span className="mobile-total-amount-label">예상합계금액</span>
+                                        <span className="mobile-total-amount-value">₩{formatCurrency(totalAmount)}</span>
+                                    </div>
                                 </td>
                             </tr>
                         </tfoot>
