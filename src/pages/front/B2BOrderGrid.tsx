@@ -848,31 +848,37 @@ export default function B2BOrderGrid() {
                         </div>
 
                         {/* Order Items Table */}
-                        <div className="bg-slate-50 rounded-xl p-6 mb-10 border border-slate-100">
+                        <div className="bg-slate-50 rounded-xl p-4 md:p-6 mb-10 border border-slate-100">
                             <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
                                 <ClipboardListIcon size={18} /> 주문 내역
                             </h4>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
+                                <table className="w-full text-sm text-left" style={{ tableLayout: 'fixed' }}>
+                                    <colgroup>
+                                        <col style={{ width: '35%' }} />
+                                        <col style={{ width: '18%' }} />
+                                        <col style={{ width: '20%' }} />
+                                        <col style={{ width: '27%' }} />
+                                    </colgroup>
                                     <thead className="text-xs text-slate-500 uppercase bg-slate-100 border-b border-slate-200">
                                         <tr>
-                                            <th className="px-4 py-3 rounded-tl-lg">품목</th>
-                                            <th className="px-4 py-3 text-center">수량</th>
-                                            <th className="px-4 py-3 text-right">예상중량</th>
-                                            <th className="px-4 py-3 text-right rounded-tr-lg">금액</th>
+                                            <th className="px-2 md:px-4 py-3 rounded-tl-lg">품목</th>
+                                            <th className="px-2 md:px-4 py-3 text-center">수량</th>
+                                            <th className="px-2 md:px-4 py-3 text-right">예상중량</th>
+                                            <th className="px-2 md:px-4 py-3 text-right rounded-tr-lg">금액</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200">
                                         {vRows.map(row => (
                                             <tr key={row.id} className="bg-white hover:bg-slate-50 transition-colors">
-                                                <td className="px-4 py-3 font-medium text-slate-900">{row.productName}</td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <span className="badge badge-light px-2 py-0.5 rounded text-xs font-bold">
-                                                        {row.quantity} {orderUnit.toUpperCase()}
+                                                <td className="px-2 md:px-4 py-3 font-medium text-slate-900" style={{ wordBreak: 'keep-all', lineHeight: '1.4' }}>{row.productName}</td>
+                                                <td className="px-2 md:px-4 py-3 text-center whitespace-nowrap">
+                                                    <span className="font-bold text-slate-800">
+                                                        {row.quantity} <span className="text-xs text-slate-500">{orderUnit.toUpperCase()}</span>
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-3 text-right text-slate-600">{formatCurrency(row.estimatedWeight)} kg</td>
-                                                <td className="px-4 py-3 text-right font-medium text-slate-900">₩{formatCurrency(row.totalAmount)}</td>
+                                                <td className="px-2 md:px-4 py-3 text-right text-slate-600 whitespace-nowrap">{formatCurrency(row.estimatedWeight)} kg</td>
+                                                <td className="px-2 md:px-4 py-3 text-right font-bold text-slate-900 whitespace-nowrap">₩{formatCurrency(row.totalAmount)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -915,12 +921,24 @@ export default function B2BOrderGrid() {
                                     </div>
                                 </div>
 
-                                <div className="mt-6">
+                                <div className="mt-6 flex flex-col items-center gap-3">
                                     <button
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-500/20 transition-all transform hover:scale-[1.01] flex items-center justify-center gap-2"
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg shadow-blue-500/20 transition-all transform hover:scale-[1.01] flex items-center justify-center gap-2"
                                         onClick={() => navigate('/signup', { state: { name: guestInfo.name, phone: guestInfo.tel, address: guestInfo.address, orderToken: token } })}
                                     >
                                         정식 거래처(회원) 등록 신청하기 <SparklesIcon size={20} />
+                                    </button>
+                                    <button
+                                        className="text-sm text-slate-400 hover:text-slate-600 transition-colors py-2 px-4"
+                                        onClick={() => {
+                                            if (window.opener) {
+                                                window.close()
+                                            } else {
+                                                window.location.href = 'about:blank'
+                                            }
+                                        }}
+                                    >
+                                        다음에 가입하기
                                     </button>
                                 </div>
                             </div>
