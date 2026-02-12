@@ -150,6 +150,14 @@
     font-size: var(--text-sm);
 }
 
+.product-table .last-update-col {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
 .margin-positive {
     color: var(--color-accent);
     font-weight: var(--font-medium);

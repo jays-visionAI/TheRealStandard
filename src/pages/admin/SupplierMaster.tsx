@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { FactoryIcon, SearchIcon, CheckCircleIcon, PauseCircleIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, AlertTriangleIcon, XIcon } from '../../components/Icons'
+import { FactoryIcon, SearchIcon, CheckCircleIcon, PauseCircleIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, AlertTriangleIcon, XIcon, KakaoIcon, CheckIcon } from '../../components/Icons'
 import './OrganizationMaster.css'  // 같은 스타일 공유
 import {
     getAllSupplierUsers,
@@ -9,6 +9,7 @@ import {
     type FirestoreUser,
     type BusinessProfile
 } from '../../lib/userService'
+import { sendInviteMessage } from '../../lib/kakaoService'
 
 // Supplier 타입 정의 (UI용)
 interface SupplierVM extends Omit<FirestoreUser, 'createdAt' | 'updatedAt'> {
@@ -62,6 +63,10 @@ export default function SupplierMaster() {
     const [editingSupplier, setEditingSupplier] = useState<SupplierVM | null>(null)
     const [formData, setFormData] = useState<any>({})
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Invite Link Modal State
+    const [inviteModalOpen, setInviteModalOpen] = useState(false)
+    const [inviteModalLink, setInviteModalLink] = useState('')
 
     // 모달 통보 전용 상태
     const [confirmConfig, setConfirmConfig] = useState<{
@@ -225,7 +230,7 @@ export default function SupplierMaster() {
                     status: formData.status,
                     business
                 })
-                showAlert('공급사 등록', '등록되었습니다.')
+                showAlert('공급사 등록', '등록되었습니다. 초대장을 발송할 수 있습니다.')
             }
 
             await loadSuppliers()
@@ -235,6 +240,36 @@ export default function SupplierMaster() {
             showAlert('저장 실패', '저장에 실패했습니다.', true)
         } finally {
             setIsSubmitting(false)
+        }
+    }
+
+    // 초대장 생성 및 링크 복사
+    const handleGenerateInvite = async (supplier: SupplierVM) => {
+        const token = `invite-${Math.random().toString(36).substr(2, 9)}`
+        try {
+            await updateUserFirebase(supplier.id, { inviteToken: token })
+            const inviteUrl = `${window.location.origin}/invite/${token}`
+            await navigator.clipboard.writeText(inviteUrl)
+            await loadSuppliers()
+            setInviteModalLink(inviteUrl)
+            setInviteModalOpen(true)
+        } catch (err) {
+            console.error('Failed to generate invite:', err)
+            showAlert('오류', '초대장 생성에 실패했습니다.', true)
+        }
+    }
+
+    // 카카오톡 초대 메시지 전송
+    const handleKakaoInvite = async (supplier: SupplierVM) => {
+        const token = `invite-${Math.random().toString(36).substr(2, 9)}`
+        try {
+            await updateUserFirebase(supplier.id, { inviteToken: token })
+            const inviteUrl = `${window.location.origin}/invite/${token}`
+            await loadSuppliers()
+            sendInviteMessage(supplier.companyName || '', inviteUrl)
+        } catch (err) {
+            console.error('Failed to send Kakao invite:', err)
+            showAlert('오류', '카카오 초대장 발송에 실패했습니다.', true)
         }
     }
 
@@ -346,6 +381,18 @@ export default function SupplierMaster() {
                                 </td>
                                 <td>{supplier.business?.paymentTerms || '-'}</td>
                                 <td className="actions">
+                                    <button
+                                        className="btn btn-sm btn-primary"
+                                        onClick={() => handleGenerateInvite(supplier)}
+                                    >
+                                        <ClipboardListIcon size={14} /> 초대장 복사
+                                    </button>
+                                    <button
+                                        className="btn btn-sm btn-kakao"
+                                        onClick={() => handleKakaoInvite(supplier)}
+                                    >
+                                        <KakaoIcon size={14} /> 카톡 초대
+                                    </button>
                                     <button className="btn btn-sm btn-ghost" onClick={() => openEditModal(supplier)}>수정</button>
                                     <button className="btn btn-sm btn-ghost" onClick={() => toggleActive(supplier)}>{supplier.isActive ? '비활성화' : '활성화'}</button>
                                     <button className="btn btn-sm btn-ghost danger" onClick={() => handleDelete(supplier)}>삭제</button>
@@ -415,6 +462,41 @@ export default function SupplierMaster() {
                     </div>
                 </div>
             )}
+
+            {/* Invite Link Modal */}
+            {inviteModalOpen && (
+                <div className="modal-overlay" onClick={() => setInviteModalOpen(false)}>
+                    <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>초대장 링크 복사 완료</h2>
+                            <button className="close-btn" onClick={() => setInviteModalOpen(false)}>
+                                <XIcon size={20} />
+                            </button>
+                        </div>
+                        <div className="modal-body" style={{ textAlign: 'center', padding: '32px 24px' }}>
+                            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                                <CheckIcon size={32} />
+                            </div>
+                            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>초대 링크가 복사되었습니다!</h3>
+                            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>공급업체 담당자에게 전달해주세요.</p>
+                            <div style={{ background: '#f3f4f6', borderRadius: '12px', padding: '16px', textAlign: 'left' }}>
+                                <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'block' }}>복사된 링크</label>
+                                <p style={{ fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all', color: '#374151' }}>{inviteModalLink}</p>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                className="btn btn-primary"
+                                style={{ width: '100%', padding: '14px', fontWeight: 'bold' }}
+                                onClick={() => setInviteModalOpen(false)}
+                            >
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Final Global Confirmation/Alert Modal */}
             {confirmConfig && (
                 <div className="modal-backdrop" style={{ zIndex: 3000 }}>

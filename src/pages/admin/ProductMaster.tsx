@@ -176,6 +176,17 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
         return new Intl.NumberFormat('ko-KR').format(value)
     }
 
+    // Last Update 포맷 (YY.MM.DD.)
+    const formatLastUpdate = (dateStr?: string) => {
+        if (!dateStr) return '-'
+        const d = new Date(dateStr)
+        if (isNaN(d.getTime())) return '-'
+        const yy = String(d.getFullYear()).slice(2)
+        const mm = String(d.getMonth() + 1).padStart(2, '0')
+        const dd = String(d.getDate()).padStart(2, '0')
+        return `${yy}.${mm}.${dd}.`
+    }
+
     // 모달 열기 (신규/수정)
     const openModal = (product?: Product) => {
         if (product) {
@@ -651,10 +662,8 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                             <th>카테고리1(냉장/냉동)</th>
                             <th>단위</th>
                             <th>예상중량/Box</th>
-                            <th className="price-col">매입가</th>
                             <th className="price-col">도매가(B2B)</th>
-                            <th className="price-col">이익(도매)</th>
-                            <th className="price-col">이익률(도매)</th>
+                            <th>Last Update</th>
                             <th>상태</th>
                             <th>관리</th>
                         </tr>
@@ -673,18 +682,8 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                 </td>
                                 <td>{product.unit.toUpperCase()}</td>
                                 <td>{product.boxWeight ? `${product.boxWeight} kg` : '-'}</td>
-                                <td className="price-col">₩{formatCurrency(product.costPrice)}</td>
                                 <td className="price-col">₩{formatCurrency(product.wholesalePrice)}</td>
-                                <td className="price-col">
-                                    <span className={(product.wholesaleProfit || 0) > 0 ? 'margin-positive' : 'margin-negative'}>
-                                        ₩{formatCurrency(product.wholesaleProfit || 0)}
-                                    </span>
-                                </td>
-                                <td className="price-col">
-                                    <span className={(product.wholesaleMargin || 0) > 0 ? 'margin-positive' : 'margin-negative'}>
-                                        {(product.wholesaleMargin || 0).toFixed(1)}%
-                                    </span>
-                                </td>
+                                <td className="last-update-col">{formatLastUpdate(product.updatedAt)}</td>
                                 <td>
                                     {product.isActive ? (
                                         <span className="status-badge active">활성</span>

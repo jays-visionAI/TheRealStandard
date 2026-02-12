@@ -7,9 +7,12 @@ import {
     KeyIcon,
     CpuIcon,
     ZapIcon,
-    CheckCircleIcon
+    CheckCircleIcon,
+    AlertCircleIcon,
+    LoaderIcon
 } from '../../components/Icons'
-import './SystemSettings.css' // Reusing logic but can have its own CSS if needed
+import './SystemSettings.css'
+import { llmTestService } from '../../lib/llmTestService'
 
 export default function LLMSettings() {
     const { settings, updateSettings } = useSystemStore()
@@ -21,6 +24,40 @@ export default function LLMSettings() {
     })
     const [isSaving, setIsSaving] = useState(false)
     const [message, setMessage] = useState({ type: '', text: '' })
+    const [testStatus, setTestStatus] = useState<{
+        [key: string]: { status: 'idle' | 'testing' | 'success' | 'error', message: string }
+    }>({
+        openai: { status: 'idle', message: '' },
+        gemini: { status: 'idle', message: '' },
+        deepseek: { status: 'idle', message: '' }
+    })
+
+    const handleTestConnection = async (provider: string, apiKey: string) => {
+        if (!apiKey) {
+            setTestStatus(prev => ({
+                ...prev,
+                [provider]: { status: 'error', message: 'API 키를 먼저 입력해주세요.' }
+            }))
+            return
+        }
+
+        setTestStatus(prev => ({ ...prev, [provider]: { status: 'testing', message: '연결 확인 중...' } }))
+
+        let result
+        if (provider === 'openai') result = await llmTestService.testOpenAIConnection(apiKey)
+        else if (provider === 'gemini') result = await llmTestService.testGeminiConnection(apiKey)
+        else if (provider === 'deepseek') result = await llmTestService.testDeepSeekConnection(apiKey)
+
+        if (result) {
+            setTestStatus(prev => ({
+                ...prev,
+                [provider]: {
+                    status: result.success ? 'success' : 'error',
+                    message: result.message
+                }
+            }))
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -103,13 +140,30 @@ export default function LLMSettings() {
                     <div className="card-body">
                         <div className="form-group">
                             <label>OpenAI API Key</label>
-                            <input
-                                type="password"
-                                value={formData.openaiApiKey}
-                                onChange={e => setFormData({ ...formData, openaiApiKey: e.target.value })}
-                                placeholder="sk-..."
-                            />
+                            <div className="flex gap-2">
+                                <input
+                                    type="password"
+                                    value={formData.openaiApiKey}
+                                    onChange={e => setFormData({ ...formData, openaiApiKey: e.target.value })}
+                                    placeholder="sk-..."
+                                    className="flex-1"
+                                />
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary whitespace-nowrap"
+                                    onClick={() => handleTestConnection('openai', formData.openaiApiKey)}
+                                    disabled={testStatus.openai.status === 'testing'}
+                                >
+                                    {testStatus.openai.status === 'testing' ? <LoaderIcon className="animate-spin" size={16} /> : '연결 테스트'}
+                                </button>
+                            </div>
                             <p className="help-text">GPT-4o, GPT-3.5 Turbo 등을 사용하는 데 필요합니다.</p>
+                            {testStatus.openai.status !== 'idle' && (
+                                <p className={`text-sm mt-1 flex items-center gap-1 ${testStatus.openai.status === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+                                    {testStatus.openai.status === 'success' ? <CheckCircleIcon size={14} /> : <AlertCircleIcon size={14} />}
+                                    {testStatus.openai.message}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </section>
@@ -122,13 +176,30 @@ export default function LLMSettings() {
                     <div className="card-body">
                         <div className="form-group">
                             <label>Gemini API Key</label>
-                            <input
-                                type="password"
-                                value={formData.geminiApiKey}
-                                onChange={e => setFormData({ ...formData, geminiApiKey: e.target.value })}
-                                placeholder="AIzaSy..."
-                            />
+                            <div className="flex gap-2">
+                                <input
+                                    type="password"
+                                    value={formData.geminiApiKey}
+                                    onChange={e => setFormData({ ...formData, geminiApiKey: e.target.value })}
+                                    placeholder="AIzaSy..."
+                                    className="flex-1"
+                                />
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary whitespace-nowrap"
+                                    onClick={() => handleTestConnection('gemini', formData.geminiApiKey)}
+                                    disabled={testStatus.gemini.status === 'testing'}
+                                >
+                                    {testStatus.gemini.status === 'testing' ? <LoaderIcon className="animate-spin" size={16} /> : '연결 테스트'}
+                                </button>
+                            </div>
                             <p className="help-text">Google AI Studio 또는 Vertex AI에서 발급받은 키를 입력하세요.</p>
+                            {testStatus.gemini.status !== 'idle' && (
+                                <p className={`text-sm mt-1 flex items-center gap-1 ${testStatus.gemini.status === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+                                    {testStatus.gemini.status === 'success' ? <CheckCircleIcon size={14} /> : <AlertCircleIcon size={14} />}
+                                    {testStatus.gemini.message}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </section>
@@ -141,13 +212,30 @@ export default function LLMSettings() {
                     <div className="card-body">
                         <div className="form-group">
                             <label>DeepSeek API Key</label>
-                            <input
-                                type="password"
-                                value={formData.deepseekApiKey}
-                                onChange={e => setFormData({ ...formData, deepseekApiKey: e.target.value })}
-                                placeholder="sk-..."
-                            />
+                            <div className="flex gap-2">
+                                <input
+                                    type="password"
+                                    value={formData.deepseekApiKey}
+                                    onChange={e => setFormData({ ...formData, deepseekApiKey: e.target.value })}
+                                    placeholder="sk-..."
+                                    className="flex-1"
+                                />
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary whitespace-nowrap"
+                                    onClick={() => handleTestConnection('deepseek', formData.deepseekApiKey)}
+                                    disabled={testStatus.deepseek.status === 'testing'}
+                                >
+                                    {testStatus.deepseek.status === 'testing' ? <LoaderIcon className="animate-spin" size={16} /> : '연결 테스트'}
+                                </button>
+                            </div>
                             <p className="help-text">DeepSeek-V3, DeepSeek-R1 등을 사용하는 데 필요합니다.</p>
+                            {testStatus.deepseek.status !== 'idle' && (
+                                <p className={`text-sm mt-1 flex items-center gap-1 ${testStatus.deepseek.status === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+                                    {testStatus.deepseek.status === 'success' ? <CheckCircleIcon size={14} /> : <AlertCircleIcon size={14} />}
+                                    {testStatus.deepseek.message}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </section>
