@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
+import { compareProductOrder } from '../../lib/productSortOrder'
 import { PackageIcon, SearchIcon, PlusIcon, ListIcon, GridIcon, ThermometerIcon, SnowflakeIcon, BoneIcon } from '../../components/Icons'
 import './ProductCatalog.css'
 
@@ -29,7 +30,7 @@ export default function ProductCatalog() {
             if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
             if (categoryFilter !== 'all' && p.category1 !== categoryFilter) return false
             return true
-        })
+        }).sort(compareProductOrder)
     }, [products, searchQuery, categoryFilter])
 
     const handleAddToOrder = (product: FirestoreProduct) => {

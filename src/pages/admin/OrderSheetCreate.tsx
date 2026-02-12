@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { FileEditIcon, BuildingIcon, SearchIcon, StarIcon, MapPinIcon, PhoneIcon, ClipboardListIcon, PackageIcon, CheckIcon, XIcon, AlertTriangleIcon, ChevronLeftIcon, ChevronRightIcon, InfoIcon, PlusIcon } from '../../components/Icons'
 import { getAllCustomerUsers, type FirestoreUser, type BusinessProfile } from '../../lib/userService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
+import { compareProductOrder } from '../../lib/productSortOrder'
 import {
     getAllOrderSheets,
     getOrderSheetItems,
@@ -172,7 +173,7 @@ export default function OrderSheetCreate() {
                 unitPrice: p.wholesalePrice,
                 createdAt: p.createdAt?.toDate?.(),
                 updatedAt: p.updatedAt?.toDate?.(),
-            })))
+            })).sort(compareProductOrder))
 
             setPastPriceLists(priceListsData)
             setPastOrderSheets(orderSheetsData)

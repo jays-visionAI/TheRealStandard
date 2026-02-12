@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { ClipboardListIcon, UserIcon, TrashIcon, PrinterIcon, ClockIcon, MegaphoneIcon, PackageIcon, MessageSquareIcon, MapPinIcon, InfoIcon, SparklesIcon, SendIcon, AlertTriangleIcon } from '../../components/Icons'
 import { getOrderSheetByToken, getOrderSheetItems, updateOrderSheet, setOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
+import { compareProductOrder } from '../../lib/productSortOrder'
 import { getUserById } from '../../lib/userService'
 import './B2BOrderGrid.css'
 
@@ -206,7 +207,7 @@ export default function B2BOrderGrid() {
                 unitPrice: p.wholesalePrice,
                 createdAt: p.createdAt?.toDate?.() || new Date(),
                 updatedAt: p.updatedAt?.toDate?.() || new Date(),
-            })))
+            })).sort(compareProductOrder))
         } catch (err) {
             console.error('Failed to load data:', err)
             setError('데이터를 불러오는데 실패했습니다.')
