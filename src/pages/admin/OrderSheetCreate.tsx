@@ -369,7 +369,7 @@ export default function OrderSheetCreate() {
                         totalAmount: 0
                     }
                 })
-                setRows(newRows)
+                setRows(newRows.sort((a, b) => compareProductOrder({ name: a.productName }, { name: b.productName })))
                 setConfirmModalOpen(false)
             }
         })
@@ -412,7 +412,7 @@ export default function OrderSheetCreate() {
                             totalAmount: item.amount || 0
                         }
                     })
-                    setRows(newRows)
+                    setRows(newRows.sort((a, b) => compareProductOrder({ name: a.productName }, { name: b.productName })))
                 } catch (err) {
                     console.error(err)
                     alert('발주서 항목을 가져오는데 실패했습니다.')
