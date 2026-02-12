@@ -74,10 +74,25 @@ export default function B2BOrderGrid() {
         tel: '',
         address: ''
     })
+    const [footerExpanded, setFooterExpanded] = useState(false)
 
     // Refs
     const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
     const dropdownRef = useRef<HTMLDivElement>(null)
+
+    // Scroll detection for footer expand
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollTop = window.scrollY || document.documentElement.scrollTop
+            const scrollHeight = document.documentElement.scrollHeight
+            const clientHeight = document.documentElement.clientHeight
+            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 80
+            setFooterExpanded(isAtBottom)
+        }
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        handleScroll()
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
 
     // Firebase에서 데이터 로드
     const loadData = async () => {
@@ -1262,21 +1277,21 @@ export default function B2BOrderGrid() {
                 )}
 
                 {/* Footer Actions */}
-                <footer className="order-footer glass-card">
-                    <div className="footer-summary">
+                <footer className={`order-footer glass-card ${footerExpanded ? 'footer-expanded' : 'footer-collapsed'}`}>
+                    <div className={`footer-summary ${footerExpanded ? '' : 'footer-summary-hidden'}`}>
                         <div className="footer-summary-item">
-                            <span className="label">품목</span>
+                            <span className="label">품목수</span>
                             <span className="value"><strong>{totalItems}</strong></span>
+                        </div>
+                        <div className="footer-summary-item divider"></div>
+                        <div className="footer-summary-item">
+                            <span className="label">박스수</span>
+                            <span className="value"><strong>{formatNumber(totalBoxes)}</strong> box</span>
                         </div>
                         <div className="footer-summary-item divider"></div>
                         <div className="footer-summary-item">
                             <span className="label">예상중량</span>
                             <span className="value"><strong>{formatCurrency(totalWeight)}</strong> kg</span>
-                        </div>
-                        <div className="footer-summary-item divider"></div>
-                        <div className="footer-summary-item">
-                            <span className="label">총 박스</span>
-                            <span className="value"><strong>{formatNumber(totalBoxes)}</strong> box</span>
                         </div>
                         <div className="footer-summary-item divider"></div>
                         <div className="footer-summary-item total">

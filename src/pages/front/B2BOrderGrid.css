@@ -393,18 +393,35 @@
 /* Footer */
 .b2b-order-grid .order-footer {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
     padding: var(--space-4) var(--space-6);
     position: sticky;
     bottom: var(--space-4);
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(12px);
     z-index: var(--z-sticky);
     border: 1px solid rgba(37, 99, 235, 0.1);
     box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     border-radius: var(--radius-2xl);
     margin-bottom: var(--space-4);
+    transition: all 0.3s ease;
+    gap: var(--space-3);
+}
+
+.footer-summary-hidden {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+}
+
+.footer-expanded .footer-summary {
+    max-height: 200px;
+    opacity: 1;
+    transition: max-height 0.3s ease, opacity 0.3s ease 0.1s;
 }
 
 .footer-summary {
