@@ -55,17 +55,34 @@ export async function getPriceHistoryByProduct(
     startDate?: Date,
     endDate?: Date
 ): Promise<PriceHistoryEntry[]> {
-    let q = query(
-        priceHistoryCollection,
-        where('productId', '==', productId),
-        orderBy('changedAt', 'asc')
-    )
+    let results: PriceHistoryEntry[] = []
 
-    const snapshot = await getDocs(q)
-    let results = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-    } as PriceHistoryEntry))
+    try {
+        // 복합 인덱스가 있는 경우 (productId + changedAt ASC)
+        const q = query(
+            priceHistoryCollection,
+            where('productId', '==', productId),
+            orderBy('changedAt', 'asc')
+        )
+        const snapshot = await getDocs(q)
+        results = snapshot.docs.map(d => ({
+            id: d.id,
+            ...d.data()
+        } as PriceHistoryEntry))
+    } catch (err) {
+        // 복합 인덱스가 없는 경우 fallback: where만 사용 후 클라이언트 정렬
+        console.warn('Composite index not available, falling back to client-side sort:', err)
+        const fallbackQ = query(
+            priceHistoryCollection,
+            where('productId', '==', productId)
+        )
+        const snapshot = await getDocs(fallbackQ)
+        results = snapshot.docs.map(d => ({
+            id: d.id,
+            ...d.data()
+        } as PriceHistoryEntry))
+        results.sort((a, b) => a.changedAt.toMillis() - b.changedAt.toMillis())
+    }
 
     // 클라이언트 사이드 날짜 필터링
     if (startDate) {
@@ -84,21 +101,39 @@ export async function getPriceHistoryByProduct(
  * 특정 상품의 최신 가격 기록 조회
  */
 export async function getLatestPriceHistory(productId: string): Promise<PriceHistoryEntry | null> {
-    const q = query(
-        priceHistoryCollection,
-        where('productId', '==', productId),
-        orderBy('changedAt', 'desc'),
-        limit(1)
-    )
+    try {
+        const q = query(
+            priceHistoryCollection,
+            where('productId', '==', productId),
+            orderBy('changedAt', 'desc'),
+            limit(1)
+        )
 
-    const snapshot = await getDocs(q)
-    if (snapshot.empty) return null
+        const snapshot = await getDocs(q)
+        if (snapshot.empty) return null
 
-    const doc = snapshot.docs[0]
-    return {
-        id: doc.id,
-        ...doc.data()
-    } as PriceHistoryEntry
+        const d = snapshot.docs[0]
+        return {
+            id: d.id,
+            ...d.data()
+        } as PriceHistoryEntry
+    } catch (err) {
+        // 복합 인덱스가 없는 경우 fallback
+        console.warn('Composite index not available for latest price, falling back:', err)
+        const fallbackQ = query(
+            priceHistoryCollection,
+            where('productId', '==', productId)
+        )
+        const snapshot = await getDocs(fallbackQ)
+        if (snapshot.empty) return null
+
+        const results = snapshot.docs.map(d => ({
+            id: d.id,
+            ...d.data()
+        } as PriceHistoryEntry))
+        results.sort((a, b) => b.changedAt.toMillis() - a.changedAt.toMillis())
+        return results[0]
+    }
 }
 
 /**
