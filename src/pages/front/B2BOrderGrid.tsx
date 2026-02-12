@@ -1293,11 +1293,10 @@ export default function B2BOrderGrid() {
                             <span className="label">예상중량</span>
                             <span className="value"><strong>{formatCurrency(totalWeight)}</strong> kg</span>
                         </div>
-                        <div className="footer-summary-item divider"></div>
-                        <div className="footer-summary-item total">
-                            <span className="label">예상합계금액</span>
-                            <span className="value"><strong>₩{formatCurrency(totalAmount)}</strong></span>
-                        </div>
+                    </div>
+                    <div className={`footer-total-row ${footerExpanded ? '' : 'footer-summary-hidden'}`}>
+                        <span className="footer-total-label">예상합계금액</span>
+                        <span className="footer-total-value">₩{formatCurrency(totalAmount)}</span>
                     </div>
 
                     <div className="flex gap-4">
