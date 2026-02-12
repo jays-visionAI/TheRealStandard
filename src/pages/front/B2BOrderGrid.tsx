@@ -950,7 +950,7 @@ export default function B2BOrderGrid() {
                         <div className="comment-text">{orderInfo.adminComment}</div>
                         {status === 'REVISION' && (
                             <div className="mt-4 text-sm text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                                <strong>💡 안내:</strong> 관리자의 요청사항을 확인하신 후, 리스트를 수정하여 다시 <strong>[주문 컨펌 및 승인 요청]</strong> 버튼을 눌러주세요.
+                                <strong>안내:</strong> 관리자의 요청사항을 확인하신 후, 리스트를 수정하여 다시 <strong>[컨펌&승인요청]</strong> 버튼을 눌러주세요.
                             </div>
                         )}
                     </div>
@@ -1273,11 +1273,7 @@ export default function B2BOrderGrid() {
                             onClick={handleSubmit}
                             disabled={totalItems === 0 || saving}
                         >
-                            {saving ? '제출 중...' : (
-                                <>
-                                    주문 컨펌 및 승인 요청 <SendIcon size={18} />
-                                </>
-                            )}
+                            {saving ? '제출 중...' : '컨펌&승인요청'}
                         </button>
                     </div>
                 </footer>
