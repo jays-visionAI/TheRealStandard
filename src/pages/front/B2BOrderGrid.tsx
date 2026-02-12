@@ -200,7 +200,13 @@ export default function B2BOrderGrid() {
                     }
                     localStorage.removeItem('trs_catalog_selection')
                 }
-                setRows(currentRows)
+                setRows(currentRows.sort((a, b) => {
+                    // 상품 미선택 행은 맨 아래
+                    if (!a.productName && !b.productName) return 0
+                    if (!a.productName) return 1
+                    if (!b.productName) return -1
+                    return compareProductOrder({ name: a.productName }, { name: b.productName })
+                }))
 
 
                 if (osData.customerComment) {
