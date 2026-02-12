@@ -563,43 +563,64 @@
     }
 
     .grid-container {
-        overflow-x: auto;
+        overflow-x: hidden;
     }
 
     .order-table {
         min-width: auto;
         table-layout: fixed;
+        width: 100%;
     }
 
     .order-table th,
     .order-table td {
-        padding: var(--space-2) var(--space-1);
+        padding: var(--space-2) 2px;
+    }
+
+    .col-check {
+        width: 28px !important;
     }
 
     .col-product {
         min-width: 0;
-        width: 40%;
     }
 
     .col-unit {
-        width: 15%;
+        display: none !important;
     }
 
     .col-price {
-        width: 20%;
+        width: 70px;
+        font-size: 13px;
     }
 
     .col-qty {
-        width: 20%;
+        width: 60px;
+    }
+
+    .col-action {
+        width: 28px !important;
     }
 
     .qty-input {
         width: 100% !important;
-        padding-right: 2px !important;
+        padding: 4px 2px !important;
+        font-size: 13px !important;
     }
 
     .qty-unit {
         display: none;
+    }
+
+    .remove-row-btn {
+        width: 24px;
+        height: 24px;
+        padding: 2px !important;
+    }
+
+    .cell-input {
+        padding: 4px 2px;
+        font-size: 13px;
     }
 
     .b2b-order-grid .order-footer {
