@@ -460,11 +460,13 @@ export default function PriceListGuestView() {
                     white-space: nowrap;
                 }
                 .plgv-table thead th.col-no {
-                    width: 50px;
+                    width: 36px;
                     text-align: center;
+                    padding-left: 8px;
+                    padding-right: 4px;
                 }
                 .plgv-table thead th.col-unit {
-                    width: 64px;
+                    width: 48px;
                     text-align: center;
                 }
                 .plgv-table thead th.col-price {
@@ -487,6 +489,8 @@ export default function PriceListGuestView() {
                     font-size: 12px;
                     font-weight: 600;
                     color: #cbd5e1;
+                    padding-left: 8px;
+                    padding-right: 4px;
                 }
                 .plgv-table tbody td.col-name {
                     font-weight: 700;
@@ -657,6 +661,26 @@ export default function PriceListGuestView() {
                     }
                     .plgv-table tbody td.col-price {
                         font-size: 13px;
+                    }
+                    .plgv-table thead th.col-no,
+                    .plgv-table tbody td.col-no {
+                        width: 28px;
+                        padding-left: 6px;
+                        padding-right: 2px;
+                        font-size: 11px;
+                    }
+                    .plgv-table thead th.col-unit,
+                    .plgv-table tbody td.col-unit {
+                        width: 36px;
+                        font-size: 11px;
+                        padding-left: 4px;
+                        padding-right: 4px;
+                    }
+                    .plgv-table thead th.col-price {
+                        width: 90px;
+                    }
+                    .plgv-table tbody td {
+                        padding: 12px 8px;
                     }
                     .plgv-footer {
                         padding: 24px 24px 32px;
