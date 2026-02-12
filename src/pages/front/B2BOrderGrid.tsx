@@ -1262,7 +1262,7 @@ export default function B2BOrderGrid() {
                         </div>
                         <div className="footer-summary-item divider"></div>
                         <div className="footer-summary-item total">
-                            <span className="label">합계 금액</span>
+                            <span className="label">예상합계금액</span>
                             <span className="value"><strong>₩{formatCurrency(totalAmount)}</strong></span>
                         </div>
                     </div>
