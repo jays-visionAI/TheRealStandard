@@ -1265,7 +1265,7 @@ export default function B2BOrderGrid() {
                             </div>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="label">배송주소 (선택)</label>
+                                    <label className="label">배송주소</label>
                                     <textarea
                                         className="input textarea"
                                         placeholder="물건을 받으실 배송지 주소를 입력하세요"
