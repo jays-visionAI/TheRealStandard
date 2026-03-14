@@ -213,49 +213,49 @@ export default function SalesOrderDetail() {
                             <div className="flex items-center gap-2 text-muted text-sm border-b border-white/5 pb-2 mb-2">
                                 <BuildingIcon size={14} /> 고객사 정보
                             </div>
-                            <div className="font-medium text-lg text-white mb-2">{order.customerName}</div>
+                            <div className="font-semibold text-lg" style={{ color: '#374151' }}>{order.customerName}</div>
                             {customer?.business && (
-                                <div className="space-y-2 text-sm">
+                                <div className="space-y-2 text-sm mt-3">
                                     {customer.business.bizRegNo && (
                                         <div className="flex justify-between">
                                             <span className="text-muted">사업자번호</span>
-                                            <span className="text-white">{customer.business.bizRegNo}</span>
+                                            <span style={{ color: '#374151' }}>{customer.business.bizRegNo}</span>
                                         </div>
                                     )}
                                     {customer.business.ceoName && (
                                         <div className="flex justify-between">
                                             <span className="text-muted">대표자</span>
-                                            <span className="text-white">{customer.business.ceoName}</span>
+                                            <span style={{ color: '#374151' }}>{customer.business.ceoName}</span>
                                         </div>
                                     )}
                                     {customer.business.address && (
                                         <div className="flex justify-between">
                                             <span className="text-muted">주소</span>
-                                            <span className="text-white" style={{ textAlign: 'right', maxWidth: '60%' }}>{customer.business.address}</span>
+                                            <span style={{ color: '#374151', textAlign: 'right', maxWidth: '60%' }}>{customer.business.address}</span>
                                         </div>
                                     )}
                                     {customer.business.tel && (
                                         <div className="flex justify-between">
                                             <span className="text-muted">연락처</span>
-                                            <span className="text-white">{customer.business.tel}</span>
+                                            <span style={{ color: '#374151' }}>{customer.business.tel}</span>
                                         </div>
                                     )}
                                     {customer.business.shipAddress1 && (
                                         <div className="flex justify-between">
                                             <span className="text-muted">배송지</span>
-                                            <span className="text-white" style={{ textAlign: 'right', maxWidth: '60%' }}>{customer.business.shipAddress1}</span>
+                                            <span style={{ color: '#374151', textAlign: 'right', maxWidth: '60%' }}>{customer.business.shipAddress1}</span>
                                         </div>
                                     )}
                                     {customer.business.contactPerson && (
                                         <div className="flex justify-between">
                                             <span className="text-muted">담당자</span>
-                                            <span className="text-white">{customer.business.contactPerson}{customer.business.contactPhone ? ` (${customer.business.contactPhone})` : ''}</span>
+                                            <span style={{ color: '#374151' }}>{customer.business.contactPerson}{customer.business.contactPhone ? ` (${customer.business.contactPhone})` : ''}</span>
                                         </div>
                                     )}
                                     {customer.business.paymentTerms && (
                                         <div className="flex justify-between">
                                             <span className="text-muted">결제조건</span>
-                                            <span className="text-white">{customer.business.paymentTerms}</span>
+                                            <span style={{ color: '#374151' }}>{customer.business.paymentTerms}</span>
                                         </div>
                                     )}
                                 </div>
