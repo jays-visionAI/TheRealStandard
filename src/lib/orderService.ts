@@ -194,6 +194,7 @@ export interface FirestoreSalesOrderItem {
     productName: string
     qtyKg: number
     qtyBox?: number
+    boxWeight?: number // kg per box
     unit?: string // 'box' | 'kg'
     unitPrice: number
     amount: number
@@ -445,7 +446,7 @@ export async function updatePurchaseOrder(id: string, data: Partial<FirestorePur
 // ============ CREATE SALES ORDER FROM ORDER SHEET ============
 export async function createSalesOrderFromSheet(
     orderSheet: { id: string; customerOrgId: string; customerName: string },
-    items: { productId?: string; productName?: string; estimatedKg?: number; unitPrice?: number; amount?: number; qtyRequested?: number; unit?: string }[]
+    items: { productId?: string; productName?: string; estimatedKg?: number; unitPrice?: number; amount?: number; qtyRequested?: number; unit?: string; boxWeight?: number }[]
 ): Promise<FirestoreSalesOrder> {
     const totalsKg = items.reduce((sum, i) => sum + (i.estimatedKg || 0), 0)
     const totalsBoxes = items.reduce((sum, i) => sum + ((i.unit === 'box' ? i.qtyRequested : 0) || 0), 0)
@@ -470,6 +471,7 @@ export async function createSalesOrderFromSheet(
         productName: i.productName || '',
         qtyKg: i.estimatedKg || 0,
         qtyBox: (i.unit === 'box' ? i.qtyRequested : 0) || 0,
+        boxWeight: i.boxWeight || (i.unit === 'box' && i.qtyRequested && i.qtyRequested > 0 ? Math.round((i.estimatedKg || 0) / i.qtyRequested * 10) / 10 : undefined),
         unit: i.unit || 'kg',
         unitPrice: i.unitPrice || 0,
         amount: i.amount || 0,

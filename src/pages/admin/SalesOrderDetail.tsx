@@ -156,10 +156,11 @@ export default function SalesOrderDetail() {
                                 <thead>
                                     <tr className="border-b border-white/10 bg-white/5">
                                         <th className="p-3 text-xs font-semibold text-muted uppercase">품명</th>
-                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">주문수량</th>
-                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">중량</th>
-                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">단가</th>
-                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">금액</th>
+                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">예상중량/BOX</th>
+                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">단가(원/Kg)</th>
+                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">주문수량(BOX)</th>
+                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">예상중량(Kg)</th>
+                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">금액(원)</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -167,10 +168,13 @@ export default function SalesOrderDetail() {
                                         <tr key={item.id}>
                                             <td className="p-3 text-sm font-medium">{item.productName}</td>
                                             <td className="p-3 text-sm text-right">
-                                                {item.qtyBox ? `${item.qtyBox} Box` : item.unit === 'kg' ? `${item.qtyKg.toFixed(1)} Kg` : '-'}
+                                                {item.boxWeight ? `${item.boxWeight} kg` : item.qtyBox && item.qtyBox > 0 && item.qtyKg > 0 ? `${Math.round(item.qtyKg / item.qtyBox * 10) / 10} kg` : '-'}
                                             </td>
-                                            <td className="p-3 text-sm text-right">{item.qtyKg.toFixed(1)} kg</td>
                                             <td className="p-3 text-sm text-right">{formatCurrency(item.unitPrice)}</td>
+                                            <td className="p-3 text-sm text-right">
+                                                {item.qtyBox ? `${item.qtyBox} BOX` : item.unit === 'kg' ? '-' : '-'}
+                                            </td>
+                                            <td className="p-3 text-sm text-right">{item.qtyKg.toFixed(1)}</td>
                                             <td className="p-3 text-sm text-right font-semibold">{formatCurrency(item.amount)}</td>
                                         </tr>
                                     ))}
@@ -178,11 +182,12 @@ export default function SalesOrderDetail() {
                                 <tfoot>
                                     <tr className="bg-white/5 font-bold">
                                         <td className="p-3 text-sm">합계</td>
+                                        <td className="p-3 text-sm"></td>
+                                        <td className="p-3 text-sm"></td>
                                         <td className="p-3 text-sm text-right text-primary">
-                                            {(order as any).totalsBoxes ? `${(order as any).totalsBoxes} Box` : '-'}
+                                            {(order as any).totalsBoxes ? `${(order as any).totalsBoxes} BOX` : '-'}
                                         </td>
                                         <td className="p-3 text-sm text-right text-primary">{order.totalsKg.toFixed(1)} kg</td>
-                                        <td className="p-3 text-sm"></td>
                                         <td className="p-3 text-sm text-right text-primary">{formatCurrency(order.totalsAmount)}</td>
                                     </tr>
                                 </tfoot>
