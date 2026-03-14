@@ -94,15 +94,30 @@ export default function InviteActivation() {
 
         setIsSubmitting(true)
         try {
-            // Firebase에서 고객 계정 활성화
+            // 1. Firebase Auth 계정 생성
+            const { createUserWithEmailAndPassword } = await import('firebase/auth')
+            const { auth } = await import('../../lib/firebase')
+
+            const normalizedEmail = email.toLowerCase().trim()
+            const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password)
+            const firebaseUid = userCredential.user.uid
+
+            // 2. Firestore 고객 정보 업데이트 (이메일, 상태, Firebase UID, 토큰 제거)
             await updateUser(customer.id, {
-                email: email,
+                email: normalizedEmail,
                 status: 'ACTIVE',
+                firebaseUid: firebaseUid,
+                inviteToken: '',  // 토큰 사용 완료 -> 재사용 방지
             })
+
             setIsSuccess(true)
-        } catch (err) {
+        } catch (err: any) {
             console.error('Activation failed:', err)
-            alert(err instanceof Error ? err.message : '활성화 중 오류가 발생했습니다.')
+            if (err.code === 'auth/email-already-in-use') {
+                alert('이미 사용 중인 이메일입니다. 다른 이메일을 입력하거나, 기존 계정으로 로그인해주세요.')
+            } else {
+                alert(err instanceof Error ? err.message : '활성화 중 오류가 발생했습니다.')
+            }
         } finally {
             setIsSubmitting(false)
         }

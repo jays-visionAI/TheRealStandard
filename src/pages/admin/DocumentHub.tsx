@@ -15,13 +15,15 @@ import {
     LockIcon,
     UserIcon,
     MessageSquareIcon,
-    KakaoIcon
+    KakaoIcon,
+    UploadIcon
 } from '../../components/Icons'
 import { shareDocument } from '../../lib/kakaoService'
 import { useDocStore, TRS_Document } from '../../stores/docStore'
 import { useAuth } from '../../contexts/AuthContext'
 import ReactQuill from 'react-quill-new'
 import 'react-quill-new/dist/quill.snow.css'
+import { marked } from 'marked'
 import './DocumentHub.css'
 
 const quillModules = {
@@ -164,6 +166,26 @@ export default function DocumentHub() {
         }))
     }
 
+    // Markdown .md 파일 업로드 핸들러
+    const handleMdFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0]) return
+        const file = e.target.files[0]
+        if (!file.name.endsWith('.md') && !file.name.endsWith('.markdown') && !file.name.endsWith('.txt')) {
+            alert('마크다운 파일(.md, .markdown, .txt)만 업로드할 수 있습니다.')
+            return
+        }
+        const reader = new FileReader()
+        reader.onload = (ev) => {
+            const mdContent = ev.target?.result as string
+            setFormData(prev => ({
+                ...prev,
+                content: mdContent,
+                title: prev.title || file.name.replace(/\.(md|markdown|txt)$/, '')
+            }))
+        }
+        reader.readAsText(file)
+    }
+
     const removeEditorAttachment = (id: string) => {
         setFormData(prev => ({
             ...prev,
@@ -259,6 +281,7 @@ export default function DocumentHub() {
                                     <div className="doc-icon">
                                         {doc.type === 'YOUTUBE' ? <YoutubeIcon size={24} className="text-error" /> :
                                             doc.type === 'EMBED' ? <ExternalLinkIcon size={24} className="text-primary" /> :
+                                            doc.type === 'MD_FILE' ? <FileTextIcon size={24} className="text-emerald-600" /> :
                                                 <FileTextIcon size={24} className="text-secondary" />}
                                     </div>
                                     <h3 className="doc-title">{doc.title}</h3>
@@ -324,6 +347,7 @@ export default function DocumentHub() {
                                         onChange={e => setFormData({ ...formData, type: e.target.value as any })}
                                     >
                                         <option value="MARKDOWN">텍스트/매뉴얼</option>
+                                        <option value="MD_FILE">마크다운 파일 업로드 (.md)</option>
                                         <option value="EMBED">웹 임베딩 (Google Docs 등)</option>
                                         <option value="YOUTUBE">유튜브 영상</option>
                                     </select>
@@ -346,18 +370,70 @@ export default function DocumentHub() {
                                 </div>
                             )}
 
-                            <div className="form-group mb-6">
-                                <label className="label">내용</label>
-                                <div className="quill-editor-container">
-                                    <ReactQuill
-                                        theme="snow"
-                                        value={formData.content}
-                                        onChange={content => setFormData({ ...formData, content })}
-                                        modules={quillModules}
-                                        placeholder="문서 내용을 입력하세요 (HTML 서식, 링크, 이미지 삽입 가능)"
-                                    />
+                            {formData.type === 'MD_FILE' ? (
+                                <div className="form-group mb-6">
+                                    <label className="label">마크다운 파일</label>
+                                    <div className="md-upload-zone" style={{
+                                        border: '2px dashed var(--border-primary)',
+                                        borderRadius: 'var(--radius-lg)',
+                                        padding: '2rem',
+                                        textAlign: 'center',
+                                        background: 'var(--bg-tertiary)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        position: 'relative'
+                                    }}>
+                                        {formData.content ? (
+                                            <div>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
+                                                    <FileTextIcon size={20} className="text-primary" />
+                                                    <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>마크다운 파일 로드됨</span>
+                                                </div>
+                                                <div style={{
+                                                    background: 'white',
+                                                    borderRadius: 'var(--radius-md)',
+                                                    padding: '16px',
+                                                    maxHeight: '300px',
+                                                    overflow: 'auto',
+                                                    textAlign: 'left',
+                                                    fontFamily: 'monospace',
+                                                    fontSize: '12px',
+                                                    lineHeight: '1.6',
+                                                    whiteSpace: 'pre-wrap',
+                                                    color: 'var(--text-secondary)',
+                                                    border: '1px solid var(--border-primary)'
+                                                }}>
+                                                    {formData.content.substring(0, 2000)}{formData.content.length > 2000 ? '\n...(이하 생략)' : ''}
+                                                </div>
+                                                <label className="btn btn-sm btn-secondary mt-4 cursor-pointer" style={{ display: 'inline-flex', gap: '6px' }}>
+                                                    <UploadIcon size={14} /> 다른 파일로 교체
+                                                    <input type="file" hidden accept=".md,.markdown,.txt" onChange={handleMdFileUpload} />
+                                                </label>
+                                            </div>
+                                        ) : (
+                                            <label className="cursor-pointer" style={{ display: 'block' }}>
+                                                <div style={{ marginBottom: '12px' }}><UploadIcon size={40} className="text-muted" /></div>
+                                                <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>마크다운 파일을 선택하세요</p>
+                                                <p className="text-muted text-sm">.md, .markdown, .txt 파일 지원</p>
+                                                <input type="file" hidden accept=".md,.markdown,.txt" onChange={handleMdFileUpload} />
+                                            </label>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="form-group mb-6">
+                                    <label className="label">내용</label>
+                                    <div className="quill-editor-container">
+                                        <ReactQuill
+                                            theme="snow"
+                                            value={formData.content}
+                                            onChange={content => setFormData({ ...formData, content })}
+                                            modules={quillModules}
+                                            placeholder="문서 내용을 입력하세요 (HTML 서식, 링크, 이미지 삽입 가능)"
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="form-group attachment-editor-section">
                                 <label className="label flex items-center justify-between">
@@ -435,8 +511,12 @@ export default function DocumentHub() {
                                 </div>
 
                                 <div
-                                    className="text-content"
-                                    dangerouslySetInnerHTML={{ __html: viewingDoc.content || '' }}
+                                    className="text-content markdown-body"
+                                    dangerouslySetInnerHTML={{
+                                        __html: viewingDoc.type === 'MD_FILE'
+                                            ? marked(viewingDoc.content || '') as string
+                                            : viewingDoc.content || ''
+                                    }}
                                 />
                                 {viewingDoc.type !== 'MARKDOWN' && viewingDoc.url && (
                                     <div className="embed-container">

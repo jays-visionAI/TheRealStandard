@@ -679,3 +679,136 @@
         border-radius: 0;
     }
 }
+
+/* Markdown Upload Zone */
+.md-upload-zone:hover {
+    border-color: #7c4dff !important;
+    background: rgba(124, 77, 255, 0.02) !important;
+}
+
+/* Markdown Body Rendering Styles */
+.markdown-body h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #eee;
+    color: #1a1a1a;
+}
+
+.markdown-body h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 1.75rem 0 0.75rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid #f0f0f0;
+    color: #222;
+}
+
+.markdown-body h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 1.5rem 0 0.5rem;
+    color: #333;
+}
+
+.markdown-body h4, .markdown-body h5, .markdown-body h6 {
+    font-weight: 700;
+    margin: 1.25rem 0 0.5rem;
+    color: #444;
+}
+
+.markdown-body p {
+    margin: 0.75rem 0;
+    line-height: 1.8;
+}
+
+.markdown-body ul, .markdown-body ol {
+    margin: 0.5rem 0;
+    padding-left: 2rem;
+}
+
+.markdown-body li {
+    margin: 0.3rem 0;
+    line-height: 1.7;
+}
+
+.markdown-body code {
+    background: #f3f4f6;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.875em;
+    color: #e11d48;
+}
+
+.markdown-body pre {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+.markdown-body pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    font-size: 1em;
+}
+
+.markdown-body blockquote {
+    border-left: 4px solid #7c4dff;
+    margin: 1rem 0;
+    padding: 0.5rem 1.25rem;
+    background: rgba(124, 77, 255, 0.04);
+    border-radius: 0 8px 8px 0;
+    color: #555;
+}
+
+.markdown-body blockquote p {
+    margin: 0.25rem 0;
+}
+
+.markdown-body table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+}
+
+.markdown-body th, .markdown-body td {
+    border: 1px solid #e5e7eb;
+    padding: 0.6rem 1rem;
+    text-align: left;
+}
+
+.markdown-body th {
+    background: #f8f9fa;
+    font-weight: 700;
+    color: #333;
+}
+
+.markdown-body tr:nth-child(even) {
+    background: #fafafa;
+}
+
+.markdown-body hr {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 2rem 0;
+}
+
+.markdown-body strong {
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.markdown-body img {
+    max-width: 100%;
+    border-radius: 8px;
+    margin: 1rem 0;
+}

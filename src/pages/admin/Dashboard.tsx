@@ -8,6 +8,8 @@ import {
     type FirestoreSalesOrder,
     type FirestoreShipment
 } from '../../lib/orderService'
+import { collection, getDocs } from 'firebase/firestore'
+import { db } from '../../lib/firebase'
 import './Dashboard.css'
 
 // Helper for currency and numbers
@@ -33,24 +35,36 @@ type Shipment = Omit<FirestoreShipment, 'createdAt' | 'updatedAt' | 'etaAt'> & {
     etaAt?: Date
 }
 
+type SalesOrderItem = {
+    id: string
+    salesOrderId: string
+    productId: string
+    productName: string
+    qtyKg: number
+    unitPrice: number
+    amount: number
+}
+
 export default function Dashboard() {
     // Firebase에서 직접 로드되는 데이터
     const [orderSheets, setOrderSheets] = useState<OrderSheet[]>([])
     const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([])
     const [shipments, setShipments] = useState<Shipment[]>([])
+    const [salesOrderItems, setSalesOrderItems] = useState<SalesOrderItem[]>([])
     const [loading, setLoading] = useState(true)
 
-    const [timeframe, setTimeframe] = useState<'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('WEEKLY')
+    const [timeframe, setTimeframe] = useState<'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('MONTHLY')
 
     // Firebase에서 모든 데이터 로드
     const loadData = async () => {
         try {
             setLoading(true)
 
-            const [osData, soData, shipData] = await Promise.all([
+            const [osData, soData, shipData, itemsSnap] = await Promise.all([
                 getAllOrderSheets(),
                 getAllSalesOrders(),
-                getAllShipments()
+                getAllShipments(),
+                getDocs(collection(db, 'salesOrderItems'))
             ])
 
             setOrderSheets(osData.map(os => ({
@@ -72,6 +86,8 @@ export default function Dashboard() {
                 updatedAt: s.updatedAt?.toDate?.() || new Date(),
                 etaAt: s.etaAt?.toDate?.() || undefined,
             })))
+
+            setSalesOrderItems(itemsSnap.docs.map(d => ({ id: d.id, ...d.data() } as SalesOrderItem)))
         } catch (err) {
             console.error('Failed to load dashboard data:', err)
         } finally {
@@ -84,49 +100,174 @@ export default function Dashboard() {
         loadData()
     }, [])
 
-    // 계산된 지표들
-    const todaySales = useMemo(() => {
-        const today = new Date().toDateString()
-        return salesOrders
-            .filter(so => so.createdAt && so.createdAt.toDateString() === today)
-            .reduce((sum, so) => sum + so.totalsAmount, 0)
+    // 총 매출
+    const totalSales = useMemo(() => {
+        return salesOrders.reduce((sum, so) => sum + so.totalsAmount, 0)
     }, [salesOrders])
 
+    // 활성 거래처: salesOrders에서 고유 customerOrgId
     const activeCustomers = useMemo(() => {
-        const uniqueCustomers = new Set(orderSheets.map(os => os.customerOrgId))
+        const uniqueCustomers = new Set(salesOrders.map(so => so.customerOrgId))
         return uniqueCustomers.size
-    }, [orderSheets])
+    }, [salesOrders])
 
+    // 주문 완료율: COMPLETED 또는 SHIPPED 상태
     const orderCompletionRate = useMemo(() => {
-        if (orderSheets.length === 0) return 0
-        const confirmed = orderSheets.filter(os => os.status === 'CONFIRMED').length
-        return (confirmed / orderSheets.length) * 100
-    }, [orderSheets])
+        if (salesOrders.length === 0) return 0
+        const completed = salesOrders.filter(so =>
+            so.status === 'COMPLETED' || so.status === 'SHIPPED' || so.status === 'PO_GENERATED'
+        ).length
+        return (completed / salesOrders.length) * 100
+    }, [salesOrders])
 
-    // 차트용 데이터 (실제 데이터 축적 전까지 0으로 초기화된 배열 제공)
+    // 미처리 주문: CREATED 상태
+    const pendingOrders = useMemo(() => {
+        return salesOrders.filter(so => so.status === 'CREATED').length
+    }, [salesOrders])
+
+    // 총 주문 수
+    const totalOrders = salesOrders.length
+
+    // 총 중량
+    const totalKg = useMemo(() => {
+        return salesOrders.reduce((sum, so) => sum + so.totalsKg, 0)
+    }, [salesOrders])
+
+    // 차트용 데이터: 실제 confirmedAt 기반으로 매출 집계
     const salesData = useMemo(() => {
-        const count = timeframe === 'WEEKLY' ? 7 : timeframe === 'MONTHLY' ? 12 : 4
-        return new Array(count).fill(0)
-    }, [timeframe])
+        if (timeframe === 'WEEKLY') {
+            // 최근 7일
+            const data = new Array(7).fill(0)
+            const now = new Date()
+            salesOrders.forEach(so => {
+                if (!so.confirmedAt) return
+                const diff = Math.floor((now.getTime() - so.confirmedAt.getTime()) / (1000 * 60 * 60 * 24))
+                if (diff >= 0 && diff < 7) {
+                    data[6 - diff] += so.totalsAmount
+                }
+            })
+            return data
+        } else if (timeframe === 'MONTHLY') {
+            // 12개월
+            const data = new Array(12).fill(0)
+            salesOrders.forEach(so => {
+                if (!so.confirmedAt) return
+                const month = so.confirmedAt.getMonth()
+                data[month] += so.totalsAmount
+            })
+            return data
+        } else if (timeframe === 'QUARTERLY') {
+            // 4분기
+            const data = new Array(4).fill(0)
+            salesOrders.forEach(so => {
+                if (!so.confirmedAt) return
+                const q = Math.floor(so.confirmedAt.getMonth() / 3)
+                data[q] += so.totalsAmount
+            })
+            return data
+        } else {
+            // 연간 (최근 3년)
+            const years = new Set<number>()
+            salesOrders.forEach(so => {
+                if (so.confirmedAt) years.add(so.confirmedAt.getFullYear())
+            })
+            const sortedYears = [...years].sort()
+            if (sortedYears.length === 0) return [0]
+            const data = sortedYears.map(year =>
+                salesOrders
+                    .filter(so => so.confirmedAt?.getFullYear() === year)
+                    .reduce((sum, so) => sum + so.totalsAmount, 0)
+            )
+            return data
+        }
+    }, [salesOrders, timeframe])
 
     const labels = useMemo(() => {
-        if (timeframe === 'WEEKLY') return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-        if (timeframe === 'MONTHLY') return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        return ['Q1', 'Q2', 'Q3', 'Q4']
-    }, [timeframe])
+        if (timeframe === 'WEEKLY') {
+            const days = []
+            const now = new Date()
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(now)
+                d.setDate(d.getDate() - i)
+                days.push(`${d.getMonth() + 1}/${d.getDate()}`)
+            }
+            return days
+        }
+        if (timeframe === 'MONTHLY') return ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
+        if (timeframe === 'QUARTERLY') return ['Q1', 'Q2', 'Q3', 'Q4']
+        // YEARLY
+        const years = new Set<number>()
+        salesOrders.forEach(so => {
+            if (so.confirmedAt) years.add(so.confirmedAt.getFullYear())
+        })
+        const sorted = [...years].sort()
+        return sorted.length > 0 ? sorted.map(y => `${y}년`) : ['2026년']
+    }, [timeframe, salesOrders])
 
-    // Donut Data
-    const productMix = [
-        { name: '대기 중', value: 100, color: '#f0f0f0' }
-    ]
+    // Product Mix: salesOrderItems에서 상품명별 매출 비중
+    const productMix = useMemo(() => {
+        const productSales = new Map<string, number>()
+        salesOrderItems.forEach(item => {
+            const name = (item.productName || '').replace(/\s*\(국내산\)\s*$/, '').trim()
+            // 기본 부위명만 추출 (포장/온도 제거)
+            const baseName = name.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').trim()
+            productSales.set(baseName, (productSales.get(baseName) || 0) + item.amount)
+        })
+
+        const sorted = [...productSales.entries()].sort((a, b) => b[1] - a[1])
+        const total = sorted.reduce((sum, [, v]) => sum + v, 0)
+        if (total === 0) return [{ name: '데이터 없음', value: 100, amount: 0, color: '#f0f0f0' }]
+
+        const colors = ['#7c4dff', '#00d2ff', '#00e676', '#ff9d00', '#f06292', '#ab47bc', '#26a69a', '#78909c']
+        const top = sorted.slice(0, 6)
+        const others = sorted.slice(6)
+        const otherAmount = others.reduce((sum, [, v]) => sum + v, 0)
+
+        const result = top.map(([name, amount], i) => ({
+            name,
+            value: Math.round((amount / total) * 1000) / 10,
+            amount,
+            color: colors[i % colors.length]
+        }))
+
+        if (otherAmount > 0) {
+            result.push({
+                name: '기타',
+                value: Math.round((otherAmount / total) * 1000) / 10,
+                amount: otherAmount,
+                color: '#78909c'
+            })
+        }
+
+        return result
+    }, [salesOrderItems])
+
+    // 거래처별 매출 TOP
+    const customerRanking = useMemo(() => {
+        const customerMap = new Map<string, { name: string; amount: number; kg: number; count: number }>()
+        salesOrders.forEach(so => {
+            const existing = customerMap.get(so.customerOrgId) || { name: so.customerName, amount: 0, kg: 0, count: 0 }
+            existing.amount += so.totalsAmount
+            existing.kg += so.totalsKg
+            existing.count += 1
+            customerMap.set(so.customerOrgId, existing)
+        })
+        return [...customerMap.values()].sort((a, b) => b.amount - a.amount).slice(0, 5)
+    }, [salesOrders])
 
     // Logistics Data
-    const logisticsStatus = [
-        { label: '입고(In)', value: 0, color: '#7c4dff' },
-        { label: '출고(Out)', value: shipments.filter(s => s.status === 'PREPARING').length, color: '#00d2ff' },
-        { label: '배송(Del)', value: shipments.filter(s => s.status === 'IN_TRANSIT' || s.status === 'DELIVERED').length, color: '#00e676' },
-        { label: '완료(Done)', value: shipments.filter(s => s.status === 'DELIVERED').length, color: '#ff9d00' },
-    ]
+    const logisticsStatus = useMemo(() => {
+        const preparing = shipments.filter(s => s.status === 'PREPARING').length
+        const inTransit = shipments.filter(s => s.status === 'IN_TRANSIT').length
+        const delivered = shipments.filter(s => s.status === 'DELIVERED').length
+        const total = Math.max(shipments.length, 1)
+        return [
+            { label: '대기', value: Math.round((preparing / total) * 100), count: preparing, color: '#7c4dff' },
+            { label: '배송중', value: Math.round((inTransit / total) * 100), count: inTransit, color: '#00d2ff' },
+            { label: '배송완료', value: Math.round((delivered / total) * 100), count: delivered, color: '#00e676' },
+            { label: '전체', value: 100, count: shipments.length, color: '#ff9d00' },
+        ]
+    }, [shipments])
 
     // 로딩 상태
     if (loading) {
@@ -140,13 +281,15 @@ export default function Dashboard() {
         )
     }
 
+    const maxSales = Math.max(...salesData, 1)
+
     return (
         <div className="dashboard-v2">
             {/* Header */}
             <header className="dashboard-v2-header">
                 <div>
-                    <h1>TRS Insights Hub</h1>
-                    <p className="text-secondary mt-1">오늘의 비즈니스 현황을 요약합니다</p>
+                    <h1>MEATGO Insights Hub</h1>
+                    <p className="text-secondary mt-1">비즈니스 현황 요약</p>
                 </div>
                 <div className="date-badge">
                     {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
@@ -156,31 +299,31 @@ export default function Dashboard() {
             {/* Top Stats Row */}
             <div className="stats-v2-grid">
                 <div className="premium-card stat-v2-card">
-                    <span className="stat-v2-label">오늘의 매출</span>
-                    <div className="stat-v2-value">{formatKRW(todaySales)}</div>
+                    <span className="stat-v2-label">총 매출</span>
+                    <div className="stat-v2-value">{formatKRW(totalSales)}</div>
                     <div className="stat-v2-trend">
-                        실시간 업데이트 중
+                        {totalOrders}건 / {formatNum(Math.round(totalKg))}kg
                     </div>
                 </div>
                 <div className="premium-card stat-v2-card">
-                    <span className="stat-v2-label">활성 거래처 (Active)</span>
+                    <span className="stat-v2-label">활성 거래처</span>
                     <div className="stat-v2-value">{formatNum(activeCustomers)}</div>
                     <div className="stat-v2-trend">
-                        운영 중인 고객사 수
+                        주문 이력이 있는 거래처
                     </div>
                 </div>
                 <div className="premium-card stat-v2-card">
-                    <span className="stat-v2-label">주문 완료율</span>
+                    <span className="stat-v2-label">주문 처리율</span>
                     <div className="stat-v2-value">{formatPercent(orderCompletionRate)}</div>
                     <div className="stat-v2-trend">
-                        전체 대비 승인 완료 비중
+                        전체 {totalOrders}건 중 {salesOrders.filter(so => so.status !== 'CREATED').length}건 처리
                     </div>
                 </div>
                 <div className="premium-card stat-v2-card">
                     <span className="stat-v2-label">미처리 주문</span>
-                    <div className="stat-v2-value">{orderSheets.filter(os => os.status !== 'CONFIRMED').length}건</div>
+                    <div className="stat-v2-value">{pendingOrders}건</div>
                     <div className="stat-v2-trend warning">
-                        검토가 필요한 주문장
+                        {pendingOrders > 0 ? '검토가 필요합니다' : '처리 완료'}
                     </div>
                 </div>
             </div>
@@ -190,7 +333,7 @@ export default function Dashboard() {
                 {/* Sales Trend */}
                 <div className="premium-card">
                     <div className="card-header">
-                        <h3><TrendingUpIcon size={18} className="text-primary mr-2" /> Sales Trend</h3>
+                        <h3><TrendingUpIcon size={18} className="text-primary mr-2" /> 매출 추이</h3>
                         <div className="timeframe-selector">
                             {(['WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'] as const).map(tf => (
                                 <button
@@ -207,7 +350,7 @@ export default function Dashboard() {
                     <div className="chart-container">
                         {salesData.every(v => v === 0) ? (
                             <div className="empty-chart-overlay">
-                                <p>데이터를 축적 중입니다...</p>
+                                <p>해당 기간 데이터가 없습니다</p>
                             </div>
                         ) : (
                             <svg width="100%" height="100%" viewBox="0 0 1000 300" preserveAspectRatio="none">
@@ -217,19 +360,48 @@ export default function Dashboard() {
                                         <stop offset="100%" stopColor="#7c4dff" stopOpacity="0" />
                                     </linearGradient>
                                 </defs>
-                                <polyline
-                                    className="chart-line"
-                                    points={salesData.map((d, i) => `${(i / (salesData.length - 1)) * 1000},${300 - (d / Math.max(1, ...salesData)) * 250}`).join(' ')}
-                                />
-                                <path
-                                    className="chart-area"
-                                    d={`M0,300 ${salesData.map((d, i) => `${(i / (salesData.length - 1)) * 1000},${300 - (d / Math.max(1, ...salesData)) * 250}`).join(' ')} L1000,300 Z`}
-                                />
+                                {/* Bar chart */}
+                                {salesData.map((d, i) => {
+                                    const barWidth = 800 / salesData.length
+                                    const x = 100 + i * barWidth
+                                    const barHeight = (d / maxSales) * 250
+                                    return (
+                                        <g key={i}>
+                                            <rect
+                                                x={x + barWidth * 0.15}
+                                                y={300 - barHeight}
+                                                width={barWidth * 0.7}
+                                                height={barHeight}
+                                                rx="4"
+                                                fill={d > 0 ? 'url(#barGradient)' : 'rgba(255,255,255,0.05)'}
+                                                opacity={0.9}
+                                            />
+                                            {d > 0 && (
+                                                <text
+                                                    x={x + barWidth * 0.5}
+                                                    y={300 - barHeight - 8}
+                                                    textAnchor="middle"
+                                                    fill="#ccc"
+                                                    fontSize="11"
+                                                    fontWeight="600"
+                                                >
+                                                    {(d / 10000).toFixed(0)}만
+                                                </text>
+                                            )}
+                                        </g>
+                                    )
+                                })}
+                                <defs>
+                                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#7c4dff" />
+                                        <stop offset="100%" stopColor="#3d1f99" />
+                                    </linearGradient>
+                                </defs>
                             </svg>
                         )}
 
                         {/* Labels Overlay */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem', padding: '0 10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '0.5rem', padding: '0 60px' }}>
                             {labels.map(l => <span key={l} style={{ fontSize: '0.65rem', color: '#999', fontWeight: 600 }}>{l}</span>)}
                         </div>
                     </div>
@@ -238,12 +410,12 @@ export default function Dashboard() {
                 {/* Product Mix Donut */}
                 <div className="premium-card">
                     <div className="card-header">
-                        <h3><PackageIcon size={18} className="text-primary mr-2" /> Product Mix</h3>
+                        <h3><PackageIcon size={18} className="text-primary mr-2" /> 상품별 매출</h3>
                     </div>
                     <div className="donut-container">
                         <div style={{ position: 'relative', width: '180px', height: '180px' }}>
                             <svg width="180" height="180" className="donut-svg">
-                                <circle cx="90" cy="90" r="70" fill="transparent" stroke="#f0f0f0" strokeWidth="20" />
+                                <circle cx="90" cy="90" r="70" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="20" />
                                 {productMix.reduce((acc, item, i) => {
                                     const offset = productMix.slice(0, i).reduce((sum, prev) => sum + prev.value, 0)
                                     const length = (item.value / 100) * (2 * Math.PI * 70)
@@ -265,7 +437,7 @@ export default function Dashboard() {
                             </svg>
                             <div className="donut-center-text">
                                 <div className="donut-center-label">총 매출</div>
-                                <div className="donut-center-value">84%</div>
+                                <div className="donut-center-value" style={{ fontSize: '0.85rem' }}>{formatKRW(totalSales)}</div>
                             </div>
                         </div>
                         <div className="donut-legend">
@@ -280,91 +452,73 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* Bottom Row: Logistics & Operational Lead Time */}
+            {/* Bottom Row: Customer Ranking & Logistics */}
             <div className="bottom-grid">
-                {/* Logistics status bars */}
+                {/* 거래처별 매출 TOP */}
                 <div className="premium-card">
                     <div className="card-header">
-                        <h3><TruckIcon size={18} className="text-primary mr-2" /> Logistics Throughput</h3>
+                        <h3><TruckIcon size={18} className="text-primary mr-2" /> 거래처별 매출 TOP</h3>
                     </div>
-                    <div className="logistics-grid">
-                        {logisticsStatus.map(item => (
-                            <div key={item.label} className="progress-tube-container">
-                                <div className="progress-tube">
-                                    <div className="progress-fill" style={{ height: `${item.value}%`, background: `linear-gradient(to top, ${item.color}, ${item.color}cc)` }}></div>
-                                    <div className="progress-segments">
-                                        {[...Array(10)].map((_, i) => <div key={i} className="segment-divider"></div>)}
+                    <div style={{ padding: '0.5rem 0' }}>
+                        {customerRanking.length === 0 ? (
+                            <p style={{ color: '#888', textAlign: 'center', padding: '2rem 0' }}>거래 데이터가 없습니다</p>
+                        ) : (
+                            customerRanking.map((c, i) => {
+                                const maxAmount = customerRanking[0]?.amount || 1
+                                return (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888', width: '24px', textAlign: 'center' }}>
+                                            {i + 1}
+                                        </span>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: '4px' }}>{c.name}</div>
+                                            <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', width: `${(c.amount / maxAmount) * 100}%`, background: 'linear-gradient(90deg, #7c4dff, #00d2ff)', borderRadius: '3px', transition: 'width 0.5s ease' }} />
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'right', minWidth: '120px' }}>
+                                            <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{formatKRW(c.amount)}</div>
+                                            <div style={{ fontSize: '0.7rem', color: '#888' }}>{c.count}건 / {formatNum(Math.round(c.kg))}kg</div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="progress-label">{item.label}</div>
-                                <div className="progress-percent">{item.value}%</div>
-                            </div>
-                        ))}
+                                )
+                            })
+                        )}
                     </div>
                 </div>
 
                 {/* Lead Time Operational Matrix */}
                 <div className="premium-card">
                     <div className="card-header">
-                        <h3><ClockIcon size={18} className="text-primary mr-2" /> Operational Matrix</h3>
-                        <span className="text-xs text-secondary">Avg. Lead Time: <strong>2.4 Days</strong></span>
+                        <h3><ClockIcon size={18} className="text-primary mr-2" /> 운영 현황</h3>
                     </div>
                     <div className="lead-time-matrix">
-                        <div className="timeline">
-                            <div className="timeline-step active">
-                                <div className="step-node"></div>
-                                <div className="step-info">
-                                    <div className="step-name">주문접수</div>
-                                    <div className="step-time">Day 0</div>
-                                </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                            <div style={{ background: 'rgba(124,77,255,0.1)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#7c4dff' }}>{totalOrders}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>총 주문 수</div>
                             </div>
-                            <div className="timeline-step active">
-                                <div className="step-node"></div>
-                                <div className="step-info">
-                                    <div className="step-name">내부승인</div>
-                                    <div className="step-time">+4h</div>
-                                </div>
+                            <div style={{ background: 'rgba(0,210,255,0.1)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#00d2ff' }}>{shipments.length}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>총 배송 건수</div>
                             </div>
-                            <div className="timeline-step active">
-                                <div className="step-node"></div>
-                                <div className="step-info">
-                                    <div className="step-name">발주완료</div>
-                                    <div className="step-time">+12h</div>
-                                </div>
+                            <div style={{ background: 'rgba(0,230,118,0.1)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#00e676' }}>{formatNum(Math.round(totalKg))}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>총 중량 (kg)</div>
                             </div>
-                            <div className="timeline-step active">
-                                <div className="step-node"></div>
-                                <div className="step-info">
-                                    <div className="step-name">배차매칭</div>
-                                    <div className="step-time">+18h</div>
-                                </div>
-                            </div>
-                            <div className="timeline-step">
-                                <div className="step-node"></div>
-                                <div className="step-info">
-                                    <div className="step-name">배송완료</div>
-                                    <div className="step-time">Day 2.4</div>
-                                </div>
+                            <div style={{ background: 'rgba(255,157,0,0.1)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ff9d00' }}>{activeCustomers}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>활성 거래처</div>
                             </div>
                         </div>
 
                         <div className="metrics-summary">
-                            <div className="metric-item">
-                                <span className="metric-label">주문 → 발주</span>
-                                <span className="metric-avg">8.5h</span>
-                            </div>
-                            <div className="metric-item">
-                                <span className="metric-label">발주 → 출고</span>
-                                <span className="metric-avg">14.2h</span>
-                            </div>
-                            <div className="metric-item">
-                                <span className="metric-label">총 배송 소요</span>
-                                <span className="metric-avg">32.8h</span>
-                            </div>
-                        </div>
-
-                        <div style={{ marginTop: 'auto', textAlign: 'right' }}>
-                            <button className="btn btn-ghost btn-sm">세부 지표 리포트 보기 →</button>
+                            {logisticsStatus.map(item => (
+                                <div key={item.label} className="metric-item">
+                                    <span className="metric-label">{item.label}</span>
+                                    <span className="metric-avg" style={{ color: item.color }}>{item.count}건</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>

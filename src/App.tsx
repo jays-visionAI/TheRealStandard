@@ -30,6 +30,8 @@ import OrderSheetList from './pages/admin/OrderSheetList'
 import OrderSheetCreate from './pages/admin/OrderSheetCreate'
 import OrderReview from './pages/admin/OrderReview'
 import SalesOrderList from './pages/admin/SalesOrderList'
+import SeedOrders from './pages/admin/SeedOrders'
+import ProductMigration from './pages/admin/ProductMigration'
 import SalesOrderDetail from './pages/admin/SalesOrderDetail'
 import POList from './pages/admin/POList'
 import PurchaseOrderCreate from './pages/admin/PurchaseOrderCreate'
@@ -163,6 +165,8 @@ function App() {
                         <Route path="order-sheets/:id/review" element={<OrderReview />} />
                         <Route path="sales-orders" element={<SalesOrderList />} />
                         <Route path="sales-orders/:id" element={<SalesOrderDetail />} />
+                        <Route path="seed-orders" element={<SeedOrders />} />
+                        <Route path="product-migration" element={<ProductMigration />} />
                         {/* 거래내역 */}
                         <Route path="purchase-orders" element={<POList />} />
                         <Route path="purchase-orders/create" element={<PurchaseOrderCreate />} />

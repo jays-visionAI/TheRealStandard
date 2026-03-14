@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     getAllSalesOrders,
@@ -14,6 +14,8 @@ import { getAllVehicleTypes, type FirestoreVehicleType } from '../../lib/vehicle
 import { SearchIcon, CheckCircleIcon, TruckDeliveryIcon, KakaoIcon, XIcon, AlertTriangleIcon, TrashIcon } from '../../components/Icons'
 import { sendOrderMessage } from '../../lib/kakaoService'
 import ShippingCard from '../../components/ShippingCard'
+import ListPagination from '../../components/ListPagination'
+import { useListFilters } from '../../hooks/useListFilters'
 import './SalesOrderList.css'
 import { Timestamp } from 'firebase/firestore'
 
@@ -48,6 +50,12 @@ export default function SalesOrderList() {
     const [editingShipmentId, setEditingShipmentId] = useState<string | null>(null) // null = new, string = editing
 
     const navigate = useNavigate()
+
+    // Delete Confirm Modal State
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+    const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+    const [deleteTargetName, setDeleteTargetName] = useState('')
+    const [isDeleting, setIsDeleting] = useState(false)
 
     // Firebase에서 데이터 로드
     const loadData = async () => {
@@ -96,12 +104,32 @@ export default function SalesOrderList() {
         return shipments.find(s => s.sourceSalesOrderId === orderId)
     }
 
-    const filteredOrders = useMemo(() => {
+    const searchFiltered = useMemo(() => {
         return salesOrders.filter(so =>
             so.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (so.customerName || '').toLowerCase().includes(searchTerm.toLowerCase())
-        ).sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
+        )
     }, [salesOrders, searchTerm])
+
+    const dateExtractor = useCallback((so: LocalSalesOrder) => so.confirmedAt, [])
+    const listFilters = useListFilters(searchFiltered, { dateExtractor, defaultSort: 'date' })
+
+    const filteredOrders = useMemo(() => {
+        const items = [...listFilters.filteredItems]
+        const { sortField, sortDir } = listFilters
+        const dir = sortDir === 'asc' ? 1 : -1
+        if (sortField === 'customer') items.sort((a, b) => dir * (a.customerName || '').localeCompare(b.customerName || ''))
+        else if (sortField === 'amount') items.sort((a, b) => dir * (a.totalsAmount - b.totalsAmount))
+        else items.sort((a, b) => dir * ((a.confirmedAt?.getTime() || 0) - (b.confirmedAt?.getTime() || 0)))
+        return items
+    }, [listFilters.filteredItems, listFilters.sortField, listFilters.sortDir])
+
+    const paginatedOrders = useMemo(() => {
+        const start = (listFilters.page - 1) * listFilters.pageSize
+        return filteredOrders.slice(start, start + listFilters.pageSize)
+    }, [filteredOrders, listFilters.page, listFilters.pageSize])
+
+    const totalPages = Math.max(1, Math.ceil(filteredOrders.length / listFilters.pageSize))
 
     // --- Dispatch Logic ---
     const [dispatchForm, setDispatchForm] = useState({
@@ -183,15 +211,25 @@ export default function SalesOrderList() {
         }
     }
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('정말 삭제하시겠습니까? 관련 데이터가 모두 삭제됩니다.')) return
+    const handleDelete = (so: LocalSalesOrder) => {
+        setDeleteTargetId(so.id)
+        setDeleteTargetName(so.customerName || so.id)
+        setDeleteConfirmOpen(true)
+    }
+
+    const confirmDelete = async () => {
+        if (!deleteTargetId) return
+        setIsDeleting(true)
         try {
-            await deleteSalesOrder(id)
-            alert('삭제되었습니다.')
-            loadData()
+            await deleteSalesOrder(deleteTargetId)
+            await loadData()
+            setDeleteConfirmOpen(false)
+            setDeleteTargetId(null)
         } catch (err) {
             console.error('Failed to delete:', err)
             alert('삭제에 실패했습니다.')
+        } finally {
+            setIsDeleting(false)
         }
     }
 
@@ -247,15 +285,24 @@ export default function SalesOrderList() {
             </div>
 
             <div className="filters-bar glass-card mb-6">
-                <div className="search-box p-2 flex items-center gap-2">
-                    <SearchIcon size={20} className="text-muted" />
-                    <input
-                        type="text"
-                        className="bg-transparent border-none outline-none text-white w-full"
-                        placeholder="주문번호 또는 고객사명 검색..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', padding: '8px' }}>
+                    <div className="search-box p-2 flex items-center gap-2" style={{ flex: '1', minWidth: '200px' }}>
+                        <SearchIcon size={20} className="text-muted" />
+                        <input
+                            type="text"
+                            className="bg-transparent border-none outline-none text-white w-full"
+                            placeholder="주문번호 또는 고객사명 검색..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="date" value={listFilters.startDate} onChange={e => listFilters.setStartDate(e.target.value)}
+                            style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px 10px', fontSize: '13px' }} />
+                        <span style={{ color: 'var(--text-muted)' }}>~</span>
+                        <input type="date" value={listFilters.endDate} onChange={e => listFilters.setEndDate(e.target.value)}
+                            style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px 10px', fontSize: '13px' }} />
+                    </div>
                 </div>
             </div>
 
@@ -264,22 +311,22 @@ export default function SalesOrderList() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b border-white/10 bg-white/5">
-                                <th className="p-4 text-sm font-semibold text-muted uppercase">주문일시</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('date')}>주문확정일시 {listFilters.sortField === 'date' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
                                 <th className="p-4 text-sm font-semibold text-muted uppercase">SalesOrder No</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase">고객사</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('customer')}>고객사 {listFilters.sortField === 'customer' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
                                 <th className="p-4 text-sm font-semibold text-muted uppercase text-right">총 중량</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right">총 금액</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('amount')}>총 금액 {listFilters.sortField === 'amount' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
                                 <th className="p-4 text-sm font-semibold text-muted uppercase">상태</th>
                                 <th className="p-4 text-sm font-semibold text-muted uppercase">작업</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {filteredOrders.length > 0 ? (
-                                filteredOrders.map((so) => {
+                            {paginatedOrders.length > 0 ? (
+                                paginatedOrders.map((so) => {
                                     const shipment = getShipmentByOrderId(so.id)
                                     return (
                                         <tr key={so.id} className="hover:bg-white/5 transition-colors">
-                                            <td className="p-4 text-sm">{formatDate(so.createdAt)}</td>
+                                            <td className="p-4 text-sm">{formatDate(so.confirmedAt)}</td>
                                             <td className="p-4 text-sm font-mono text-primary">{so.id}</td>
                                             <td className="p-4 text-sm font-medium">{so.customerName}</td>
                                             <td className="p-4 text-sm text-right">{so.totalsKg.toFixed(1)} kg</td>
@@ -324,7 +371,7 @@ export default function SalesOrderList() {
                                                     )}
                                                     <button
                                                         className="btn btn-sm btn-ghost text-red-500"
-                                                        onClick={() => handleDelete(so.id)}
+                                                        onClick={() => handleDelete(so)}
                                                         title="삭제"
                                                     >
                                                         <TrashIcon size={14} />
@@ -344,6 +391,14 @@ export default function SalesOrderList() {
                         </tbody>
                     </table>
                 </div>
+                <ListPagination
+                    page={listFilters.page}
+                    totalPages={totalPages}
+                    pageSize={listFilters.pageSize}
+                    totalItems={filteredOrders.length}
+                    onPageChange={listFilters.setPage}
+                    onPageSizeChange={listFilters.setPageSize}
+                />
             </div>
 
             {/* Dispatch Modal */}
@@ -422,6 +477,48 @@ export default function SalesOrderList() {
                                     </p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirm Modal */}
+            {deleteConfirmOpen && deleteTargetId && (
+                <div className="modal-overlay" onClick={() => { if (!isDeleting) { setDeleteConfirmOpen(false); setDeleteTargetId(null) } }}>
+                    <div className="modal-content glass-card" style={{ maxWidth: '440px' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <AlertTriangleIcon size={24} color="#ef4444" />
+                                확정주문 삭제
+                            </h2>
+                            <button className="modal-close-btn" onClick={() => { setDeleteConfirmOpen(false); setDeleteTargetId(null) }} disabled={isDeleting}>
+                                <XIcon size={20} />
+                            </button>
+                        </div>
+                        <div style={{ padding: '24px' }}>
+                            <p style={{ fontSize: '1.05rem', lineHeight: '1.7', color: 'var(--text-primary)' }}>
+                                <strong>"{deleteTargetName}"</strong>의 확정주문을 삭제하시겠습니까?
+                            </p>
+                            <p style={{ fontSize: '0.875rem', color: '#ef4444', marginTop: '8px' }}>
+                                관련 데이터가 모두 삭제되며 되돌릴 수 없습니다.
+                            </p>
+                        </div>
+                        <div style={{ borderTop: '1px solid var(--border-primary)', padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                            <button
+                                className="btn btn-ghost"
+                                onClick={() => { setDeleteConfirmOpen(false); setDeleteTargetId(null) }}
+                                disabled={isDeleting}
+                            >
+                                취소
+                            </button>
+                            <button
+                                className="btn"
+                                style={{ backgroundColor: '#ef4444', color: 'white', fontWeight: 'bold' }}
+                                onClick={confirmDelete}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? '삭제 중...' : '삭제하기'}
+                            </button>
                         </div>
                     </div>
                 </div>

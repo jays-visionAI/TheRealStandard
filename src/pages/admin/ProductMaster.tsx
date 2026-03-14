@@ -664,6 +664,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                             <th>단위</th>
                             <th>예상중량/Box</th>
                             <th className="price-col">도매가(B2B)</th>
+                            <th>등록일</th>
                             <th>Last Update</th>
                             <th>상태</th>
                             <th>관리</th>
@@ -684,6 +685,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                 <td>{product.unit.toUpperCase()}</td>
                                 <td>{product.boxWeight ? `${product.boxWeight} kg` : '-'}</td>
                                 <td className="price-col">₩{formatCurrency(product.wholesalePrice)}</td>
+                                <td className="last-update-col">{formatLastUpdate(product.createdAt)}</td>
                                 <td className="last-update-col">{formatLastUpdate(product.updatedAt)}</td>
                                 <td>
                                     {product.isActive ? (

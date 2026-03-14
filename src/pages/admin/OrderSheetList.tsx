@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { PlusIcon, SearchIcon, FileTextIcon, PencilIcon, TrashIcon, EyeIcon, AlertTriangleIcon } from '../../components/Icons'
 import {
@@ -7,6 +7,8 @@ import {
     type FirestoreOrderSheet
 } from '../../lib/orderService'
 import type { OrderSheetStatus } from '../../types'
+import ListPagination from '../../components/ListPagination'
+import { useListFilters } from '../../hooks/useListFilters'
 
 // OrderSheet 타입 정의
 type OrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDate' | 'cutOffAt'> & {
@@ -19,7 +21,6 @@ type OrderSheet = Omit<FirestoreOrderSheet, 'createdAt' | 'updatedAt' | 'shipDat
 }
 
 export default function OrderSheetList() {
-    // Firebase에서 직접 로드되는 데이터
     const [orderSheets, setOrderSheets] = useState<OrderSheet[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -27,21 +28,17 @@ export default function OrderSheetList() {
     const [filterStatus, setFilterStatus] = useState<OrderSheetStatus | 'ALL'>('ALL')
     const [searchTerm, setSearchTerm] = useState('')
 
-    // Delete confirmation modal state
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
 
-    // Link modal state
     const [showLinkModal, setShowLinkModal] = useState(false)
     const [linkModalData, setLinkModalData] = useState<{ link: string; message: string; isGuest: boolean } | null>(null)
     const [copied, setCopied] = useState(false)
 
-    // Alert modal state
     const [showAlertModal, setShowAlertModal] = useState(false)
     const [alertModalData, setAlertModalData] = useState<{ title: string; message: string; isError?: boolean } | null>(null)
 
-    // Firebase에서 발주서 목록 로드
     const loadOrderSheets = async () => {
         try {
             setLoading(true)
@@ -62,7 +59,6 @@ export default function OrderSheetList() {
         }
     }
 
-    // 초기 로드
     useEffect(() => {
         loadOrderSheets()
     }, [])
@@ -76,6 +72,25 @@ export default function OrderSheetList() {
             return matchesStatus && matchesSearch
         })
     }, [orderSheets, filterStatus, searchTerm])
+
+    const dateExtractor = useCallback((o: OrderSheet) => o.createdAt, [])
+    const listFilters = useListFilters(filteredOrders, { dateExtractor, defaultSort: 'date' })
+
+    const sortedOrders = useMemo(() => {
+        const items = [...listFilters.filteredItems]
+        const { sortField, sortDir } = listFilters
+        const dir = sortDir === 'asc' ? 1 : -1
+        if (sortField === 'customer') items.sort((a, b) => dir * (a.customerName || '').localeCompare(b.customerName || ''))
+        else items.sort((a, b) => dir * ((a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0)))
+        return items
+    }, [listFilters.filteredItems, listFilters.sortField, listFilters.sortDir])
+
+    const paginatedOrders = useMemo(() => {
+        const start = (listFilters.page - 1) * listFilters.pageSize
+        return sortedOrders.slice(start, start + listFilters.pageSize)
+    }, [sortedOrders, listFilters.page, listFilters.pageSize])
+
+    const totalPages = Math.max(1, Math.ceil(sortedOrders.length / listFilters.pageSize))
 
     const getStatusBadge = (status: string) => {
         const statusConfig: Record<string, { label: string; class: string }> = {
@@ -108,13 +123,8 @@ export default function OrderSheetList() {
             return
         }
         const link = `${window.location.origin}/order/${token}/edit`
-
-        // For guest orders, include a message template
         if (order.isGuest) {
-            const message = `[주식회사 믿고] 발주 내용이 확정되었습니다.
-아래 링크에서 확인해주세요.
-
-${link}`
+            const message = `[주식회사 믿고] 발주 내용이 확정되었습니다.\n아래 링크에서 확인해주세요.\n\n${link}`
             setLinkModalData({ link, message, isGuest: true })
         } else {
             setLinkModalData({ link, message: link, isGuest: false })
@@ -167,7 +177,6 @@ ${link}`
         setDeleteTargetId(null)
     }
 
-    // 로딩 상태
     if (loading) {
         return (
             <div className="page-container">
@@ -179,7 +188,6 @@ ${link}`
         )
     }
 
-    // 에러 상태
     if (error) {
         return (
             <div className="page-container">
@@ -200,7 +208,6 @@ ${link}`
 
     return (
         <div className="page-container">
-            {/* Header */}
             <div className="page-header">
                 <div className="header-left">
                     <h1>매출발주(고객용) 목록</h1>
@@ -208,37 +215,44 @@ ${link}`
                 </div>
             </div>
 
-            {/* Filters */}
             <div className="filters-bar glass-card">
-                <div className="filter-group">
-                    <input
-                        type="text"
-                        className="input"
-                        placeholder="발주번호 또는 고객명 검색..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="filter-group" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <select
-                        className="input select"
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value as OrderSheetStatus | 'ALL')}
-                    >
-                        <option value="ALL">전체 상태</option>
-                        <option value="DRAFT">초안</option>
-                        <option value="SENT">발송됨</option>
-                        <option value="SUBMITTED">고객 컨펌</option>
-                        <option value="REVISION">수정요청</option>
-                        <option value="CONFIRMED">승인됨</option>
-                    </select>
-                    <Link to="/admin/order-sheets/create" className="btn btn-primary" style={{ whiteSpace: 'nowrap', minWidth: '140px' }}>
-                        <PlusIcon size={18} /> + 발주서 생성
-                    </Link>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', padding: '8px' }}>
+                    <div className="filter-group" style={{ flex: '1', minWidth: '200px' }}>
+                        <input
+                            type="text"
+                            className="input"
+                            placeholder="발주번호 또는 고객명 검색..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input type="date" value={listFilters.startDate} onChange={e => listFilters.setStartDate(e.target.value)}
+                            style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px 10px', fontSize: '13px' }} />
+                        <span style={{ color: 'var(--text-muted)' }}>~</span>
+                        <input type="date" value={listFilters.endDate} onChange={e => listFilters.setEndDate(e.target.value)}
+                            style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '6px 10px', fontSize: '13px' }} />
+                    </div>
+                    <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <select
+                            className="input select"
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value as OrderSheetStatus | 'ALL')}
+                        >
+                            <option value="ALL">전체 상태</option>
+                            <option value="DRAFT">초안</option>
+                            <option value="SENT">발송됨</option>
+                            <option value="SUBMITTED">고객 컨펌</option>
+                            <option value="REVISION">수정요청</option>
+                            <option value="CONFIRMED">승인됨</option>
+                        </select>
+                        <Link to="/admin/order-sheets/create" className="btn btn-primary" style={{ whiteSpace: 'nowrap', minWidth: '140px' }}>
+                            <PlusIcon size={18} /> + 발주서 생성
+                        </Link>
+                    </div>
                 </div>
             </div>
 
-            {/* Table */}
             <div className="glass-card">
                 <div className="table-container">
                     <table className="table">
@@ -254,8 +268,8 @@ ${link}`
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredOrders.length > 0 ? (
-                                filteredOrders.map((order) => (
+                            {paginatedOrders.length > 0 ? (
+                                paginatedOrders.map((order) => (
                                     <tr key={order.id}>
                                         <td className="font-semibold text-primary">{order.id}</td>
                                         <td>
@@ -328,6 +342,14 @@ ${link}`
                         </tbody>
                     </table>
                 </div>
+                <ListPagination
+                    page={listFilters.page}
+                    totalPages={totalPages}
+                    pageSize={listFilters.pageSize}
+                    totalItems={sortedOrders.length}
+                    onPageChange={listFilters.setPage}
+                    onPageSizeChange={listFilters.setPageSize}
+                />
             </div>
 
             {/* Delete Confirmation Modal */}
@@ -349,18 +371,8 @@ ${link}`
                             </p>
                         </div>
                         <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                            <button
-                                className="btn btn-ghost"
-                                onClick={cancelDelete}
-                                disabled={isDeleting}
-                            >
-                                취소
-                            </button>
-                            <button
-                                className="btn btn-error"
-                                onClick={confirmDelete}
-                                disabled={isDeleting}
-                            >
+                            <button className="btn btn-ghost" onClick={cancelDelete} disabled={isDeleting}>취소</button>
+                            <button className="btn btn-error" onClick={confirmDelete} disabled={isDeleting}>
                                 {isDeleting ? '삭제 중...' : '삭제'}
                             </button>
                         </div>
@@ -398,13 +410,8 @@ ${link}`
                             </div>
                         </div>
                         <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                            <button className="btn btn-ghost" onClick={closeLinkModal}>
-                                닫기
-                            </button>
-                            <button
-                                className={`btn ${copied ? 'btn-success' : 'btn-primary'}`}
-                                onClick={handleCopyLink}
-                            >
+                            <button className="btn btn-ghost" onClick={closeLinkModal}>닫기</button>
+                            <button className={`btn ${copied ? 'btn-success' : 'btn-primary'}`} onClick={handleCopyLink}>
                                 {copied ? '복사됨!' : '복사하기'}
                             </button>
                         </div>
@@ -428,9 +435,7 @@ ${link}`
                             </p>
                         </div>
                         <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button className="btn btn-primary" onClick={() => setShowAlertModal(false)}>
-                                확인
-                            </button>
+                            <button className="btn btn-primary" onClick={() => setShowAlertModal(false)}>확인</button>
                         </div>
                     </div>
                 </div>

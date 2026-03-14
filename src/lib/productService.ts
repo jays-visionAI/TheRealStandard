@@ -1,5 +1,5 @@
 import {
-    collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc,
+    collection, doc, getDocs, getDoc, setDoc, deleteDoc,
     serverTimestamp, Timestamp
 } from 'firebase/firestore'
 import { db } from './firebase'
@@ -57,7 +57,8 @@ export async function createProductWithId(id: string, data: Omit<FirestoreProduc
 
 export async function updateProduct(id: string, data: Partial<FirestoreProduct>): Promise<void> {
     const docRef = doc(db, PRODUCTS_COLLECTION, id)
-    await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() })
+    const { id: _id, ...updateData } = data as any
+    await setDoc(docRef, { ...updateData, updatedAt: serverTimestamp() }, { merge: true })
 }
 
 export async function deleteProduct(id: string): Promise<void> {

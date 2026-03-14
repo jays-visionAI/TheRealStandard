@@ -79,6 +79,11 @@ export default function OrganizationMaster() {
     const [inviteModalOpen, setInviteModalOpen] = useState(false)
     const [inviteModalLink, setInviteModalLink] = useState('')
 
+    // Delete Confirm Modal State
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+    const [confirmTarget, setConfirmTarget] = useState<Customer | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
+
     // Firebase에서 거래처 목록 로드 (통합 users 컬렉션)
     const loadCustomers = async () => {
         try {
@@ -243,16 +248,25 @@ export default function OrganizationMaster() {
         }
     }
 
-    // 삭제
-    const handleDelete = async (customer: Customer) => {
-        if (!confirm(`"${customer.companyName}" 거래처를 정말 삭제하시겠습니까?`)) return
+    // 삭제 - 커스텀 확인 모달 표시
+    const handleDelete = (customer: Customer) => {
+        setConfirmTarget(customer)
+        setConfirmModalOpen(true)
+    }
+
+    const confirmDelete = async () => {
+        if (!confirmTarget) return
+        setIsDeleting(true)
         try {
-            await deleteUser(customer.id)
+            await deleteUser(confirmTarget.id)
             await loadCustomers()
-            alert('삭제되었습니다.')
+            setConfirmModalOpen(false)
+            setConfirmTarget(null)
         } catch (err) {
             console.error('Delete failed:', err)
             alert('삭제에 실패했습니다.')
+        } finally {
+            setIsDeleting(false)
         }
     }
 
@@ -727,6 +741,45 @@ export default function OrganizationMaster() {
                                 onClick={() => setInviteModalOpen(false)}
                             >
                                 확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Delete Confirm Modal */}
+            {confirmModalOpen && confirmTarget && (
+                <div className="modal-overlay" onClick={() => { if (!isDeleting) { setConfirmModalOpen(false); setConfirmTarget(null) } }}>
+                    <div className="modal-content" style={{ maxWidth: '440px' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <AlertTriangleIcon size={24} color="#ef4444" />
+                                거래처 삭제
+                            </h2>
+                            <button className="close-btn" onClick={() => { setConfirmModalOpen(false); setConfirmTarget(null) }} disabled={isDeleting}>✕</button>
+                        </div>
+                        <div className="modal-body" style={{ padding: '24px' }}>
+                            <p style={{ fontSize: '1.05rem', lineHeight: '1.7', color: 'var(--text-primary)' }}>
+                                <strong>"{confirmTarget.companyName}"</strong> 거래처를 정말 삭제하시겠습니까?
+                            </p>
+                            <p style={{ fontSize: '0.875rem', color: '#ef4444', marginTop: '8px' }}>
+                                이 작업은 되돌릴 수 없습니다.
+                            </p>
+                        </div>
+                        <div className="modal-footer" style={{ borderTop: '1px solid var(--border-primary)', padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => { setConfirmModalOpen(false); setConfirmTarget(null) }}
+                                disabled={isDeleting}
+                            >
+                                취소
+                            </button>
+                            <button
+                                className="btn"
+                                style={{ backgroundColor: '#ef4444', color: 'white', fontWeight: 'bold' }}
+                                onClick={confirmDelete}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? '삭제 중...' : '삭제하기'}
                             </button>
                         </div>
                     </div>

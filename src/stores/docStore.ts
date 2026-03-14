@@ -23,7 +23,7 @@ export interface TRS_Document {
     categoryId: string
     title: string
     content: string
-    type: 'MARKDOWN' | 'EMBED' | 'YOUTUBE'
+    type: 'MARKDOWN' | 'EMBED' | 'YOUTUBE' | 'MD_FILE'
     url?: string
     author: string
     authorId: string
