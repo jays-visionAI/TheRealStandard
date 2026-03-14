@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { createSalesOrder, setSalesOrderItems } from '../../lib/orderService'
 import { getAllCustomerUsers } from '../../lib/userService'
-import { Timestamp } from 'firebase/firestore'
+import { Timestamp, collection, getDocs, deleteDoc, doc } from 'firebase/firestore'
+import { db } from '../../lib/firebase'
 
 // 태윤유통 거래처원장 데이터 (Excel에서 추출)
 const TAEYOON_ORDERS: Record<string, { product: string; origin: string; qty: number; weight: number; unitPrice: number; totalPrice: number }[]> = {
@@ -10,6 +11,7 @@ const TAEYOON_ORDERS: Record<string, { product: string; origin: string; qty: num
         { product: 'A전지(냉장)', origin: '국내산', qty: 20, weight: 260, unitPrice: 8500, totalPrice: 2210000 },
         { product: '미전지(진공/냉장)', origin: '국내산', qty: 30, weight: 495, unitPrice: 8200, totalPrice: 4059000 },
         { product: '등갈비(진공/냉장)', origin: '국내산', qty: 10, weight: 125, unitPrice: 1400, totalPrice: 175000 },
+        { product: '기타 품목(목살/등뼈/갈비/가브리/항정)', origin: '국내산', qty: 0, weight: 0, unitPrice: 0, totalPrice: 1086770 },
     ],
     '25/11/12': [
         { product: '갈비(진공/냉동)', origin: '국내산', qty: 7, weight: 102.2, unitPrice: 8000, totalPrice: 817600 },
@@ -257,6 +259,31 @@ export default function SeedOrders() {
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`])
     }
 
+    // 주문 삭제 함수
+    const deleteOrder = async (orderId: string) => {
+        setRunning(true)
+        setLogs([])
+        addLog(`주문 ${orderId} 삭제 시작...`)
+        try {
+            // salesOrderItems 삭제
+            const itemsSnap = await getDocs(collection(db, 'salesOrderItems'))
+            let deleted = 0
+            for (const d of itemsSnap.docs) {
+                if (d.data().salesOrderId === orderId) {
+                    await deleteDoc(doc(db, 'salesOrderItems', d.id))
+                    deleted++
+                }
+            }
+            addLog(`품목 ${deleted}건 삭제`)
+            // salesOrder 삭제
+            await deleteDoc(doc(db, 'salesOrders', orderId))
+            addLog(`주문 ${orderId} 삭제 완료!`)
+        } catch (err: any) {
+            addLog(`ERROR: ${err.message}`)
+        }
+        setRunning(false)
+    }
+
     // 범용 시드 함수
     const seedCompany = async (
         searchName: string,
@@ -352,6 +379,9 @@ export default function SeedOrders() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <button onClick={() => deleteOrder('KvApgu3B5aAsUfKqaPYD')} disabled={running} style={btnStyle('#d32f2f')}>
+                    25/11/06 잘못된 주문 삭제
+                </button>
                 <button onClick={() => seedCompany('태윤', '(주)태윤유통', TAEYOON_ORDERS, ['25/11/06'])} disabled={running} style={btnStyle('#ff5722')}>
                     태윤유통 25/11/06 복원 1건
                 </button>
