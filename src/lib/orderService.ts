@@ -180,7 +180,9 @@ export interface FirestoreSalesOrder {
     customerName: string
     status: 'CREATED' | 'PO_GENERATED' | 'SHIPPED' | 'COMPLETED'
     totalsKg: number
+    totalsBoxes?: number
     totalsAmount: number
+    orderUnit?: string // 'box' | 'kg'
     confirmedAt: Timestamp
     createdAt: Timestamp
 }
@@ -191,6 +193,8 @@ export interface FirestoreSalesOrderItem {
     productId: string
     productName: string
     qtyKg: number
+    qtyBox?: number
+    unit?: string // 'box' | 'kg'
     unitPrice: number
     amount: number
 }
@@ -441,10 +445,12 @@ export async function updatePurchaseOrder(id: string, data: Partial<FirestorePur
 // ============ CREATE SALES ORDER FROM ORDER SHEET ============
 export async function createSalesOrderFromSheet(
     orderSheet: { id: string; customerOrgId: string; customerName: string },
-    items: { productId?: string; productName?: string; estimatedKg?: number; unitPrice?: number; amount?: number }[]
+    items: { productId?: string; productName?: string; estimatedKg?: number; unitPrice?: number; amount?: number; qtyRequested?: number; unit?: string }[]
 ): Promise<FirestoreSalesOrder> {
     const totalsKg = items.reduce((sum, i) => sum + (i.estimatedKg || 0), 0)
+    const totalsBoxes = items.reduce((sum, i) => sum + ((i.unit === 'box' ? i.qtyRequested : 0) || 0), 0)
     const totalsAmount = items.reduce((sum, i) => sum + (i.amount || 0), 0)
+    const orderUnit = items.length > 0 && items[0].unit ? items[0].unit : 'kg'
 
     const salesOrder = await createSalesOrder({
         sourceOrderSheetId: orderSheet.id,
@@ -452,7 +458,9 @@ export async function createSalesOrderFromSheet(
         customerName: orderSheet.customerName,
         status: 'CREATED',
         totalsKg,
+        totalsBoxes,
         totalsAmount,
+        orderUnit,
         confirmedAt: Timestamp.now(),
     })
 
@@ -461,6 +469,8 @@ export async function createSalesOrderFromSheet(
         productId: i.productId || '',
         productName: i.productName || '',
         qtyKg: i.estimatedKg || 0,
+        qtyBox: (i.unit === 'box' ? i.qtyRequested : 0) || 0,
+        unit: i.unit || 'kg',
         unitPrice: i.unitPrice || 0,
         amount: i.amount || 0,
     }))

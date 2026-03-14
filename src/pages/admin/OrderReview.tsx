@@ -230,7 +230,15 @@ export default function OrderReview() {
                     })
 
                     // SalesOrder 생성
-                    await createSalesOrderFromSheet(orderSheet, items)
+                    await createSalesOrderFromSheet(orderSheet, items.map(i => ({
+                        productId: i.productId,
+                        productName: i.productName,
+                        estimatedKg: i.estimatedKg,
+                        unitPrice: i.unitPrice,
+                        amount: i.amount,
+                        qtyRequested: i.qtyRequested,
+                        unit: i.unit,
+                    })))
 
                     setAlertModal({ show: true, title: '확정 완료', message: '주문이 확정되었습니다. 확정주문(SalesOrder)이 생성되었습니다.', onClose: () => navigate('/admin/order-sheets') })
                 } catch (err) {

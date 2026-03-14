@@ -314,6 +314,7 @@ export default function SalesOrderList() {
                                 <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('date')}>주문확정일시 {listFilters.sortField === 'date' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
                                 <th className="p-4 text-sm font-semibold text-muted uppercase">SalesOrder No</th>
                                 <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('customer')}>고객사 {listFilters.sortField === 'customer' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right">주문수량</th>
                                 <th className="p-4 text-sm font-semibold text-muted uppercase text-right">총 중량</th>
                                 <th className="p-4 text-sm font-semibold text-muted uppercase text-right" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('amount')}>총 금액 {listFilters.sortField === 'amount' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
                                 <th className="p-4 text-sm font-semibold text-muted uppercase">상태</th>
@@ -329,6 +330,9 @@ export default function SalesOrderList() {
                                             <td className="p-4 text-sm">{formatDate(so.confirmedAt)}</td>
                                             <td className="p-4 text-sm font-mono text-primary">{so.id}</td>
                                             <td className="p-4 text-sm font-medium">{so.customerName}</td>
+                                            <td className="p-4 text-sm text-right font-medium">
+                                                {(so as any).totalsBoxes ? `${(so as any).totalsBoxes} Box` : (so as any).orderUnit === 'kg' ? `${so.totalsKg.toFixed(1)} Kg` : '-'}
+                                            </td>
                                             <td className="p-4 text-sm text-right">{so.totalsKg.toFixed(1)} kg</td>
                                             <td className="p-4 text-sm text-right font-medium">{formatCurrency(so.totalsAmount)}</td>
                                             <td className="p-4 text-sm">
@@ -383,7 +387,7 @@ export default function SalesOrderList() {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={7} className="p-12 text-center text-muted">
+                                    <td colSpan={8} className="p-12 text-center text-muted">
                                         확정된 주문이 없습니다. 주문서 검토 후 '확정하기'를 눌러주세요.
                                     </td>
                                 </tr>

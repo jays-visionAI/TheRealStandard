@@ -224,7 +224,9 @@ export default function OrderSheetView() {
           productName: i.productName,
           estimatedKg: i.estimatedKg,
           unitPrice: i.unitPrice,
-          amount: i.amount
+          amount: i.amount,
+          qtyRequested: i.qtyBox > 0 ? i.qtyBox : i.qtyKg,
+          unit: i.qtyBox > 0 ? 'box' : 'kg',
         }))
       )
 
