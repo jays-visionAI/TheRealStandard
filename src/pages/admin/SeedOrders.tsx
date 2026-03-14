@@ -5,6 +5,12 @@ import { Timestamp } from 'firebase/firestore'
 
 // 태윤유통 거래처원장 데이터 (Excel에서 추출)
 const TAEYOON_ORDERS: Record<string, { product: string; origin: string; qty: number; weight: number; unitPrice: number; totalPrice: number }[]> = {
+    '25/11/06': [
+        { product: '삼겹살(진공/냉장)', origin: '국내산', qty: 40, weight: 720, unitPrice: 15000, totalPrice: 10800000 },
+        { product: 'A전지(냉장)', origin: '국내산', qty: 20, weight: 260, unitPrice: 8500, totalPrice: 2210000 },
+        { product: '미전지(진공/냉장)', origin: '국내산', qty: 30, weight: 495, unitPrice: 8200, totalPrice: 4059000 },
+        { product: '등갈비(진공/냉장)', origin: '국내산', qty: 10, weight: 125, unitPrice: 1400, totalPrice: 175000 },
+    ],
     '25/11/12': [
         { product: '갈비(진공/냉동)', origin: '국내산', qty: 7, weight: 102.2, unitPrice: 8000, totalPrice: 817600 },
         { product: '삼겹살(진공/냉장)', origin: '국내산', qty: 55, weight: 935.3, unitPrice: 13000, totalPrice: 12158900 },
@@ -285,13 +291,17 @@ export default function SeedOrders() {
             const orderDate = parseDate(dateStr)
 
             try {
+                const totalsBoxes = items.reduce((s, i) => s + i.qty, 0)
+
                 const so = await createSalesOrder({
                     sourceOrderSheetId: `EXCEL-${searchName}-${dateStr.replace(/\//g, '')}`,
                     customerOrgId: customer.id,
                     customerName: customer.business?.companyName || customer.name || displayName,
                     status: 'CREATED',
                     totalsKg,
+                    totalsBoxes,
                     totalsAmount,
+                    orderUnit: 'box',
                     confirmedAt: Timestamp.fromDate(orderDate),
                 })
 
@@ -299,6 +309,9 @@ export default function SeedOrders() {
                     productId: `PROD-${item.product.replace(/[^가-힣a-zA-Z]/g, '')}`,
                     productName: `${item.product} (${item.origin})`,
                     qtyKg: item.weight,
+                    qtyBox: item.qty,
+                    boxWeight: item.qty > 0 ? Math.round((item.weight / item.qty) * 10) / 10 : undefined,
+                    unit: 'box',
                     unitPrice: item.unitPrice,
                     amount: item.totalPrice,
                 })))
@@ -339,6 +352,9 @@ export default function SeedOrders() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <button onClick={() => seedCompany('태윤', '(주)태윤유통', TAEYOON_ORDERS, ['25/11/06'])} disabled={running} style={btnStyle('#ff5722')}>
+                    태윤유통 25/11/06 복원 1건
+                </button>
                 <button onClick={() => seedCompany('태윤', '(주)태윤유통', TAEYOON_ORDERS, ['26/03/10', '26/03/12'])} disabled={running} style={btnStyle('#00c853')}>
                     태윤유통 신규 2건 (3/10, 3/12)
                 </button>
