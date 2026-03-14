@@ -54,6 +54,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true)
 
     const [timeframe, setTimeframe] = useState<'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('MONTHLY')
+    const [customerFilter, setCustomerFilter] = useState<string>('ALL')
 
     // Firebase에서 모든 데이터 로드
     const loadData = async () => {
@@ -204,19 +205,31 @@ export default function Dashboard() {
         return sorted.length > 0 ? sorted.map(y => `${y}년`) : ['2026년']
     }, [timeframe, salesOrders])
 
-    // Product Mix: salesOrderItems에서 상품명별 매출 비중
+    // 거래처 목록 (필터용)
+    const customerNames = useMemo(() => {
+        const map = new Map<string, string>()
+        salesOrders.forEach(so => map.set(so.customerOrgId, so.customerName))
+        return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]))
+    }, [salesOrders])
+
+    // Product Mix: salesOrderItems에서 상품명별 매출 비중 (거래처 필터 적용)
     const productMix = useMemo(() => {
+        // 거래처 필터가 적용된 salesOrderIds
+        const filteredSOIds = customerFilter === 'ALL'
+            ? new Set(salesOrders.map(so => so.id))
+            : new Set(salesOrders.filter(so => so.customerOrgId === customerFilter).map(so => so.id))
+
         const productSales = new Map<string, number>()
         salesOrderItems.forEach(item => {
+            if (!filteredSOIds.has(item.salesOrderId)) return
             const name = (item.productName || '').replace(/\s*\(국내산\)\s*$/, '').trim()
-            // 기본 부위명만 추출 (포장/온도 제거)
             const baseName = name.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').trim()
             productSales.set(baseName, (productSales.get(baseName) || 0) + item.amount)
         })
 
         const sorted = [...productSales.entries()].sort((a, b) => b[1] - a[1])
         const total = sorted.reduce((sum, [, v]) => sum + v, 0)
-        if (total === 0) return [{ name: '데이터 없음', value: 100, amount: 0, color: '#f0f0f0' }]
+        if (total === 0) return { items: [{ name: '데이터 없음', value: 100, amount: 0, color: '#f0f0f0' }], total: 0 }
 
         const colors = ['#7c4dff', '#00d2ff', '#00e676', '#ff9d00', '#f06292', '#ab47bc', '#26a69a', '#78909c']
         const top = sorted.slice(0, 6)
@@ -239,8 +252,8 @@ export default function Dashboard() {
             })
         }
 
-        return result
-    }, [salesOrderItems])
+        return { items: result, total }
+    }, [salesOrderItems, salesOrders, customerFilter])
 
     // 거래처별 매출 TOP
     const customerRanking = useMemo(() => {
@@ -409,24 +422,45 @@ export default function Dashboard() {
 
                 {/* Product Mix Donut */}
                 <div className="premium-card">
-                    <div className="card-header">
+                    <div className="card-header" style={{ flexWrap: 'wrap', gap: '8px' }}>
                         <h3><PackageIcon size={18} className="text-primary mr-2" /> 상품별 매출</h3>
+                        <select
+                            value={customerFilter}
+                            onChange={(e) => setCustomerFilter(e.target.value)}
+                            style={{
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                border: '1px solid #e0e0e0',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                color: '#444',
+                                background: '#f8f8f8',
+                                cursor: 'pointer',
+                                outline: 'none',
+                                maxWidth: '180px',
+                            }}
+                        >
+                            <option value="ALL">전체 거래처</option>
+                            {customerNames.map(([id, name]) => (
+                                <option key={id} value={id}>{name}</option>
+                            ))}
+                        </select>
                     </div>
                     <div className="donut-container">
-                        <div style={{ position: 'relative', width: '180px', height: '180px' }}>
-                            <svg width="180" height="180" className="donut-svg">
-                                <circle cx="90" cy="90" r="70" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="20" />
-                                {productMix.reduce((acc, item, i) => {
-                                    const offset = productMix.slice(0, i).reduce((sum, prev) => sum + prev.value, 0)
-                                    const length = (item.value / 100) * (2 * Math.PI * 70)
-                                    const totalLength = 2 * Math.PI * 70
+                        <div style={{ position: 'relative', width: '160px', height: '160px', flexShrink: 0 }}>
+                            <svg width="160" height="160" className="donut-svg">
+                                <circle cx="80" cy="80" r="60" fill="transparent" stroke="rgba(0,0,0,0.04)" strokeWidth="18" />
+                                {productMix.items.reduce((acc, item, i) => {
+                                    const offset = productMix.items.slice(0, i).reduce((sum, prev) => sum + prev.value, 0)
+                                    const length = (item.value / 100) * (2 * Math.PI * 60)
+                                    const totalLength = 2 * Math.PI * 60
                                     acc.push(
                                         <circle
                                             key={item.name}
-                                            cx="90" cy="90" r="70"
+                                            cx="80" cy="80" r="60"
                                             fill="transparent"
                                             stroke={item.color}
-                                            strokeWidth="22"
+                                            strokeWidth="20"
                                             strokeDasharray={`${length} ${totalLength - length}`}
                                             strokeDashoffset={-(offset / 100) * totalLength}
                                             strokeLinecap="round"
@@ -435,13 +469,13 @@ export default function Dashboard() {
                                     return acc
                                 }, [] as React.ReactElement[])}
                             </svg>
-                            <div className="donut-center-text">
+                            <div className="donut-center-text" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
                                 <div className="donut-center-label">총 매출</div>
-                                <div className="donut-center-value" style={{ fontSize: '0.85rem' }}>{formatKRW(totalSales)}</div>
+                                <div className="donut-center-value" style={{ fontSize: '0.7rem' }}>{formatKRW(productMix.total)}</div>
                             </div>
                         </div>
                         <div className="donut-legend">
-                            {productMix.map(item => (
+                            {productMix.items.map(item => (
                                 <div key={item.name} className="legend-item">
                                     <div className="legend-color" style={{ background: item.color }}></div>
                                     <span>{item.name} ({item.value}%)</span>
