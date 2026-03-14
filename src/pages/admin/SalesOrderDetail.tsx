@@ -207,7 +207,7 @@ export default function SalesOrderDetail() {
                 {/* Sidebar Info */}
                 <div className="space-y-6">
                     <div className="glass-card p-6 space-y-4">
-                        <h3 className="text-lg font-bold mb-4">배뉴 및 정산 정보</h3>
+                        <h3 className="text-lg font-bold mb-4">고객사정보</h3>
 
                         <div className="info-row">
                             <div className="flex items-center gap-2 text-muted text-sm border-b border-white/5 pb-2 mb-2">
