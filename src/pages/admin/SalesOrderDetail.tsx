@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getSalesOrderById, getSalesOrderItems, type FirestoreSalesOrder, type FirestoreSalesOrderItem } from '../../lib/orderService'
+import { getUserById, type FirestoreUser } from '../../lib/userService'
 import {
     CheckCircleIcon,
     ArrowLeftIcon,
@@ -26,6 +27,7 @@ export default function SalesOrderDetail() {
     // Firebase에서 직접 로드되는 데이터
     const [order, setOrder] = useState<LocalSalesOrder | null>(null)
     const [items, setItems] = useState<FirestoreSalesOrderItem[]>([])
+    const [customer, setCustomer] = useState<FirestoreUser | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
@@ -50,6 +52,12 @@ export default function SalesOrderDetail() {
                 })
             }
             setItems(itemsData)
+
+            // 고객사 정보 로드
+            if (soData?.customerOrgId) {
+                const customerData = await getUserById(soData.customerOrgId)
+                setCustomer(customerData)
+            }
         } catch (err) {
             console.error('Failed to load data:', err)
             setError('데이터를 불러오는데 실패했습니다.')
@@ -156,10 +164,10 @@ export default function SalesOrderDetail() {
                                 <thead>
                                     <tr className="border-b border-white/10 bg-white/5">
                                         <th className="p-3 text-xs font-semibold text-muted uppercase">품명</th>
-                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">예상중량/BOX</th>
+                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">확정중량/BOX</th>
                                         <th className="p-3 text-xs font-semibold text-muted uppercase text-right">단가(원/Kg)</th>
                                         <th className="p-3 text-xs font-semibold text-muted uppercase text-right">주문수량(BOX)</th>
-                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">예상중량(Kg)</th>
+                                        <th className="p-3 text-xs font-semibold text-muted uppercase text-right">확정중량(Kg)</th>
                                         <th className="p-3 text-xs font-semibold text-muted uppercase text-right">금액(원)</th>
                                     </tr>
                                 </thead>
@@ -205,7 +213,53 @@ export default function SalesOrderDetail() {
                             <div className="flex items-center gap-2 text-muted text-sm border-b border-white/5 pb-2 mb-2">
                                 <BuildingIcon size={14} /> 고객사 정보
                             </div>
-                            <div className="font-medium text-lg text-white">{order.customerName}</div>
+                            <div className="font-medium text-lg text-white mb-2">{order.customerName}</div>
+                            {customer?.business && (
+                                <div className="space-y-2 text-sm">
+                                    {customer.business.bizRegNo && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted">사업자번호</span>
+                                            <span className="text-white">{customer.business.bizRegNo}</span>
+                                        </div>
+                                    )}
+                                    {customer.business.ceoName && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted">대표자</span>
+                                            <span className="text-white">{customer.business.ceoName}</span>
+                                        </div>
+                                    )}
+                                    {customer.business.address && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted">주소</span>
+                                            <span className="text-white" style={{ textAlign: 'right', maxWidth: '60%' }}>{customer.business.address}</span>
+                                        </div>
+                                    )}
+                                    {customer.business.tel && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted">연락처</span>
+                                            <span className="text-white">{customer.business.tel}</span>
+                                        </div>
+                                    )}
+                                    {customer.business.shipAddress1 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted">배송지</span>
+                                            <span className="text-white" style={{ textAlign: 'right', maxWidth: '60%' }}>{customer.business.shipAddress1}</span>
+                                        </div>
+                                    )}
+                                    {customer.business.contactPerson && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted">담당자</span>
+                                            <span className="text-white">{customer.business.contactPerson}{customer.business.contactPhone ? ` (${customer.business.contactPhone})` : ''}</span>
+                                        </div>
+                                    )}
+                                    {customer.business.paymentTerms && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted">결제조건</span>
+                                            <span className="text-white">{customer.business.paymentTerms}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="info-row">
