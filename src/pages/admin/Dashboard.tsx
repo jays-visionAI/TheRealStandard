@@ -447,20 +447,20 @@ export default function Dashboard() {
                         </select>
                     </div>
                     <div className="donut-container">
-                        <div style={{ position: 'relative', width: '160px', height: '160px', flexShrink: 0 }}>
-                            <svg width="160" height="160" className="donut-svg">
-                                <circle cx="80" cy="80" r="60" fill="transparent" stroke="rgba(0,0,0,0.04)" strokeWidth="18" />
+                        <div style={{ position: 'relative', width: '192px', height: '192px', flexShrink: 0 }}>
+                            <svg width="192" height="192" className="donut-svg">
+                                <circle cx="96" cy="96" r="72" fill="transparent" stroke="rgba(0,0,0,0.04)" strokeWidth="22" />
                                 {productMix.items.reduce((acc, item, i) => {
                                     const offset = productMix.items.slice(0, i).reduce((sum, prev) => sum + prev.value, 0)
-                                    const length = (item.value / 100) * (2 * Math.PI * 60)
-                                    const totalLength = 2 * Math.PI * 60
+                                    const length = (item.value / 100) * (2 * Math.PI * 72)
+                                    const totalLength = 2 * Math.PI * 72
                                     acc.push(
                                         <circle
                                             key={item.name}
-                                            cx="80" cy="80" r="60"
+                                            cx="96" cy="96" r="72"
                                             fill="transparent"
                                             stroke={item.color}
-                                            strokeWidth="20"
+                                            strokeWidth="24"
                                             strokeDasharray={`${length} ${totalLength - length}`}
                                             strokeDashoffset={-(offset / 100) * totalLength}
                                             strokeLinecap="round"
