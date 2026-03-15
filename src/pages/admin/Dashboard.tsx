@@ -130,14 +130,17 @@ export default function Dashboard() {
         return ids.size
     }, [salesOrders, pendingOrderSheets, aggregationMode])
 
-    // 주문 완료율
+    // 주문처리율: 확정매출 건수 / (고객 승인요청 발주서 + 확정매출) * 100
     const orderCompletionRate = useMemo(() => {
-        if (salesOrders.length === 0) return 0
-        const completed = salesOrders.filter(so =>
-            so.status === 'COMPLETED' || so.status === 'SHIPPED' || so.status === 'PO_GENERATED'
+        const confirmedCount = salesOrders.length
+        // 고객이 승인 요청한 발주서 (SUBMITTED 상태, 금액 기록 있는 건만)
+        const submittedCount = orderSheets.filter(os =>
+            os.status === 'SUBMITTED' && (os.totalAmount || 0) > 0
         ).length
-        return (completed / salesOrders.length) * 100
-    }, [salesOrders])
+        const total = confirmedCount + submittedCount
+        if (total === 0) return 0
+        return (confirmedCount / total) * 100
+    }, [salesOrders, orderSheets])
 
     // 미처리 주문
     const pendingOrders = useMemo(() => {
