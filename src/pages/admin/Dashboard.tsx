@@ -374,7 +374,7 @@ export default function Dashboard() {
                     <span className="stat-v2-label">주문 처리율</span>
                     <div className="stat-v2-value">{formatPercent(orderCompletionRate)}</div>
                     <div className="stat-v2-trend">
-                        전체 {totalOrders}건 중 {salesOrders.filter(so => so.status !== 'CREATED').length}건 처리
+                        전체 {salesOrders.length + orderSheets.filter(os => os.status === 'SUBMITTED' && (os.totalAmount || 0) > 0).length}건 중 {salesOrders.length}건 처리
                     </div>
                 </div>
                 <div className="premium-card stat-v2-card">
