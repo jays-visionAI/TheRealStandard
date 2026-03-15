@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createSalesOrder, setSalesOrderItems } from '../../lib/orderService'
 import { getAllCustomerUsers } from '../../lib/userService'
-import { Timestamp, collection, getDocs, deleteDoc, doc, setDoc } from 'firebase/firestore'
+import { Timestamp, collection, getDocs, deleteDoc, doc, setDoc, addDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 
 // 태윤유통 거래처원장 데이터 (Excel에서 추출)
@@ -383,6 +383,56 @@ export default function SeedOrders() {
         setRunning(false)
     }
 
+    // 매출발주(orderSheet) 등록 함수 (SUBMITTED 상태로)
+    const seedOrderSheet = async (
+        searchName: string,
+        displayName: string,
+        dateStr: string,
+        totalAmount: number
+    ) => {
+        setRunning(true)
+        setLogs([])
+
+        let customer = customers.find(c =>
+            c.business?.companyName?.includes(searchName) || c.name?.includes(searchName)
+        )
+
+        if (!customer) {
+            addLog(`ERROR: ${displayName} 고객사를 찾을 수 없습니다.`)
+            setRunning(false)
+            return
+        }
+
+        addLog(`${displayName} 발견: ${customer.id}`)
+        const orderDate = parseDate(dateStr)
+        const now = Timestamp.now()
+
+        try {
+            const docRef = await addDoc(collection(db, 'orderSheets'), {
+                customerOrgId: customer.id,
+                customerName: customer.business?.companyName || customer.name || displayName,
+                status: 'SUBMITTED',
+                totalAmount: totalAmount,
+                totalKg: 0,
+                totalBoxes: 0,
+                totalItems: 0,
+                shipTo: '',
+                cutOffAt: Timestamp.fromDate(orderDate),
+                shipDate: Timestamp.fromDate(orderDate),
+                createdAt: now,
+                updatedAt: now,
+                adminComment: '3/18 예정 납품 - 임시 등록',
+            })
+
+            addLog(`[${dateStr}] ${displayName} 매출발주 등록 (SUBMITTED) / ${totalAmount.toLocaleString()}원 -> ${docRef.id}`)
+        } catch (err: any) {
+            addLog(`ERROR: ${err.message}`)
+        }
+
+        addLog('완료!')
+        setRunning(false)
+    }
+
     // 범용 시드 함수
     const seedCompany = async (
         searchName: string,
@@ -527,14 +577,14 @@ export default function SeedOrders() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#444', alignSelf: 'center' }}>3/18 예정 납품 (임시):</span>
-                <button onClick={() => seedAmountOnly('태윤', '(주)태윤유통', '26/03/18', 42586840)} disabled={running} style={btnStyle('#795548')}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#444', alignSelf: 'center' }}>3/18 매출발주 (승인요청 상태):</span>
+                <button onClick={() => seedOrderSheet('태윤', '(주)태윤유통', '26/03/18', 42586840)} disabled={running} style={btnStyle('#795548')}>
                     태윤유통 42,586,840원
                 </button>
-                <button onClick={() => seedAmountOnly('백운', '(주)백운유통', '26/03/18', 47910330)} disabled={running} style={btnStyle('#795548')}>
+                <button onClick={() => seedOrderSheet('백운', '(주)백운유통', '26/03/18', 47910330)} disabled={running} style={btnStyle('#795548')}>
                     백운유통 47,910,330원
                 </button>
-                <button onClick={() => seedAmountOnly('어반', '어반나이프', '26/03/18', 8700000)} disabled={running} style={btnStyle('#795548')}>
+                <button onClick={() => seedOrderSheet('어반', '어반나이프', '26/03/18', 8700000)} disabled={running} style={btnStyle('#795548')}>
                     어반나이프 8,700,000원
                 </button>
             </div>
