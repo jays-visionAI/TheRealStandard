@@ -164,76 +164,101 @@ export default function Dashboard() {
         return confirmed
     }, [salesOrders, pendingOrderSheets, aggregationMode])
 
-    // 차트용 데이터: 실제 confirmedAt 기반으로 매출 집계
-    const salesData = useMemo(() => {
+    // 차트용 데이터: 실제 confirmedAt 기반으로 매출 집계 (연도 포함)
+    const chartData = useMemo(() => {
         if (timeframe === 'WEEKLY') {
-            // 최근 7일
-            const data = new Array(7).fill(0)
+            const days: string[] = []
+            const data: number[] = []
             const now = new Date()
-            salesOrders.forEach(so => {
-                if (!so.confirmedAt) return
-                const diff = Math.floor((now.getTime() - so.confirmedAt.getTime()) / (1000 * 60 * 60 * 24))
-                if (diff >= 0 && diff < 7) {
-                    data[6 - diff] += so.totalsAmount
-                }
-            })
-            return data
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(now)
+                d.setDate(d.getDate() - i)
+                const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+                const yr = String(d.getFullYear()).slice(2)
+                days.push(`${yr}/${d.getMonth() + 1}/${d.getDate()}`)
+                const dayTotal = salesOrders
+                    .filter(so => so.confirmedAt &&
+                        so.confirmedAt.getFullYear() === d.getFullYear() &&
+                        so.confirmedAt.getMonth() === d.getMonth() &&
+                        so.confirmedAt.getDate() === d.getDate()
+                    )
+                    .reduce((sum, so) => sum + so.totalsAmount, 0)
+                data.push(dayTotal)
+            }
+            return { labels: days, data }
         } else if (timeframe === 'MONTHLY') {
-            // 12개월
-            const data = new Array(12).fill(0)
+            // 실제 데이터 범위의 연월 기반
+            const ymMap = new Map<string, number>()
             salesOrders.forEach(so => {
                 if (!so.confirmedAt) return
-                const month = so.confirmedAt.getMonth()
-                data[month] += so.totalsAmount
+                const y = so.confirmedAt.getFullYear()
+                const m = so.confirmedAt.getMonth()
+                const key = `${y}-${String(m).padStart(2, '0')}`
+                ymMap.set(key, (ymMap.get(key) || 0) + so.totalsAmount)
             })
-            return data
+            const sorted = [...ymMap.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+            if (sorted.length === 0) return { labels: ['데이터 없음'], data: [0] }
+            // 범위를 채워서 빈 월도 표시
+            const first = sorted[0][0].split('-').map(Number)
+            const last = sorted[sorted.length - 1][0].split('-').map(Number)
+            const labels: string[] = []
+            const data: number[] = []
+            let y = first[0], m = first[1]
+            while (y < last[0] || (y === last[0] && m <= last[1])) {
+                const key = `${y}-${String(m).padStart(2, '0')}`
+                const yr = String(y).slice(2)
+                labels.push(`${yr}/${m + 1}월`)
+                data.push(ymMap.get(key) || 0)
+                m++
+                if (m > 11) { m = 0; y++ }
+            }
+            return { labels, data }
         } else if (timeframe === 'QUARTERLY') {
-            // 4분기
-            const data = new Array(4).fill(0)
+            const qMap = new Map<string, number>()
             salesOrders.forEach(so => {
                 if (!so.confirmedAt) return
-                const q = Math.floor(so.confirmedAt.getMonth() / 3)
-                data[q] += so.totalsAmount
+                const y = so.confirmedAt.getFullYear()
+                const q = Math.floor(so.confirmedAt.getMonth() / 3) + 1
+                const key = `${y}-Q${q}`
+                qMap.set(key, (qMap.get(key) || 0) + so.totalsAmount)
             })
-            return data
+            const sorted = [...qMap.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+            if (sorted.length === 0) return { labels: ['데이터 없음'], data: [0] }
+            // 범위 채우기
+            const parseQ = (k: string) => { const [y, q] = k.split('-Q'); return [Number(y), Number(q)] }
+            const [fy, fq] = parseQ(sorted[0][0])
+            const [ly, lq] = parseQ(sorted[sorted.length - 1][0])
+            const labels: string[] = []
+            const data: number[] = []
+            let cy = fy, cq = fq
+            while (cy < ly || (cy === ly && cq <= lq)) {
+                const key = `${cy}-Q${cq}`
+                const yr = String(cy).slice(2)
+                labels.push(`${yr}년 Q${cq}`)
+                data.push(qMap.get(key) || 0)
+                cq++
+                if (cq > 4) { cq = 1; cy++ }
+            }
+            return { labels, data }
         } else {
-            // 연간 (최근 3년)
+            // 연간
             const years = new Set<number>()
             salesOrders.forEach(so => {
                 if (so.confirmedAt) years.add(so.confirmedAt.getFullYear())
             })
             const sortedYears = [...years].sort()
-            if (sortedYears.length === 0) return [0]
+            if (sortedYears.length === 0) return { labels: ['2026년'], data: [0] }
             const data = sortedYears.map(year =>
                 salesOrders
                     .filter(so => so.confirmedAt?.getFullYear() === year)
                     .reduce((sum, so) => sum + so.totalsAmount, 0)
             )
-            return data
+            return { labels: sortedYears.map(y => `${y}년`), data }
         }
     }, [salesOrders, timeframe])
 
-    const labels = useMemo(() => {
-        if (timeframe === 'WEEKLY') {
-            const days = []
-            const now = new Date()
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date(now)
-                d.setDate(d.getDate() - i)
-                days.push(`${d.getMonth() + 1}/${d.getDate()}`)
-            }
-            return days
-        }
-        if (timeframe === 'MONTHLY') return ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
-        if (timeframe === 'QUARTERLY') return ['Q1', 'Q2', 'Q3', 'Q4']
-        // YEARLY
-        const years = new Set<number>()
-        salesOrders.forEach(so => {
-            if (so.confirmedAt) years.add(so.confirmedAt.getFullYear())
-        })
-        const sorted = [...years].sort()
-        return sorted.length > 0 ? sorted.map(y => `${y}년`) : ['2026년']
-    }, [timeframe, salesOrders])
+    const salesData = chartData.data
+    const labels = chartData.labels
 
     // 거래처 목록 (필터용)
     const customerNames = useMemo(() => {
