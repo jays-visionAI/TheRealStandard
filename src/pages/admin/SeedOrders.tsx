@@ -14,9 +14,9 @@ const TAEYOON_ORDERS: Record<string, { product: string; origin: string; qty: num
         { product: '기타 품목(목살/등뼈/갈비/가브리/항정)', origin: '국내산', qty: 0, weight: 0, unitPrice: 0, totalPrice: 1086770 },
     ],
     '25/11/13': [
-        { product: '삼겹살(진공/냉장)', origin: '국내산', qty: 40, weight: 720, unitPrice: 15000, totalPrice: 10800000 },
-        { product: 'A전지(냉장)', origin: '국내산', qty: 30, weight: 390, unitPrice: 8600, totalPrice: 3354000 },
-        { product: '미전지(진공/냉장)', origin: '국내산', qty: 80, weight: 1320, unitPrice: 8300, totalPrice: 10956000 },
+        { product: '삼겹살(진공/냉장)', origin: '국내산', qty: 40, weight: 720, unitPrice: 14491, totalPrice: 10433233 },
+        { product: 'A전지(냉장)', origin: '국내산', qty: 30, weight: 390, unitPrice: 8308, totalPrice: 3240096 },
+        { product: '미전지(진공/냉장)', origin: '국내산', qty: 80, weight: 1320, unitPrice: 8018, totalPrice: 10583811 },
     ],
     '25/11/21': [
         { product: '삼겹살(진공/냉장)', origin: '국내산', qty: 100, weight: 1750, unitPrice: 14500, totalPrice: 25375000 },
@@ -396,6 +396,9 @@ export default function SeedOrders() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <button onClick={() => deleteOrder('V1gUx1EMrGHO7nvOtwNT')} disabled={running} style={btnStyle('#d32f2f')}>
+                    25/11/13 기존 주문 삭제
+                </button>
                 <button onClick={() => deleteOrder('KvApgu3B5aAsUfKqaPYD')} disabled={running} style={btnStyle('#d32f2f')}>
                     25/11/06 잘못된 주문 삭제
                 </button>
