@@ -18,6 +18,18 @@ const TAEYOON_ORDERS: Record<string, { product: string; origin: string; qty: num
         { product: 'A전지(냉장)', origin: '국내산', qty: 30, weight: 390, unitPrice: 8600, totalPrice: 3354000 },
         { product: '미전지(진공/냉장)', origin: '국내산', qty: 80, weight: 1320, unitPrice: 8300, totalPrice: 10956000 },
     ],
+    '25/11/21': [
+        { product: '삼겹살(진공/냉장)', origin: '국내산', qty: 100, weight: 1750, unitPrice: 14500, totalPrice: 25375000 },
+        { product: '목살(진공/냉장)', origin: '국내산', qty: 10, weight: 105, unitPrice: 12500, totalPrice: 1312500 },
+        { product: '미전지(진공/냉장)', origin: '국내산', qty: 100, weight: 1650, unitPrice: 8400, totalPrice: 13860000 },
+        { product: 'A전지(냉장)', origin: '국내산', qty: 60, weight: 780, unitPrice: 8800, totalPrice: 6864000 },
+        { product: '등갈비(진공/냉장)', origin: '국내산', qty: 20, weight: 250, unitPrice: 13500, totalPrice: 3375000 },
+        { product: '등뼈(냉장)', origin: '국내산', qty: 5, weight: 92.5, unitPrice: 2200, totalPrice: 203500 },
+        { product: '갈비(진공/냉장)', origin: '국내산', qty: 1, weight: 33.4, unitPrice: 7800, totalPrice: 260520 },
+        { product: '가브리', origin: '국내산', qty: 0, weight: 5, unitPrice: 1800, totalPrice: 9000 },
+        { product: '항정', origin: '국내산', qty: 0, weight: 5, unitPrice: 2900, totalPrice: 14500 },
+        { product: '시가조정분/돈후지샘플', origin: '국내산', qty: 0, weight: 0, unitPrice: 0, totalPrice: 399230 },
+    ],
     '25/11/12': [
         { product: '갈비(진공/냉동)', origin: '국내산', qty: 7, weight: 102.2, unitPrice: 8000, totalPrice: 817600 },
         { product: '삼겹살(진공/냉장)', origin: '국내산', qty: 55, weight: 935.3, unitPrice: 13000, totalPrice: 12158900 },
@@ -392,6 +404,9 @@ export default function SeedOrders() {
                 </button>
                 <button onClick={() => seedCompany('태윤', '(주)태윤유통', TAEYOON_ORDERS, ['25/11/13'])} disabled={running} style={btnStyle('#ff5722')}>
                     태윤유통 25/11/13 복원 1건
+                </button>
+                <button onClick={() => seedCompany('태윤', '(주)태윤유통', TAEYOON_ORDERS, ['25/11/21'])} disabled={running} style={btnStyle('#ff5722')}>
+                    태윤유통 25/11/21 복원 1건
                 </button>
                 <button onClick={() => seedCompany('태윤', '(주)태윤유통', TAEYOON_ORDERS, ['26/03/10', '26/03/12'])} disabled={running} style={btnStyle('#00c853')}>
                     태윤유통 신규 2건 (3/10, 3/12)
