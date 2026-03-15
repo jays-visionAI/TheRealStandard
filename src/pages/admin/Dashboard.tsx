@@ -386,6 +386,46 @@ export default function Dashboard() {
                 </div>
             </div>
 
+            {/* Second Stats Row: Order Pipeline */}
+            <div className="stats-v2-grid">
+                <div className="premium-card stat-v2-card">
+                    <span className="stat-v2-label">주문 미승인</span>
+                    <div className="stat-v2-value" style={{ color: '#e65100' }}>
+                        {orderSheets.filter(os => os.status === 'SUBMITTED').length}건
+                    </div>
+                    <div className="stat-v2-trend warning">
+                        고객 승인요청 대기중
+                    </div>
+                </div>
+                <div className="premium-card stat-v2-card">
+                    <span className="stat-v2-label">주문 승인</span>
+                    <div className="stat-v2-value" style={{ color: '#2979ff' }}>
+                        {orderSheets.filter(os => os.status === 'CONFIRMED').length}건
+                    </div>
+                    <div className="stat-v2-trend">
+                        관리자 최종 승인 완료
+                    </div>
+                </div>
+                <div className="premium-card stat-v2-card">
+                    <span className="stat-v2-label">주문 확정</span>
+                    <div className="stat-v2-value" style={{ color: '#00c853' }}>
+                        {salesOrders.length}건
+                    </div>
+                    <div className="stat-v2-trend">
+                        확정주문 발행 완료
+                    </div>
+                </div>
+                <div className="premium-card stat-v2-card">
+                    <span className="stat-v2-label">배송 완료</span>
+                    <div className="stat-v2-value" style={{ color: '#7c4dff' }}>
+                        {shipments.filter(s => s.status === 'DELIVERED').length}건
+                    </div>
+                    <div className="stat-v2-trend">
+                        납품 완료
+                    </div>
+                </div>
+            </div>
+
             {/* Middle Row: Sales Trend & Product Mix */}
             <div className="chart-grid">
                 {/* Sales Trend */}
