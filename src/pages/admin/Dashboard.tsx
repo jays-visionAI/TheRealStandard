@@ -55,6 +55,7 @@ export default function Dashboard() {
 
     const [timeframe, setTimeframe] = useState<'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('MONTHLY')
     const [customerFilter, setCustomerFilter] = useState<string>('ALL')
+    const [aggregationMode, setAggregationMode] = useState<'CONFIRMED' | 'ALL_SALES'>('CONFIRMED')
 
     // Firebase에서 모든 데이터 로드
     const loadData = async () => {
@@ -101,18 +102,35 @@ export default function Dashboard() {
         loadData()
     }, [])
 
-    // 총 매출
+    // orderSheets 중 salesOrder로 전환되지 않은 것들 (매출발주 상태)
+    const pendingOrderSheets = useMemo(() => {
+        const soSourceIds = new Set(salesOrders.map(so => so.sourceOrderSheetId).filter(Boolean))
+        return orderSheets.filter(os =>
+            !soSourceIds.has(os.id) &&
+            (os.status === 'SUBMITTED' || os.status === 'CONFIRMED' || os.status === 'SENT')
+        )
+    }, [orderSheets, salesOrders])
+
+    // 총 매출 (모드에 따라)
     const totalSales = useMemo(() => {
-        return salesOrders.reduce((sum, so) => sum + so.totalsAmount, 0)
-    }, [salesOrders])
+        const confirmed = salesOrders.reduce((sum, so) => sum + so.totalsAmount, 0)
+        if (aggregationMode === 'ALL_SALES') {
+            const pending = pendingOrderSheets.reduce((sum, os) => sum + (os.totalAmount || 0), 0)
+            return confirmed + pending
+        }
+        return confirmed
+    }, [salesOrders, pendingOrderSheets, aggregationMode])
 
-    // 활성 거래처: salesOrders에서 고유 customerOrgId
+    // 활성 거래처
     const activeCustomers = useMemo(() => {
-        const uniqueCustomers = new Set(salesOrders.map(so => so.customerOrgId))
-        return uniqueCustomers.size
-    }, [salesOrders])
+        const ids = new Set(salesOrders.map(so => so.customerOrgId))
+        if (aggregationMode === 'ALL_SALES') {
+            pendingOrderSheets.forEach(os => ids.add(os.customerOrgId))
+        }
+        return ids.size
+    }, [salesOrders, pendingOrderSheets, aggregationMode])
 
-    // 주문 완료율: COMPLETED 또는 SHIPPED 상태
+    // 주문 완료율
     const orderCompletionRate = useMemo(() => {
         if (salesOrders.length === 0) return 0
         const completed = salesOrders.filter(so =>
@@ -121,18 +139,27 @@ export default function Dashboard() {
         return (completed / salesOrders.length) * 100
     }, [salesOrders])
 
-    // 미처리 주문: CREATED 상태
+    // 미처리 주문
     const pendingOrders = useMemo(() => {
-        return salesOrders.filter(so => so.status === 'CREATED').length
-    }, [salesOrders])
+        const base = salesOrders.filter(so => so.status === 'CREATED').length
+        if (aggregationMode === 'ALL_SALES') return base + pendingOrderSheets.length
+        return base
+    }, [salesOrders, pendingOrderSheets, aggregationMode])
 
     // 총 주문 수
-    const totalOrders = salesOrders.length
+    const totalOrders = aggregationMode === 'ALL_SALES'
+        ? salesOrders.length + pendingOrderSheets.length
+        : salesOrders.length
 
     // 총 중량
     const totalKg = useMemo(() => {
-        return salesOrders.reduce((sum, so) => sum + so.totalsKg, 0)
-    }, [salesOrders])
+        const confirmed = salesOrders.reduce((sum, so) => sum + so.totalsKg, 0)
+        if (aggregationMode === 'ALL_SALES') {
+            const pending = pendingOrderSheets.reduce((sum, os) => sum + (os.totalKg || 0), 0)
+            return confirmed + pending
+        }
+        return confirmed
+    }, [salesOrders, pendingOrderSheets, aggregationMode])
 
     // 차트용 데이터: 실제 confirmedAt 기반으로 매출 집계
     const salesData = useMemo(() => {
@@ -304,9 +331,24 @@ export default function Dashboard() {
                     <h1>MEATGO Insights Hub</h1>
                     <p className="text-secondary mt-1">비즈니스 현황 요약</p>
                 </div>
-                <div className="date-badge">
-                    {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
-                </div>
+                <select
+                    value={aggregationMode}
+                    onChange={(e) => setAggregationMode(e.target.value as 'CONFIRMED' | 'ALL_SALES')}
+                    style={{
+                        padding: '8px 16px',
+                        borderRadius: '10px',
+                        border: '1.5px solid #ddd',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: aggregationMode === 'ALL_SALES' ? '#e65100' : '#333',
+                        background: aggregationMode === 'ALL_SALES' ? '#fff3e0' : '#f9f9f9',
+                        cursor: 'pointer',
+                        outline: 'none',
+                    }}
+                >
+                    <option value="CONFIRMED">확정주문 총액만 보기</option>
+                    <option value="ALL_SALES">매출발주내역 포함</option>
+                </select>
             </header>
 
             {/* Top Stats Row */}
