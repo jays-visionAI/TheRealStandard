@@ -164,12 +164,18 @@ export default function Dashboard() {
         return confirmed
     }, [salesOrders, pendingOrderSheets, aggregationMode])
 
-    // 차트용 데이터: 고정 범위 (주간 12주, 월간 12개월, 분기 12분기, 연간 6년)
+    // 차트용 데이터 (주간: 12주, 월간/분기/연간: 데이터 시작~현재)
     const chartData = useMemo(() => {
         const now = new Date()
 
+        // 가장 이른 데이터 시점
+        const earliest = salesOrders.reduce((min, so) => {
+            if (!so.confirmedAt) return min
+            return so.confirmedAt.getTime() < min.getTime() ? so.confirmedAt : min
+        }, now)
+
         if (timeframe === 'WEEKLY') {
-            // 최근 12주 (주 단위 집계, 월~일 기준)
+            // 최근 12주 (주 단위 집계)
             const labels: string[] = []
             const data: number[] = []
             for (let w = 11; w >= 0; w--) {
@@ -193,13 +199,15 @@ export default function Dashboard() {
             return { labels, data }
 
         } else if (timeframe === 'MONTHLY') {
-            // 최근 12개월
+            // 데이터 시작월 ~ 현재월
+            const startY = earliest.getFullYear()
+            const startM = earliest.getMonth()
+            const endY = now.getFullYear()
+            const endM = now.getMonth()
             const labels: string[] = []
             const data: number[] = []
-            for (let i = 11; i >= 0; i--) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-                const y = d.getFullYear()
-                const m = d.getMonth()
+            let y = startY, m = startM
+            while (y < endY || (y === endY && m <= endM)) {
                 const yr = String(y).slice(2)
                 labels.push(`${yr}/${m + 1}월`)
                 const monthTotal = salesOrders
@@ -209,41 +217,45 @@ export default function Dashboard() {
                     )
                     .reduce((sum, so) => sum + so.totalsAmount, 0)
                 data.push(monthTotal)
+                m++
+                if (m > 11) { m = 0; y++ }
             }
             return { labels, data }
 
         } else if (timeframe === 'QUARTERLY') {
-            // 최근 12분기
-            const labels: string[] = []
-            const data: number[] = []
+            // 데이터 시작분기 ~ 현재분기
+            const startQ = Math.floor(earliest.getMonth() / 3) + 1
+            const startY = earliest.getFullYear()
             const curQ = Math.floor(now.getMonth() / 3) + 1
             const curY = now.getFullYear()
-            for (let i = 11; i >= 0; i--) {
-                let q = curQ - i
-                let y = curY
-                while (q <= 0) { q += 4; y-- }
-                const yr = String(y).slice(2)
-                labels.push(`${yr}년 Q${q}`)
-                const qStart = (q - 1) * 3
+            const labels: string[] = []
+            const data: number[] = []
+            let cy = startY, cq = startQ
+            while (cy < curY || (cy === curY && cq <= curQ)) {
+                const yr = String(cy).slice(2)
+                labels.push(`${yr}년 Q${cq}`)
+                const qStart = (cq - 1) * 3
                 const qEnd = qStart + 2
                 const qTotal = salesOrders
                     .filter(so => so.confirmedAt &&
-                        so.confirmedAt.getFullYear() === y &&
+                        so.confirmedAt.getFullYear() === cy &&
                         so.confirmedAt.getMonth() >= qStart &&
                         so.confirmedAt.getMonth() <= qEnd
                     )
                     .reduce((sum, so) => sum + so.totalsAmount, 0)
                 data.push(qTotal)
+                cq++
+                if (cq > 4) { cq = 1; cy++ }
             }
             return { labels, data }
 
         } else {
-            // 최근 6개년
+            // 데이터 시작연도 ~ 현재연도
+            const startY = earliest.getFullYear()
+            const curY = now.getFullYear()
             const labels: string[] = []
             const data: number[] = []
-            const curY = now.getFullYear()
-            for (let i = 5; i >= 0; i--) {
-                const y = curY - i
+            for (let y = startY; y <= curY; y++) {
                 labels.push(`${y}년`)
                 const yearTotal = salesOrders
                     .filter(so => so.confirmedAt?.getFullYear() === y)
