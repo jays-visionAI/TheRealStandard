@@ -199,15 +199,13 @@ export default function Dashboard() {
             return { labels, data }
 
         } else if (timeframe === 'MONTHLY') {
-            // 데이터 시작월 ~ 현재월
+            // 데이터 시작월부터 12개월 (미래 포함)
             const startY = earliest.getFullYear()
             const startM = earliest.getMonth()
-            const endY = now.getFullYear()
-            const endM = now.getMonth()
             const labels: string[] = []
             const data: number[] = []
             let y = startY, m = startM
-            while (y < endY || (y === endY && m <= endM)) {
+            for (let i = 0; i < 12; i++) {
                 const yr = String(y).slice(2)
                 labels.push(`${yr}/${m + 1}월`)
                 const monthTotal = salesOrders
@@ -223,15 +221,13 @@ export default function Dashboard() {
             return { labels, data }
 
         } else if (timeframe === 'QUARTERLY') {
-            // 데이터 시작분기 ~ 현재분기
+            // 데이터 시작분기부터 12분기 (미래 포함)
             const startQ = Math.floor(earliest.getMonth() / 3) + 1
             const startY = earliest.getFullYear()
-            const curQ = Math.floor(now.getMonth() / 3) + 1
-            const curY = now.getFullYear()
             const labels: string[] = []
             const data: number[] = []
             let cy = startY, cq = startQ
-            while (cy < curY || (cy === curY && cq <= curQ)) {
+            for (let i = 0; i < 12; i++) {
                 const yr = String(cy).slice(2)
                 labels.push(`${yr}년 Q${cq}`)
                 const qStart = (cq - 1) * 3
@@ -250,12 +246,12 @@ export default function Dashboard() {
             return { labels, data }
 
         } else {
-            // 데이터 시작연도 ~ 현재연도
+            // 데이터 시작연도부터 6개년 (미래 포함)
             const startY = earliest.getFullYear()
-            const curY = now.getFullYear()
             const labels: string[] = []
             const data: number[] = []
-            for (let y = startY; y <= curY; y++) {
+            for (let i = 0; i < 6; i++) {
+                const y = startY + i
                 labels.push(`${y}년`)
                 const yearTotal = salesOrders
                     .filter(so => so.confirmedAt?.getFullYear() === y)
