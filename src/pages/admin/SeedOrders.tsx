@@ -300,6 +300,62 @@ export default function SeedOrders() {
         }
         setRunning(false)
     }
+    // 임시 금액만 등록 함수 (품목 없이 총액만)
+    const seedAmountOnly = async (
+        searchName: string,
+        displayName: string,
+        dateStr: string,
+        totalAmount: number
+    ) => {
+        setRunning(true)
+        setLogs([])
+
+        const customer = customers.find(c =>
+            c.business?.companyName?.includes(searchName) || c.name?.includes(searchName)
+        )
+
+        if (!customer) {
+            addLog(`ERROR: ${displayName} 고객사를 찾을 수 없습니다.`)
+            setRunning(false)
+            return
+        }
+
+        addLog(`${displayName} 발견: ${customer.id}`)
+        const orderDate = parseDate(dateStr)
+
+        try {
+            const so = await createSalesOrder({
+                sourceOrderSheetId: `TEMP-${searchName}-${dateStr.replace(/\//g, '')}`,
+                customerOrgId: customer.id,
+                customerName: customer.business?.companyName || customer.name || displayName,
+                status: 'CREATED',
+                totalsKg: 0,
+                totalsBoxes: 0,
+                totalsAmount: totalAmount,
+                orderUnit: 'box',
+                confirmedAt: Timestamp.fromDate(orderDate),
+            })
+
+            // 품목 1건: 임시 총액
+            await setSalesOrderItems(so.id, [{
+                productId: 'TEMP-AMOUNT-ONLY',
+                productName: `임시 등록 (총액만 - ${displayName})`,
+                qtyKg: 0,
+                qtyBox: 0,
+                boxWeight: 0,
+                unit: 'etc',
+                unitPrice: 0,
+                amount: totalAmount,
+            }])
+
+            addLog(`[${dateStr}] ${displayName} 임시 등록 / ${totalAmount.toLocaleString()}원 -> ${so.id}`)
+        } catch (err: any) {
+            addLog(`ERROR: ${err.message}`)
+        }
+
+        addLog('완료!')
+        setRunning(false)
+    }
 
     // 범용 시드 함수
     const seedCompany = async (
@@ -422,6 +478,19 @@ export default function SeedOrders() {
                 </button>
                 <button onClick={() => seedCompany('에이치', '에이치앤더블유미트', HNW_ORDERS)} disabled={running} style={btnStyle('#d500f9')}>
                     에이치앤더블유미트 1건 (3/6)
+                </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#444', alignSelf: 'center' }}>3/18 예정 납품 (임시):</span>
+                <button onClick={() => seedAmountOnly('태윤', '(주)태윤유통', '26/03/18', 42586840)} disabled={running} style={btnStyle('#795548')}>
+                    태윤유통 42,586,840원
+                </button>
+                <button onClick={() => seedAmountOnly('백운', '(주)백운유통', '26/03/18', 47910330)} disabled={running} style={btnStyle('#795548')}>
+                    백운유통 47,910,330원
+                </button>
+                <button onClick={() => seedAmountOnly('어반', '어반나이프', '26/03/18', 8700000)} disabled={running} style={btnStyle('#795548')}>
+                    어반나이프 8,700,000원
                 </button>
             </div>
 
