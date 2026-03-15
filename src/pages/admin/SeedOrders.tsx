@@ -336,9 +336,9 @@ export default function SeedOrders() {
                     productId: `PROD-${item.product.replace(/[^가-힣a-zA-Z]/g, '')}`,
                     productName: `${item.product} (${item.origin})`,
                     qtyKg: item.weight,
-                    qtyBox: item.qty,
-                    boxWeight: item.qty > 0 ? Math.round((item.weight / item.qty) * 10) / 10 : undefined,
-                    unit: 'box',
+                    qtyBox: item.qty || 0,
+                    boxWeight: item.qty > 0 ? Math.round((item.weight / item.qty) * 10) / 10 : 0,
+                    unit: item.qty > 0 ? 'box' : 'etc',
                     unitPrice: item.unitPrice,
                     amount: item.totalPrice,
                 })))
