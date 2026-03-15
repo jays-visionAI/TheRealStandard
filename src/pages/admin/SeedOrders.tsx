@@ -13,6 +13,11 @@ const TAEYOON_ORDERS: Record<string, { product: string; origin: string; qty: num
         { product: '등갈비(진공/냉장)', origin: '국내산', qty: 10, weight: 125, unitPrice: 1400, totalPrice: 175000 },
         { product: '기타 품목(목살/등뼈/갈비/가브리/항정)', origin: '국내산', qty: 0, weight: 0, unitPrice: 0, totalPrice: 1086770 },
     ],
+    '25/11/13': [
+        { product: '삼겹살(진공/냉장)', origin: '국내산', qty: 40, weight: 720, unitPrice: 15000, totalPrice: 10800000 },
+        { product: 'A전지(냉장)', origin: '국내산', qty: 30, weight: 390, unitPrice: 8600, totalPrice: 3354000 },
+        { product: '미전지(진공/냉장)', origin: '국내산', qty: 80, weight: 1320, unitPrice: 8300, totalPrice: 10956000 },
+    ],
     '25/11/12': [
         { product: '갈비(진공/냉동)', origin: '국내산', qty: 7, weight: 102.2, unitPrice: 8000, totalPrice: 817600 },
         { product: '삼겹살(진공/냉장)', origin: '국내산', qty: 55, weight: 935.3, unitPrice: 13000, totalPrice: 12158900 },
@@ -384,6 +389,9 @@ export default function SeedOrders() {
                 </button>
                 <button onClick={() => seedCompany('태윤', '(주)태윤유통', TAEYOON_ORDERS, ['25/11/06'])} disabled={running} style={btnStyle('#ff5722')}>
                     태윤유통 25/11/06 복원 1건
+                </button>
+                <button onClick={() => seedCompany('태윤', '(주)태윤유통', TAEYOON_ORDERS, ['25/11/13'])} disabled={running} style={btnStyle('#ff5722')}>
+                    태윤유통 25/11/13 복원 1건
                 </button>
                 <button onClick={() => seedCompany('태윤', '(주)태윤유통', TAEYOON_ORDERS, ['26/03/10', '26/03/12'])} disabled={running} style={btnStyle('#00c853')}>
                     태윤유통 신규 2건 (3/10, 3/12)
