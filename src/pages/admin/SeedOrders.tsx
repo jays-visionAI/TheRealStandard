@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createSalesOrder, setSalesOrderItems } from '../../lib/orderService'
 import { getAllCustomerUsers } from '../../lib/userService'
-import { Timestamp, collection, getDocs, deleteDoc, doc } from 'firebase/firestore'
+import { Timestamp, collection, getDocs, deleteDoc, doc, setDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 
 // 태윤유통 거래처원장 데이터 (Excel에서 추출)
@@ -300,7 +300,7 @@ export default function SeedOrders() {
         }
         setRunning(false)
     }
-    // 임시 금액만 등록 함수 (품목 없이 총액만)
+    // 임시 금액만 등록 함수 (품목 없이 총액만, 미등록 고객사 자동 생성)
     const seedAmountOnly = async (
         searchName: string,
         displayName: string,
@@ -310,17 +310,44 @@ export default function SeedOrders() {
         setRunning(true)
         setLogs([])
 
-        const customer = customers.find(c =>
+        let customer = customers.find(c =>
             c.business?.companyName?.includes(searchName) || c.name?.includes(searchName)
         )
 
+        // 고객사 미등록 시 자동 생성
         if (!customer) {
-            addLog(`ERROR: ${displayName} 고객사를 찾을 수 없습니다.`)
-            setRunning(false)
-            return
+            addLog(`${displayName} 미등록 - 자동 생성 중...`)
+            try {
+                const newId = `AUTO-${searchName}-${Date.now()}`
+                const now = Timestamp.now()
+                await setDoc(doc(db, 'users', newId), {
+                    email: `${searchName.toLowerCase()}@temp.meatgo.kr`,
+                    name: displayName,
+                    role: 'CUSTOMER',
+                    status: 'ACTIVE',
+                    business: {
+                        companyName: displayName,
+                        bizRegNo: '',
+                        ceoName: '',
+                        address: '',
+                        tel: '',
+                    },
+                    createdAt: now,
+                    updatedAt: now,
+                })
+                customer = { id: newId, name: displayName, business: { companyName: displayName } }
+                // 목록 업데이트
+                setCustomers(prev => [...prev, customer])
+                addLog(`${displayName} 거래처 자동 생성 완료: ${newId}`)
+            } catch (err: any) {
+                addLog(`ERROR 거래처 생성 실패: ${err.message}`)
+                setRunning(false)
+                return
+            }
+        } else {
+            addLog(`${displayName} 발견: ${customer.id}`)
         }
 
-        addLog(`${displayName} 발견: ${customer.id}`)
         const orderDate = parseDate(dateStr)
 
         try {
@@ -336,7 +363,6 @@ export default function SeedOrders() {
                 confirmedAt: Timestamp.fromDate(orderDate),
             })
 
-            // 품목 1건: 임시 총액
             await setSalesOrderItems(so.id, [{
                 productId: 'TEMP-AMOUNT-ONLY',
                 productName: `임시 등록 (총액만 - ${displayName})`,
@@ -478,6 +504,25 @@ export default function SeedOrders() {
                 </button>
                 <button onClick={() => seedCompany('에이치', '에이치앤더블유미트', HNW_ORDERS)} disabled={running} style={btnStyle('#d500f9')}>
                     에이치앤더블유미트 1건 (3/6)
+                </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#444', alignSelf: 'center' }}>복원 (엄마네한우/푸드고/어반나이프):</span>
+                <button onClick={() => seedAmountOnly('엄마네', '엄마네한우', '25/12/19', 6801050)} disabled={running} style={btnStyle('#e65100')}>
+                    엄마네한우 12/19 6,801,050원
+                </button>
+                <button onClick={() => seedAmountOnly('푸드고', '푸드고', '26/01/23', 8232000)} disabled={running} style={btnStyle('#e65100')}>
+                    푸드고 01/23 8,232,000원
+                </button>
+                <button onClick={() => seedAmountOnly('어반', '어반나이프', '26/02/25', 8736000)} disabled={running} style={btnStyle('#e65100')}>
+                    어반나이프 02/25 8,736,000원
+                </button>
+                <button onClick={() => seedAmountOnly('어반', '어반나이프', '26/03/09', 6119010)} disabled={running} style={btnStyle('#e65100')}>
+                    어반나이프 03/09 6,119,010원
+                </button>
+                <button onClick={() => seedAmountOnly('어반', '어반나이프', '26/03/11', 8700000)} disabled={running} style={btnStyle('#e65100')}>
+                    어반나이프 03/11 8,700,000원
                 </button>
             </div>
 
