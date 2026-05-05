@@ -3,9 +3,10 @@ import {
     query, where, serverTimestamp, Timestamp
 } from 'firebase/firestore'
 import { db } from './firebase'
+import { getCreatorStamp, type CreatorStamp } from './auditing'
 
 // ============ ORDER SHEET (주문장) ============
-export interface FirestoreOrderSheet {
+export interface FirestoreOrderSheet extends Partial<CreatorStamp> {
     id: string
     inviteTokenId?: string
     customerOrgId: string
@@ -72,18 +73,18 @@ export async function getOrderSheetsByCustomer(customerOrgId: string): Promise<F
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FirestoreOrderSheet))
 }
 
-export async function createOrderSheet(data: Omit<FirestoreOrderSheet, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreOrderSheet> {
+export async function createOrderSheet(data: Omit<FirestoreOrderSheet, 'id' | 'createdAt' | 'updatedAt' | keyof CreatorStamp>): Promise<FirestoreOrderSheet> {
     const newDocRef = doc(collection(db, ORDER_SHEETS_COLLECTION))
     const now = serverTimestamp()
-    await setDoc(newDocRef, { ...data, createdAt: now, updatedAt: now })
+    await setDoc(newDocRef, { ...getCreatorStamp(), ...data, createdAt: now, updatedAt: now })
     const created = await getDoc(newDocRef)
     return { id: created.id, ...created.data() } as FirestoreOrderSheet
 }
 
-export async function createOrderSheetWithId(id: string, data: Omit<FirestoreOrderSheet, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreOrderSheet> {
+export async function createOrderSheetWithId(id: string, data: Omit<FirestoreOrderSheet, 'id' | 'createdAt' | 'updatedAt' | keyof CreatorStamp>): Promise<FirestoreOrderSheet> {
     const docRef = doc(db, ORDER_SHEETS_COLLECTION, id)
     const now = serverTimestamp()
-    await setDoc(docRef, { ...data, createdAt: now, updatedAt: now })
+    await setDoc(docRef, { ...getCreatorStamp(), ...data, createdAt: now, updatedAt: now })
     const created = await getDoc(docRef)
     return { id: created.id, ...created.data() } as FirestoreOrderSheet
 }
@@ -168,12 +169,19 @@ export async function setOrderSheetItems(orderSheetId: string, items: Omit<Fires
     for (let i = 0; i < items.length; i++) {
         const item = items[i]
         const itemRef = doc(collection(db, ORDER_SHEET_ITEMS_COLLECTION))
-        await setDoc(itemRef, { ...item, orderSheetId, id: itemRef.id })
+        // Firestore does not accept undefined values, so strip them
+        const cleanItem: Record<string, any> = { orderSheetId, id: itemRef.id }
+        for (const [key, value] of Object.entries(item)) {
+            if (value !== undefined) {
+                cleanItem[key] = value
+            }
+        }
+        await setDoc(itemRef, cleanItem)
     }
 }
 
 // ============ SALES ORDER (판매오더) ============
-export interface FirestoreSalesOrder {
+export interface FirestoreSalesOrder extends Partial<CreatorStamp> {
     id: string
     sourceOrderSheetId: string
     customerOrgId: string
@@ -185,6 +193,10 @@ export interface FirestoreSalesOrder {
     orderUnit?: string // 'box' | 'kg'
     confirmedAt: Timestamp
     createdAt: Timestamp
+    // Sprint 2: 출고 확정 후 실적 필드
+    finalWeightKg?: number        // 출고 확정 후 실중량
+    finalAmount?: number          // 출고 확정 후 실금액
+    settlementId?: string         // 연결된 settlement ID
 }
 
 export interface FirestoreSalesOrderItem {
@@ -221,10 +233,10 @@ export async function getSalesOrdersByCustomer(customerOrgId: string): Promise<F
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FirestoreSalesOrder))
 }
 
-export async function createSalesOrder(data: Omit<FirestoreSalesOrder, 'id' | 'createdAt'>): Promise<FirestoreSalesOrder> {
+export async function createSalesOrder(data: Omit<FirestoreSalesOrder, 'id' | 'createdAt' | keyof CreatorStamp>): Promise<FirestoreSalesOrder> {
     const newDocRef = doc(collection(db, SALES_ORDERS_COLLECTION))
     const now = serverTimestamp()
-    await setDoc(newDocRef, { ...data, createdAt: now })
+    await setDoc(newDocRef, { ...getCreatorStamp(), ...data, createdAt: now })
     const created = await getDoc(newDocRef)
     return { id: created.id, ...created.data() } as FirestoreSalesOrder
 }
@@ -254,12 +266,19 @@ export async function setSalesOrderItems(salesOrderId: string, items: Omit<Fires
     for (let i = 0; i < items.length; i++) {
         const item = items[i]
         const itemRef = doc(collection(db, SALES_ORDER_ITEMS_COLLECTION))
-        await setDoc(itemRef, { ...item, salesOrderId, id: itemRef.id })
+        // Firestore does not accept undefined values, so strip them
+        const cleanItem: Record<string, any> = { salesOrderId, id: itemRef.id }
+        for (const [key, value] of Object.entries(item)) {
+            if (value !== undefined) {
+                cleanItem[key] = value
+            }
+        }
+        await setDoc(itemRef, cleanItem)
     }
 }
 
 // ============ SHIPMENT (배송) ============
-export interface FirestoreShipment {
+export interface FirestoreShipment extends Partial<CreatorStamp> {
     id: string
     sourceSalesOrderId: string
     orderId?: string // for backward compatibility
@@ -308,10 +327,10 @@ export async function getShipmentByToken(token: string): Promise<FirestoreShipme
     return { id: d.id, ...d.data() } as FirestoreShipment
 }
 
-export async function createShipment(data: Omit<FirestoreShipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreShipment> {
+export async function createShipment(data: Omit<FirestoreShipment, 'id' | 'createdAt' | 'updatedAt' | keyof CreatorStamp>): Promise<FirestoreShipment> {
     const newDocRef = doc(collection(db, SHIPMENTS_COLLECTION))
     const now = serverTimestamp()
-    await setDoc(newDocRef, { ...data, createdAt: now, updatedAt: now })
+    await setDoc(newDocRef, { ...getCreatorStamp(), ...data, createdAt: now, updatedAt: now })
     const created = await getDoc(newDocRef)
     return { id: created.id, ...created.data() } as FirestoreShipment
 }
@@ -377,7 +396,7 @@ export async function deleteDriver(id: string): Promise<void> {
 }
 
 // ============ PURCHASE ORDER (매입발주) ============
-export interface FirestorePurchaseOrder {
+export interface FirestorePurchaseOrder extends Partial<CreatorStamp> {
     id: string
     inviteTokenId?: string
     supplierOrgId: string
@@ -430,10 +449,10 @@ export async function getPurchaseOrderItems(purchaseOrderId: string): Promise<Fi
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FirestorePurchaseOrderItem))
 }
 
-export async function createPurchaseOrder(data: Omit<FirestorePurchaseOrder, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestorePurchaseOrder> {
+export async function createPurchaseOrder(data: Omit<FirestorePurchaseOrder, 'id' | 'createdAt' | 'updatedAt' | keyof CreatorStamp>): Promise<FirestorePurchaseOrder> {
     const newDocRef = doc(collection(db, PURCHASE_ORDERS_COLLECTION))
     const now = serverTimestamp()
-    await setDoc(newDocRef, { ...data, createdAt: now, updatedAt: now })
+    await setDoc(newDocRef, { ...getCreatorStamp(), ...data, createdAt: now, updatedAt: now })
     const created = await getDoc(newDocRef)
     return { id: created.id, ...created.data() } as FirestorePurchaseOrder
 }

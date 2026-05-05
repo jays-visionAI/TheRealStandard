@@ -9,14 +9,14 @@ import {
 } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import type { UserRole } from '../types'
-import { getUserByEmail, createUser, type BusinessProfile } from '../lib/userService'
+import { getUserByEmail, getUserById, createUser, type BusinessProfile } from '../lib/userService'
+import { setCurrentActor } from '../lib/auditing'
 
 interface User {
-    id: string
+    id: string          // Firebase UID와 동일
     email: string
     name: string
     role: UserRole
-    orgId?: string
     avatar?: string
     firebaseUid?: string
     business?: BusinessProfile
@@ -74,10 +74,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (fbUser && fbUser.email) {
                 try {
-                    // 통합 users 컬렉션에서 사용자 정보 가져오기
-                    const firestoreUser = await getUserByEmail(fbUser.email)
+                    // Firebase UID로 직접 조회 (doc ID === Firebase UID)
+                    const firestoreUser = await getUserById(fbUser.uid)
 
                     if (firestoreUser) {
+                        // PENDING 유저 차단
+                        if (firestoreUser.status === 'PENDING') {
+                            await signOut(auth)
+                            setUser(null)
+                            setLoading(false)
+                            console.warn('PENDING user blocked:', firestoreUser.email)
+                            // TODO: 로그인 페이지로 에러 메시지 전달 (별도 전역 state 또는 toast 활용)
+                            return
+                        }
+
                         // 관리자 이메일 목록에 있으면 권한을 ADMIN으로 강제 설정
                         const isAdminEmail = ADMIN_EMAILS.includes(fbUser.email.toLowerCase())
                         const finalRole = isAdminEmail ? 'ADMIN' : firestoreUser.role
@@ -87,7 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             email: firestoreUser.email,
                             name: firestoreUser.business?.companyName || firestoreUser.name,
                             role: finalRole as UserRole,
-                            orgId: firestoreUser.id,
                             firebaseUid: fbUser.uid,
                             business: firestoreUser.business
                         })
@@ -101,19 +110,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             role: 'CUSTOMER',
                             status: 'PENDING',
                             firebaseUid: fbUser.uid
-                        })
+                        }, fbUser.uid)
 
                         // 생성된 사용자 정보 다시 조회
-                        const newUser = await getUserByEmail(fbUser.email)
+                        const newUser = await getUserById(fbUser.uid)
                         if (newUser) {
-                            setUser({
-                                id: newUser.id,
-                                email: newUser.email,
-                                name: newUser.name,
-                                role: newUser.role,
-                                orgId: newUser.id,
-                                firebaseUid: fbUser.uid
-                            })
+                            // 신규 생성 유저는 PENDING이므로 차단
+                            await signOut(auth)
+                            setUser(null)
+                            setLoading(false)
+                            console.warn('Newly created PENDING user blocked:', newUser.email)
+                            return
                         } else {
                             // fallback: 기본 정보로 설정
                             setUser({
@@ -152,9 +159,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             console.log('Attempting login for:', normalizedEmail)
             // Firebase Auth로 로그인
-            await signInWithEmailAndPassword(auth, normalizedEmail, password)
+            const credential = await signInWithEmailAndPassword(auth, normalizedEmail, password)
             console.log('Login successful')
-            const updatedUser = await getUserByEmail(normalizedEmail)
+            const updatedUser = await getUserById(credential.user.uid)
             if (!updatedUser) throw new Error('사용자 정보를 찾을 수 없습니다.')
 
             // 관리자 권한 강제 부여
@@ -166,7 +173,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email: updatedUser.email,
                 name: updatedUser.name,
                 role: finalRole as UserRole,
-                orgId: updatedUser.orgId,
                 business: updatedUser.business
             }
         } catch (error: any) {
@@ -188,16 +194,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         name: demoAccount?.name || '신규 사용자',
                         role: demoAccount?.role || 'CUSTOMER',
                         status: 'ACTIVE',
-                    })
+                    }, userCredential.user.uid)
                     console.log('Firestore user identity created')
-                    const newUser = await getUserByEmail(normalizedEmail)
+                    const newUser = await getUserById(userCredential.user.uid)
                     if (!newUser) throw new Error('계정 생성 후 정보를 불러올 수 없습니다.')
                     return {
                         id: newUser.id,
                         email: newUser.email,
                         name: newUser.name,
                         role: newUser.role,
-                        orgId: newUser.orgId,
                         business: newUser.business
                     }
                 } catch (createError: any) {
@@ -221,14 +226,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const email = kakaoUser.kakao_account?.email || `${kakaoUser.id}@kakao.com`
         const tempPassword = `kakao_${kakaoUser.id}_temp`
 
+        let kakaoUid: string | undefined
         try {
             // 먼저 로그인 시도
-            await signInWithEmailAndPassword(auth, email, tempPassword)
+            const credential = await signInWithEmailAndPassword(auth, email, tempPassword)
+            kakaoUid = credential.user.uid
         } catch (error: any) {
             if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
                 // 계정이 없으면 생성
                 try {
-                    await createUserWithEmailAndPassword(auth, email, tempPassword)
+                    const credential = await createUserWithEmailAndPassword(auth, email, tempPassword)
+                    kakaoUid = credential.user.uid
 
                     // Firestore에 사용자 정보 저장
                     await createUser({
@@ -236,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         name: kakaoUser.properties?.nickname || '카카오 사용자',
                         role: 'CUSTOMER',
                         status: 'ACTIVE',
-                    })
+                    }, kakaoUid)
                 } catch (createError) {
                     console.error('Kakao login error:', createError)
                     throw new Error('카카오 로그인에 실패했습니다.')
@@ -245,14 +253,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 throw error
             }
         }
-        const updatedUser = await getUserByEmail(email)
+        const updatedUser = await getUserById(kakaoUid!)
         if (!updatedUser) throw new Error('사용자 정보를 찾을 수 없습니다.')
         return {
             id: updatedUser.id,
             email: updatedUser.email,
             name: updatedUser.name,
             role: updatedUser.role,
-            orgId: updatedUser.orgId,
             business: updatedUser.business
         }
     }
@@ -267,24 +274,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('Google login (popup) success:', googleUser.email)
 
             // Firestore에 사용자 정보가 없으면 생성
-            const existingUser = await getUserByEmail(googleUser.email)
+            const existingUser = await getUserById(googleUser.uid)
             if (!existingUser) {
                 await createUser({
                     email: googleUser.email,
                     name: googleUser.displayName || '구글 사용자',
                     role: 'CUSTOMER',
                     status: 'ACTIVE',
-                })
+                }, googleUser.uid)
             }
 
-            const updatedUser = await getUserByEmail(googleUser.email)
+            const updatedUser = await getUserById(googleUser.uid)
             if (!updatedUser) throw new Error('사용자 정보를 찾을 수 없습니다.')
             return {
                 id: updatedUser.id,
                 email: updatedUser.email,
                 name: updatedUser.name,
                 role: updatedUser.role,
-                orgId: updatedUser.orgId,
                 business: updatedUser.business
             }
         } catch (error: any) {
@@ -340,14 +346,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 status: 'PENDING',
                 firebaseUid: userCredential.user.uid,
                 business: businessData
-            })
+            }, userCredential.user.uid)
 
             return {
                 id: newUser.id,
                 email: newUser.email,
                 name: newUser.name,
                 role: newUser.role as UserRole,
-                orgId: newUser.id,
                 firebaseUid: userCredential.user.uid,
                 business: newUser.business
             }
@@ -359,6 +364,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             throw error
         }
     }
+
+    // 작성자 자동기록을 위한 currentActor 동기화
+    useEffect(() => {
+        if (user) {
+            setCurrentActor({
+                uid: user.firebaseUid || user.id,
+                name: user.name,
+                role: user.role,
+            })
+        } else {
+            setCurrentActor(null)
+        }
+    }, [user])
 
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'OPS'
     const isCustomer = user?.role === 'CUSTOMER'
