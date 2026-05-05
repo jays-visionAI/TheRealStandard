@@ -33,6 +33,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
     const [searchQuery, setSearchQuery] = useState('')
     const [categoryFilter, setCategoryFilter] = useState<string>('all')
     const [supplierFilter, setSupplierFilter] = useState<string>('all') // 'all' | 'unassigned' | <supplierOrgId>
+    const [sortMode, setSortMode] = useState<'category' | 'supplier'>('category') // 정렬 기준
     const [suppliers, setSuppliers] = useState<FirestoreUser[]>([])
     const [showModal, setShowModal] = useState(false)
     const [showBulkModal, setShowBulkModal] = useState(false)
@@ -168,8 +169,22 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                 return false
             }
             return true
-        }).sort(compareProductOrder)
-    }, [products, searchQuery, categoryFilter, supplierFilter, showInactive, channel])
+        }).sort((a, b) => {
+            if (sortMode === 'supplier') {
+                // 공급사명 기준 그룹 정렬 (미지정은 맨 아래)
+                const aHas = !!a.supplierOrgId
+                const bHas = !!b.supplierOrgId
+                if (aHas !== bHas) return aHas ? -1 : 1
+                const aName = a.supplierName || ''
+                const bName = b.supplierName || ''
+                const cmp = aName.localeCompare(bName, 'ko')
+                if (cmp !== 0) return cmp
+                // 같은 공급사 내에서는 기본 카테고리 순
+                return compareProductOrder(a as any, b as any)
+            }
+            return compareProductOrder(a as any, b as any)
+        })
+    }, [products, searchQuery, categoryFilter, supplierFilter, showInactive, channel, sortMode])
 
     // 통계
     const stats = useMemo(() => {
@@ -708,19 +723,44 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                 </button>
                 {suppliers.map(s => {
                     const count = products.filter(p => p.supplierOrgId === s.id).length
-                    if (count === 0) return null
                     return (
                         <button
                             key={s.id}
                             type="button"
                             className={`btn ${supplierFilter === s.id ? 'btn-primary' : 'btn-secondary'}`}
-                            style={{ padding: '6px 14px', fontSize: '13px' }}
+                            style={{
+                                padding: '6px 14px',
+                                fontSize: '13px',
+                                opacity: count === 0 ? 0.6 : 1,
+                            }}
                             onClick={() => setSupplierFilter(s.id)}
+                            title={count === 0 ? '아직 매핑된 상품이 없습니다' : undefined}
                         >
                             {s.business?.companyName || s.name || s.email} ({count})
                         </button>
                     )
                 })}
+
+                {/* 정렬 토글 */}
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '12px', color: '#6b7280' }}>정렬:</span>
+                    <button
+                        type="button"
+                        className={`btn ${sortMode === 'category' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                        onClick={() => setSortMode('category')}
+                    >
+                        카테고리순
+                    </button>
+                    <button
+                        type="button"
+                        className={`btn ${sortMode === 'supplier' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                        onClick={() => setSortMode('supplier')}
+                    >
+                        공급사순
+                    </button>
+                </div>
             </div>
 
             {/* Product Table */}
