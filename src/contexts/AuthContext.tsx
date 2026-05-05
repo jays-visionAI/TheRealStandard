@@ -20,6 +20,7 @@ interface User {
     avatar?: string
     firebaseUid?: string
     business?: BusinessProfile
+    mustChangePassword?: boolean  // 관리자 발급 임시PW 사용 중인 경우 true. 첫 로그인 시 비번 변경 강제
 }
 
 interface AuthContextType {
@@ -98,7 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             name: firestoreUser.business?.companyName || firestoreUser.name,
                             role: finalRole as UserRole,
                             firebaseUid: fbUser.uid,
-                            business: firestoreUser.business
+                            business: firestoreUser.business,
+                            mustChangePassword: firestoreUser.mustChangePassword
                         })
                     } else {
                         // users 컬렉션에 없는 경우 - 신규 사용자로 자동 생성

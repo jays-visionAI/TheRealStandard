@@ -11,7 +11,8 @@ import {
     serverTimestamp,
     Timestamp
 } from 'firebase/firestore'
-import { db, cleanData } from './firebase'
+import { createUserWithEmailAndPassword, signOut } from 'firebase/auth'
+import { db, cleanData, getSecondaryAuth } from './firebase'
 import type { UserRole } from '../types'
 
 // ============ 사업체 정보 타입 정의 ============
@@ -65,12 +66,10 @@ export interface FirestoreUser {
     status: 'ACTIVE' | 'PENDING' | 'INACTIVE'
     firebaseUid?: string          // Firebase Auth UID
     inviteToken?: string          // 초대 토큰 (가입 전)
+    mustChangePassword?: boolean  // 첫 로그인 시 비밀번호 변경 강제 (관리자가 임시PW로 발급한 경우)
 
     // 사업체 정보 (CUSTOMER, SUPPLIER, 3PL 역할인 경우)
     business?: BusinessProfile
-
-    // 레거시 호환용 (마이그레이션 후 제거 예정)
-    orgId?: string
 
     createdAt: Timestamp
     updatedAt: Timestamp
@@ -123,22 +122,83 @@ export async function getUsersByRole(role: UserRole): Promise<FirestoreUser[]> {
 // ============ CREATE ============
 
 // 새 사용자 생성 (이메일 소문자 정규화)
-export async function createUser(userData: Omit<FirestoreUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreUser> {
-    const newDocRef = doc(usersRef)
+export async function createUser(
+    userData: Omit<FirestoreUser, 'id' | 'createdAt' | 'updatedAt'>,
+    firebaseUid?: string
+): Promise<FirestoreUser> {
+    // firebaseUid가 있으면 그것을 doc ID로, 없으면 랜덤 생성
+    const docId = firebaseUid || doc(usersRef).id
+    const docRef = doc(db, USERS_COLLECTION, docId)
     const now = serverTimestamp()
 
     const newUser = {
         ...cleanData(userData),
         email: userData.email.toLowerCase().trim(),
+        firebaseUid: firebaseUid || undefined,
         createdAt: now,
         updatedAt: now
     }
 
-    await setDoc(newDocRef, newUser)
+    await setDoc(docRef, newUser)
 
     // 생성된 문서 반환
-    const created = await getDoc(newDocRef)
+    const created = await getDoc(docRef)
     return { id: created.id, ...created.data() } as FirestoreUser
+}
+
+// 임시 비밀번호 자동 생성 (영문 대소문자 + 숫자, 8자)
+export function generateTempPassword(length = 8): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+    let pw = ''
+    for (let i = 0; i < length; i++) {
+        pw += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return pw
+}
+
+// 관리자가 외부 사용자(공급사 등)의 Firebase Auth 계정을 즉시 발급한다.
+// secondary app instance를 사용하여 현재 admin 세션을 보호한다.
+// 발급된 사용자는 mustChangePassword=true 로 표시되어 첫 로그인 시 비밀번호를 변경해야 한다.
+export async function createUserWithAuth(params: {
+    email: string
+    tempPassword: string
+    name: string
+    role: UserRole
+    business?: BusinessProfile
+    phone?: string
+}): Promise<{ user: FirestoreUser; tempPassword: string }> {
+    const normalizedEmail = params.email.toLowerCase().trim()
+    const secondaryAuth = getSecondaryAuth()
+
+    // 1. Firebase Auth에 계정 생성 (secondary app으로 admin 세션 보호)
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, normalizedEmail, params.tempPassword)
+    const uid = cred.user.uid
+
+    // 2. Firestore users/{uid} 도큐먼트 생성 (doc ID == Firebase UID)
+    const docRef = doc(db, USERS_COLLECTION, uid)
+    const now = serverTimestamp()
+    const newUser = cleanData({
+        email: normalizedEmail,
+        name: params.name,
+        phone: params.phone,
+        role: params.role,
+        status: 'ACTIVE',
+        firebaseUid: uid,
+        mustChangePassword: true,
+        business: params.business,
+        createdAt: now,
+        updatedAt: now,
+    })
+    await setDoc(docRef, newUser)
+
+    // 3. secondary auth signOut (계정 잠금)
+    await signOut(secondaryAuth)
+
+    const created = await getDoc(docRef)
+    return {
+        user: { id: created.id, ...created.data() } as FirestoreUser,
+        tempPassword: params.tempPassword,
+    }
 }
 
 // 특정 ID로 사용자 생성 (초기 데이터 시드용, 이메일 소문자 정규화)
@@ -363,8 +423,7 @@ export async function migrateLegacySuppliersToUsers(): Promise<{ migrated: numbe
                             accountHolder: data.ceoName || ''
                         } : undefined,
                         paymentTerms: data.paymentTerms,
-                    },
-                    orgId: id // 레거시 참조용
+                    }
                 }
 
                 await createUserWithId(id, newUserData)
@@ -378,4 +437,11 @@ export async function migrateLegacySuppliersToUsers(): Promise<{ migrated: numbe
     }
 
     return result
+}
+
+// ============ 유틸리티 함수 ============
+
+// 유저 승인 상태 확인
+export function isUserApproved(user: FirestoreUser): boolean {
+    return user.status === 'ACTIVE'
 }

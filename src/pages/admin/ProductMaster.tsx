@@ -8,6 +8,7 @@ import {
     deleteProduct as deleteProductFirebase,
     type FirestoreProduct
 } from '../../lib/productService'
+import { getAllSupplierUsers, type FirestoreUser } from '../../lib/userService'
 import { checkAndRecordPriceChange, getPriceHistoryByProduct, type PriceHistoryEntry } from '../../lib/priceHistoryService'
 import { compareProductOrder } from '../../lib/productSortOrder'
 import { AlertTriangleIcon } from '../../components/Icons'
@@ -31,6 +32,8 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
 
     const [searchQuery, setSearchQuery] = useState('')
     const [categoryFilter, setCategoryFilter] = useState<string>('all')
+    const [supplierFilter, setSupplierFilter] = useState<string>('all') // 'all' | 'unassigned' | <supplierOrgId>
+    const [suppliers, setSuppliers] = useState<FirestoreUser[]>([])
     const [showModal, setShowModal] = useState(false)
     const [showBulkModal, setShowBulkModal] = useState(false)
     const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -129,6 +132,13 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
         loadProducts()
     }, [])
 
+    // 공급사 목록 로드 (필터/폼 드롭다운용)
+    useEffect(() => {
+        getAllSupplierUsers()
+            .then(setSuppliers)
+            .catch(err => console.error('Failed to load suppliers:', err))
+    }, [])
+
     // 필터링된 상품 목록
     const filteredProducts = useMemo(() => {
         return products.filter(p => {
@@ -147,13 +157,19 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
             if (categoryFilter !== 'all' && p.category1 !== categoryFilter) {
                 return false
             }
+            // 공급사 필터
+            if (supplierFilter === 'unassigned') {
+                if (p.supplierOrgId) return false
+            } else if (supplierFilter !== 'all') {
+                if (p.supplierOrgId !== supplierFilter) return false
+            }
             // 비활성 상품 필터
             if (!showInactive && !p.isActive) {
                 return false
             }
             return true
         }).sort(compareProductOrder)
-    }, [products, searchQuery, categoryFilter, showInactive, channel])
+    }, [products, searchQuery, categoryFilter, supplierFilter, showInactive, channel])
 
     // 통계
     const stats = useMemo(() => {
@@ -232,6 +248,10 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
             const profit = wholesale - cost
             const margin = wholesale > 0 ? (profit / wholesale) * 100 : 0
 
+            const supplierOrgId = (formData as any).supplierOrgId || ''
+            const supplier = supplierOrgId ? suppliers.find(s => s.id === supplierOrgId) : null
+            const supplierName = supplier ? (supplier.business?.companyName || supplier.name || supplier.email) : ''
+
             const cleanData = {
                 name: formData.name,
                 category1: formData.category1 as '냉장' | '냉동' | '부산물',
@@ -245,6 +265,8 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                 wholesaleMargin: margin,
                 isActive: formData.isActive !== false,
                 memo: formData.memo || '',
+                supplierOrgId: supplierOrgId || undefined,
+                supplierName: supplierName || undefined,
             }
 
             if (editingProduct) {
@@ -643,6 +665,18 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                         <option value="부산물">🦴 부산물</option>
                     </select>
 
+                    <select
+                        className="input select"
+                        value={supplierFilter}
+                        onChange={(e) => setSupplierFilter(e.target.value)}
+                    >
+                        <option value="all">전체 공급사</option>
+                        <option value="unassigned">미지정</option>
+                        {suppliers.map(s => (
+                            <option key={s.id} value={s.id}>{s.business?.companyName || s.name || s.email}</option>
+                        ))}
+                    </select>
+
                     <label className="checkbox-label">
                         <input
                             type="checkbox"
@@ -654,12 +688,48 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                 </div>
             </div >
 
+            {/* 공급사 탭 (빠른 전환) */}
+            <div className="filters-bar glass-card" style={{ flexWrap: 'wrap', gap: '6px' }}>
+                <button
+                    type="button"
+                    className={`btn ${supplierFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '6px 14px', fontSize: '13px' }}
+                    onClick={() => setSupplierFilter('all')}
+                >
+                    전체 ({products.length})
+                </button>
+                <button
+                    type="button"
+                    className={`btn ${supplierFilter === 'unassigned' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '6px 14px', fontSize: '13px' }}
+                    onClick={() => setSupplierFilter('unassigned')}
+                >
+                    미지정 ({products.filter(p => !p.supplierOrgId).length})
+                </button>
+                {suppliers.map(s => {
+                    const count = products.filter(p => p.supplierOrgId === s.id).length
+                    if (count === 0) return null
+                    return (
+                        <button
+                            key={s.id}
+                            type="button"
+                            className={`btn ${supplierFilter === s.id ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ padding: '6px 14px', fontSize: '13px' }}
+                            onClick={() => setSupplierFilter(s.id)}
+                        >
+                            {s.business?.companyName || s.name || s.email} ({count})
+                        </button>
+                    )
+                })}
+            </div>
+
             {/* Product Table */}
             < div className="table-container glass-card" >
                 <table className="product-table">
                     <thead>
                         <tr>
                             <th>품목명</th>
+                            <th>공급사</th>
                             <th>카테고리1(냉장/냉동)</th>
                             <th>단위</th>
                             <th>예상중량/Box</th>
@@ -676,6 +746,13 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                 <td className="product-name">
                                     <span className="name">{product.name}</span>
                                     {product.memo && <span className="memo">{product.memo}</span>}
+                                </td>
+                                <td>
+                                    {product.supplierName ? (
+                                        <span style={{ fontSize: '13px' }}>{product.supplierName}</span>
+                                    ) : (
+                                        <span style={{ fontSize: '12px', color: '#9ca3af', fontStyle: 'italic' }}>미지정</span>
+                                    )}
                                 </td>
                                 <td>
                                     <span className={`category-badge ${product.category1}`}>
@@ -786,6 +863,20 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                                 <option value="냉장">🧊 냉장</option>
                                                 <option value="냉동">❄️ 냉동</option>
                                                 <option value="부산물">🦴 부산물</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="label">공급사</label>
+                                            <select
+                                                className="input select"
+                                                value={(formData as any).supplierOrgId || ''}
+                                                onChange={(e) => setFormData({ ...formData, supplierOrgId: e.target.value || undefined } as any)}
+                                            >
+                                                <option value="">미지정</option>
+                                                {suppliers.map(s => (
+                                                    <option key={s.id} value={s.id}>{s.business?.companyName || s.name || s.email}</option>
+                                                ))}
                                             </select>
                                         </div>
 

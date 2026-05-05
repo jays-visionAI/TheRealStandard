@@ -3,7 +3,8 @@ import { FactoryIcon, SearchIcon, CheckCircleIcon, PauseCircleIcon, ClipboardLis
 import './OrganizationMaster.css'  // 같은 스타일 공유
 import {
     getAllSupplierUsers,
-    createUser,
+    createUserWithAuth,
+    generateTempPassword,
     updateUser as updateUserFirebase,
     deleteUser as deleteUserFirebase,
     type FirestoreUser,
@@ -67,6 +68,9 @@ export default function SupplierMaster() {
     // Invite Link Modal State
     const [inviteModalOpen, setInviteModalOpen] = useState(false)
     const [inviteModalLink, setInviteModalLink] = useState('')
+
+    // 계정 발급 결과 모달 (ID + 임시PW 표시)
+    const [credentialModal, setCredentialModal] = useState<{ email: string; tempPassword: string; companyName: string } | null>(null)
 
     // 모달 통보 전용 상태
     const [confirmConfig, setConfirmConfig] = useState<{
@@ -157,6 +161,7 @@ export default function SupplierMaster() {
             ceoName: '',
             phone: '',
             email: '',
+            tempPassword: generateTempPassword(),  // 임시비번 자동생성
             address: '',
             supplyCategory: 'meat',
             status: 'ACTIVE',
@@ -222,22 +227,40 @@ export default function SupplierMaster() {
                     business
                 })
                 showAlert('공급사 수정', '수정되었습니다.')
+                await loadSuppliers()
+                setShowModal(false)
             } else {
-                await createUser({
+                // Firebase Auth 계정 즉시 발급 + Firestore users 도큐 생성 (mustChangePassword: true)
+                const tempPassword = formData.tempPassword || generateTempPassword()
+                const result = await createUserWithAuth({
                     email: formData.email,
+                    tempPassword,
                     name: formData.contactPerson || formData.ceoName || formData.companyName,
                     role: 'SUPPLIER',
-                    status: formData.status,
-                    business
+                    business,
+                    phone: formData.phone,
                 })
-                showAlert('공급사 등록', '등록되었습니다. 초대장을 발송할 수 있습니다.')
+                await loadSuppliers()
+                setShowModal(false)
+                // 계정 발급 결과 모달 표시 (ID + 임시PW)
+                setCredentialModal({
+                    email: result.user.email,
+                    tempPassword,
+                    companyName: formData.companyName,
+                })
             }
-
-            await loadSuppliers()
-            setShowModal(false)
-        } catch (error) {
+        } catch (error: any) {
             console.error('Save failed:', error)
-            showAlert('저장 실패', '저장에 실패했습니다.', true)
+            const code = error?.code as string | undefined
+            if (code === 'auth/email-already-in-use') {
+                showAlert('계정 발급 실패', '이미 사용 중인 이메일입니다.', true)
+            } else if (code === 'auth/invalid-email') {
+                showAlert('계정 발급 실패', '유효하지 않은 이메일 형식입니다.', true)
+            } else if (code === 'auth/weak-password') {
+                showAlert('계정 발급 실패', '비밀번호는 6자 이상이어야 합니다.', true)
+            } else {
+                showAlert('저장 실패', error?.message || '저장에 실패했습니다.', true)
+            }
         } finally {
             setIsSubmitting(false)
         }
@@ -433,10 +456,41 @@ export default function SupplierMaster() {
                                 <div className="form-grid">
                                     <div className="form-group required"><label>전화번호</label><input className="input" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} required /></div>
                                     <div className="form-group"><label>팩스</label><input className="input" value={formData.fax} onChange={e => setFormData({ ...formData, fax: e.target.value })} /></div>
-                                    <div className="form-group required"><label>이메일</label><input className="input" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required /></div>
+                                    <div className="form-group required"><label>이메일 (로그인 ID)</label><input className="input" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required disabled={!!editingSupplier} /></div>
                                 </div>
                                 <div className="form-group required full-width"><label>주소</label><input className="input" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} required /></div>
                             </div>
+                            {!editingSupplier && (
+                                <div className="form-section">
+                                    <h3>로그인 계정 발급</h3>
+                                    <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
+                                        등록 즉시 Firebase Auth 계정이 발급됩니다. 공급사는 첫 로그인 시 비밀번호를 변경해야 합니다.
+                                    </p>
+                                    <div className="form-grid">
+                                        <div className="form-group required full-width">
+                                            <label>임시 비밀번호 (자동 생성됨, 수정 가능)</label>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <input
+                                                    className="input"
+                                                    type="text"
+                                                    value={formData.tempPassword || ''}
+                                                    onChange={e => setFormData({ ...formData, tempPassword: e.target.value })}
+                                                    minLength={6}
+                                                    required
+                                                    style={{ fontFamily: 'monospace', flex: 1 }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-secondary"
+                                                    onClick={() => setFormData({ ...formData, tempPassword: generateTempPassword() })}
+                                                >
+                                                    재생성
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             <div className="form-section">
                                 <h3>공급 및 결제 정보</h3>
                                 <div className="form-grid">
@@ -490,6 +544,75 @@ export default function SupplierMaster() {
                                 style={{ width: '100%', padding: '14px', fontWeight: 'bold' }}
                                 onClick={() => setInviteModalOpen(false)}
                             >
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 계정 발급 결과 Modal — ID + 임시PW 표시 */}
+            {credentialModal && (
+                <div className="modal-overlay" onClick={() => setCredentialModal(null)}>
+                    <div className="modal-content" style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>공급사 계정 발급 완료</h2>
+                            <button className="close-btn" onClick={() => setCredentialModal(null)}>
+                                <XIcon size={20} />
+                            </button>
+                        </div>
+                        <div className="modal-body" style={{ padding: '24px' }}>
+                            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                                <CheckIcon size={32} />
+                            </div>
+                            <h3 style={{ fontSize: '18px', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px' }}>
+                                {credentialModal.companyName} 계정이 발급되었습니다
+                            </h3>
+                            <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center', marginBottom: '20px' }}>
+                                아래 정보를 공급사 담당자에게 전달해주세요.<br />
+                                공급사는 첫 로그인 시 비밀번호를 변경해야 합니다.
+                            </p>
+                            <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', marginBottom: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>로그인 ID (이메일)</div>
+                                        <div style={{ fontFamily: 'monospace', fontSize: '15px', fontWeight: 'bold' }}>{credentialModal.email}</div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                                        onClick={() => navigator.clipboard.writeText(credentialModal.email)}
+                                    >
+                                        복사
+                                    </button>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>임시 비밀번호</div>
+                                        <div style={{ fontFamily: 'monospace', fontSize: '15px', fontWeight: 'bold', letterSpacing: '0.5px' }}>{credentialModal.tempPassword}</div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                                        onClick={() => navigator.clipboard.writeText(credentialModal.tempPassword)}
+                                    >
+                                        복사
+                                    </button>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                style={{ width: '100%', padding: '10px' }}
+                                onClick={() => navigator.clipboard.writeText(`MeatGo 로그인 정보\n사이트: ${window.location.origin}/login\nID: ${credentialModal.email}\n임시 비밀번호: ${credentialModal.tempPassword}\n\n첫 로그인 시 비밀번호를 변경해주세요.`)}
+                            >
+                                전체 안내문 복사 (사이트 + ID + 비번)
+                            </button>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setCredentialModal(null)}>
                                 확인
                             </button>
                         </div>

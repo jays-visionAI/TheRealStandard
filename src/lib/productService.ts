@@ -1,5 +1,6 @@
 import {
     collection, doc, getDocs, getDoc, setDoc, deleteDoc,
+    query, where,
     serverTimestamp, Timestamp
 } from 'firebase/firestore'
 import { db } from './firebase'
@@ -20,6 +21,9 @@ export interface FirestoreProduct {
     wholesaleMargin?: number
     isActive: boolean
     memo?: string
+    // 공급사 연결 (1상품 : 1공급사)
+    supplierOrgId?: string       // users 컬렉션의 SUPPLIER role doc ID
+    supplierName?: string        // 디노멀라이즈 (UI 빠른 조회용)
     createdAt: Timestamp
     updatedAt: Timestamp
 }
@@ -37,6 +41,18 @@ export async function getProductById(id: string): Promise<FirestoreProduct | nul
     const snapshot = await getDoc(docRef)
     if (!snapshot.exists()) return null
     return { id: snapshot.id, ...snapshot.data() } as FirestoreProduct
+}
+
+// 공급사별 상품 조회 (supplierOrgId가 비어있으면 미지정 상품을 반환)
+export async function getProductsBySupplier(supplierOrgId: string | null): Promise<FirestoreProduct[]> {
+    if (supplierOrgId === null || supplierOrgId === '') {
+        // 미지정 상품: supplierOrgId 필드가 없거나 빈 문자열인 경우
+        const all = await getAllProducts()
+        return all.filter(p => !p.supplierOrgId)
+    }
+    const q = query(productsRef, where('supplierOrgId', '==', supplierOrgId))
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FirestoreProduct))
 }
 
 export async function createProduct(data: Omit<FirestoreProduct, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreProduct> {

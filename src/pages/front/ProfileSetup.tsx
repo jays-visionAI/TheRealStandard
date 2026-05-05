@@ -12,8 +12,11 @@ import {
     FileTextIcon,
     CheckCircleIcon,
     ArrowRightIcon,
-    LockIcon
+    LockIcon,
+    FilePlusIcon
 } from '../../components/Icons'
+import FileUpload, { FileList } from '../../components/FileUpload'
+import { getFilesByRelated, deleteFile, type FirestoreFileAttachment } from '../../lib/fileService'
 import './ProfileSetup.css'
 
 export default function ProfileSetup() {
@@ -23,6 +26,7 @@ export default function ProfileSetup() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isPasswordChanging, setIsPasswordChanging] = useState(false)
     const [isOnboarding, setIsOnboarding] = useState(false)
+    const [bizRegFiles, setBizRegFiles] = useState<FirestoreFileAttachment[]>([])
 
     // 비밀번호 변경 관련 상태
     const [newPassword, setNewPassword] = useState('')
@@ -56,6 +60,13 @@ export default function ProfileSetup() {
             }
         }
         loadProfile()
+    }, [user])
+
+    // 사업자등록증 파일 로드
+    useEffect(() => {
+        if (user?.id) {
+            getFilesByRelated('USER', user.id, 'BIZ_REG').then(setBizRegFiles)
+        }
     }, [user])
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -96,9 +107,19 @@ export default function ProfileSetup() {
         setIsPasswordChanging(true)
         try {
             await updateUserPassword(newPassword)
+            // 임시PW로 발급된 사용자라면 mustChangePassword 플래그 해제
+            if (user?.id) {
+                try {
+                    await updateUser(user.id, { mustChangePassword: false })
+                } catch (e) {
+                    console.warn('mustChangePassword flag clear failed:', e)
+                }
+            }
             alert('비밀번호가 성공적으로 변경되었습니다.')
             setNewPassword('')
             setConfirmPassword('')
+            // 강제 리디렉션 해제를 위해 페이지 리로드 (AuthContext가 새 user 상태 가져옴)
+            window.location.href = '/'
         } catch (err: any) {
             alert(err.message)
             if (err.message.includes('다시 로그인')) {
@@ -217,6 +238,31 @@ export default function ProfileSetup() {
                                 required
                             />
                         </div>
+                    </div>
+
+                    {/* 사업자등록증 업로드 */}
+                    <div className="form-section">
+                        <h3><FilePlusIcon size={18} /> 사업자등록증</h3>
+                        <p className="description">사업자등록증 사본을 업로드해주세요. (PDF 또는 이미지)</p>
+
+                        {user?.id && (
+                            <FileUpload
+                                fileType="BIZ_REG"
+                                relatedType="USER"
+                                relatedId={user.id}
+                                label="사업자등록증 업로드"
+                                accept="image/*,application/pdf"
+                                onUploaded={(f) => setBizRegFiles([f, ...bizRegFiles])}
+                            />
+                        )}
+
+                        <FileList
+                            files={bizRegFiles}
+                            onDelete={async (id) => {
+                                await deleteFile(id)
+                                setBizRegFiles(bizRegFiles.filter(f => f.id !== id))
+                            }}
+                        />
                     </div>
 
                     {/* 비밀번호 변경 섹션 (Onboarding이 아닐 때만 표시) */}

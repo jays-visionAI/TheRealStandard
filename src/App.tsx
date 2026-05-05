@@ -20,8 +20,16 @@ import StepPO from './pages/workflow/StepPO'
 import WarehouseDashboard from './pages/warehouse/WarehouseDashboard'
 import WarehouseReceive from './pages/warehouse/WarehouseReceive'
 import WarehouseRelease from './pages/warehouse/WarehouseRelease'
+import InventoryDashboard from './pages/warehouse/InventoryDashboard'
 
-// Accounting Pages - TBD (placeholder)
+// Settlement / Accounting Pages
+import SettlementList from './pages/admin/SettlementList'
+import SettlementDetail from './pages/admin/SettlementDetail'
+import CompanyDocuments from './pages/admin/CompanyDocuments'
+import SalesDashboard from './pages/admin/SalesDashboard'
+import PurchaseDashboard from './pages/admin/PurchaseDashboard'
+import CustomerSettlement from './pages/front/CustomerSettlement'
+import CustomerOrderDetail from './pages/front/CustomerOrderDetail'
 
 // Legacy Admin Pages (설정용)
 import AdminLayout from './layouts/AdminLayout'
@@ -70,6 +78,14 @@ import CustomerOrderList from './pages/front/CustomerOrderList'
 import ProductCatalog from './pages/front/ProductCatalog'
 import ProfileSetup from './pages/front/ProfileSetup'
 import FleetManagement from './pages/front/FleetManagement'
+import { useAuth } from './contexts/AuthContext'
+
+function AdminDashboardRouter() {
+    const { user } = useAuth()
+    if (user?.role === 'SALES') return <SalesDashboard />
+    if (user?.role === 'PURCHASE') return <PurchaseDashboard />
+    return <Dashboard />
+}
 
 function App() {
     useEffect(() => {
@@ -102,7 +118,7 @@ function App() {
                     <Route
                         path="/warehouse"
                         element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'WAREHOUSE']}>
+                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'SALES', 'PURCHASE', 'WAREHOUSE']}>
                                 <WarehouseDashboard />
                             </ProtectedRoute>
                         }
@@ -110,7 +126,7 @@ function App() {
                     <Route
                         path="/warehouse/receive/:id"
                         element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'WAREHOUSE']}>
+                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'SALES', 'PURCHASE', 'WAREHOUSE']}>
                                 <WarehouseReceive />
                             </ProtectedRoute>
                         }
@@ -118,8 +134,16 @@ function App() {
                     <Route
                         path="/warehouse/release/:id"
                         element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'WAREHOUSE']}>
+                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'SALES', 'PURCHASE', 'WAREHOUSE']}>
                                 <WarehouseRelease />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/warehouse/inventory"
+                        element={
+                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'SALES', 'PURCHASE', 'WAREHOUSE']}>
+                                <InventoryDashboard />
                             </ProtectedRoute>
                         }
                     />
@@ -131,7 +155,7 @@ function App() {
                         path="/accounting"
                         element={
                             <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'ACCOUNTING']}>
-                                <Navigate to="/admin/workflow" replace />
+                                <Navigate to="/admin/settlement" replace />
                             </ProtectedRoute>
                         }
                     />
@@ -142,12 +166,12 @@ function App() {
                     <Route
                         path="/admin"
                         element={
-                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'ACCOUNTING']}>
+                            <ProtectedRoute allowedRoles={['ADMIN', 'OPS', 'SALES', 'PURCHASE', 'ACCOUNTING', 'WAREHOUSE']}>
                                 <AdminLayout />
                             </ProtectedRoute>
                         }
                     >
-                        <Route index element={<Dashboard />} />
+                        <Route index element={<AdminDashboardRouter />} />
                         <Route path="documents" element={<DocumentHub />} />
                         <Route path="users/list" element={<UserManagement />} />
                         <Route path="users" element={<UserList />} />
@@ -174,6 +198,10 @@ function App() {
                         <Route path="shipments" element={<ShipmentList />} />
                         <Route path="shipments/:id" element={<ShipmentDetail />} />
                         <Route path="transactions" element={<Dashboard />} />
+                        {/* Settlement */}
+                        <Route path="settlement" element={<SettlementList />} />
+                        <Route path="settlement/:id" element={<SettlementDetail />} />
+                        <Route path="company-documents" element={<CompanyDocuments />} />
                         {/* Settings */}
                         <Route path="settings/catalogs" element={<CatalogManager />} />
                         <Route path="settings/vehicles" element={<VehicleTypeSettings />} />
@@ -217,7 +245,7 @@ function App() {
                         <Route path="catalog" element={<ProductCatalog />} />
                         <Route path="tracking" element={<DeliveryTracking />} />
                         <Route path="profile-setup" element={
-                            <ProtectedRoute allowedRoles={['CUSTOMER', '3PL', 'ADMIN']}>
+                            <ProtectedRoute allowedRoles={['CUSTOMER', '3PL', 'ADMIN', 'SUPPLIER', 'SALES', 'PURCHASE', 'ACCOUNTING', 'WAREHOUSE']}>
                                 <ProfileSetup />
                             </ProtectedRoute>
                         } />
@@ -232,6 +260,16 @@ function App() {
                         <Route path=":token/edit" element={<B2BOrderGrid />} />
                         <Route path=":token/confirm" element={<CustomerConfirm />} />
                         <Route path=":token/tracking" element={<DeliveryTracking />} />
+                        <Route path="settlement" element={
+                            <ProtectedRoute allowedRoles={['CUSTOMER', 'ADMIN']}>
+                                <CustomerSettlement />
+                            </ProtectedRoute>
+                        } />
+                        <Route path="orders/:id" element={
+                            <ProtectedRoute allowedRoles={['CUSTOMER', 'ADMIN']}>
+                                <CustomerOrderDetail />
+                            </ProtectedRoute>
+                        } />
                     </Route>
 
                     {/* Default: 로그인 페이지로 */}
