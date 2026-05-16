@@ -65,6 +65,7 @@ import LLMSettings from './pages/admin/LLMSettings'
 import OrderSheetView from './pages/front/OrderSheetView'
 import PurchaseOrderView from './pages/front/PurchaseOrderView'
 import DispatchView from './pages/public/DispatchView'
+import PublicCatalog from './pages/public/PublicCatalog'
 import PriceListGuestView from './pages/front/PriceListGuestView'
 
 // Front (Customer) Pages
@@ -103,6 +104,7 @@ function App() {
                 <Routes>
                     {/* Public Routes */}
                     <Route path="/" element={<LandingPage />} />
+                    <Route path="/products" element={<PublicCatalog />} />
                     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
                     <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
                     <Route path="/order-sheet/:token" element={<OrderSheetView />} />

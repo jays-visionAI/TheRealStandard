@@ -148,6 +148,7 @@ export default function LandingPage() {
                         </p>
                         <div className="hero-cta-group flex-wrap">
                             <button className="btn btn-accent h-12 px-8 text-lg" onClick={() => scrollToSection('contact')}>도입 문의하기</button>
+                            <button className="btn btn-primary h-12 px-8 text-lg" onClick={() => navigate('/products')}>상품 둘러보기</button>
                             <button className="btn btn-secondary h-12 px-8 text-lg" onClick={() => scrollToSection('technology')}>기술 로드맵</button>
                             {!loading && (
                                 user ? (
