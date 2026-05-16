@@ -9,6 +9,7 @@ import {
     type FirestoreProduct
 } from '../../lib/productService'
 import { getAllSupplierUsers, type FirestoreUser } from '../../lib/userService'
+import { uploadFile } from '../../lib/fileService'
 import { checkAndRecordPriceChange, getPriceHistoryByProduct, type PriceHistoryEntry } from '../../lib/priceHistoryService'
 import { compareProductOrder } from '../../lib/productSortOrder'
 import { AlertTriangleIcon } from '../../components/Icons'
@@ -40,6 +41,7 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
     const [editingProduct, setEditingProduct] = useState<Product | null>(null)
     const [showInactive, setShowInactive] = useState(false)
     const [saving, setSaving] = useState(false)
+    const [imageUploading, setImageUploading] = useState(false)
     const [bulkRows, setBulkRows] = useState<Record<string, number | null | undefined>>({})
     const [showPriceHistoryModal, setShowPriceHistoryModal] = useState(false)
     const [showUploadModal, setShowUploadModal] = useState(false)
@@ -282,6 +284,8 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                 memo: formData.memo || '',
                 supplierOrgId: supplierOrgId || undefined,
                 supplierName: supplierName || undefined,
+                imageUrl: (formData as any).imageUrl || undefined,
+                displayOnPublic: (formData as any).displayOnPublic === true,
             }
 
             if (editingProduct) {
@@ -768,12 +772,14 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                 <table className="product-table">
                     <thead>
                         <tr>
+                            <th style={{ width: '60px' }}>이미지</th>
                             <th>품목명</th>
                             <th>공급사</th>
                             <th>카테고리1(냉장/냉동)</th>
                             <th>단위</th>
                             <th>예상중량/Box</th>
                             <th className="price-col">도매가(B2B)</th>
+                            <th>공개</th>
                             <th>등록일</th>
                             <th>Last Update</th>
                             <th>상태</th>
@@ -783,6 +789,17 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                     <tbody>
                         {filteredProducts.map(product => (
                             <tr key={product.id} className={!product.isActive ? 'inactive' : ''}>
+                                <td>
+                                    <div style={{ width: '44px', height: '44px', borderRadius: '6px', overflow: 'hidden', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        {product.imageUrl ? (
+                                            <img src={product.imageUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <span style={{ fontSize: '20px' }}>
+                                                {product.category1 === '냉장' ? '🧊' : product.category1 === '냉동' ? '❄️' : '🦴'}
+                                            </span>
+                                        )}
+                                    </div>
+                                </td>
                                 <td className="product-name">
                                     <span className="name">{product.name}</span>
                                     {product.memo && <span className="memo">{product.memo}</span>}
@@ -802,6 +819,13 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                 <td>{product.unit.toUpperCase()}</td>
                                 <td>{product.boxWeight ? `${product.boxWeight} kg` : '-'}</td>
                                 <td className="price-col">₩{formatCurrency(product.wholesalePrice)}</td>
+                                <td>
+                                    {product.displayOnPublic ? (
+                                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#dcfce7', color: '#16a34a', fontWeight: 600 }}>공개</span>
+                                    ) : (
+                                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#f3f4f6', color: '#6b7280' }}>비공개</span>
+                                    )}
+                                </td>
                                 <td className="last-update-col">{formatLastUpdate(product.createdAt)}</td>
                                 <td className="last-update-col">{formatLastUpdate(product.updatedAt)}</td>
                                 <td>
@@ -1002,6 +1026,89 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                             </strong>
                                         </div>
                                     )}
+                                </div>
+
+                                {/* 진열용 이미지 & 공개 노출 */}
+                                <div className="form-section">
+                                    <h4><PackageIcon size={18} /> 진열용 이미지 & 공개 카탈로그</h4>
+                                    <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                                        <div style={{ width: '140px', height: '140px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                                            {(formData as any).imageUrl ? (
+                                                <img src={(formData as any).imageUrl} alt="상품 이미지" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <span style={{ fontSize: '40px' }}>
+                                                    {formData.category1 === '냉장' ? '🧊' : formData.category1 === '냉동' ? '❄️' : '🦴'}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: '240px' }}>
+                                            <label className="label">상품 사진 업로드</label>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="input"
+                                                disabled={imageUploading}
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0]
+                                                    if (!file) return
+                                                    if (file.size > 5 * 1024 * 1024) {
+                                                        showAlert('업로드 실패', '파일 크기는 5MB 이하여야 합니다.', true)
+                                                        return
+                                                    }
+                                                    try {
+                                                        setImageUploading(true)
+                                                        const relatedId = editingProduct?.id || `new_${Date.now()}`
+                                                        const uploaded = await uploadFile({
+                                                            file,
+                                                            fileName: file.name,
+                                                            fileType: 'PRODUCT_IMAGE',
+                                                            relatedType: 'PRODUCT',
+                                                            relatedId,
+                                                            uploadedBy: user?.id || 'unknown',
+                                                        })
+                                                        setFormData({ ...formData, imageUrl: uploaded.downloadUrl } as any)
+                                                    } catch (err: any) {
+                                                        console.error('Image upload failed:', err)
+                                                        showAlert('업로드 실패', err?.message || '이미지 업로드에 실패했습니다.', true)
+                                                    } finally {
+                                                        setImageUploading(false)
+                                                    }
+                                                }}
+                                            />
+                                            <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
+                                                권장: 정사각형, 500×500 px 이상, 5MB 이하 (JPG/PNG/WebP)
+                                            </p>
+                                            {(formData as any).imageUrl && (
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-secondary"
+                                                    style={{ marginTop: '8px', padding: '6px 12px', fontSize: '12px' }}
+                                                    onClick={() => setFormData({ ...formData, imageUrl: undefined } as any)}
+                                                >
+                                                    이미지 제거
+                                                </button>
+                                            )}
+                                            {imageUploading && (
+                                                <p style={{ fontSize: '12px', color: 'var(--color-primary)', marginTop: '6px' }}>업로드 중...</p>
+                                            )}
+
+                                            <div style={{ marginTop: '14px', padding: '12px', borderRadius: '6px', background: '#f9fafb', border: '1px solid #e5e7eb' }}>
+                                                <label className="checkbox-label" style={{ margin: 0 }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={(formData as any).displayOnPublic === true}
+                                                        onChange={(e) => setFormData({ ...formData, displayOnPublic: e.target.checked } as any)}
+                                                    />
+                                                    <span style={{ marginLeft: '8px', fontSize: '13px' }}>
+                                                        <strong>공개 카탈로그(/products)에 진열</strong>
+                                                        <span style={{ display: 'block', fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                                                            체크 시 비회원도 이 상품을 볼 수 있습니다. 기본값은 비공개.
+                                                        </span>
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* 비고 */}

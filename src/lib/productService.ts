@@ -24,6 +24,9 @@ export interface FirestoreProduct {
     // 공급사 연결 (1상품 : 1공급사)
     supplierOrgId?: string       // users 컬렉션의 SUPPLIER role doc ID
     supplierName?: string        // 디노멀라이즈 (UI 빠른 조회용)
+    // 진열용 이미지 & 공개 노출
+    imageUrl?: string            // Firebase Storage 다운로드 URL (없으면 카테고리별 플레이스홀더 SVG 사용)
+    displayOnPublic?: boolean    // 공개 카탈로그(/products)에 노출 여부 (기본 false)
     createdAt: Timestamp
     updatedAt: Timestamp
 }
