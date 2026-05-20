@@ -398,7 +398,7 @@ export default function LandingV2() {
                     오늘 견적부터 받아보세요.
                 </h2>
                 <p style={{ fontSize: '16px', color: C.textMuted, marginBottom: '32px' }}>
-                    문의 후 1 영업일 내 회신드립니다.
+                    바로 주문할 수 있습니다.
                 </p>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                     <button onClick={() => setContactOpen(true)} style={btnPrimaryLg}>
