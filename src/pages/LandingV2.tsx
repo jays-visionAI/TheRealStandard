@@ -324,13 +324,16 @@ export default function LandingV2() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '40px' }}>
                     <CategoryCard emoji="🥩" name="육류" status="NOW SERVING" statusColor={C.primary}
                         desc="한우·돼지·오리·닭, 냉장/냉동/부산물"
+                        imageUrl="/images/category-meat.jpg"
                         active onClick={() => navigate('/products')}
                     />
                     <CategoryCard emoji="🥬" name="채소" status="Q1 2027 OPEN" statusColor={C.accent}
                         desc="산지직송, 친환경·유기농 (예정)"
+                        imageUrl="/images/category-veg.jpg"
                     />
                     <CategoryCard emoji="🌶️" name="양념·가공식품" status="Q2 2027" statusColor={C.textFaint}
                         desc="장류, 소스, 가공식품 (예정)"
+                        imageUrl="/images/category-sauce.jpg"
                     />
                 </div>
                 <div style={{ textAlign: 'center' }}>
@@ -346,10 +349,18 @@ export default function LandingV2() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '64px', alignItems: 'center' }}>
                         <div style={{
                             aspectRatio: '4/3', borderRadius: '16px', overflow: 'hidden',
-                            background: `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryDark} 100%)`,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '120px',
-                        }}>🚜</div>
+                            position: 'relative',
+                            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.3)',
+                        }}>
+                            <img src="/images/supplier-farm.jpg" alt="공급사·농가"
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                loading="lazy"
+                            />
+                            <div style={{
+                                position: 'absolute', inset: 0,
+                                background: `linear-gradient(135deg, rgba(4, 120, 87, 0.4) 0%, rgba(6, 95, 70, 0.55) 100%)`,
+                            }} />
+                        </div>
                         <div>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: C.primaryLight, letterSpacing: '1px', textTransform: 'uppercase' }}>
                                 For Suppliers
@@ -449,29 +460,40 @@ function HeroVisual() {
     return (
         <div style={{
             aspectRatio: '4/3', borderRadius: '20px',
-            background: `linear-gradient(135deg, ${C.primaryLight} 0%, ${C.bg} 100%)`,
             border: `1px solid ${C.border}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
             position: 'relative', overflow: 'hidden',
+            boxShadow: '0 12px 32px rgba(31, 41, 55, 0.12)',
         }}>
+            <img src="/images/hero-meat.jpg" alt="신선한 정육"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                loading="eager"
+            />
+            {/* 오버레이 — 텍스트 가독성을 위한 어두운 그라데이션 */}
             <div style={{
-                fontSize: '160px', lineHeight: 1,
-                filter: 'drop-shadow(0 8px 24px rgba(4, 120, 87, 0.3))',
-            }}>🥩</div>
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(31, 41, 55, 0.45) 100%)',
+            }} />
             <div style={{
                 position: 'absolute', bottom: '20px', left: '20px',
-                background: C.surface, borderRadius: '12px',
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(8px)',
+                borderRadius: '12px',
                 padding: '12px 16px', fontSize: '13px', color: C.text,
                 display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                fontWeight: 500,
             }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.primary }} />
+                <span style={{
+                    width: '8px', height: '8px', borderRadius: '50%', background: C.primary,
+                    boxShadow: `0 0 0 3px ${C.primaryLight}`,
+                }} />
                 <span>지금 입고 중 · 한우 1등급</span>
             </div>
             <div style={{
                 position: 'absolute', top: '20px', right: '20px',
                 background: C.accent, color: '#fff', borderRadius: '999px',
                 padding: '6px 14px', fontSize: '12px', fontWeight: 600,
+                boxShadow: '0 4px 12px rgba(217, 119, 6, 0.4)',
             }}>면세</div>
         </div>
     )
@@ -532,36 +554,60 @@ function StepCard({ n, icon, title, body }: { n: number; icon: string; title: st
     )
 }
 
-function CategoryCard({ emoji, name, status, statusColor, desc, active, onClick }: {
+function CategoryCard({ emoji, name, status, statusColor, desc, active, onClick, imageUrl }: {
     emoji: string; name: string; status: string; statusColor: string; desc: string;
-    active?: boolean; onClick?: () => void
+    active?: boolean; onClick?: () => void; imageUrl?: string
 }) {
     return (
         <div onClick={onClick} style={{
             background: C.surface, border: `1px solid ${active ? C.primary : C.border}`,
-            borderRadius: '16px', padding: '32px 24px',
+            borderRadius: '16px', overflow: 'hidden',
             cursor: onClick ? 'pointer' : 'default',
-            position: 'relative', overflow: 'hidden',
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            opacity: active ? 1 : 0.85,
+            position: 'relative',
+            transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
+            opacity: active ? 1 : 0.92,
         }}
-            onMouseEnter={e => { if (onClick) { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.08)' } }}
+            onMouseEnter={e => { if (onClick) { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.10)' } }}
             onMouseLeave={e => { if (onClick) { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' } }}
         >
-            {active && <div style={{
-                position: 'absolute', top: '12px', right: '12px',
-                background: C.primaryLight, color: C.primary,
-                fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '999px',
-            }}>{status}</div>}
-            {!active && <div style={{
-                position: 'absolute', top: '12px', right: '12px',
-                background: C.surfaceAlt, color: statusColor,
-                fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '999px',
-                border: `1px solid ${C.border}`,
-            }}>{status}</div>}
-            <div style={{ fontSize: '64px', marginBottom: '12px', lineHeight: 1 }}>{emoji}</div>
-            <h3 style={{ fontSize: '20px', fontWeight: 700, color: C.secondary, marginBottom: '6px' }}>{name}</h3>
-            <p style={{ fontSize: '13px', color: C.textMuted, margin: 0 }}>{desc}</p>
+            {/* 이미지 */}
+            <div style={{ aspectRatio: '16/10', width: '100%', overflow: 'hidden', position: 'relative', background: '#f3f4f6' }}>
+                {imageUrl ? (
+                    <img src={imageUrl} alt={name}
+                        style={{
+                            width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                            filter: active ? 'none' : 'grayscale(40%) brightness(0.95)',
+                            transition: 'filter 0.2s',
+                        }}
+                        loading="lazy"
+                    />
+                ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '80px' }}>
+                        {emoji}
+                    </div>
+                )}
+                {/* 상태 뱃지 */}
+                {active && <div style={{
+                    position: 'absolute', top: '12px', right: '12px',
+                    background: C.primary, color: '#fff',
+                    fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '999px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                }}>{status}</div>}
+                {!active && <div style={{
+                    position: 'absolute', top: '12px', right: '12px',
+                    background: 'rgba(255,255,255,0.95)', color: statusColor,
+                    fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '999px',
+                    border: `1px solid ${C.border}`,
+                }}>{status}</div>}
+            </div>
+            {/* 텍스트 */}
+            <div style={{ padding: '20px 24px 24px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: C.secondary, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '24px' }}>{emoji}</span>
+                    {name}
+                </h3>
+                <p style={{ fontSize: '13px', color: C.textMuted, margin: 0 }}>{desc}</p>
+            </div>
         </div>
     )
 }
