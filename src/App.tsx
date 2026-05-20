@@ -6,6 +6,7 @@ import ProtectedRoute, { PublicRoute } from './components/ProtectedRoute'
 
 // Auth Pages
 import LandingPage from './pages/LandingPage'
+import LandingV2 from './pages/LandingV2'
 import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
 import InviteActivation from './pages/auth/InviteActivation'
@@ -104,6 +105,7 @@ function App() {
                 <Routes>
                     {/* Public Routes */}
                     <Route path="/" element={<LandingPage />} />
+                    <Route path="/landing-v2" element={<LandingV2 />} />
                     <Route path="/products" element={<PublicCatalog />} />
                     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
                     <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
