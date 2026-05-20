@@ -104,7 +104,8 @@ function App() {
             <BrowserRouter>
                 <Routes>
                     {/* Public Routes */}
-                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/" element={<LandingV2 />} />
+                    <Route path="/about" element={<LandingPage />} />
                     <Route path="/landing-v2" element={<LandingV2 />} />
                     <Route path="/products" element={<PublicCatalog />} />
                     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
