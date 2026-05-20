@@ -124,7 +124,7 @@ export default function B2BOrderGrid() {
                         return
                     }
 
-                    if (user.orgId !== osData.customerOrgId) {
+                    if (user.id !== osData.customerOrgId) {
                         alert('해당 주문장에 대한 접근 권한이 없습니다. 올바른 파트너 계정으로 로그인해주세요.')
                         navigate('/order/list')
                         return
@@ -554,7 +554,7 @@ export default function B2BOrderGrid() {
 
                     // Convert to member order
                     updatePayload.isGuest = false
-                    updatePayload.customerOrgId = user.orgId
+                    updatePayload.customerOrgId = user.id
                 } else {
                     // Guest user submitting: Require manual input
                     if (!guestInfo.name || !guestInfo.tel) {

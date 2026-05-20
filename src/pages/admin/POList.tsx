@@ -132,15 +132,15 @@ export default function POList() {
 
             <div className="glass-card overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse" style={{ tableLayout: 'fixed' }}>
                         <thead>
                             <tr className="border-b border-white/10 bg-white/5">
-                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('date')}>발주일시{sortIndicator('date')}</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase">PO No</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('supplier')}>공급사{sortIndicator('supplier')}</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right">총 중량</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('amount')}>총 금액{sortIndicator('amount')}</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase">상태</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer', width: '15%' }} onClick={() => listFilters.toggleSort('date')}>발주일시{sortIndicator('date')}</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ width: '20%' }}>PO No</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer', width: '20%' }} onClick={() => listFilters.toggleSort('supplier')}>공급사{sortIndicator('supplier')}</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right" style={{ width: '13%' }}>총 중량</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right" style={{ cursor: 'pointer', width: '18%' }} onClick={() => listFilters.toggleSort('amount')}>총 금액{sortIndicator('amount')}</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ width: '14%' }}>상태</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -148,7 +148,7 @@ export default function POList() {
                                 paginatedOrders.map((o) => (
                                     <tr key={o.id} className="hover:bg-white/5 transition-colors">
                                         <td className="p-4 text-sm">{formatDate(o.createdAt)}</td>
-                                        <td className="p-4 text-sm font-mono text-primary">{o.id}</td>
+                                        <td className="p-4 text-sm font-mono text-primary" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={o.id}>{o.id}</td>
                                         <td className="p-4 text-sm font-medium">{o.supplierName}</td>
                                         <td className="p-4 text-sm text-right">{o.totalsKg.toFixed(1)} kg</td>
                                         <td className="p-4 text-sm text-right font-medium">{formatCurrency(o.totalsAmount)}</td>

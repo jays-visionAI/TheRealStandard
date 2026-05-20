@@ -258,20 +258,20 @@ export default function OrderSheetList() {
                     <table className="table">
                         <thead>
                             <tr>
-                                <th>발주번호</th>
-                                <th>고객사</th>
-                                <th>배송일</th>
-                                <th>마감시간</th>
-                                <th>상태</th>
-                                <th>최종제출</th>
-                                <th>작업</th>
+                                <th style={{ width: '15%' }}>발주번호</th>
+                                <th style={{ width: '13%' }}>고객사</th>
+                                <th style={{ width: '12%' }}>배송일</th>
+                                <th style={{ width: '14%' }}>마감시간</th>
+                                <th style={{ width: '10%' }}>상태</th>
+                                <th style={{ width: '14%' }}>최종제출</th>
+                                <th style={{ width: '22%' }}>작업</th>
                             </tr>
                         </thead>
                         <tbody>
                             {paginatedOrders.length > 0 ? (
                                 paginatedOrders.map((order) => (
                                     <tr key={order.id}>
-                                        <td className="font-semibold text-primary">{order.id}</td>
+                                        <td className="font-semibold text-primary cell-truncate" title={order.id}>{order.id}</td>
                                         <td>
                                             {order.customerName}
                                             {order.isGuest && (

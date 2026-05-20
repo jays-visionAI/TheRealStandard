@@ -67,7 +67,7 @@ export default function Signup() {
             // 만약 이전 페이지에서 전달된 발주서 토큰이 있다면, 해당 발주서를 이 계정에 연결
             if (prefillData.orderToken) {
                 try {
-                    await claimOrderSheetByToken(prefillData.orderToken, newUser.orgId || newUser.id)
+                    await claimOrderSheetByToken(prefillData.orderToken, newUser.id)
                     console.log('Linked guest order sheet to new user:', prefillData.orderToken)
                 } catch (linkErr) {
                     console.error('Failed to link order sheet:', linkErr)

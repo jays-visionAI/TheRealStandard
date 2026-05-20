@@ -8,7 +8,8 @@ import {
     TruckIcon,
     LogOutIcon,
     UserIcon,
-    ClipboardCheckIcon
+    ClipboardCheckIcon,
+    WalletIcon
 } from '../components/Icons'
 import { LogoSmall } from '../components/Logo'
 import './FrontLayout.css'
@@ -42,6 +43,7 @@ export default function FrontLayout() {
             { path: '/order/list', label: '발주서', icon: <ClipboardListIcon size={20} /> },
             { path: '/order/history', label: '발주 내역', icon: <ClipboardCheckIcon size={20} /> },
             { path: '/order/tracking', label: '배송 현황', icon: <TruckIcon size={20} /> },
+            { path: '/order/settlement', label: '정산 내역', icon: <WalletIcon size={20} /> },
         ]
     }
 
@@ -50,7 +52,7 @@ export default function FrontLayout() {
     return (
         <div className="front-layout-v2">
             {/* Sidebar - Only shown for logged in users with an organization */}
-            {user && user.orgId && (
+            {user && user.role === 'CUSTOMER' && (
                 <aside className="front-sidebar glass-card">
                     <div className="sidebar-header">
                         <LogoSmall />
@@ -93,7 +95,7 @@ export default function FrontLayout() {
                     </div>
                     {user && (
                         <div className="header-user-badge">
-                            <span className="org-name">{user.orgId ? '회원 고객' : '비회원'}</span>
+                            <span className="org-name">{user.role === 'CUSTOMER' ? '회원 고객' : '비회원'}</span>
                         </div>
                     )}
                 </header>

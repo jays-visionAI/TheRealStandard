@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { createSalesOrder, setSalesOrderItems } from '../../lib/orderService'
+import { createSalesOrder, setSalesOrderItems, getAllSalesOrders } from '../../lib/orderService'
 import { getAllCustomerUsers } from '../../lib/userService'
-import { Timestamp, collection, getDocs, deleteDoc, doc, setDoc, addDoc } from 'firebase/firestore'
+import { Timestamp, collection, getDocs, deleteDoc, doc, setDoc, addDoc, query, where, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 
 // 태윤유통 거래처원장 데이터 (Excel에서 추출)
@@ -502,6 +502,432 @@ export default function SeedOrders() {
         setRunning(false)
     }
 
+    // 미확정 발주서에 직전 주문 비율로 상품항목 채우기
+    const seedPendingAsConfirmed = async (
+        searchName: string,
+        displayName: string,
+        totalAmount: number
+    ) => {
+        setRunning(true)
+        setLogs([])
+
+        const customer = customers.find(c =>
+            c.business?.companyName?.includes(searchName) || c.name?.includes(searchName)
+        )
+
+        if (!customer) {
+            addLog(`ERROR: ${displayName} 고객사를 찾을 수 없습니다.`)
+            setRunning(false)
+            return
+        }
+
+        addLog(`${displayName} 발견: ${customer.id}`)
+
+        try {
+            // 1. 해당 거래처의 SUBMITTED 상태 orderSheet 찾기
+            const osSnap = await getDocs(collection(db, 'orderSheets'))
+            const pendingOS = osSnap.docs.find(d => {
+                const data = d.data()
+                return data.customerOrgId === customer.id && data.status === 'SUBMITTED'
+            })
+
+            if (!pendingOS) {
+                addLog(`ERROR: ${displayName}에 SUBMITTED 상태의 발주서가 없습니다.`)
+                setRunning(false)
+                return
+            }
+
+            addLog(`발주서 발견: ${pendingOS.id} (${totalAmount.toLocaleString()}원)`)
+
+            // 2. 해당 거래처의 모든 확정 주문(salesOrders) 조회
+            const allSO = await getAllSalesOrders()
+            const soData = allSO.map(so => ({
+                ...so,
+                confirmedAt: so.confirmedAt?.toDate?.() || new Date(),
+            }))
+
+            // 3. salesOrderItems 전체 조회
+            const itemsSnap = await getDocs(collection(db, 'salesOrderItems'))
+            const allItems = itemsSnap.docs.map(d => ({ id: d.id, ...d.data() } as any))
+
+            // 4. TEMP-AMOUNT-ONLY가 아닌 실제 상품이 있는 최신 주문 찾기
+            const customerOrders = soData
+                .filter(so => so.customerOrgId === customer.id)
+                .sort((a, b) => (b.confirmedAt?.getTime?.() || 0) - (a.confirmedAt?.getTime?.() || 0))
+
+            let referenceOrder: typeof soData[0] | null = null
+            let referenceItems: any[] = []
+
+            for (const so of customerOrders) {
+                const items = allItems.filter((item: any) => item.salesOrderId === so.id)
+                const hasRealItems = items.some((item: any) => item.productId !== 'TEMP-AMOUNT-ONLY')
+                if (hasRealItems) {
+                    referenceOrder = so
+                    referenceItems = items.filter((item: any) => item.productId !== 'TEMP-AMOUNT-ONLY')
+                    break
+                }
+            }
+
+            if (!referenceOrder || referenceItems.length === 0) {
+                addLog(`ERROR: ${displayName}에 참조할 실제 상품 주문이 없습니다. 상품항목을 채울 수 없습니다.`)
+                setRunning(false)
+                return
+            }
+
+            addLog(`참조 주문 발견: ${referenceOrder.id} (${referenceItems.length}개 품목)`)
+
+            // 참조 주문의 총액 계산
+            const refTotal = referenceItems.reduce((sum: number, item: any) => sum + (item.amount || 0), 0)
+            addLog(`참조 주문 총액: ${refTotal.toLocaleString()}원`)
+
+            // 비율 계산 및 orderSheetItems 형식으로 분배
+            const distributedItems = referenceItems.map((item: any) => {
+                const ratio = refTotal > 0 ? (item.amount || 0) / refTotal : 0
+                const distributedAmount = Math.round(totalAmount * ratio)
+                const distributedKg = item.qtyKg ? Math.round(item.qtyKg * (totalAmount / refTotal) * 10) / 10 : 0
+                const distributedBox = item.qtyBox ? Math.round(item.qtyBox * (totalAmount / refTotal)) : 0
+                return {
+                    productId: item.productId,
+                    productName: item.productName,
+                    category1: '',
+                    unit: item.unit || 'box',
+                    unitPrice: item.unitPrice || 0,
+                    qtyRequested: distributedBox,
+                    estimatedKg: distributedKg,
+                    amount: distributedAmount,
+                }
+            })
+
+            // 반올림 차이 보정 (마지막 아이템에 합산)
+            const distributedTotal = distributedItems.reduce((sum: number, i: any) => sum + i.amount, 0)
+            const diff = totalAmount - distributedTotal
+            if (diff !== 0 && distributedItems.length > 0) {
+                distributedItems[distributedItems.length - 1].amount += diff
+            }
+
+            // 5. setOrderSheetItems로 발주서에 상품항목 저장
+            const { setOrderSheetItems } = await import('../../lib/orderService')
+            await setOrderSheetItems(pendingOS.id, distributedItems)
+
+            // 6. orderSheet 헤더 수치 업데이트 (상태는 변경하지 않음)
+            const totalKg = distributedItems.reduce((sum: number, i: any) => sum + (i.estimatedKg || 0), 0)
+            const totalBoxes = distributedItems.reduce((sum: number, i: any) => sum + (i.qtyRequested || 0), 0)
+            await updateDoc(doc(db, 'orderSheets', pendingOS.id), {
+                totalItems: distributedItems.length,
+                totalKg,
+                totalBoxes,
+                totalAmount,
+                updatedAt: Timestamp.now(),
+            })
+
+            addLog(`${distributedItems.length}개 품목으로 분배 완료:`)
+            distributedItems.forEach((item: any) => {
+                const pct = ((item.amount / totalAmount) * 100).toFixed(1)
+                addLog(`  - ${item.productName}: ${item.amount.toLocaleString()}원 (${pct}%)`)
+            })
+            addLog(`발주서 ${pendingOS.id}에 상품항목 저장 완료 (상태: SUBMITTED 유지)`)
+
+        } catch (err: any) {
+            addLog(`ERROR: ${err.message}`)
+        }
+
+        addLog('완료!')
+        setRunning(false)
+    }
+
+    // 잘못 생성된 salesOrders 정리 (이전 실행에서 잘못 만든 것들)
+    const cleanupDuplicateSalesOrders = async () => {
+        setRunning(true)
+        setLogs([])
+        addLog('잘못 생성된 salesOrders 검색 중...')
+
+        try {
+            // orderSheets 중 SUBMITTED 또는 CONFIRMED 상태인 것의 ID 수집
+            const osSnap = await getDocs(collection(db, 'orderSheets'))
+            const orderSheetIds = new Set(
+                osSnap.docs
+                    .filter(d => ['SUBMITTED', 'CONFIRMED'].includes(d.data().status))
+                    .map(d => d.id)
+            )
+
+            // salesOrders에서 sourceOrderSheetId가 이 목록에 있는 것 찾기
+            const allSO = await getAllSalesOrders()
+            const duplicates = allSO.filter(so => orderSheetIds.has(so.sourceOrderSheetId))
+
+            if (duplicates.length === 0) {
+                addLog('잘못 생성된 salesOrders가 없습니다.')
+            } else {
+                addLog(`${duplicates.length}개 잘못 생성된 salesOrders 발견:`)
+                for (const so of duplicates) {
+                    // 해당 salesOrder의 items도 삭제
+                    const itemsSnap = await getDocs(
+                        query(collection(db, 'salesOrderItems'), where('salesOrderId', '==', so.id))
+                    )
+                    for (const itemDoc of itemsSnap.docs) {
+                        await deleteDoc(doc(db, 'salesOrderItems', itemDoc.id))
+                    }
+                    await deleteDoc(doc(db, 'salesOrders', so.id))
+                    addLog(`  삭제: ${so.id} (${so.customerName}, ${so.totalsAmount.toLocaleString()}원, items: ${itemsSnap.size}개)`)
+                }
+            }
+
+            // CONFIRMED로 잘못 변경된 orderSheets를 SUBMITTED로 복원
+            for (const osDoc of osSnap.docs) {
+                if (osDoc.data().status === 'CONFIRMED' && orderSheetIds.has(osDoc.id)) {
+                    await updateDoc(doc(db, 'orderSheets', osDoc.id), {
+                        status: 'SUBMITTED',
+                        updatedAt: Timestamp.now(),
+                    })
+                    addLog(`  발주서 ${osDoc.id} 상태 CONFIRMED -> SUBMITTED 복원`)
+                }
+            }
+
+        } catch (err: any) {
+            addLog(`ERROR: ${err.message}`)
+        }
+
+        addLog('완료!')
+        setRunning(false)
+    }
+
+    // 발송됨 -> 승인요청 상태 변경
+    const updateSentToSubmitted = async () => {
+        setRunning(true)
+        setLogs([])
+        const ids = ['20260317-001', '20260317-002', '20260317-003']
+        addLog(`${ids.length}건 발주서 상태 변경 (SENT -> SUBMITTED)...`)
+
+        for (const id of ids) {
+            try {
+                const docRef = doc(db, 'orderSheets', id)
+                const snap = await getDocs(collection(db, 'orderSheets'))
+                const found = snap.docs.find(d => d.id === id)
+                if (found) {
+                    await updateDoc(docRef, {
+                        status: 'SUBMITTED',
+                        updatedAt: Timestamp.now(),
+                    })
+                    const data = found.data()
+                    addLog(`  ${id} (${data.customerName}): SENT -> SUBMITTED 완료`)
+                } else {
+                    addLog(`  ${id}: 문서를 찾을 수 없습니다`)
+                }
+            } catch (err: any) {
+                addLog(`  ERROR ${id}: ${err.message}`)
+            }
+        }
+
+        addLog('완료!')
+        setRunning(false)
+    }
+
+    // 20260317-003 거래처명 수정 (에이치앤더블유미트 → 주식회사대경햄)
+    const fixOrderSheet003Customer = async () => {
+        setRunning(true)
+        setLogs([])
+        addLog('20260317-003 거래처 변경 시작...')
+
+        try {
+            // 대경햄 고객 찾기
+            const daekyungHam = customers.find(c =>
+                c.business?.companyName?.includes('대경햄') || c.name?.includes('대경햄')
+            )
+
+            const newName = '주식회사 대경햄'
+            const newOrgId = daekyungHam?.id || ''
+
+            if (daekyungHam) {
+                addLog(`대경햄 고객 발견: ${daekyungHam.id} / ${daekyungHam.business?.companyName || daekyungHam.name}`)
+            } else {
+                addLog(`WARNING: 대경햄 고객을 찾을 수 없습니다. customerName만 변경합니다.`)
+            }
+
+            const docRef = doc(db, 'orderSheets', '20260317-003')
+            const updateData: Record<string, any> = {
+                customerName: newName,
+                updatedAt: Timestamp.now(),
+            }
+            if (newOrgId) {
+                updateData.customerOrgId = newOrgId
+            }
+            await updateDoc(docRef, updateData)
+            addLog(`20260317-003: 거래처 → ${newName} (orgId: ${newOrgId || 'N/A'}) 완료`)
+        } catch (err: any) {
+            addLog(`ERROR: ${err.message}`)
+        }
+
+        addLog('완료!')
+        setRunning(false)
+    }
+
+    // 대경햄 003 확정 처리
+    const confirmDaekyung003 = async () => {
+        setRunning(true)
+        setLogs([])
+        const sheetId = '20260317-003'
+        addLog(`${sheetId} 확정 처리 시작...`)
+
+        try {
+            // orderSheet 정보 가져오기
+            const sheetRef = doc(db, 'orderSheets', sheetId)
+            const sheetSnap = await getDocs(collection(db, 'orderSheets'))
+            const sheetDoc = sheetSnap.docs.find(d => d.id === sheetId)
+
+            if (!sheetDoc) {
+                addLog('ERROR: orderSheet를 찾을 수 없습니다.')
+                setRunning(false)
+                return
+            }
+
+            const sheetData = sheetDoc.data()
+            addLog(`orderSheet: ${sheetData.customerName}, ${sheetData.totalAmount?.toLocaleString()}원`)
+
+            // orderSheetItems 가져오기
+            const itemsSnap = await getDocs(
+                query(collection(db, 'orderSheetItems'), where('orderSheetId', '==', sheetId))
+            )
+            addLog(`orderSheetItems: ${itemsSnap.size}개`)
+
+            const items = itemsSnap.docs.map(d => d.data())
+
+            // salesOrder 생성
+            const totalsKg = items.reduce((s, i) => s + (i.estimatedKg || 0), 0)
+            const totalsBoxes = items.reduce((s, i) => s + ((i.unit === 'box' ? i.qtyRequested : 0) || 0), 0)
+            const totalsAmount = items.reduce((s, i) => s + (i.amount || 0), 0)
+
+            const salesOrder = await createSalesOrder({
+                sourceOrderSheetId: sheetId,
+                customerOrgId: sheetData.customerOrgId || '',
+                customerName: sheetData.customerName || '주식회사 대경햄',
+                status: 'CREATED',
+                totalsKg,
+                totalsBoxes,
+                totalsAmount,
+                orderUnit: items[0]?.unit || 'kg',
+                confirmedAt: Timestamp.now(),
+            })
+            addLog(`salesOrder 생성: ${salesOrder.id} (${totalsAmount.toLocaleString()}원)`)
+
+            // salesOrderItems 생성
+            const soItems = items.map(i => ({
+                productId: i.productId || '',
+                productName: i.productName || '',
+                qtyKg: i.estimatedKg || 0,
+                qtyBox: (i.unit === 'box' ? i.qtyRequested : 0) || 0,
+                unit: i.unit || 'kg',
+                unitPrice: i.unitPrice || 0,
+                amount: i.amount || 0,
+            }))
+            await setSalesOrderItems(salesOrder.id, soItems)
+            addLog(`salesOrderItems ${soItems.length}개 생성`)
+
+            for (const item of soItems) {
+                addLog(`  + ${item.productName}: ${item.amount.toLocaleString()}원`)
+            }
+
+            // orderSheet 상태 CONFIRMED로 변경
+            await updateDoc(sheetRef, {
+                status: 'CONFIRMED',
+                updatedAt: Timestamp.now(),
+            })
+            addLog(`orderSheet 상태: CONFIRMED`)
+
+        } catch (err: any) {
+            addLog(`ERROR: ${err.message}`)
+        }
+
+        addLog('완료!')
+        setRunning(false)
+    }
+
+    // 태윤유통 12/12 매출 데이터 수정 (매출거래처원장 기준)
+    const fixTaeyoon1212 = async () => {
+        setRunning(true)
+        setLogs([])
+        addLog('태윤유통 12/12 매출 데이터 수정 시작...')
+
+        const correctItems = [
+            { productName: '돈등뼈(냉장)', origin: '국내산', qtyBox: 15, qtyKg: 285.7, unitPrice: 1800, amount: 514260 },
+            { productName: '등갈비(진공/냉장)', origin: '국내산', qtyBox: 15, qtyKg: 197.6, unitPrice: 14500, amount: 2865200 },
+            { productName: '목심(진공/냉장)', origin: '국내산', qtyBox: 5, qtyKg: 47.4, unitPrice: 12000, amount: 568800 },
+            { productName: '삼겹살(진공/냉장)', origin: '국내산', qtyBox: 71, qtyKg: 1222.6, unitPrice: 15500, amount: 18950300 },
+            { productName: '양미삼겹살(진공/냉장)', origin: '국내산', qtyBox: 1, qtyKg: 20.7, unitPrice: 15000, amount: 310500 },
+            { productName: '미삼겹살(진공/냉장)', origin: '국내산', qtyBox: 16, qtyKg: 308.5, unitPrice: 15000, amount: 4627500 },
+            { productName: '미전지(진공/냉장)', origin: '국내산', qtyBox: 25, qtyKg: 397.1, unitPrice: 9500, amount: 3772450 },
+            { productName: '무항생제 목심(진공/냉장)', origin: '국내산', qtyBox: 15, qtyKg: 153.3, unitPrice: 12000, amount: 1839600 },
+            { productName: '무항생제 전지(진공/냉장)', origin: '국내산', qtyBox: 35, qtyKg: 441.5, unitPrice: 9700, amount: 4282550 },
+            { productName: '무항생제 미전지(진공/냉장)', origin: '국내산', qtyBox: 10, qtyKg: 152.7, unitPrice: 9500, amount: 1450650 },
+            { productName: '무항생제 삼겹(진공/냉장)', origin: '국내산', qtyBox: 19, qtyKg: 301.8, unitPrice: 15500, amount: 4677900 },
+            { productName: '무항생제 이삼겹(진공/냉장)', origin: '국내산', qtyBox: 2, qtyKg: 33.9, unitPrice: 15000, amount: 508500 },
+            { productName: '무항생제 양미삼겹(진공/냉장)', origin: '국내산', qtyBox: 1, qtyKg: 16.7, unitPrice: 15000, amount: 250500 },
+        ]
+
+        const totalAmount = correctItems.reduce((s, i) => s + i.amount, 0) // 44,618,710
+        const totalKg = correctItems.reduce((s, i) => s + i.qtyKg, 0) // 3,579.5
+        const totalBoxes = correctItems.reduce((s, i) => s + i.qtyBox, 0) // 230
+
+        try {
+            // 태윤유통 12/12 salesOrder 찾기
+            const allSO = await getAllSalesOrders()
+            const taeyoonSO = allSO.filter(so =>
+                so.customerName?.includes('태윤') &&
+                so.confirmedAt &&
+                new Date(so.confirmedAt instanceof Timestamp ? so.confirmedAt.toDate() : so.confirmedAt).getMonth() === 11 &&
+                new Date(so.confirmedAt instanceof Timestamp ? so.confirmedAt.toDate() : so.confirmedAt).getDate() === 12
+            )
+
+            if (taeyoonSO.length === 0) {
+                addLog('ERROR: 태윤유통 12/12 salesOrder를 찾을 수 없습니다.')
+                setRunning(false)
+                return
+            }
+
+            const so = taeyoonSO[0]
+            addLog(`salesOrder 발견: ${so.id} (${so.customerName}, ${so.totalsAmount.toLocaleString()}원)`)
+
+            // 기존 items 삭제
+            const existingItems = await getDocs(
+                query(collection(db, 'salesOrderItems'), where('salesOrderId', '==', so.id))
+            )
+            addLog(`기존 items ${existingItems.size}개 삭제 중...`)
+            for (const d of existingItems.docs) {
+                await deleteDoc(doc(db, 'salesOrderItems', d.id))
+            }
+
+            // 새로운 items 추가
+            for (const item of correctItems) {
+                const itemRef = doc(collection(db, 'salesOrderItems'))
+                await setDoc(itemRef, {
+                    id: itemRef.id,
+                    salesOrderId: so.id,
+                    productId: item.productName,
+                    productName: `${item.productName} (${item.origin})`,
+                    qtyKg: item.qtyKg,
+                    qtyBox: item.qtyBox,
+                    unit: 'box',
+                    unitPrice: item.unitPrice,
+                    amount: item.amount,
+                })
+                addLog(`  + ${item.productName}: ${item.qtyBox}box, ${item.qtyKg}kg, ${item.amount.toLocaleString()}원`)
+            }
+
+            // salesOrder 총액 업데이트
+            await updateDoc(doc(db, 'salesOrders', so.id), {
+                totalsKg: totalKg,
+                totalsBoxes: totalBoxes,
+                totalsAmount: totalAmount,
+                updatedAt: Timestamp.now(),
+            })
+            addLog(`salesOrder 총액 업데이트: ${totalAmount.toLocaleString()}원 (${totalKg}kg, ${totalBoxes}box)`)
+
+        } catch (err: any) {
+            addLog(`ERROR: ${err.message}`)
+        }
+
+        addLog('완료!')
+        setRunning(false)
+    }
+
     const btnStyle = (color: string) => ({
         padding: '10px 20px',
         backgroundColor: running ? '#888' : color,
@@ -586,6 +1012,38 @@ export default function SeedOrders() {
                 </button>
                 <button onClick={() => seedOrderSheet('어반', '어반나이프', '26/03/18', 8700000)} disabled={running} style={btnStyle('#795548')}>
                     어반나이프 8,700,000원
+                </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#e65100', alignSelf: 'center' }}>미확정 발주 상품항목 채우기 (직전주문 비율):</span>
+                <button onClick={() => seedPendingAsConfirmed('태윤', '(주)태윤유통', 42586840)} disabled={running} style={btnStyle('#1b5e20')}>
+                    태윤유통 42,586,840원 상품채우기
+                </button>
+                <button onClick={() => seedPendingAsConfirmed('백운', '(주)백운유통', 47910330)} disabled={running} style={btnStyle('#1b5e20')}>
+                    백운유통 47,910,330원 상품채우기
+                </button>
+                <button onClick={() => seedPendingAsConfirmed('어반', '어반나이프', 8700000)} disabled={running} style={btnStyle('#1b5e20')}>
+                    어반나이프 8,700,000원 상품채우기
+                </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#d32f2f', alignSelf: 'center' }}>데이터 정리:</span>
+                <button onClick={cleanupDuplicateSalesOrders} disabled={running} style={btnStyle('#d32f2f')}>
+                    잘못 생성된 salesOrders 정리
+                </button>
+                <button onClick={updateSentToSubmitted} disabled={running} style={btnStyle('#ff6f00')}>
+                    3/17 발주서 3건 SENT → SUBMITTED
+                </button>
+                <button onClick={fixTaeyoon1212} disabled={running} style={btnStyle('#0d47a1')}>
+                    태윤유통 12/12 매출 수정
+                </button>
+                <button onClick={fixOrderSheet003Customer} disabled={running} style={btnStyle('#6a1b9a')}>
+                    003 거래처 → 대경햄
+                </button>
+                <button onClick={confirmDaekyung003} disabled={running} style={btnStyle('#00695c')}>
+                    대경햄 003 확정처리
                 </button>
             </div>
 

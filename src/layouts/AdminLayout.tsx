@@ -14,6 +14,8 @@ import {
 } from '../components/Icons'
 import { LogoSmall } from '../components/Logo'
 import { addKakaoChannel } from '../lib/kakaoService'
+import AlertBell from '../components/AlertBell'
+import { filterMenuByRole, type MenuItem } from '../lib/menuConfig'
 import './AdminLayout.css'
 
 // 아이콘 매핑
@@ -27,73 +29,14 @@ const iconComponents: Record<string, React.FC<{ size?: number; className?: strin
     docs: BookOpenIcon,
 }
 
-const navigation = [
-    {
-        label: '대시보드',
-        path: '/admin',
-        iconKey: 'dashboard',
-    },
-    {
-        label: 'Document Hub',
-        path: '/admin/documents',
-        iconKey: 'docs',
-    },
-    {
-        label: '상품관리',
-        iconKey: 'products',
-        children: [
-            { label: '상품리스트', path: '/admin/products/b2b' },
-            { label: '단가표', path: '/admin/products/price-lists' },
-        ],
-    },
-    {
-        label: '발주 관리',
-        iconKey: 'orders',
-        children: [
-            { label: '매출발주(고객용) 목록', path: '/admin/order-sheets' },
-            { label: '매입발주(공급사용) 목록', path: '/admin/purchase-orders' },
-            { label: '확정주문(매출)', path: '/admin/sales-orders' },
-            { label: '확정주문(매입)', path: '/admin/confirmed-purchase-orders' },
-        ],
-    },
-    {
-        label: '물류/배송',
-        iconKey: 'transactions',
-        children: [
-            { label: '배송 목록', path: '/admin/shipments' },
-            { label: '정산 현황', path: '/admin/transactions' },
-        ],
-    },
-    {
-        label: 'Users',
-        iconKey: 'users',
-        children: [
-            { label: '전체 유저 리스트', path: '/admin/users/list' },
-            { label: 'Staff Setting (임직원)', path: '/admin/users/staff' },
-            { label: '고객사 (구매처) 관리', path: '/admin/users/customers' },
-            { label: '공급 거래처 관리', path: '/admin/users/suppliers' },
-            { label: '배송업체 관리', path: '/admin/users/carriers' },
-        ],
-    },
-    {
-        label: 'Settings',
-        iconKey: 'settings',
-        children: [
-            { label: '카탈로그 관리', path: '/admin/settings/catalogs' },
-            { label: '차량 타입', path: '/admin/settings/vehicles' },
-            { label: '문서 관리', path: '/admin/settings/documents' },
-            { label: '물류 게이트', path: '/admin/settings/warehouse' },
-            { label: 'API 설정', path: '/admin/settings/system' },
-            { label: 'LLM 설정', path: '/admin/settings/llm' },
-        ],
-    },
-]
-
 export default function AdminLayout() {
     const { user, logout } = useAuth()
     const [showLogoutModal, setShowLogoutModal] = useState(false)
     const location = useLocation()
     const navigate = useNavigate()
+
+    // 역할 기반 메뉴 필터링
+    const navigation: MenuItem[] = filterMenuByRole(user?.role as any)
 
     const handleLogoutClick = () => {
         setShowLogoutModal(true)
@@ -200,6 +143,7 @@ export default function AdminLayout() {
                         {getPageTitle(location.pathname)}
                     </div>
                     <div className="header-actions">
+                        <AlertBell />
                         <div className="header-time">
                             {new Date().toLocaleDateString('ko-KR', {
                                 year: 'numeric',
@@ -271,6 +215,7 @@ function getPageTitle(pathname: string): string {
         '/admin/purchase-orders': '발주 관리',
         '/admin/shipments': '배송 목록',
         '/admin/transactions': '정산 현황',
+        '/admin/settlement': '정산 / 미수채권 현황',
         // Settings
         '/admin/settings/catalogs': '카탈로그 관리',
         '/admin/settings/vehicles': '차량 타입 설정',

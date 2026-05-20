@@ -33,6 +33,8 @@ type UserAccount = Omit<FirestoreUser, 'createdAt' | 'updatedAt' | 'lastLogin'> 
 const ROLE_LABELS: Record<string, string> = {
     ADMIN: '관리자',
     OPS: '영업/운영',
+    SALES: '영업담당',
+    PURCHASE: '구매담당',
     WAREHOUSE: '물류/물류센터',
     ACCOUNTING: '회계/경리',
     CUSTOMER: '고객사',
@@ -138,7 +140,6 @@ export default function UserManagement() {
                 name: formData.name,
                 role: formData.role as any,
                 status: formData.status as any,
-                orgId: formData.orgId || undefined, // Ensure orgId is updated or cleared
             })
             await loadData()
             setShowModal(false)
@@ -261,14 +262,10 @@ export default function UserManagement() {
                                 </td>
                                 <td>{user.email}</td>
                                 <td>
-                                    {user.orgId ? (
+                                    {user.business?.companyName ? (
                                         <div className="org-info-cell">
                                             <BuildingIcon size={14} className="text-secondary" />
-                                            <span>
-                                                {customers.find(c => c.id === user.orgId)?.business?.companyName ||
-                                                    suppliers.find(s => s.id === user.orgId)?.business?.companyName ||
-                                                    carriers.find(c => c.id === user.orgId)?.business?.companyName || '-'}
-                                            </span>
+                                            <span>{user.business.companyName}</span>
                                         </div>
                                     ) : '-'}
                                 </td>
@@ -374,6 +371,8 @@ export default function UserManagement() {
                                 >
                                     <option value="ADMIN">관리자</option>
                                     <option value="OPS">영업/운영</option>
+                                    <option value="SALES">영업담당</option>
+                                    <option value="PURCHASE">구매담당</option>
                                     <option value="WAREHOUSE">물류/창고</option>
                                     <option value="ACCOUNTING">회계/경리</option>
                                     <option value="CUSTOMER">고객사 담당자</option>
@@ -381,54 +380,6 @@ export default function UserManagement() {
                                     <option value="3PL">3PL</option>
                                 </select>
                             </div>
-
-                            {formData.role === 'CUSTOMER' && (
-                                <div className="form-group">
-                                    <label>소속 고객사</label>
-                                    <select
-                                        required
-                                        value={formData.orgId || ''}
-                                        onChange={e => setFormData({ ...formData, orgId: e.target.value })}
-                                    >
-                                        <option value="">고객사 선택...</option>
-                                        {customers.map(c => (
-                                            <option key={c.id} value={c.id}>{c.business?.companyName || c.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-
-                            {(formData.role === 'SUPPLIER') && (
-                                <div className="form-group">
-                                    <label>소속 공급사</label>
-                                    <select
-                                        required
-                                        value={formData.orgId || ''}
-                                        onChange={e => setFormData({ ...formData, orgId: e.target.value })}
-                                    >
-                                        <option value="">공급사 선택...</option>
-                                        {suppliers.map(s => (
-                                            <option key={s.id} value={s.id}>{s.business?.companyName || s.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-
-                            {(formData.role === '3PL') && (
-                                <div className="form-group">
-                                    <label>소속 3PL (공급사 리스트에서 선택)</label>
-                                    <select
-                                        required
-                                        value={formData.orgId || ''}
-                                        onChange={e => setFormData({ ...formData, orgId: e.target.value })}
-                                    >
-                                        <option value="">3PL 업체 선택...</option>
-                                        {carriers.map(c => (
-                                            <option key={c.id} value={c.id}>{c.business?.companyName || c.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
 
                             <div className="form-group">
                                 <label>상태</label>

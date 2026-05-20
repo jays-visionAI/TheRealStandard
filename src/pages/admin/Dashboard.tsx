@@ -8,6 +8,7 @@ import {
     type FirestoreSalesOrder,
     type FirestoreShipment
 } from '../../lib/orderService'
+import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import './Dashboard.css'
@@ -51,22 +52,25 @@ export default function Dashboard() {
     const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([])
     const [shipments, setShipments] = useState<Shipment[]>([])
     const [salesOrderItems, setSalesOrderItems] = useState<SalesOrderItem[]>([])
+    const [products, setProducts] = useState<FirestoreProduct[]>([])
     const [loading, setLoading] = useState(true)
 
     const [timeframe, setTimeframe] = useState<'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('MONTHLY')
     const [customerFilter, setCustomerFilter] = useState<string>('ALL')
     const [aggregationMode, setAggregationMode] = useState<'CONFIRMED' | 'ALL_SALES'>('CONFIRMED')
+    const [productGroupMode, setProductGroupMode] = useState<'DETAIL' | 'MERGED'>('DETAIL')
 
     // Firebase에서 모든 데이터 로드
     const loadData = async () => {
         try {
             setLoading(true)
 
-            const [osData, soData, shipData, itemsSnap] = await Promise.all([
+            const [osData, soData, shipData, itemsSnap, productsData] = await Promise.all([
                 getAllOrderSheets(),
                 getAllSalesOrders(),
                 getAllShipments(),
-                getDocs(collection(db, 'salesOrderItems'))
+                getDocs(collection(db, 'salesOrderItems')),
+                getAllProducts()
             ])
 
             setOrderSheets(osData.map(os => ({
@@ -90,6 +94,7 @@ export default function Dashboard() {
             })))
 
             setSalesOrderItems(itemsSnap.docs.map(d => ({ id: d.id, ...d.data() } as SalesOrderItem)))
+            setProducts(productsData)
         } catch (err) {
             console.error('Failed to load dashboard data:', err)
         } finally {
@@ -279,29 +284,143 @@ export default function Dashboard() {
             ? new Set(salesOrders.map(so => so.id))
             : new Set(salesOrders.filter(so => so.customerOrgId === customerFilter).map(so => so.id))
 
+        // 상품 DB에서 productId -> name 매핑 생성
+        const productNameMap = new Map<string, string>()
+        products.forEach(p => productNameMap.set(p.id, p.name))
+
+        // 상품명 정규화 헬퍼: productId → 표시명 (MERGED 모드 포함)
+        const resolveDisplayName = (productId: string, productName: string): string => {
+            let name = productNameMap.get(productId)
+                || (productName || '기타').replace(/\s*\(국내산\)\s*$/g, '').trim()
+            if (productGroupMode === 'MERGED') {
+                const original = name
+                name = name
+                    .replace(/^무항생제\s*/g, '')
+                    .replace(/\(진공\/냉장\)/g, '')
+                    .replace(/\(진공\/냉동\)/g, '')
+                    .replace(/\(PE\/냉동\)/g, '')
+                    .replace(/\(PE\/냉장\)/g, '')
+                    .replace(/\(냉장\)/g, '')
+                    .replace(/\(냉동\)/g, '')
+                    .trim()
+                if (name === '삼겹') name = '삼겹살'
+                if (name === '미삼겹') name = '미삼겹살'
+                if (name === '암미삼겹') name = '암미삼겹살'
+                // 빈 문자열이 되면 원래 이름 유지
+                if (!name) name = original || '기타'
+            }
+            return name || '기타'
+        }
+
         const productSales = new Map<string, number>()
         salesOrderItems.forEach(item => {
             if (!filteredSOIds.has(item.salesOrderId)) return
-            const name = (item.productName || '').replace(/\s*\(국내산\)\s*$/, '').trim()
-            const baseName = name.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').trim()
-            productSales.set(baseName, (productSales.get(baseName) || 0) + item.amount)
+            if (item.productId === 'TEMP-AMOUNT-ONLY') {
+                productSales.set('기타', (productSales.get('기타') || 0) + item.amount)
+                return
+            }
+            const displayName = resolveDisplayName(item.productId, item.productName)
+            productSales.set(displayName, (productSales.get(displayName) || 0) + item.amount)
         })
 
+        // 미확정 매출발주(pendingOrderSheets)를 해당 거래처의 직전 주문 상품 구성 비율로 분배
+        if (aggregationMode === 'ALL_SALES') {
+            const filteredPendingOS = customerFilter === 'ALL'
+                ? pendingOrderSheets
+                : pendingOrderSheets.filter(os => os.customerOrgId === customerFilter)
+
+            // 거래처별 가장 최근 확정 주문 찾기 (TEMP-AMOUNT-ONLY 전용 주문은 제외)
+            const latestSOByCustomer = new Map<string, SalesOrder>()
+            const ordersWithRealItems = salesOrders.filter(so => {
+                const items = salesOrderItems.filter(item => item.salesOrderId === so.id)
+                return items.some(item => item.productId !== 'TEMP-AMOUNT-ONLY')
+            })
+            ordersWithRealItems.forEach(so => {
+                const existing = latestSOByCustomer.get(so.customerOrgId)
+                if (!existing || (so.confirmedAt && existing.confirmedAt && so.confirmedAt.getTime() > existing.confirmedAt.getTime())) {
+                    latestSOByCustomer.set(so.customerOrgId, so)
+                }
+            })
+
+            filteredPendingOS.forEach(os => {
+                const pendingAmount = os.totalAmount || 0
+                if (pendingAmount <= 0) return
+
+                const latestSO = latestSOByCustomer.get(os.customerOrgId)
+                if (!latestSO) {
+                    productSales.set('기타', (productSales.get('기타') || 0) + pendingAmount)
+                    return
+                }
+
+                const latestItems = salesOrderItems.filter(item => item.salesOrderId === latestSO.id)
+                const latestTotal = latestItems.reduce((sum, item) => sum + item.amount, 0)
+
+                if (latestTotal <= 0 || latestItems.length === 0) {
+                    productSales.set('기타', (productSales.get('기타') || 0) + pendingAmount)
+                    return
+                }
+
+                latestItems.forEach(item => {
+                    if (item.productId === 'TEMP-AMOUNT-ONLY') {
+                        productSales.set('기타', (productSales.get('기타') || 0) + (item.amount / latestTotal) * pendingAmount)
+                        return
+                    }
+                    const displayName = resolveDisplayName(item.productId, item.productName)
+                    const distributed = (item.amount / latestTotal) * pendingAmount
+                    productSales.set(displayName, (productSales.get(displayName) || 0) + distributed)
+                })
+            })
+        }
+
         const sorted = [...productSales.entries()].sort((a, b) => b[1] - a[1])
-        const total = sorted.reduce((sum, [, v]) => sum + v, 0)
+        const itemsTotal = sorted.reduce((sum, [, v]) => sum + v, 0)
+
+        // 총매출은 대시보드 상단과 동일한 기준
+        const filteredSalesOrders = customerFilter === 'ALL'
+            ? salesOrders
+            : salesOrders.filter(so => so.customerOrgId === customerFilter)
+        let soTotal = filteredSalesOrders.reduce((sum, so) => sum + so.totalsAmount, 0)
+
+        // 매출발주내역 포함 모드: pendingOrderSheets 금액도 포함
+        if (aggregationMode === 'ALL_SALES') {
+            const filteredPending = customerFilter === 'ALL'
+                ? pendingOrderSheets
+                : pendingOrderSheets.filter(os => os.customerOrgId === customerFilter)
+            soTotal += filteredPending.reduce((sum, os) => sum + (os.totalAmount || 0), 0)
+        }
+        const total = Math.max(soTotal, itemsTotal)
+
         if (total === 0) return { items: [{ name: '데이터 없음', value: 100, amount: 0, color: '#f0f0f0' }], total: 0 }
 
-        const colors = ['#7c4dff', '#00d2ff', '#00e676', '#ff9d00', '#f06292', '#ab47bc', '#26a69a', '#78909c']
-        const top = sorted.slice(0, 6)
-        const others = sorted.slice(6)
-        const otherAmount = others.reduce((sum, [, v]) => sum + v, 0)
+        const colors = [
+            '#7c4dff', '#00d2ff', '#00e676', '#ff9d00', '#f06292',
+            '#ab47bc', '#26a69a', '#ef5350', '#5c6bc0', '#66bb6a',
+            '#ffa726', '#42a5f5', '#ec407a', '#8d6e63', '#29b6f6',
+            '#9ccc65', '#ffca28', '#78909c', '#7e57c2', '#26c6da',
+        ]
 
-        const result = top.map(([name, amount], i) => ({
-            name,
-            value: Math.round((amount / total) * 1000) / 10,
-            amount,
-            color: colors[i % colors.length]
-        }))
+        // 1% 이상인 상품은 개별 표시, 1% 미만 + "기타" 항목은 하나의 "기타"로 합산
+        const threshold = total * 0.01
+        const visible: [string, number][] = []
+        let otherAmount = total - itemsTotal  // 총매출 - 아이템 합계 차이분
+
+        sorted.forEach(([name, amount]) => {
+            if (name === '기타' || amount < threshold) {
+                otherAmount += amount
+            } else {
+                visible.push([name, amount])
+            }
+        })
+
+        // % 내림차순 정렬, "기타"는 항상 마지막
+        const result = visible
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, amount], i) => ({
+                name,
+                value: Math.round((amount / total) * 1000) / 10,
+                amount,
+                color: colors[i % colors.length]
+            }))
 
         if (otherAmount > 0) {
             result.push({
@@ -312,8 +431,34 @@ export default function Dashboard() {
             })
         }
 
-        return { items: result, total }
-    }, [salesOrderItems, salesOrders, customerFilter])
+        // 최종 중복 이름 병합 (유니코드 차이 등으로 같은 이름이 2개 생기는 케이스 방지)
+        const merged = new Map<string, { name: string; amount: number; color: string }>()
+        result.forEach(item => {
+            const key = item.name.normalize('NFC').trim()
+            const existing = merged.get(key)
+            if (existing) {
+                existing.amount += item.amount
+            } else {
+                merged.set(key, { name: item.name, amount: item.amount, color: item.color })
+            }
+        })
+
+        const finalItems = [...merged.values()]
+            .sort((a, b) => {
+                // "기타"는 항상 마지막
+                if (a.name.normalize('NFC').trim() === '기타') return 1
+                if (b.name.normalize('NFC').trim() === '기타') return -1
+                return b.amount - a.amount
+            })
+            .map((item, i) => ({
+                name: item.name,
+                value: Math.round((item.amount / total) * 1000) / 10,
+                amount: item.amount,
+                color: item.name.normalize('NFC').trim() === '기타' ? '#78909c' : colors[i % colors.length]
+            }))
+
+        return { items: finalItems, total }
+    }, [salesOrderItems, salesOrders, customerFilter, products, productGroupMode, aggregationMode, pendingOrderSheets])
 
     // 거래처별 매출 TOP
     const customerRanking = useMemo(() => {
@@ -539,43 +684,78 @@ export default function Dashboard() {
                 <div className="premium-card">
                     <div className="card-header" style={{ flexWrap: 'wrap', gap: '8px' }}>
                         <h3><PackageIcon size={18} className="text-primary mr-2" /> 상품별 매출</h3>
-                        <select
-                            value={customerFilter}
-                            onChange={(e) => setCustomerFilter(e.target.value)}
-                            style={{
-                                padding: '6px 12px',
-                                borderRadius: '8px',
-                                border: '1px solid #e0e0e0',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                color: '#444',
-                                background: '#f8f8f8',
-                                cursor: 'pointer',
-                                outline: 'none',
-                                maxWidth: '180px',
-                            }}
-                        >
-                            <option value="ALL">전체 거래처</option>
-                            {customerNames.map(([id, name]) => (
-                                <option key={id} value={id}>{name}</option>
-                            ))}
-                        </select>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e0e0e0' }}>
+                                <button
+                                    onClick={() => setProductGroupMode('DETAIL')}
+                                    style={{
+                                        padding: '5px 12px',
+                                        fontSize: '0.72rem',
+                                        fontWeight: 600,
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        background: productGroupMode === 'DETAIL' ? '#7c4dff' : '#f8f8f8',
+                                        color: productGroupMode === 'DETAIL' ? '#fff' : '#666',
+                                        transition: 'all 0.2s',
+                                    }}
+                                >
+                                    상세
+                                </button>
+                                <button
+                                    onClick={() => setProductGroupMode('MERGED')}
+                                    style={{
+                                        padding: '5px 12px',
+                                        fontSize: '0.72rem',
+                                        fontWeight: 600,
+                                        border: 'none',
+                                        borderLeft: '1px solid #e0e0e0',
+                                        cursor: 'pointer',
+                                        background: productGroupMode === 'MERGED' ? '#7c4dff' : '#f8f8f8',
+                                        color: productGroupMode === 'MERGED' ? '#fff' : '#666',
+                                        transition: 'all 0.2s',
+                                    }}
+                                >
+                                    합산
+                                </button>
+                            </div>
+                            <select
+                                value={customerFilter}
+                                onChange={(e) => setCustomerFilter(e.target.value)}
+                                style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #e0e0e0',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    color: '#444',
+                                    background: '#f8f8f8',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                    maxWidth: '180px',
+                                }}
+                            >
+                                <option value="ALL">전체 거래처</option>
+                                {customerNames.map(([id, name]) => (
+                                    <option key={id} value={id}>{name}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
-                    <div className="donut-container">
-                        <div style={{ position: 'relative', width: '192px', height: '192px', flexShrink: 0 }}>
-                            <svg width="192" height="192" className="donut-svg">
-                                <circle cx="96" cy="96" r="72" fill="transparent" stroke="rgba(0,0,0,0.04)" strokeWidth="22" />
+                    <div className="donut-container" style={{ flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+                        <div style={{ position: 'relative', width: '220px', height: '220px', flexShrink: 0 }}>
+                            <svg width="220" height="220" className="donut-svg">
+                                <circle cx="110" cy="110" r="82" fill="transparent" stroke="rgba(0,0,0,0.04)" strokeWidth="22" />
                                 {productMix.items.reduce((acc, item, i) => {
                                     const offset = productMix.items.slice(0, i).reduce((sum, prev) => sum + prev.value, 0)
-                                    const length = (item.value / 100) * (2 * Math.PI * 72)
-                                    const totalLength = 2 * Math.PI * 72
+                                    const length = (item.value / 100) * (2 * Math.PI * 82)
+                                    const totalLength = 2 * Math.PI * 82
                                     acc.push(
                                         <circle
                                             key={item.name}
-                                            cx="96" cy="96" r="72"
+                                            cx="110" cy="110" r="82"
                                             fill="transparent"
                                             stroke={item.color}
-                                            strokeWidth="24"
+                                            strokeWidth="26"
                                             strokeDasharray={`${length} ${totalLength - length}`}
                                             strokeDashoffset={-(offset / 100) * totalLength}
                                             strokeLinecap="round"
@@ -586,14 +766,14 @@ export default function Dashboard() {
                             </svg>
                             <div className="donut-center-text" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
                                 <div className="donut-center-label">총 매출</div>
-                                <div className="donut-center-value" style={{ fontSize: '0.7rem' }}>{formatKRW(productMix.total)}</div>
+                                <div className="donut-center-value" style={{ fontSize: '0.75rem' }}>{formatKRW(productMix.total)}</div>
                             </div>
                         </div>
-                        <div className="donut-legend">
+                        <div className="donut-legend" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px', width: '100%' }}>
                             {productMix.items.map(item => (
-                                <div key={item.name} className="legend-item">
-                                    <div className="legend-color" style={{ background: item.color }}></div>
-                                    <span>{item.name} ({item.value}%)</span>
+                                <div key={item.name} className="legend-item" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <div className="legend-color" style={{ background: item.color, width: '10px', height: '10px', borderRadius: '3px', flexShrink: 0 }}></div>
+                                    <span style={{ fontSize: '0.72rem', lineHeight: 1.3 }}>{item.name} ({item.value}%)</span>
                                 </div>
                             ))}
                         </div>

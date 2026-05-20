@@ -123,9 +123,9 @@ export default function InviteLanding() {
   // Auto-claim logic for logged-in users
   useEffect(() => {
     const checkAndClaimOrder = async () => {
-      // 조건: 유저 로그인됨, 유저 orgId 존재, 주문정보 로드됨, 현재 주문이 Guest 상태임, 유저가 관리자가 아님
-      if (user && user.orgId && orderInfo && orderInfo.isGuest && !loading && user.role !== 'ADMIN') {
-        console.log('Auto-claiming guest order for user:', user.orgId)
+      // 조건: 유저 로그인됨, 주문정보 로드됨, 현재 주문이 Guest 상태임, 유저가 관리자가 아님
+      if (user && user.id && orderInfo && orderInfo.isGuest && !loading && user.role !== 'ADMIN') {
+        console.log('Auto-claiming guest order for user:', user.id)
         try {
           // User 타입 안전하게 접근
           const safeUser = user as any
@@ -135,7 +135,7 @@ export default function InviteLanding() {
           // 1. 주문서 업데이트 (Guest -> Member)
           await updateOrderSheet(orderInfo.id, {
             isGuest: false,
-            customerOrgId: user.orgId,
+            customerOrgId: user.id,
             customerName: companyName,
             tel: phone
           })
@@ -146,7 +146,7 @@ export default function InviteLanding() {
             return {
               ...prev,
               isGuest: false,
-              customerOrgId: user.orgId!,
+              customerOrgId: user.id!,
               customerName: companyName
             }
           })
@@ -352,7 +352,7 @@ export default function InviteLanding() {
                 발주서 작성 시작하기 →
               </button>
             </div>
-          ) : !user || user.orgId !== orderInfo.customerOrgId ? (
+          ) : !user || user.id !== orderInfo.customerOrgId ? (
             <div className="auth-step-box">
               <div className="flex items-center gap-3 mb-8 bg-blue-50 p-4 rounded-xl border border-blue-100">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">

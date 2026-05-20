@@ -150,6 +150,9 @@ export default function WarehouseDashboard() {
                     })}</p>
                 </div>
                 <div className="header-right">
+                    <button className="btn btn-secondary" onClick={() => navigate('/warehouse/inventory')}>
+                        <PackageIcon size={16} /> 재고 현황
+                    </button>
                     <span className="user-info">창고담당: 관리자</span>
                 </div>
             </header>

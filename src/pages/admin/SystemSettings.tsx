@@ -7,7 +7,11 @@ import {
     KeyIcon,
     MessageCircleIcon,
     BuildingIcon,
-    MailIcon
+    MailIcon,
+    SearchIcon,
+    ChartIcon,
+    CheckCircleIcon,
+    AlertTriangleIcon,
 } from '../../components/Icons'
 import './SystemSettings.css'
 
@@ -16,6 +20,11 @@ export default function SystemSettings() {
     const [formData, setFormData] = useState({ ...settings })
     const [isSaving, setIsSaving] = useState(false)
     const [message, setMessage] = useState({ type: '', text: '' })
+    const [testResults, setTestResults] = useState<Record<string, 'idle' | 'loading' | 'success' | 'error'>>({
+        datago: 'idle',
+        kamis: 'idle',
+        naver: 'idle',
+    })
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -37,6 +46,50 @@ export default function SystemSettings() {
         } finally {
             setIsSaving(false)
         }
+    }
+
+    const testConnection = async (service: 'datago' | 'kamis' | 'naver') => {
+        setTestResults(prev => ({ ...prev, [service]: 'loading' }))
+        try {
+            let url = ''
+            const headers: Record<string, string> = {}
+
+            if (service === 'datago') {
+                const key = formData.datagoKey || import.meta.env.VITE_DATAGO_KEY || ''
+                if (!key) throw new Error('API 키가 입력되지 않았습니다.')
+                const today = new Date()
+                const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
+                url = `/api/datago/B552895/getKpnPriceList/getKpnPriceList?serviceKey=${encodeURIComponent(key)}&delDate=${dateStr}&cattleClsCd=2&numOfRows=1&pageNo=1&_type=json`
+            } else if (service === 'kamis') {
+                const key = formData.kamisKey || import.meta.env.VITE_KAMIS_KEY || ''
+                const id = formData.kamisId || import.meta.env.VITE_KAMIS_ID || ''
+                if (!key || !id) throw new Error('KAMIS 키 또는 ID가 입력되지 않았습니다.')
+                url = `/api/kamis/service/price/xml.do?action=periodProductList&p_productclscode=02&p_itemcategorycode=500&p_itemcode=514&p_regday=2026-05-01&p_convert_kg_yn=Y&p_cert_key=${encodeURIComponent(key)}&p_cert_id=${encodeURIComponent(id)}&p_returntype=json`
+            } else if (service === 'naver') {
+                const clientId = formData.naverClientId || import.meta.env.VITE_NAVER_CLIENT_ID || ''
+                const clientSecret = formData.naverClientSecret || import.meta.env.VITE_NAVER_CLIENT_SECRET || ''
+                if (!clientId || !clientSecret) throw new Error('네이버 Client ID/Secret이 입력되지 않았습니다.')
+                url = `/api/naver/v1/search/news.json?query=${encodeURIComponent('한우 시세')}&display=1&sort=date`
+                headers['X-Naver-Client-Id'] = clientId
+                headers['X-Naver-Client-Secret'] = clientSecret
+            }
+
+            const res = await fetch(url, { headers })
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            await res.json()
+            setTestResults(prev => ({ ...prev, [service]: 'success' }))
+        } catch (err) {
+            console.error(`${service} test failed:`, err)
+            setTestResults(prev => ({ ...prev, [service]: 'error' }))
+        }
+    }
+
+    const renderTestBadge = (service: 'datago' | 'kamis' | 'naver') => {
+        const status = testResults[service]
+        if (status === 'loading') return <span className="test-badge loading">테스트 중...</span>
+        if (status === 'success') return <span className="test-badge success"><CheckCircleIcon size={12} /> 연결 성공</span>
+        if (status === 'error') return <span className="test-badge error"><AlertTriangleIcon size={12} /> 연결 실패</span>
+        return null
     }
 
     return (
@@ -122,11 +175,134 @@ export default function SystemSettings() {
                                 />
                             </div>
                         </div>
-                        <div className="form-group mt-6">
-                            <div className="security-notice">
-                                <ShieldIcon size={16} />
-                                <span>모든 API 키는 브라우저 보안 정책에 따라 암호화되어 관리됩니다.</span>
-                            </div>
+                    </div>
+                </section>
+
+                {/* 공공데이터포털 (EKAPE) API */}
+                <section className="settings-card glass-card">
+                    <div className="card-header">
+                        <ChartIcon size={20} className="text-datago" />
+                        <h2>공공데이터포털 (축산물가격)</h2>
+                        {renderTestBadge('datago')}
+                    </div>
+                    <div className="card-body">
+                        <div className="form-group">
+                            <label>API 인증키 (Encoding)</label>
+                            <input
+                                type="password"
+                                value={formData.datagoKey || ''}
+                                onChange={e => setFormData({ ...formData, datagoKey: e.target.value })}
+                                placeholder="공공데이터포털에서 발급받은 인증키"
+                            />
+                            <p className="help-text">
+                                data.go.kr &gt; 축산물품질평가원_축산물경락가격정보 API 활용신청 후 발급
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={() => testConnection('datago')}
+                            disabled={testResults.datago === 'loading'}
+                        >
+                            <SearchIcon size={14} /> 연결 테스트
+                        </button>
+                    </div>
+                </section>
+
+                {/* KAMIS API */}
+                <section className="settings-card glass-card">
+                    <div className="card-header">
+                        <ChartIcon size={20} className="text-kamis" />
+                        <h2>KAMIS (농산물유통정보)</h2>
+                        {renderTestBadge('kamis')}
+                    </div>
+                    <div className="card-body">
+                        <div className="form-group">
+                            <label>인증 키 (p_cert_key)</label>
+                            <input
+                                type="password"
+                                value={formData.kamisKey || ''}
+                                onChange={e => setFormData({ ...formData, kamisKey: e.target.value })}
+                                placeholder="KAMIS 인증 키"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>인증 ID (p_cert_id)</label>
+                            <input
+                                type="text"
+                                value={formData.kamisId || ''}
+                                onChange={e => setFormData({ ...formData, kamisId: e.target.value })}
+                                placeholder="KAMIS 인증 ID"
+                            />
+                            <p className="help-text">
+                                kamis.or.kr &gt; 개방데이터 &gt; API 신청 후 발급
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={() => testConnection('kamis')}
+                            disabled={testResults.kamis === 'loading'}
+                        >
+                            <SearchIcon size={14} /> 연결 테스트
+                        </button>
+                    </div>
+                </section>
+
+                {/* 네이버 뉴스 검색 API */}
+                <section className="settings-card glass-card">
+                    <div className="card-header">
+                        <SearchIcon size={20} className="text-naver" />
+                        <h2>네이버 뉴스 검색 API</h2>
+                        {renderTestBadge('naver')}
+                    </div>
+                    <div className="card-body">
+                        <div className="form-group">
+                            <label>Client ID</label>
+                            <input
+                                type="text"
+                                value={formData.naverClientId || ''}
+                                onChange={e => setFormData({ ...formData, naverClientId: e.target.value })}
+                                placeholder="네이버 Client ID"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Client Secret</label>
+                            <input
+                                type="password"
+                                value={formData.naverClientSecret || ''}
+                                onChange={e => setFormData({ ...formData, naverClientSecret: e.target.value })}
+                                placeholder="네이버 Client Secret"
+                            />
+                            <p className="help-text">
+                                developers.naver.com &gt; 애플리케이션 등록 &gt; 검색 API 선택 후 발급 (일 25,000건 무료)
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={() => testConnection('naver')}
+                            disabled={testResults.naver === 'loading'}
+                        >
+                            <SearchIcon size={14} /> 연결 테스트
+                        </button>
+                    </div>
+                </section>
+
+                {/* 보안 안내 */}
+                <section className="settings-card glass-card">
+                    <div className="card-header">
+                        <ShieldIcon size={20} className="text-success" />
+                        <h2>보안 안내</h2>
+                    </div>
+                    <div className="card-body">
+                        <div className="security-notice">
+                            <ShieldIcon size={16} />
+                            <span>모든 API 키는 브라우저 로컬 스토리지에 암호화되어 저장됩니다. 서버로 전송되지 않습니다.</span>
+                        </div>
+                        <div className="security-notice mt-4" style={{ background: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.2)', color: '#D97706' }}>
+                            <AlertTriangleIcon size={16} />
+                            <span>운영 환경에서는 API 키를 서버 측(Firebase Functions)에서 관리하는 것을 권장합니다.</span>
                         </div>
                     </div>
                 </section>
@@ -154,3 +330,4 @@ export default function SystemSettings() {
         </div>
     )
 }
+

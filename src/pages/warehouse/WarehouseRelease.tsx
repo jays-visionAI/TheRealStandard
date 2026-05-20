@@ -3,9 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
     getSalesOrderById,
     getSalesOrderItems,
+    updateSalesOrder,
     type FirestoreSalesOrder,
     type FirestoreSalesOrderItem
 } from '../../lib/orderService'
+import { recordOutbound } from '../../lib/inventoryService'
+import { createSettlement } from '../../lib/settlementService'
+import { Timestamp } from 'firebase/firestore'
+import { useAuth } from '../../contexts/AuthContext'
 import { MapPinIcon, TruckDeliveryIcon, PackageIcon, CheckCircleIcon, ClipboardListIcon, AlertTriangleIcon } from '../../components/Icons'
 import './WarehouseRelease.css'
 
@@ -30,6 +35,7 @@ type LocalSalesOrderItem = FirestoreSalesOrderItem
 export default function WarehouseRelease() {
     const { id } = useParams()
     const navigate = useNavigate()
+    const { user } = useAuth()
 
     // Firebase에서 직접 로드되는 데이터
     const [so, setSo] = useState<LocalSalesOrder | null>(null)
@@ -170,15 +176,77 @@ export default function WarehouseRelease() {
     const allItemsLoaded = items.every(item => item.status !== 'PENDING')
     const hasIssues = items.some(item => item.status === 'ISSUE')
 
-    const handleComplete = () => {
+    const handleComplete = async () => {
         if (!driverConfirmation.confirmed) {
             showAlert('확인 필요', '기사님 확인이 필요합니다.', true)
             return
         }
-        showAlert('출고 완료', '✅ 출고 처리가 완료되었습니다!\n\n배송 정보가 고객에게 전송됩니다.')
-        setTimeout(() => {
-            navigate('/warehouse')
-        }, 1500)
+        if (!so) return
+
+        try {
+            setLoading(true)
+
+            const totalLoadedKg = items.reduce((sum, i) => sum + i.loadedKg, 0)
+
+            // 1. SalesOrder 상태 SHIPPED로 업데이트
+            await updateSalesOrder(so.id, {
+                status: 'SHIPPED',
+                totalsKg: totalLoadedKg,
+            })
+
+            // 2. 각 품목별로 inventory OUTBOUND 이벤트 저장
+            const outboundPromises = items.map(item =>
+                recordOutbound({
+                    sourceId: so.id,
+                    productId: item.productName, // TODO: productId 교체
+                    productName: item.productName,
+                    customerId: so.customerOrgId || '',
+                    customerName: so.customerName || '',
+                    tempZone: 'CHILLED',         // TODO: 상품 마스터 연동 시 교체
+                    boxCount: item.boxCount,
+                    weightKg: item.loadedKg,     // 실적재 중량
+                    memo: item.note || undefined,
+                    createdBy: user?.id || 'unknown',
+                })
+            )
+            await Promise.all(outboundPromises)
+
+            // 3. Settlement 자동 생성
+            const estimatedUnitPrice =
+                so.totalsAmount > 0 && so.totalsKg > 0
+                    ? so.totalsAmount / so.totalsKg
+                    : 0
+
+            const settlement = await createSettlement({
+                salesOrderId: so.id,
+                customerOrgId: so.customerOrgId || '',
+                customerName: so.customerName || '',
+                estimatedAmount: so.totalsAmount,
+                estimatedWeightKg: so.totalsKg,
+                finalWeightKg: totalLoadedKg,
+                unitPrice: estimatedUnitPrice,
+                paymentTermDays: 30,            // TODO: 고객사별 결제조건으로 교체
+                shippedAt: Timestamp.now(),
+                createdBy: user?.id || 'unknown',
+            })
+
+            // 4. SalesOrder에 실중량/실금액/정산ID 기록
+            await updateSalesOrder(so.id, {
+                finalWeightKg: totalLoadedKg,
+                finalAmount: settlement.finalAmount,
+                settlementId: settlement.id,
+            })
+
+            showAlert('출고 완료', '출고 처리가 완료되었습니다!\n재고 차감 및 정산이 생성되었습니다.')
+            setTimeout(() => {
+                navigate('/warehouse')
+            }, 1500)
+        } catch (err) {
+            console.error('Failed to complete release:', err)
+            showAlert('오류', '출고 처리 중 오류가 발생했습니다.', true)
+        } finally {
+            setLoading(false)
+        }
     }
 
     // 로딩 상태

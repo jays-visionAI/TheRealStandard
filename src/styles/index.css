@@ -511,6 +511,19 @@ code {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--text-sm);
+  table-layout: fixed;
+}
+
+/* Truncate long text in table cells */
+.cell-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
 }
 
 .table th {

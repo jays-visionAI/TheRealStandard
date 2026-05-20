@@ -11,8 +11,10 @@ import {
     PackageIcon,
     TruckIcon,
     TrendingUpIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    FileTextIcon
 } from '../../components/Icons'
+import { getCompanyDocuments, type FirestoreFileAttachment } from '../../lib/fileService'
 import './CustomerDashboard.css'
 
 export default function CustomerDashboard() {
@@ -25,19 +27,20 @@ export default function CustomerDashboard() {
         totalSpentMonth: 0
     })
     const [recentSheets, setRecentSheets] = useState<FirestoreOrderSheet[]>([])
+    const [companyDocs, setCompanyDocs] = useState<FirestoreFileAttachment[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const load = async () => {
-            if (!user?.orgId) {
+            if (!user?.id) {
                 setLoading(false)
                 return
             }
 
             try {
                 const [sheets, orders] = await Promise.all([
-                    getOrderSheetsByCustomer(user.orgId),
-                    getSalesOrdersByCustomer(user.orgId)
+                    getOrderSheetsByCustomer(user.id),
+                    getSalesOrdersByCustomer(user.id)
                 ])
 
                 const pending = sheets.filter(s => ['SENT', 'REVISION', 'SUBMITTED'].includes(s.status))
@@ -57,6 +60,10 @@ export default function CustomerDashboard() {
                 })
 
                 setRecentSheets(pending.slice(0, 3))
+
+                // MeatGo 회사 서류 로드
+                const docs = await getCompanyDocuments()
+                setCompanyDocs(docs)
             } catch (err) {
                 console.error(err)
             } finally {
@@ -143,6 +150,30 @@ export default function CustomerDashboard() {
                         </button>
                     </div>
                 </div>
+
+                {companyDocs.length > 0 && (
+                    <div className="grid-section glass-card">
+                        <div className="section-header">
+                            <h3><FileTextIcon size={16} /> MeatGo 회사 서류</h3>
+                        </div>
+                        <p className="preview-text">사업자등록증, 통장사본 등 거래에 필요한 서류입니다.</p>
+                        <div className="company-doc-list">
+                            {companyDocs.map(d => (
+                                <a
+                                    key={d.id}
+                                    href={d.downloadUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="doc-item"
+                                >
+                                    <FileTextIcon size={16} />
+                                    <span className="doc-name">{d.fileName}</span>
+                                    <span className="doc-action">다운로드 &rarr;</span>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )

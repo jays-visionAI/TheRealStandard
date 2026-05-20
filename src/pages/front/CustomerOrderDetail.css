@@ -1,0 +1,14 @@
+/* CustomerOrderDetail Styles */
+.customer-order-detail { padding: 20px; max-width: 800px; margin: 0 auto; }
+.customer-order-detail h1 { font-size: 22px; margin: 16px 0 20px; }
+.info-card, .items-card {
+    background: var(--bg-primary); border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg, 12px); padding: 18px; margin-bottom: 14px;
+}
+.info-card h3, .items-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.customer-order-detail .info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px solid var(--border-secondary, #2D3748); }
+.customer-order-detail .info-row:last-child { border-bottom: none; }
+.items-card table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.items-card th { text-align: left; padding: 8px; color: var(--text-secondary); border-bottom: 1px solid var(--border-primary); }
+.items-card td { padding: 8px; border-bottom: 1px solid var(--border-secondary); }
+.hint { font-size: 12px; color: var(--text-secondary); margin: 12px 0 6px; }

@@ -1,0 +1,32 @@
+/* SettlementDetail Styles */
+.settlement-detail { min-height: 100vh; padding: var(--space-6); max-width: 800px; margin: 0 auto; }
+.settlement-detail .page-header { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); }
+.settlement-detail .page-header h1 { font-size: var(--text-xl); font-weight: var(--font-bold); }
+.settlement-detail .detail-card { background: var(--bg-primary); border: 1px solid var(--border-primary); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-4); }
+.settlement-detail .detail-card h2 { font-size: var(--text-base); font-weight: var(--font-bold); margin-bottom: var(--space-4); }
+.settlement-detail .info-grid { display: flex; flex-direction: column; gap: var(--space-3); }
+.settlement-detail .info-row { display: flex; justify-content: space-between; font-size: var(--text-sm); }
+.settlement-detail .info-row .label { color: var(--text-secondary); }
+.settlement-detail .info-row .value { font-weight: var(--font-medium); }
+.settlement-detail .info-row .mono { font-family: monospace; font-size: var(--text-xs); }
+.settlement-detail .amount-compare { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-4); }
+.settlement-detail .amount-box { background: var(--bg-secondary); border-radius: var(--radius-md); padding: var(--space-4); text-align: center; }
+.settlement-detail .amount-box.highlight { border: 1px solid var(--color-primary); }
+.settlement-detail .amount-label { display: block; font-size: var(--text-xs); color: var(--text-secondary); margin-bottom: var(--space-2); }
+.settlement-detail .amount-value { display: block; font-size: var(--text-lg); font-weight: var(--font-bold); }
+.settlement-detail .refund-notice { background: rgba(5,150,105,0.08); border: 1px solid rgba(5,150,105,0.3); border-radius: var(--radius-md); padding: var(--space-3); font-size: var(--text-sm); color: #059669; }
+.settlement-detail .additional-notice { background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.3); border-radius: var(--radius-md); padding: var(--space-3); font-size: var(--text-sm); color: #DC2626; }
+.settlement-detail .payment-summary { margin-bottom: var(--space-4); }
+.settlement-detail .pay-row { display: flex; justify-content: space-between; padding: var(--space-2) 0; border-bottom: 1px solid var(--border-secondary); font-size: var(--text-sm); }
+.settlement-detail .pay-row.total { font-weight: var(--font-bold); font-size: var(--text-base); border-bottom: none; }
+.settlement-detail .text-success { color: #059669; }
+.settlement-detail .text-danger { color: #DC2626; }
+.settlement-detail .payment-history { margin: var(--space-4) 0; }
+.settlement-detail .payment-history h3 { font-size: var(--text-sm); font-weight: var(--font-semibold); margin-bottom: var(--space-3); color: var(--text-secondary); }
+.settlement-detail .history-row { display: flex; gap: var(--space-3); font-size: var(--text-sm); padding: var(--space-2) 0; border-bottom: 1px solid var(--border-secondary); flex-wrap: wrap; }
+.settlement-detail .memo { color: var(--text-secondary); font-size: var(--text-xs); }
+.settlement-detail .payment-form { border-top: 1px solid var(--border-primary); padding-top: var(--space-4); margin-top: var(--space-4); }
+.settlement-detail .payment-form h3 { font-size: var(--text-sm); font-weight: var(--font-semibold); margin-bottom: var(--space-3); }
+.settlement-detail .form-row { display: flex; gap: var(--space-2); margin-bottom: var(--space-2); }
+.settlement-detail .form-row .input { flex: 1; }
+.settlement-detail .form-message { font-size: var(--text-sm); margin: var(--space-2) 0; color: var(--text-secondary); }

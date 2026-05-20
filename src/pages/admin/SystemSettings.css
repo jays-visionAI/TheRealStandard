@@ -143,3 +143,62 @@
         align-items: stretch;
     }
 }
+
+/* 외부 API 브랜드 색상 */
+.text-datago { color: #2563EB; }
+.text-kamis { color: #059669; }
+.text-naver { color: #03C75A; }
+.text-success { color: #10B981; }
+
+/* 연결 테스트 배지 */
+.test-badge {
+    margin-left: auto;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+.test-badge.loading {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366F1;
+}
+.test-badge.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+.test-badge.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #DC2626;
+}
+
+/* 카드 헤더 배지 호환 */
+.settings-card .card-header {
+    flex-wrap: wrap;
+}
+
+/* outline/sm 버튼 */
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+.btn-outline:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8125rem;
+    border-radius: var(--radius-md);
+}
+
+.mt-4 { margin-top: 1rem; }

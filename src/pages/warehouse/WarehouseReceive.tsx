@@ -7,6 +7,8 @@ import {
     updatePurchaseOrder,
     type FirestorePurchaseOrder
 } from '../../lib/orderService'
+import { recordInbound } from '../../lib/inventoryService'
+import { useAuth } from '../../contexts/AuthContext'
 import './WarehouseReceive.css'
 
 interface ReceiveItem {
@@ -22,6 +24,7 @@ interface ReceiveItem {
 export default function WarehouseReceive() {
     const { id } = useParams()
     const navigate = useNavigate()
+    const { user } = useAuth()
 
     const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1)
     const [loading, setLoading] = useState(true)
@@ -159,16 +162,35 @@ export default function WarehouseReceive() {
         if (!poData) return
         try {
             setLoading(true)
-            // 발주 상태를 RECEIVED로 업데이트
+
+            const totalActualKg = items.reduce((sum, i) => sum + i.actualKg, 0)
+
+            // 1. 발주 상태를 RECEIVED로 업데이트 (기존 코드 유지)
             await updatePurchaseOrder(poData.id, {
                 status: 'RECEIVED',
-                totalsKg: items.reduce((sum, i) => sum + i.actualKg, 0)
+                totalsKg: totalActualKg
             })
 
-            showAlert('반입 완료', '✅ 반입 처리가 완료되었습니다!')
+            // 2. 각 품목별로 inventory INBOUND 이벤트 저장 (신규)
+            const inboundPromises = items.map(item =>
+                recordInbound({
+                    sourceId: poData.id,
+                    productId: item.productName, // TODO: productId가 생기면 교체
+                    productName: item.productName,
+                    supplierName: poData.supplierName || '',
+                    tempZone: 'CHILLED',         // TODO: 상품 마스터에서 가져오도록 교체
+                    boxCount: item.boxCount,
+                    weightKg: item.actualKg,     // 검수 후 실중량
+                    memo: item.note || undefined,
+                    createdBy: user?.id || 'unknown',
+                })
+            )
+            await Promise.all(inboundPromises)
+
+            showAlert('반입 완료', '반입 처리가 완료되었습니다!\n재고에 반영되었습니다.')
             setTimeout(() => {
                 navigate('/warehouse')
-            }, 1000)
+            }, 1200)
         } catch (err) {
             console.error('Failed to complete receive:', err)
             showAlert('오류', '반입 처리 중 오류가 발생했습니다.', true)

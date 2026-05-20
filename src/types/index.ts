@@ -4,7 +4,17 @@
 // ======================================
 
 // 사용자 역할
-export type UserRole = 'ADMIN' | 'OPS' | 'CUSTOMER' | 'SUPPLIER' | 'ACCOUNTING' | 'WAREHOUSE' | '3PL';
+export type UserRole =
+    | 'ADMIN'       // 최고관리자
+    | 'OPS'         // 운영 슈퍼유저 (기존 계정 하위호환 유지)
+    | 'SALES'       // 영업담당 (주문장, 수주, 미수관리)
+    | 'PURCHASE'    // 구매담당 (발주, 공급사, 입고)
+    | 'CUSTOMER'    // 고객사
+    | 'SUPPLIER'    // 공급사
+    | 'ACCOUNTING'  // 회계/정산
+    | 'WAREHOUSE'   // 창고/물류
+    | '3PL';        // 배송업체
+
 
 // 조직 정보 (고객/공급사/도축장/물류 등)
 export interface Organization {

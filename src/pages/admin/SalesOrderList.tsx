@@ -131,6 +131,14 @@ export default function SalesOrderList() {
 
     const totalPages = Math.max(1, Math.ceil(filteredOrders.length / listFilters.pageSize))
 
+    // 필터된 결과 합계
+    const summaryTotals = useMemo(() => {
+        const totalAmount = filteredOrders.reduce((sum, so) => sum + (so.totalsAmount || 0), 0)
+        const totalKg = filteredOrders.reduce((sum, so) => sum + (so.totalsKg || 0), 0)
+        const totalBoxes = filteredOrders.reduce((sum, so) => sum + ((so as any).totalsBoxes || 0), 0)
+        return { count: filteredOrders.length, totalAmount, totalKg, totalBoxes }
+    }, [filteredOrders])
+
     // --- Dispatch Logic ---
     const [dispatchForm, setDispatchForm] = useState({
         company: '',
@@ -306,19 +314,54 @@ export default function SalesOrderList() {
                 </div>
             </div>
 
+            {/* Summary Totals Bar */}
+            <div className="glass-card mb-6" style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 24px',
+                background: 'linear-gradient(135deg, rgba(124, 77, 255, 0.08), rgba(59, 130, 246, 0.08))',
+                borderLeft: '4px solid var(--primary)',
+                gap: '24px',
+                flexWrap: 'wrap',
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>조회건수</span>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>{summaryTotals.count}건</span>
+                    </div>
+                    {summaryTotals.totalBoxes > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>총 수량</span>
+                            <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>{summaryTotals.totalBoxes.toLocaleString()} Box</span>
+                        </div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>총 중량</span>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>{summaryTotals.totalKg.toLocaleString(undefined, { maximumFractionDigits: 1 })} kg</span>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>합계금액</span>
+                    <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.5px' }}>
+                        {formatCurrency(summaryTotals.totalAmount)}
+                    </span>
+                </div>
+            </div>
+
             <div className="glass-card overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse" style={{ tableLayout: 'fixed' }}>
                         <thead>
                             <tr className="border-b border-white/10 bg-white/5">
-                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('date')}>주문확정일시 {listFilters.sortField === 'date' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase">SalesOrder No</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('customer')}>고객사 {listFilters.sortField === 'customer' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right">주문수량</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right">총 중량</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right" style={{ cursor: 'pointer' }} onClick={() => listFilters.toggleSort('amount')}>총 금액 {listFilters.sortField === 'amount' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase">상태</th>
-                                <th className="p-4 text-sm font-semibold text-muted uppercase">작업</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer', width: '12%' }} onClick={() => listFilters.toggleSort('date')}>주문확정일시 {listFilters.sortField === 'date' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ width: '14%' }}>SalesOrder No</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ cursor: 'pointer', width: '12%' }} onClick={() => listFilters.toggleSort('customer')}>고객사 {listFilters.sortField === 'customer' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right" style={{ width: '10%' }}>주문수량</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right" style={{ width: '10%' }}>총 중량</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase text-right" style={{ cursor: 'pointer', width: '12%' }} onClick={() => listFilters.toggleSort('amount')}>총 금액 {listFilters.sortField === 'amount' ? (listFilters.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ width: '10%' }}>상태</th>
+                                <th className="p-4 text-sm font-semibold text-muted uppercase" style={{ width: '20%' }}>작업</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -328,7 +371,7 @@ export default function SalesOrderList() {
                                     return (
                                         <tr key={so.id} className="hover:bg-white/5 transition-colors">
                                             <td className="p-4 text-sm">{formatDate(so.confirmedAt)}</td>
-                                            <td className="p-4 text-sm font-mono text-primary">{so.id}</td>
+                                            <td className="p-4 text-sm font-mono text-primary" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={so.id}>{so.id}</td>
                                             <td className="p-4 text-sm font-medium">{so.customerName}</td>
                                             <td className="p-4 text-sm text-right font-medium">
                                                 {(so as any).totalsBoxes ? `${(so as any).totalsBoxes} Box` : (so as any).orderUnit === 'kg' ? `${so.totalsKg.toFixed(1)} Kg` : '-'}
@@ -343,7 +386,7 @@ export default function SalesOrderList() {
                                                 )}
                                             </td>
                                             <td className="p-4 text-sm">
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
                                                     <button
                                                         className="btn btn-sm btn-ghost"
                                                         onClick={() => navigate(`/admin/sales-orders/${so.id}`)}

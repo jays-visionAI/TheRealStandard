@@ -13,8 +13,10 @@ import {
 } from '../../lib/orderService'
 import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
 import { getAllVehicleTypes, type FirestoreVehicleType } from '../../lib/vehicleService'
-import { TruckIcon, CheckCircleIcon, PhoneIcon, UserIcon, PackageIcon, AlertTriangleIcon, SearchIcon } from '../../components/Icons'
+import { TruckIcon, CheckCircleIcon, PhoneIcon, UserIcon, PackageIcon, AlertTriangleIcon, SearchIcon, FilePlusIcon } from '../../components/Icons'
 import { Timestamp } from 'firebase/firestore'
+import FileUpload, { FileList } from '../../components/FileUpload'
+import { getFilesByRelated, deleteFile, type FirestoreFileAttachment } from '../../lib/fileService'
 
 interface DispatchItem extends FirestoreSalesOrderItem {
     boxWeight?: number;
@@ -31,6 +33,9 @@ export default function DispatchView() {
     const [error, setError] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
+    const [tempLogs, setTempLogs] = useState<FirestoreFileAttachment[]>([])
+    const [loadPhotos, setLoadPhotos] = useState<FirestoreFileAttachment[]>([])
+    const [unloadPhotos, setUnloadPhotos] = useState<FirestoreFileAttachment[]>([])
 
     // Form states
     const [vehicleTypeId, setVehicleTypeId] = useState('')
@@ -92,6 +97,20 @@ export default function DispatchView() {
             setLoading(false)
         }
     }
+
+    // 파일 로드
+    useEffect(() => {
+        if (!shipment) return
+        Promise.all([
+            getFilesByRelated('SHIPMENT', shipment.id, 'TEMP_LOG'),
+            getFilesByRelated('SHIPMENT', shipment.id, 'LOAD_PHOTO'),
+            getFilesByRelated('SHIPMENT', shipment.id, 'UNLOAD_PHOTO'),
+        ]).then(([t, l, u]) => {
+            setTempLogs(t)
+            setLoadPhotos(l)
+            setUnloadPhotos(u)
+        })
+    }, [shipment])
 
     const selectRegisteredDriver = (driver: RegisteredDriver) => {
         setVehicleNo(driver.vehicleNumber)
@@ -165,8 +184,38 @@ export default function DispatchView() {
                         <div className="flex justify-between mb-1"><span>차량번호:</span><strong>{vehicleNo}</strong></div>
                         <div className="flex justify-between"><span>상태:</span><span className="text-blue-600 font-bold">{shipment?.status === 'IN_TRANSIT' ? '배송중' : '배송완료'}</span></div>
                     </div>
+                    </div>
+
+                    {/* 배송 증빙 자료 업로드 */}
+                    {shipment && (
+                        <div className="bg-white p-6 rounded-xl mt-6 border border-gray-200" style={{ maxWidth: '500px', margin: '24px auto 0' }}>
+                            <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                                <FilePlusIcon size={16} /> 배송 증빙 자료 업로드
+                            </h3>
+
+                            <div style={{ marginBottom: '16px' }}>
+                                <p className="text-xs font-medium text-gray-600 mb-2">차량 온도 기록지</p>
+                                <FileUpload fileType="TEMP_LOG" relatedType="SHIPMENT" relatedId={shipment.id} label="온도 기록지 업로드"
+                                    onUploaded={(f) => setTempLogs([f, ...tempLogs])} />
+                                <FileList files={tempLogs} onDelete={async (id) => { await deleteFile(id); setTempLogs(tempLogs.filter(f => f.id !== id)) }} />
+                            </div>
+
+                            <div style={{ marginBottom: '16px' }}>
+                                <p className="text-xs font-medium text-gray-600 mb-2">상차 사진</p>
+                                <FileUpload fileType="LOAD_PHOTO" relatedType="SHIPMENT" relatedId={shipment.id} label="상차 사진 업로드" accept="image/*"
+                                    onUploaded={(f) => setLoadPhotos([f, ...loadPhotos])} />
+                                <FileList files={loadPhotos} onDelete={async (id) => { await deleteFile(id); setLoadPhotos(loadPhotos.filter(f => f.id !== id)) }} />
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-medium text-gray-600 mb-2">하차 사진</p>
+                                <FileUpload fileType="UNLOAD_PHOTO" relatedType="SHIPMENT" relatedId={shipment.id} label="하차 사진 업로드" accept="image/*"
+                                    onUploaded={(f) => setUnloadPhotos([f, ...unloadPhotos])} />
+                                <FileList files={unloadPhotos} onDelete={async (id) => { await deleteFile(id); setUnloadPhotos(unloadPhotos.filter(f => f.id !== id)) }} />
+                            </div>
+                        </div>
+                    )}
                 </div>
-            </div>
         )
     }
 

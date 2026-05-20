@@ -31,15 +31,15 @@ export default function CustomerOrderList() {
 
     useEffect(() => {
         const loadOrders = async () => {
-            if (!user?.orgId) {
+            if (!user?.id) {
                 setLoading(false)
                 return
             }
 
             try {
                 const [sheets, orders] = await Promise.all([
-                    getOrderSheetsByCustomer(user.orgId),
-                    getSalesOrdersByCustomer(user.orgId)
+                    getOrderSheetsByCustomer(user.id),
+                    getSalesOrdersByCustomer(user.id)
                 ])
 
                 setOrderSheets(sheets.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)))

@@ -1,0 +1,22 @@
+/* CustomerSettlement Styles */
+.customer-settlement { padding: var(--space-5); min-height: 100vh; }
+.customer-settlement h1 { font-size: var(--text-xl); font-weight: var(--font-bold); margin-bottom: var(--space-5); }
+.remaining-banner { display: flex; justify-content: space-between; align-items: center; background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.3); border-radius: var(--radius-lg); padding: var(--space-4); margin-bottom: var(--space-5); font-size: var(--text-sm); color: var(--text-primary); }
+.remaining-amount { font-size: var(--text-xl); font-weight: var(--font-bold); color: #DC2626; }
+.settlement-cards { display: flex; flex-direction: column; gap: var(--space-3); }
+.settlement-card { background: var(--bg-primary); border: 1px solid var(--border-primary); border-radius: var(--radius-lg); padding: var(--space-4); }
+.settlement-card.overdue { border-color: #DC2626; }
+.settlement-card.paid { opacity: 0.7; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); }
+.customer-settlement .order-id { font-size: var(--text-sm); color: var(--text-secondary); font-family: monospace; }
+.status-tag { font-weight: var(--font-bold); font-size: var(--text-sm); }
+.card-body { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3); }
+.customer-settlement .amount-row { display: flex; justify-content: space-between; font-size: var(--text-sm); }
+.customer-settlement .amount-label { color: var(--text-secondary); }
+.customer-settlement .amount-value { font-weight: var(--font-bold); }
+.customer-settlement .amount-row.remaining .text-danger { font-weight: var(--font-bold); }
+.customer-settlement .text-danger { color: #DC2626; }
+.refund-info { font-size: var(--text-xs); color: #059669; background: rgba(5,150,105,0.08); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); }
+.card-footer { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-secondary); border-top: 1px solid var(--border-secondary); padding-top: var(--space-3); }
+.customer-settlement .empty-state { text-align: center; padding: var(--space-16); color: var(--text-secondary); }
+.customer-settlement .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; gap: var(--space-4); }
