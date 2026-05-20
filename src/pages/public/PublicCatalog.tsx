@@ -77,11 +77,12 @@ export default function PublicCatalog() {
                 <div style={{ ...containerStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '68px' }}>
                     <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
                         <div style={{
-                            width: '36px', height: '36px', borderRadius: RADIUS.md,
+                            minWidth: '44px', height: '36px', borderRadius: RADIUS.md,
                             background: COLOR.primary, color: '#fff',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '18px', fontWeight: 700,
-                        }}>M</div>
+                            fontSize: '15px', fontWeight: 800, letterSpacing: '-0.5px',
+                            padding: '0 8px',
+                        }}>믿고</div>
                         <span style={{ fontSize: '20px', fontWeight: 700, color: COLOR.secondary, letterSpacing: '-0.5px' }}>MEATGO</span>
                     </Link>
                     <nav style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>

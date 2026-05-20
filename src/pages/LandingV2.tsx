@@ -193,11 +193,12 @@ export default function LandingV2() {
                             style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
                         >
                             <div style={{
-                                width: '36px', height: '36px', borderRadius: '8px',
+                                minWidth: '44px', height: '36px', borderRadius: '8px',
                                 background: C.primary, color: '#fff',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '18px', fontWeight: 700,
-                            }}>M</div>
+                                fontSize: '15px', fontWeight: 800, letterSpacing: '-0.5px',
+                                padding: '0 8px',
+                            }}>믿고</div>
                             <span style={{ fontSize: '20px', fontWeight: 700, color: C.secondary, letterSpacing: '-0.5px' }}>
                                 MEATGO
                             </span>
@@ -416,9 +417,10 @@ export default function LandingV2() {
                         <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                                 <div style={{
-                                    width: '32px', height: '32px', borderRadius: '8px', background: C.primary, color: '#fff',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 700,
-                                }}>M</div>
+                                    minWidth: '40px', height: '32px', borderRadius: '8px', background: C.primary, color: '#fff',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 800,
+                                    letterSpacing: '-0.5px', padding: '0 8px',
+                                }}>믿고</div>
                                 <span style={{ fontSize: '18px', fontWeight: 700, color: C.secondary }}>MEATGO</span>
                             </div>
                             <p style={{ fontSize: '13px', color: C.textMuted }}>
