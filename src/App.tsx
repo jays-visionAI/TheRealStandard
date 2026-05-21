@@ -250,7 +250,7 @@ function App() {
                         <Route path="catalog" element={<ProductCatalog />} />
                         <Route path="tracking" element={<DeliveryTracking />} />
                         <Route path="profile-setup" element={
-                            <ProtectedRoute allowedRoles={['CUSTOMER', '3PL', 'ADMIN', 'SUPPLIER', 'SALES', 'PURCHASE', 'ACCOUNTING', 'WAREHOUSE']}>
+                            <ProtectedRoute allowedRoles={['CUSTOMER', 'SUPPLIER', '3PL']}>
                                 <ProfileSetup />
                             </ProtectedRoute>
                         } />

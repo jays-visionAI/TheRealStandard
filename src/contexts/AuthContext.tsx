@@ -103,36 +103,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             mustChangePassword: firestoreUser.mustChangePassword
                         })
                     } else {
-                        // users 컬렉션에 없는 경우 - 신규 사용자로 자동 생성
-                        console.log('User not found in Firestore, creating new user...')
-                        const { createUser } = await import('../lib/userService')
-                        await createUser({
-                            email: fbUser.email.toLowerCase().trim(),
-                            name: fbUser.displayName || '신규 사용자',
-                            role: 'CUSTOMER',
-                            status: 'PENDING',
-                            firebaseUid: fbUser.uid
-                        }, fbUser.uid)
-
-                        // 생성된 사용자 정보 다시 조회
-                        const newUser = await getUserById(fbUser.uid)
-                        if (newUser) {
-                            // 신규 생성 유저는 PENDING이므로 차단
-                            await signOut(auth)
-                            setUser(null)
-                            setLoading(false)
-                            console.warn('Newly created PENDING user blocked:', newUser.email)
-                            return
-                        } else {
-                            // fallback: 기본 정보로 설정
-                            setUser({
-                                id: fbUser.uid,
-                                email: fbUser.email,
-                                name: fbUser.displayName || '사용자',
-                                role: 'CUSTOMER',
-                                firebaseUid: fbUser.uid
-                            })
-                        }
+                        // users 컬렉션에 doc 없음.
+                        // 정상 흐름(signup, Kakao/Google login)에서는 doc이 함께 생성되므로
+                        // 여기 도달하는 건 비정상 케이스(Firestore 생성 실패 등).
+                        // 이전엔 자동으로 CUSTOMER로 만들었지만 → SUPPLIER/직원 발급 도중 실패 시
+                        // 역할이 오염되는 위험이 있어 제거. 명시적 에러 + 강제 로그아웃.
+                        console.error('User document not found in Firestore for uid:', fbUser.uid, 'email:', fbUser.email)
+                        await signOut(auth)
+                        setUser(null)
+                        setLoading(false)
+                        alert('계정 정보를 찾을 수 없습니다.\n관리자에게 문의해주세요.\n(가입 직후라면 잠시 후 다시 시도해주세요.)')
+                        return
                     }
                 } catch (error) {
                     console.error('Failed to fetch user data:', error)

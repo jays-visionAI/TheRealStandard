@@ -41,8 +41,9 @@ service cloud.firestore {
 
     // ============ USERS ============
     match /users/{userId} {
-      // 읽기: 인증된 사용자만 (이전엔 공개였음 — 강화)
-      allow read: if isAuthenticated();
+      // 읽기: 본인 문서 또는 내부 직원만
+      // (이전엔 모든 인증 사용자가 모든 사용자 정보 read 가능 → CUSTOMER/SUPPLIER 정보 노출 위험)
+      allow read: if isOwnDocument(userId) || isStaff();
       // 생성: 본인 문서만 + Firebase UID 일치
       allow create: if isAuthenticated() && request.auth.uid == userId;
       // 수정: 본인 또는 관리자(ADMIN/OPS)

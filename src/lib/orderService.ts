@@ -119,15 +119,18 @@ export async function updateOrderSheet(id: string, data: Partial<FirestoreOrderS
 
 /**
  * 비회원 발주서를 가입한 회원의 OrgId로 연결합니다.
+ * 동시에 createdBy stamp를 'guest'에서 실제 가입한 사용자 정보로 갱신합니다.
  */
 export async function claimOrderSheetByToken(token: string, customerOrgId: string): Promise<void> {
     const q = query(collection(db, ORDER_SHEETS_COLLECTION), where('inviteTokenId', '==', token))
     const snapshot = await getDocs(q)
     if (!snapshot.empty) {
         const d = snapshot.docs[0]
+        // getCreatorStamp()는 현재 로그인된 사용자의 stamp를 반환 (AuthContext가 setCurrentActor 호출됨)
         await updateDoc(d.ref, {
             customerOrgId,
             isGuest: false,
+            ...getCreatorStamp(),
             updatedAt: serverTimestamp()
         })
     }
