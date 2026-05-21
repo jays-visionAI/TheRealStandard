@@ -27,6 +27,10 @@ export default function ProfileSetup() {
     const [isPasswordChanging, setIsPasswordChanging] = useState(false)
     const [isOnboarding, setIsOnboarding] = useState(false)
     const [bizRegFiles, setBizRegFiles] = useState<FirestoreFileAttachment[]>([])
+    const [companyProfileFiles, setCompanyProfileFiles] = useState<FirestoreFileAttachment[]>([])
+
+    const isSupplier = user?.role === 'SUPPLIER'
+    const isCarrier = user?.role === '3PL'
 
     // 비밀번호 변경 관련 상태
     const [newPassword, setNewPassword] = useState('')
@@ -62,12 +66,15 @@ export default function ProfileSetup() {
         loadProfile()
     }, [user])
 
-    // 사업자등록증 파일 로드
+    // 사업자등록증 + 회사소개자료 파일 로드
     useEffect(() => {
         if (user?.id) {
             getFilesByRelated('USER', user.id, 'BIZ_REG').then(setBizRegFiles)
+            if (isSupplier) {
+                getFilesByRelated('USER', user.id, 'COMPANY_PROFILE').then(setCompanyProfileFiles)
+            }
         }
-    }, [user])
+    }, [user, isSupplier])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -264,6 +271,43 @@ export default function ProfileSetup() {
                             }}
                         />
                     </div>
+
+                    {/* SUPPLIER 전용 — 회사소개자료 */}
+                    {isSupplier && (
+                        <div className="form-section">
+                            <h3><FilePlusIcon size={18} /> 회사소개자료</h3>
+                            <p className="description">
+                                회사 소개 PDF·이미지·문서를 업로드해주세요. 자사 강점, 취급 품목, 인증 사항 등을 포함하면 MeatGo 운영팀이 거래 검토 시 참고합니다. (여러 파일 업로드 가능)
+                            </p>
+                            {user?.id && (
+                                <FileUpload
+                                    fileType="COMPANY_PROFILE"
+                                    relatedType="USER"
+                                    relatedId={user.id}
+                                    label="회사소개자료 업로드"
+                                    accept="image/*,application/pdf,.doc,.docx,.ppt,.pptx"
+                                    onUploaded={(f) => setCompanyProfileFiles([f, ...companyProfileFiles])}
+                                />
+                            )}
+                            <FileList
+                                files={companyProfileFiles}
+                                onDelete={async (id) => {
+                                    await deleteFile(id)
+                                    setCompanyProfileFiles(companyProfileFiles.filter(f => f.id !== id))
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {/* 3PL 안내 */}
+                    {isCarrier && (
+                        <div className="form-section" style={{ background: '#FEF3C7', borderRadius: '8px', padding: '16px', border: '1px solid #FDE68A' }}>
+                            <h3 style={{ color: '#92400E' }}>3PL 배송업체 안내</h3>
+                            <p style={{ fontSize: '14px', color: '#78350F', marginBottom: '8px' }}>
+                                기본 사업자 정보와 사업자등록증을 등록하신 후, 차량/기사 관리는 별도 메뉴에서 진행하실 수 있습니다.
+                            </p>
+                        </div>
+                    )}
 
                     {/* 비밀번호 변경 섹션 (Onboarding이 아닐 때만 표시) */}
                     {!isOnboarding && (

@@ -29,6 +29,7 @@ export type FileType =
     | 'LOAD_PHOTO'
     | 'UNLOAD_PHOTO'
     | 'COMPANY_DOC'
+    | 'COMPANY_PROFILE'
     | 'PRODUCT_IMAGE'
     | 'OTHER'
 

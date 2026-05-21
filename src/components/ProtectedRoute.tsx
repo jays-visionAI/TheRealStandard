@@ -36,13 +36,14 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
         return <Navigate to={defaultPath} replace />
     }
 
-    // 임시PW 사용 중인 사용자 — 비번 변경 강제 (관리자 발급 SUPPLIER 등)
+    // 임시PW 사용 중인 사용자 — 비번 변경 강제 (관리자 발급 SUPPLIER/3PL/직원 등)
     if (user.mustChangePassword && location.pathname !== '/order/profile-setup') {
         return <Navigate to="/order/profile-setup" replace />
     }
 
-    // 고객사 프로필 미완성 체크 (온보딩 강제)
-    if (user.role === 'CUSTOMER' && !user.business?.companyName && location.pathname !== '/order/profile-setup') {
+    // 거래처 계열(CUSTOMER/SUPPLIER/3PL) 프로필 미완성 시 강제 온보딩
+    const externalRoles = ['CUSTOMER', 'SUPPLIER', '3PL']
+    if (externalRoles.includes(user.role) && !user.business?.companyName && location.pathname !== '/order/profile-setup') {
         return <Navigate to="/order/profile-setup" replace />
     }
 

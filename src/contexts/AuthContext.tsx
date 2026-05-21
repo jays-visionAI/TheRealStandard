@@ -79,15 +79,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const firestoreUser = await getUserById(fbUser.uid)
 
                     if (firestoreUser) {
-                        // PENDING 유저 차단
-                        if (firestoreUser.status === 'PENDING') {
+                        // INACTIVE 유저는 차단 (관리자가 비활성화한 경우)
+                        if (firestoreUser.status === 'INACTIVE') {
                             await signOut(auth)
                             setUser(null)
                             setLoading(false)
-                            console.warn('PENDING user blocked:', firestoreUser.email)
-                            // TODO: 로그인 페이지로 에러 메시지 전달 (별도 전역 state 또는 toast 활용)
+                            alert('비활성화된 계정입니다. 관리자에게 문의해주세요.')
                             return
                         }
+                        // PENDING 유저는 로그인 허용 — ProtectedRoute가 /order/profile-setup으로
+                        // 강제 라우팅하여 첫 로그인 시 비번 변경 + 프로필/서류 입력하게 함.
+                        // 이전엔 PENDING을 차단했지만 그러면 신규 사용자가 프로필을 못 채우는
+                        // 데드락에 걸렸음 (CUSTOMER 자가입 + SUPPLIER 관리자 발급 모두 해당).
 
                         // 관리자 이메일 목록에 있으면 권한을 ADMIN으로 강제 설정
                         const isAdminEmail = ADMIN_EMAILS.includes(fbUser.email.toLowerCase())

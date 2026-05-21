@@ -159,6 +159,10 @@ export function generateTempPassword(length = 8): string {
 // 관리자가 외부 사용자(공급사 등)의 Firebase Auth 계정을 즉시 발급한다.
 // secondary app instance를 사용하여 현재 admin 세션을 보호한다.
 // 발급된 사용자는 mustChangePassword=true 로 표시되어 첫 로그인 시 비밀번호를 변경해야 한다.
+//
+// status 규칙:
+// - 직원 역할(ADMIN/OPS/SALES/PURCHASE/ACCOUNTING/WAREHOUSE) → ACTIVE 즉시 발급
+// - 거래처 계열(CUSTOMER/SUPPLIER/3PL) → PENDING 발급 (첫 로그인 후 정보 작성하면 ACTIVE)
 export async function createUserWithAuth(params: {
     email: string
     tempPassword: string
@@ -174,6 +178,10 @@ export async function createUserWithAuth(params: {
     const cred = await createUserWithEmailAndPassword(secondaryAuth, normalizedEmail, params.tempPassword)
     const uid = cred.user.uid
 
+    // 거래처 계열은 PENDING으로 발급 (첫 로그인 → 사업자정보 입력 → ACTIVE)
+    const isExternalRole = ['CUSTOMER', 'SUPPLIER', '3PL'].includes(params.role)
+    const initialStatus: 'ACTIVE' | 'PENDING' = isExternalRole ? 'PENDING' : 'ACTIVE'
+
     // 2. Firestore users/{uid} 도큐먼트 생성 (doc ID == Firebase UID)
     const docRef = doc(db, USERS_COLLECTION, uid)
     const now = serverTimestamp()
@@ -182,7 +190,7 @@ export async function createUserWithAuth(params: {
         name: params.name,
         phone: params.phone,
         role: params.role,
-        status: 'ACTIVE',
+        status: initialStatus,
         firebaseUid: uid,
         mustChangePassword: true,
         business: params.business,

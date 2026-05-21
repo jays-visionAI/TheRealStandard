@@ -464,7 +464,9 @@ export default function SupplierMaster() {
                                 <div className="form-section">
                                     <h3>로그인 계정 발급</h3>
                                     <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
-                                        등록 즉시 Firebase Auth 계정이 발급됩니다. 공급사는 첫 로그인 시 비밀번호를 변경해야 합니다.
+                                        등록 즉시 Firebase Auth 계정이 발급됩니다 (status: PENDING).
+                                        공급사는 첫 로그인 시 비밀번호를 변경하고,
+                                        사업자등록증 + 회사소개자료를 업로드하면 활성화(ACTIVE)됩니다.
                                     </p>
                                     <div className="form-grid">
                                         <div className="form-group required full-width">
@@ -570,7 +572,8 @@ export default function SupplierMaster() {
                             </h3>
                             <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center', marginBottom: '20px' }}>
                                 아래 정보를 공급사 담당자에게 전달해주세요.<br />
-                                공급사는 첫 로그인 시 비밀번호를 변경해야 합니다.
+                                공급사는 첫 로그인 후 비밀번호 변경 + 사업자등록증·회사소개자료 업로드를 완료하면<br />
+                                자동으로 활성화(ACTIVE)됩니다.
                             </p>
                             <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', marginBottom: '12px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
