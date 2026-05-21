@@ -11,6 +11,8 @@ import { auth } from '../lib/firebase'
 import type { UserRole } from '../types'
 import { getUserByEmail, getUserById, createUser, type BusinessProfile } from '../lib/userService'
 import { setCurrentActor } from '../lib/auditing'
+import { getSystemApiKeys } from '../lib/systemConfigService'
+import { useSystemStore } from '../stores/systemStore'
 
 interface User {
     id: string          // Firebase UID와 동일
@@ -362,6 +364,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
             setCurrentActor(null)
         }
+    }, [user])
+
+    // 로그인된 직원이 있으면 Firestore의 외부 API 키를 store에 sync
+    // (firestore.rules에 의해 isStaff()만 read 가능)
+    useEffect(() => {
+        if (!user) return
+        const staffRoles = ['ADMIN', 'OPS', 'SALES', 'PURCHASE', 'ACCOUNTING', 'WAREHOUSE']
+        if (!staffRoles.includes(user.role)) return
+        getSystemApiKeys().then(remote => {
+            if (!remote) return
+            useSystemStore.getState().updateSettings({
+                datagoKey: remote.datagoKey ?? undefined,
+                kamisKey: remote.kamisKey ?? undefined,
+                kamisId: remote.kamisId ?? undefined,
+                naverClientId: remote.naverClientId ?? undefined,
+                naverClientSecret: remote.naverClientSecret ?? undefined,
+            })
+        }).catch(err => console.warn('API key sync failed:', err))
     }, [user])
 
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'OPS'

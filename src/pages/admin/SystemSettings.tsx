@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSystemStore } from '../../stores/systemStore'
+import { getSystemApiKeys, saveSystemApiKeys } from '../../lib/systemConfigService'
+import { useAuth } from '../../contexts/AuthContext'
 import {
     SettingsIcon,
     SaveIcon,
@@ -16,6 +18,7 @@ import {
 import './SystemSettings.css'
 
 export default function SystemSettings() {
+    const { user } = useAuth()
     const { settings, updateSettings } = useSystemStore()
     const [formData, setFormData] = useState({ ...settings })
     const [isSaving, setIsSaving] = useState(false)
@@ -26,23 +29,49 @@ export default function SystemSettings() {
         naver: 'idle',
     })
 
+    // 페이지 로드 시 Firestore에서 외부 API 키 불러와 store + form 동기화
+    useEffect(() => {
+        getSystemApiKeys().then(remoteKeys => {
+            if (!remoteKeys) return
+            const synced = {
+                datagoKey: remoteKeys.datagoKey ?? settings.datagoKey,
+                kamisKey: remoteKeys.kamisKey ?? settings.kamisKey,
+                kamisId: remoteKeys.kamisId ?? settings.kamisId,
+                naverClientId: remoteKeys.naverClientId ?? settings.naverClientId,
+                naverClientSecret: remoteKeys.naverClientSecret ?? settings.naverClientSecret,
+            }
+            updateSettings(synced)
+            setFormData(prev => ({ ...prev, ...synced }))
+        }).catch(err => console.warn('System API keys sync failed:', err))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsSaving(true)
         setMessage({ type: '', text: '' })
 
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 800))
+            // 1. 로컬 store 업데이트 (즉시 반영)
             updateSettings(formData)
-            setMessage({ type: 'success', text: '설정이 성공적으로 저장되었습니다.' })
 
-            // Re-initialize Kakao if needed (Note: usually requires page reload in simple implementations)
+            // 2. Firestore에 외부 API 키 영속화 — 모든 어드민 공유
+            await saveSystemApiKeys({
+                datagoKey: formData.datagoKey,
+                kamisKey: formData.kamisKey,
+                kamisId: formData.kamisId,
+                naverClientId: formData.naverClientId,
+                naverClientSecret: formData.naverClientSecret,
+            }, user?.id || 'unknown')
+
+            setMessage({ type: 'success', text: '설정이 저장되었습니다. (모든 어드민에 즉시 반영)' })
+
             if (formData.kakaoJsKey !== settings.kakaoJsKey) {
                 setMessage({ type: 'warning', text: '카카오 API 키가 변경되었습니다. 반영을 위해 페이지를 새로고침해주세요.' })
             }
-        } catch {
-            setMessage({ type: 'error', text: '설정 저장 중 오류가 발생했습니다.' })
+        } catch (err: any) {
+            console.error('System settings save failed:', err)
+            setMessage({ type: 'error', text: err?.message || '설정 저장 중 오류가 발생했습니다.' })
         } finally {
             setIsSaving(false)
         }
