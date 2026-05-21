@@ -305,7 +305,8 @@ export interface GateCheck {
 }
 
 // ======================================
-// Invite Token
+// Invite Token (OrderSheet 전용 — 주문장 보기/제출 토큰)
+// CUSTOMER 영업 초대 활성화 토큰은 FirestoreUser.inviteToken (별개 시스템)
 // ======================================
 
 export interface InviteToken {

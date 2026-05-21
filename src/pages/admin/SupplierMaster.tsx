@@ -266,35 +266,9 @@ export default function SupplierMaster() {
         }
     }
 
-    // 초대장 생성 및 링크 복사
-    const handleGenerateInvite = async (supplier: SupplierVM) => {
-        const token = `invite-${Math.random().toString(36).substr(2, 9)}`
-        try {
-            await updateUserFirebase(supplier.id, { inviteToken: token })
-            const inviteUrl = `${window.location.origin}/invite/${token}`
-            await navigator.clipboard.writeText(inviteUrl)
-            await loadSuppliers()
-            setInviteModalLink(inviteUrl)
-            setInviteModalOpen(true)
-        } catch (err) {
-            console.error('Failed to generate invite:', err)
-            showAlert('오류', '초대장 생성에 실패했습니다.', true)
-        }
-    }
-
-    // 카카오톡 초대 메시지 전송
-    const handleKakaoInvite = async (supplier: SupplierVM) => {
-        const token = `invite-${Math.random().toString(36).substr(2, 9)}`
-        try {
-            await updateUserFirebase(supplier.id, { inviteToken: token })
-            const inviteUrl = `${window.location.origin}/invite/${token}`
-            await loadSuppliers()
-            sendInviteMessage(supplier.companyName || '', inviteUrl)
-        } catch (err) {
-            console.error('Failed to send Kakao invite:', err)
-            showAlert('오류', '카카오 초대장 발송에 실패했습니다.', true)
-        }
-    }
+    // [DEPRECATED] SUPPLIER 흐름은 createUserWithAuth로 어드민이 즉시 발급하는
+    // 방식으로 변경됨 (2026-05). 초대 토큰 생성/카카오 발송 함수는 제거되었음.
+    // CUSTOMER 영업 초대 흐름은 OrganizationMaster에서 유지됨.
 
     const handleDelete = (supplier: SupplierVM) => {
         showConfirm('공급사 삭제', `"${supplier.companyName}" 공급업체를 삭제하시겠습니까?`, async () => {
@@ -404,18 +378,6 @@ export default function SupplierMaster() {
                                 </td>
                                 <td>{supplier.business?.paymentTerms || '-'}</td>
                                 <td className="actions">
-                                    <button
-                                        className="btn btn-sm btn-primary"
-                                        onClick={() => handleGenerateInvite(supplier)}
-                                    >
-                                        <ClipboardListIcon size={14} /> 초대장 복사
-                                    </button>
-                                    <button
-                                        className="btn btn-sm btn-kakao"
-                                        onClick={() => handleKakaoInvite(supplier)}
-                                    >
-                                        <KakaoIcon size={14} /> 카톡 초대
-                                    </button>
                                     <button className="btn btn-sm btn-ghost" onClick={() => openEditModal(supplier)}>수정</button>
                                     <button className="btn btn-sm btn-ghost" onClick={() => toggleActive(supplier)}>{supplier.isActive ? '비활성화' : '활성화'}</button>
                                     <button className="btn btn-sm btn-ghost danger" onClick={() => handleDelete(supplier)}>삭제</button>

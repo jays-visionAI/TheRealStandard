@@ -65,7 +65,14 @@ export interface FirestoreUser {
     role: UserRole
     status: 'ACTIVE' | 'PENDING' | 'INACTIVE'
     firebaseUid?: string          // Firebase Auth UID
-    inviteToken?: string          // 초대 토큰 (가입 전)
+    /**
+     * CUSTOMER 영업 초대 활성화 토큰.
+     * - 어드민이 OrganizationMaster에서 거래처를 가등록하고 토큰 발급
+     * - 거래처가 /invite/<token> 진입 → InviteActivation에서 비번 설정 → status ACTIVE
+     * 주의: orderSheets.inviteTokenId(주문장 보기 토큰)와는 별개 시스템.
+     * SUPPLIER 흐름은 이걸 안 씀(createUserWithAuth로 즉시 발급).
+     */
+    inviteToken?: string
     mustChangePassword?: boolean  // 첫 로그인 시 비밀번호 변경 강제 (관리자가 임시PW로 발급한 경우)
 
     // 사업체 정보 (CUSTOMER, SUPPLIER, 3PL 역할인 경우)
