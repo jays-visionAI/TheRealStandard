@@ -14,6 +14,7 @@ import {
     type FirestoreOrderSheetItem
 } from '../../lib/orderService'
 import { getAllPriceLists, type FirestorePriceList } from '../../lib/priceListService'
+import { detectInventoryShortage } from '../../lib/notificationService'
 import './OrderSheetCreate.css'
 import { Timestamp } from 'firebase/firestore'
 
@@ -636,6 +637,11 @@ export default function OrderSheetCreate() {
             }))
 
             await setOrderSheetItems(newOrderSheet.id, items)
+
+            // 주문장 생성 후 결품 감지 트리거 — 백그라운드 실행 (실패해도 발주서 생성은 성공으로 처리)
+            detectInventoryShortage().catch(err => {
+                console.warn('Background inventory shortage detection failed:', err)
+            })
 
             const link = `${window.location.origin}/order/${token}`
             navigator.clipboard.writeText(link)
