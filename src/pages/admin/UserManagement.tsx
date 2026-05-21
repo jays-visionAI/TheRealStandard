@@ -7,6 +7,8 @@ import {
     getAllSupplierUsers,
     getAll3PLUsers,
     migrateLegacySuppliersToUsers,
+    createUserWithAuth,
+    generateTempPassword,
     type FirestoreUser
 } from '../../lib/userService'
 import {
@@ -62,8 +64,10 @@ export default function UserManagement() {
         isDanger?: boolean
     } | null>(null)
     const [editingUser, setEditingUser] = useState<UserAccount | null>(null)
-    const [formData, setFormData] = useState<Partial<UserAccount>>({})
+    const [formData, setFormData] = useState<Partial<UserAccount> & { tempPassword?: string }>({})
     const [saving, setSaving] = useState(false)
+    // 계정 발급 결과 모달 (ID + 임시PW)
+    const [credentialModal, setCredentialModal] = useState<{ email: string; tempPassword: string; name: string; role: string } | null>(null)
 
     // Firebase에서 데이터 로드
     const loadData = async () => {
@@ -129,23 +133,68 @@ export default function UserManagement() {
         setShowModal(true)
     }
 
+    const handleOpenCreate = () => {
+        setEditingUser(null)
+        setFormData({
+            name: '',
+            email: '',
+            role: 'SALES',
+            status: 'ACTIVE',
+            tempPassword: generateTempPassword(),
+        })
+        setShowModal(true)
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!editingUser) return
         setSaving(true)
 
         try {
-            await updateUserFirebase(editingUser.id, {
-                email: formData.email,
-                name: formData.name,
-                role: formData.role as any,
-                status: formData.status as any,
-            })
-            await loadData()
-            setShowModal(false)
-        } catch (err) {
+            if (editingUser) {
+                // 기존 사용자 수정
+                await updateUserFirebase(editingUser.id, {
+                    email: formData.email,
+                    name: formData.name,
+                    role: formData.role as any,
+                    status: formData.status as any,
+                })
+                await loadData()
+                setShowModal(false)
+            } else {
+                // 신규 직원 발급 (Firebase Auth 계정 즉시 생성 + Firestore doc 생성)
+                const tempPassword = formData.tempPassword || generateTempPassword()
+                if (!formData.email || !formData.name || !formData.role) {
+                    alert('이름·이메일·역할은 필수입니다.')
+                    setSaving(false)
+                    return
+                }
+                const result = await createUserWithAuth({
+                    email: formData.email,
+                    tempPassword,
+                    name: formData.name,
+                    role: formData.role as any,
+                })
+                await loadData()
+                setShowModal(false)
+                setCredentialModal({
+                    email: result.user.email,
+                    tempPassword,
+                    name: formData.name,
+                    role: ROLE_LABELS[formData.role!] || formData.role!,
+                })
+            }
+        } catch (err: any) {
             console.error('Save failed:', err)
-            alert('저장에 실패했습니다.')
+            const code = err?.code as string | undefined
+            if (code === 'auth/email-already-in-use') {
+                alert('이미 사용 중인 이메일입니다.')
+            } else if (code === 'auth/invalid-email') {
+                alert('유효하지 않은 이메일 형식입니다.')
+            } else if (code === 'auth/weak-password') {
+                alert('비밀번호는 6자 이상이어야 합니다.')
+            } else {
+                alert(err?.message || '저장에 실패했습니다.')
+            }
         } finally {
             setSaving(false)
         }
@@ -219,6 +268,9 @@ export default function UserManagement() {
                     <p className="text-primary font-bold mt-2" style={{ color: 'var(--color-primary)' }}>이름은 실명을 사용해주세요.</p>
                 </div>
                 <div className="header-right">
+                    <button className="btn btn-primary" onClick={handleOpenCreate} style={{ marginRight: '10px' }}>
+                        + 신규 직원 발급
+                    </button>
                     <button className="btn btn-secondary" onClick={handleMigrateSuppliers} style={{ marginRight: '10px' }}>
                         공급사 데이터 마이그레이션
                     </button>
@@ -341,27 +393,31 @@ export default function UserManagement() {
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal-content glass-card" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>사용자 정보 수정</h2>
+                            <h2>{editingUser ? '사용자 정보 수정' : '신규 직원 발급'}</h2>
                             <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
                         </div>
                         <form onSubmit={handleSubmit} className="modal-body">
                             <div className="form-group">
-                                <label>이름</label>
+                                <label>이름 *</label>
                                 <input
                                     type="text"
                                     required
                                     value={formData.name || ''}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder="예: 홍길동"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>이메일</label>
+                                <label>이메일 (로그인 ID) *</label>
                                 <input
                                     type="email"
                                     required
                                     value={formData.email || ''}
                                     onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                    disabled={!!editingUser}
+                                    placeholder="example@meatgo.kr"
                                 />
+                                {editingUser && <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>※ 이메일은 Firebase Auth UID와 연결되어 수정 불가</p>}
                             </div>
                             <div className="form-group">
                                 <label>역할 (Role)</label>
@@ -381,24 +437,110 @@ export default function UserManagement() {
                                 </select>
                             </div>
 
-                            <div className="form-group">
-                                <label>상태</label>
-                                <select
-                                    value={formData.status || 'ACTIVE'}
-                                    onChange={e => setFormData({ ...formData, status: e.target.value as any })}
-                                >
-                                    <option value="ACTIVE">활성</option>
-                                    <option value="PENDING">대기</option>
-                                    <option value="INACTIVE">비활성</option>
-                                </select>
-                            </div>
+                            {editingUser && (
+                                <div className="form-group">
+                                    <label>상태</label>
+                                    <select
+                                        value={formData.status || 'ACTIVE'}
+                                        onChange={e => setFormData({ ...formData, status: e.target.value as any })}
+                                    >
+                                        <option value="ACTIVE">활성</option>
+                                        <option value="PENDING">대기</option>
+                                        <option value="INACTIVE">비활성</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            {!editingUser && (
+                                <div className="form-group">
+                                    <label>임시 비밀번호 (자동 생성됨, 수정 가능) *</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input
+                                            type="text"
+                                            required
+                                            minLength={6}
+                                            value={formData.tempPassword || ''}
+                                            onChange={e => setFormData({ ...formData, tempPassword: e.target.value })}
+                                            style={{ fontFamily: 'monospace', flex: 1 }}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary"
+                                            onClick={() => setFormData({ ...formData, tempPassword: generateTempPassword() })}
+                                            style={{ whiteSpace: 'nowrap' }}
+                                        >
+                                            재생성
+                                        </button>
+                                    </div>
+                                    <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
+                                        직원은 첫 로그인 시 비밀번호를 변경해야 합니다.
+                                    </p>
+                                </div>
+                            )}
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)} disabled={saving}>취소</button>
                                 <button type="submit" className="btn btn-primary" disabled={saving}>
-                                    {saving ? '저장 중...' : '저장하기'}
+                                    {saving ? '저장 중...' : (editingUser ? '저장하기' : '계정 발급')}
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* 계정 발급 결과 모달 — ID + 임시PW 표시 */}
+            {credentialModal && (
+                <div className="modal-overlay" onClick={() => setCredentialModal(null)}>
+                    <div className="modal-content glass-card" style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>직원 계정 발급 완료</h2>
+                            <button className="close-btn" onClick={() => setCredentialModal(null)}>✕</button>
+                        </div>
+                        <div className="modal-body" style={{ padding: '24px' }}>
+                            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '32px' }}>✓</div>
+                            <h3 style={{ fontSize: '18px', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px' }}>
+                                {credentialModal.name} ({credentialModal.role}) 계정이 발급되었습니다
+                            </h3>
+                            <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center', marginBottom: '20px' }}>
+                                아래 정보를 본인에게 전달해주세요.<br />
+                                직원은 첫 로그인 시 비밀번호를 변경해야 합니다.
+                            </p>
+                            <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', marginBottom: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>로그인 ID (이메일)</div>
+                                        <div style={{ fontFamily: 'monospace', fontSize: '15px', fontWeight: 'bold' }}>{credentialModal.email}</div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                                        onClick={() => navigator.clipboard.writeText(credentialModal.email)}
+                                    >복사</button>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>임시 비밀번호</div>
+                                        <div style={{ fontFamily: 'monospace', fontSize: '15px', fontWeight: 'bold', letterSpacing: '0.5px' }}>{credentialModal.tempPassword}</div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        style={{ padding: '6px 12px', fontSize: '12px' }}
+                                        onClick={() => navigator.clipboard.writeText(credentialModal.tempPassword)}
+                                    >복사</button>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                style={{ width: '100%', padding: '10px' }}
+                                onClick={() => navigator.clipboard.writeText(`MeatGo 로그인 정보\n사이트: ${window.location.origin}/login\nID: ${credentialModal.email}\n임시 비밀번호: ${credentialModal.tempPassword}\n\n첫 로그인 시 비밀번호를 변경해주세요.`)}
+                            >전체 안내문 복사 (사이트 + ID + 비번)</button>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setCredentialModal(null)}>확인</button>
+                        </div>
                     </div>
                 </div>
             )}
