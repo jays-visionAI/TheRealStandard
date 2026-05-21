@@ -36,14 +36,19 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
         return <Navigate to={defaultPath} replace />
     }
 
-    // 임시PW 사용 중인 사용자 — 비번 변경 강제 (관리자 발급 SUPPLIER/3PL/직원 등)
-    if (user.mustChangePassword && location.pathname !== '/order/profile-setup') {
-        return <Navigate to="/order/profile-setup" replace />
+    // 임시PW 사용 중인 사용자 — 비번 변경 강제
+    // 거래처 계열은 /order/profile-setup (사업자정보 + 서류 + 비번)
+    // 직원은 /account/profile (비번만)
+    const externalRoles = ['CUSTOMER', 'SUPPLIER', '3PL']
+    const isExternal = externalRoles.includes(user.role)
+    const onboardingPath = isExternal ? '/order/profile-setup' : '/account/profile'
+
+    if (user.mustChangePassword && location.pathname !== onboardingPath) {
+        return <Navigate to={onboardingPath} replace />
     }
 
-    // 거래처 계열(CUSTOMER/SUPPLIER/3PL) 프로필 미완성 시 강제 온보딩
-    const externalRoles = ['CUSTOMER', 'SUPPLIER', '3PL']
-    if (externalRoles.includes(user.role) && !user.business?.companyName && location.pathname !== '/order/profile-setup') {
+    // 거래처 계열 프로필 미완성 시 강제 온보딩
+    if (isExternal && !user.business?.companyName && location.pathname !== '/order/profile-setup') {
         return <Navigate to="/order/profile-setup" replace />
     }
 

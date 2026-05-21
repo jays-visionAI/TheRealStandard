@@ -7,6 +7,7 @@ import ProtectedRoute, { PublicRoute } from './components/ProtectedRoute'
 // Auth Pages
 import LandingPage from './pages/LandingPage'
 import LandingV2 from './pages/LandingV2'
+import AccountProfile from './pages/account/AccountProfile'
 import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
 import InviteActivation from './pages/auth/InviteActivation'
@@ -116,6 +117,17 @@ function App() {
                     <Route path="/invite/:token" element={<InviteActivation />} />
                     <Route path="/price-view/:token" element={<PriceListGuestView />} />
 
+                    {/* ========================================
+                          ACCOUNT — 직원·거래처 본인 계정 설정 (모든 role)
+                       ======================================== */}
+                    <Route
+                        path="/account/profile"
+                        element={
+                            <ProtectedRoute>
+                                <AccountProfile />
+                            </ProtectedRoute>
+                        }
+                    />
 
                     {/* ========================================
                           WAREHOUSE (창고직원) - 반입/출고

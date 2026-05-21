@@ -117,7 +117,12 @@ export default function AdminLayout() {
                             <MessageCircleIcon size={16} /> 24시 관제 채널
                         </button>
                     </div>
-                    <div className="user-info">
+                    <div
+                        className="user-info"
+                        onClick={() => navigate('/account/profile')}
+                        style={{ cursor: 'pointer' }}
+                        title="내 정보 / 비밀번호 변경"
+                    >
                         <div className="user-avatar overflow-hidden">
                             {user?.avatar ? (
                                 <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
@@ -129,7 +134,11 @@ export default function AdminLayout() {
                             <span className="user-name">{user?.name || '관리자'}</span>
                             <span className="user-role">{user?.role || 'ADMIN'}</span>
                         </div>
-                        <button className="logout-btn" onClick={handleLogoutClick} title="로그아웃">
+                        <button
+                            className="logout-btn"
+                            onClick={(e) => { e.stopPropagation(); handleLogoutClick() }}
+                            title="로그아웃"
+                        >
                             <LogOutIcon size={18} />
                         </button>
                     </div>
