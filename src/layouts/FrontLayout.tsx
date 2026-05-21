@@ -9,7 +9,8 @@ import {
     LogOutIcon,
     UserIcon,
     ClipboardCheckIcon,
-    WalletIcon
+    WalletIcon,
+    FileTextIcon
 } from '../components/Icons'
 import { LogoSmall } from '../components/Logo'
 import './FrontLayout.css'
@@ -35,6 +36,7 @@ export default function FrontLayout() {
                 { path: '/order/dashboard', label: '대시보드', icon: <DashboardIcon size={20} /> },
                 { path: '/order/fleet', label: '차량/기사 관리', icon: <UserIcon size={20} /> },
                 { path: '/order/tracking', label: '배송 현황', icon: <TruckIcon size={20} /> },
+                { path: '/order/company-info', label: 'MeatGo 서류', icon: <FileTextIcon size={20} /> },
             ]
         }
         return [
@@ -44,6 +46,7 @@ export default function FrontLayout() {
             { path: '/order/history', label: '발주 내역', icon: <ClipboardCheckIcon size={20} /> },
             { path: '/order/tracking', label: '배송 현황', icon: <TruckIcon size={20} /> },
             { path: '/order/settlement', label: '정산 내역', icon: <WalletIcon size={20} /> },
+            { path: '/order/company-info', label: 'MeatGo 서류', icon: <FileTextIcon size={20} /> },
         ]
     }
 

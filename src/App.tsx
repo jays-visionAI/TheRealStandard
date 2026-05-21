@@ -8,6 +8,7 @@ import ProtectedRoute, { PublicRoute } from './components/ProtectedRoute'
 import LandingPage from './pages/LandingPage'
 import LandingV2 from './pages/LandingV2'
 import AccountProfile from './pages/account/AccountProfile'
+import CompanyInfo from './pages/front/CompanyInfo'
 import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
 import InviteActivation from './pages/auth/InviteActivation'
@@ -269,6 +270,11 @@ function App() {
                         <Route path="fleet" element={
                             <ProtectedRoute allowedRoles={['3PL', 'ADMIN']}>
                                 <FleetManagement />
+                            </ProtectedRoute>
+                        } />
+                        <Route path="company-info" element={
+                            <ProtectedRoute allowedRoles={['CUSTOMER', 'SUPPLIER', '3PL', 'ADMIN', 'OPS', 'SALES', 'PURCHASE', 'ACCOUNTING', 'WAREHOUSE']}>
+                                <CompanyInfo />
                             </ProtectedRoute>
                         } />
 
