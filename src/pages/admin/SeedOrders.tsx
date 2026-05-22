@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createSalesOrder, setSalesOrderItems, getAllSalesOrders } from '../../lib/orderService'
 import { getAllCustomerUsers } from '../../lib/userService'
+import { getAllProducts, updateProduct } from '../../lib/productService'
 import { Timestamp, collection, getDocs, deleteDoc, doc, setDoc, addDoc, query, where, updateDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 
@@ -274,6 +275,93 @@ export default function SeedOrders() {
 
     const addLog = (msg: string) => {
         setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`])
+    }
+
+    // ============ 공개 카탈로그 진열 시드 ============
+    // 기존 활성 상품 중 처음 10개에 mediaImages + displayOnPublic=true 적용.
+    // public/images/meat-1~6.jpg 를 돌려쓰며 일부 상품에 샘플 YouTube URL 도 부여.
+    const seedPublicCatalog = async () => {
+        setRunning(true)
+        addLog('공개 카탈로그 진열 시드 시작...')
+        try {
+            const products = await getAllProducts()
+            const activeProducts = products.filter(p => p.isActive).slice(0, 10)
+            if (activeProducts.length === 0) {
+                addLog('⚠ 활성 상품이 없습니다. 먼저 ProductMaster에서 상품을 추가하세요.')
+                return
+            }
+            const photoUrls = [
+                '/images/category-meat.jpg',
+                '/images/hero-meat.jpg',
+                '/images/meat-1.jpg',
+                '/images/meat-2.jpg',
+                '/images/meat-3.jpg',
+                '/images/meat-4.jpg',
+                '/images/meat-5.jpg',
+                '/images/meat-6.jpg',
+            ]
+            // 데모용 YouTube — Big Buck Bunny 공식 (저작권 안전)
+            const demoVideoUrl = 'https://www.youtube.com/watch?v=aqz-KE-bpKQ'
+
+            let count = 0
+            for (const p of activeProducts) {
+                const primaryPhoto = photoUrls[count % photoUrls.length]
+                const secondaryPhoto = photoUrls[(count + 3) % photoUrls.length]
+                await updateProduct(p.id, {
+                    displayOnPublic: true,
+                    mediaImages: [
+                        {
+                            url: primaryPhoto,
+                            thumbnailUrl: primaryPhoto,
+                            storagePath: 'static-seed',
+                            isPrimary: true,
+                        },
+                        {
+                            url: secondaryPhoto,
+                            thumbnailUrl: secondaryPhoto,
+                            storagePath: 'static-seed',
+                            isPrimary: false,
+                        },
+                    ],
+                    // 3개 상품마다 1개씩 영상 부여 (Phase 1.3 임베드 모달 확인용)
+                    videoUrl: count % 3 === 0 ? demoVideoUrl : undefined,
+                })
+                count++
+                addLog(`✓ ${p.name} → 진열용 미디어 적용 (${count}/${activeProducts.length})`)
+            }
+            addLog(`완료: ${count}개 상품을 공개 카탈로그에 진열 (메인 + 보조 이미지 + 영상 일부)`)
+        } catch (err: any) {
+            addLog(`⚠ 오류: ${err?.message || err}`)
+        } finally {
+            setRunning(false)
+        }
+    }
+
+    const resetPublicCatalog = async () => {
+        if (!confirm('모든 상품을 공개 카탈로그에서 숨기고 시드 미디어를 제거하시겠습니까?')) return
+        setRunning(true)
+        addLog('공개 카탈로그 시드 리셋 시작...')
+        try {
+            const products = await getAllProducts()
+            let count = 0
+            for (const p of products) {
+                // 시드로 만든 mediaImages만 제거 (storagePath가 'static-seed')
+                const isSeed = p.mediaImages?.some(m => m.storagePath === 'static-seed')
+                if (isSeed || p.displayOnPublic) {
+                    await updateProduct(p.id, {
+                        displayOnPublic: false,
+                        mediaImages: isSeed ? undefined : p.mediaImages,
+                        videoUrl: isSeed ? undefined : p.videoUrl,
+                    })
+                    count++
+                }
+            }
+            addLog(`완료: ${count}개 상품을 비공개로 전환 + 시드 미디어 제거`)
+        } catch (err: any) {
+            addLog(`⚠ 오류: ${err?.message || err}`)
+        } finally {
+            setRunning(false)
+        }
     }
 
     // 주문 삭제 함수
@@ -951,6 +1039,23 @@ export default function SeedOrders() {
                         <li key={c.id}>{c.business?.companyName || c.name} ({c.id})</li>
                     ))}
                 </ul>
+            </div>
+
+            {/* 공개 카탈로그 진열 시드 */}
+            <div style={{ marginBottom: '2rem', padding: '16px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '8px' }}>
+                <h3 style={{ margin: '0 0 8px 0', color: '#065F46' }}>🥩 공개 카탈로그 진열 시드</h3>
+                <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 12px 0' }}>
+                    Phase 1.1+1.2 (멀티미디어 모델 + MediaUploader) 검증용. 활성 상품 10개에
+                    실사 이미지 2장씩 + 일부 YouTube 영상을 자동 적용하고 공개 카탈로그(/products)에 노출시킵니다.
+                </p>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button onClick={seedPublicCatalog} disabled={running} style={btnStyle('#047857')}>
+                        ▶ 진열 시드 적용 (10개 상품)
+                    </button>
+                    <button onClick={resetPublicCatalog} disabled={running} style={btnStyle('#6B7280')}>
+                        ↺ 시드 리셋 (비공개로 되돌림)
+                    </button>
+                </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
