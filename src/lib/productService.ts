@@ -6,6 +6,18 @@ import {
 import { db } from './firebase'
 
 // ============ PRODUCT SERVICE ============
+
+/**
+ * 상품 멀티미디어 — 최대 5장 이미지 + 1개 YouTube 영상.
+ * 대표 이미지(isPrimary=true)는 한 개만. 카탈로그 카드/테이블 썸네일에 사용.
+ */
+export interface ProductMediaImage {
+    url: string            // 원본 Firebase Storage URL
+    thumbnailUrl?: string  // Canvas 클라이언트 리사이즈된 200x200 썸네일 (선택)
+    storagePath: string    // 삭제용
+    isPrimary: boolean     // 대표 이미지 (1개만 true)
+}
+
 export interface FirestoreProduct {
     id: string
     name: string
@@ -24,11 +36,41 @@ export interface FirestoreProduct {
     // 공급사 연결 (1상품 : 1공급사)
     supplierOrgId?: string       // users 컬렉션의 SUPPLIER role doc ID
     supplierName?: string        // 디노멀라이즈 (UI 빠른 조회용)
-    // 진열용 이미지 & 공개 노출
-    imageUrl?: string            // Firebase Storage 다운로드 URL (없으면 카테고리별 플레이스홀더 SVG 사용)
-    displayOnPublic?: boolean    // 공개 카탈로그(/products)에 노출 여부 (기본 false)
+    // 진열용 미디어 (Phase 1)
+    mediaImages?: ProductMediaImage[]  // 최대 5장, isPrimary=true 한 개
+    videoUrl?: string                  // YouTube URL (정규화된 형태)
+    displayOnPublic?: boolean          // 공개 카탈로그(/products)에 노출 여부 (기본 false)
+    // [DEPRECATED] 단일 이미지 모델 — 자동으로 mediaImages[0]으로 마이그레이션됨
+    imageUrl?: string
     createdAt: Timestamp
     updatedAt: Timestamp
+}
+
+/**
+ * 레거시 imageUrl을 mediaImages[0]으로 변환 (마이그레이션 없이 런타임 호환).
+ * 카드/테이블에서 항상 이 함수를 통해 대표 이미지를 가져오면 안전.
+ */
+export function getPrimaryImageUrl(p: FirestoreProduct): string | undefined {
+    if (p.mediaImages && p.mediaImages.length > 0) {
+        const primary = p.mediaImages.find(m => m.isPrimary) || p.mediaImages[0]
+        return primary.thumbnailUrl || primary.url
+    }
+    return p.imageUrl
+}
+
+export function getPrimaryImageFullUrl(p: FirestoreProduct): string | undefined {
+    if (p.mediaImages && p.mediaImages.length > 0) {
+        const primary = p.mediaImages.find(m => m.isPrimary) || p.mediaImages[0]
+        return primary.url
+    }
+    return p.imageUrl
+}
+
+export function getAllImageUrls(p: FirestoreProduct): string[] {
+    if (p.mediaImages && p.mediaImages.length > 0) {
+        return p.mediaImages.map(m => m.url)
+    }
+    return p.imageUrl ? [p.imageUrl] : []
 }
 
 const PRODUCTS_COLLECTION = 'products'

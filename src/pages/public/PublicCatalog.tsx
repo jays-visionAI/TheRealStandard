@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
+import { getAllProducts, getPrimaryImageUrl, type FirestoreProduct } from '../../lib/productService'
 import { useAuth } from '../../contexts/AuthContext'
 import { COLOR, FONT, RADIUS, SHADOW, containerStyle, capsuleStyle, btnPrimary, btnSecondary, btnGhost } from '../../styles/design-tokens'
 
@@ -181,11 +181,23 @@ export default function PublicCatalog() {
                                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = COLOR.primary; e.currentTarget.style.boxShadow = SHADOW.lg }}
                                 onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.borderColor = COLOR.border; e.currentTarget.style.boxShadow = '' }}
                             >
-                                <div style={{ aspectRatio: '4/3', width: '100%', overflow: 'hidden', background: COLOR.surfaceAlt }}>
-                                    {p.imageUrl ? (
-                                        <img src={p.imageUrl} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
-                                    ) : (
-                                        <CategoryPlaceholder category={p.category1} />
+                                <div style={{ aspectRatio: '4/3', width: '100%', overflow: 'hidden', background: COLOR.surfaceAlt, position: 'relative' }}>
+                                    {(() => {
+                                        const img = getPrimaryImageUrl(p)
+                                        return img ? (
+                                            <img src={img} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+                                        ) : (
+                                            <CategoryPlaceholder category={p.category1} />
+                                        )
+                                    })()}
+                                    {p.videoUrl && (
+                                        <div style={{
+                                            position: 'absolute', top: '10px', right: '10px',
+                                            background: 'rgba(0,0,0,0.7)', color: '#fff',
+                                            borderRadius: '4px', padding: '3px 8px',
+                                            fontSize: '11px', fontWeight: 600,
+                                            display: 'flex', alignItems: 'center', gap: '4px',
+                                        }}>▶ 영상</div>
                                     )}
                                 </div>
                                 <div style={{ padding: '16px' }}>
