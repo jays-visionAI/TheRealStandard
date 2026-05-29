@@ -18,7 +18,7 @@ export interface DocAttachment {
     url: string
 }
 
-export interface TRS_Document {
+export interface MEATGO_Document {
     id: string
     categoryId: string
     title: string
@@ -42,7 +42,7 @@ export interface DocCategory {
 
 interface DocStore {
     categories: DocCategory[]
-    documents: TRS_Document[]
+    documents: MEATGO_Document[]
 
     // Category Actions
     addCategory: (name: string, allowedRoles?: UserRole[]) => void
@@ -50,8 +50,8 @@ interface DocStore {
     updateCategory: (id: string, data: Partial<DocCategory>) => void
 
     // Document Actions
-    addDocument: (doc: Omit<TRS_Document, 'id' | 'createdAt' | 'updatedAt' | 'comments'>) => void
-    updateDocument: (id: string, data: Partial<TRS_Document>) => void
+    addDocument: (doc: Omit<MEATGO_Document, 'id' | 'createdAt' | 'updatedAt' | 'comments'>) => void
+    updateDocument: (id: string, data: Partial<MEATGO_Document>) => void
     deleteDocument: (id: string) => void
 
     // Comment Actions
@@ -140,7 +140,7 @@ export const useDocStore = create<DocStore>()(
             }))
         }),
         {
-            name: 'trs-doc-storage'
+            name: 'meatgo-doc-storage'
         }
     )
 )

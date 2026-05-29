@@ -157,14 +157,13 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ============ INVITE TOKENS (Phase 0.2에서 orderSheets로 통합 예정) ============
+    // ============ INVITE TOKENS (고객사 초대 토큰 — users.inviteToken deprecate, 이 컬렉션으로 이관) ============
     match /inviteTokens/{tokenId} {
       // 읽기: 공개 (토큰으로 접근)
       allow read: if true;
       allow create, update: if isStaff();
       allow delete: if isAdmin();
     }
-
     // ============ PRICE LISTS (단가표 — 토큰 기반 게스트 read 허용) ============
     match /priceLists/{document=**} {
       // 읽기: 공개 (토큰 기반)
@@ -229,6 +228,13 @@ service cloud.firestore {
       allow update: if isAdmin();
     }
 
+
+    // ============ DOC CATEGORIES (문서 카테고리) ============
+    match /docCategories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isStaff();
+      allow delete: if isAdmin();
+    }
     // ============ MARKET PRICES (외부 시장가격 데이터) ============
     match /marketPrices/{id} {
       allow read: if isStaff();

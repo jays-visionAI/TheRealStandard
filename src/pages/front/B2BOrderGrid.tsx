@@ -175,7 +175,7 @@ export default function B2BOrderGrid() {
                 }
 
                 // 2. 카탈로그에서 선택한 품목이 있으면 추가
-                const savedSelection = localStorage.getItem('trs_catalog_selection')
+                const savedSelection = localStorage.getItem('meatgo_catalog_selection')
                 if (savedSelection) {
                     // 이미 설정된 orderUnit 사용 (items가 있었다면 그 단위, 없었다면 기본값 'box')
                     const currentUnit = items && items.length > 0 ? (items[0].unit as 'kg' | 'box' || 'kg') : 'box'
@@ -198,7 +198,7 @@ export default function B2BOrderGrid() {
                     if (newRowsFromCatalog.length > 0) {
                         currentRows = [...currentRows, ...newRowsFromCatalog]
                     }
-                    localStorage.removeItem('trs_catalog_selection')
+                    localStorage.removeItem('meatgo_catalog_selection')
                 }
                 setRows(currentRows.sort((a, b) => {
                     // 상품 미선택 행은 맨 아래

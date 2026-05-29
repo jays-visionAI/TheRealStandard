@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seed:images": "node scripts/seed_product_images.mjs"
   },
   "keywords": [
     "meat-distribution",
@@ -32,6 +33,7 @@
     "@types/react-dom": "^19.1.5",
     "@vitejs/plugin-react": "^4.5.0",
     "firebase-admin": "^13.6.1",
+    "sharp": "^0.34.5",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"
   }

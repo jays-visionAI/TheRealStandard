@@ -19,7 +19,7 @@ import {
     UploadIcon
 } from '../../components/Icons'
 import { shareDocument } from '../../lib/kakaoService'
-import { useDocStore, TRS_Document } from '../../stores/docStore'
+import { useDocStore, MEATGO_Document } from '../../stores/docStore'
 import { useAuth } from '../../contexts/AuthContext'
 import ReactQuill from 'react-quill-new'
 import 'react-quill-new/dist/quill.snow.css'
@@ -54,11 +54,11 @@ export default function DocumentHub() {
     const [activeTab, setActiveTab] = useState('cat-all')
     const [searchQuery, setSearchQuery] = useState('')
     const [showEditor, setShowEditor] = useState(false)
-    const [editingDoc, setEditingDoc] = useState<TRS_Document | null>(null)
-    const [viewingDoc, setViewingDoc] = useState<TRS_Document | null>(null)
+    const [editingDoc, setEditingDoc] = useState<MEATGO_Document | null>(null)
+    const [viewingDoc, setViewingDoc] = useState<MEATGO_Document | null>(null)
     const [newComment, setNewComment] = useState('')
 
-    const [formData, setFormData] = useState<Partial<TRS_Document>>({
+    const [formData, setFormData] = useState<Partial<MEATGO_Document>>({
         title: '',
         content: '',
         type: 'MARKDOWN',
@@ -112,7 +112,7 @@ export default function DocumentHub() {
         setShowEditor(true)
     }
 
-    const handleEdit = (doc: TRS_Document) => {
+    const handleEdit = (doc: MEATGO_Document) => {
         setEditingDoc(doc)
         setFormData({ ...doc })
         setShowEditor(true)

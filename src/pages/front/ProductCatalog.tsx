@@ -35,7 +35,7 @@ export default function ProductCatalog() {
 
     const handleAddToOrder = (product: FirestoreProduct) => {
         // Get existing selections
-        const saved = localStorage.getItem('trs_catalog_selection')
+        const saved = localStorage.getItem('meatgo_catalog_selection')
         const selection = saved ? JSON.parse(saved) : []
 
         // Add if not exists
@@ -47,7 +47,7 @@ export default function ProductCatalog() {
                 unit: product.unit,
                 wholesalePrice: product.wholesalePrice
             })
-            localStorage.setItem('trs_catalog_selection', JSON.stringify(selection))
+            localStorage.setItem('meatgo_catalog_selection', JSON.stringify(selection))
             alert(`"${product.name}" 품목이 주문서 버퍼에 추가되었습니다.\n주문서 작성 시 자동으로 포함됩니다.`)
         } else {
             alert('이미 추가된 품목입니다.')
@@ -60,7 +60,7 @@ export default function ProductCatalog() {
         <div className="product-catalog">
             <header className="catalog-header">
                 <h2 className="flex items-center justify-center gap-2"><PackageIcon size={28} /> 상품 카탈로그</h2>
-                <p>TRS에서 제공하는 최상급 육류 라인업입니다.</p>
+                <p>MEATGO에서 제공하는 최상급 육류 라인업입니다.</p>
             </header>
 
             <div className="catalog-controls glass-card animate-slide-up">

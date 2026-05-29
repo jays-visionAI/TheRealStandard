@@ -51,7 +51,7 @@ export default function PurchaseOrderView() {
                         </p>
                     </div>
                     <div className="text-right">
-                        <h2 className="text-xl font-bold text-gray-800">THE REAL STANDARD</h2>
+                        <h2 className="text-xl font-bold text-gray-800">MEATGO</h2>
                         <p className="text-sm text-gray-500 mt-1">사업자 등록번호: 123-45-67890</p>
                         <p className="text-sm text-gray-500">서울시 강남구 테헤란로 123</p>
                     </div>

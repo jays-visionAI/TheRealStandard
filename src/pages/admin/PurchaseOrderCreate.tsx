@@ -27,6 +27,7 @@ import {
     type FirestorePurchaseOrder,
     type FirestoreOrderSheet
 } from '../../lib/orderService'
+import { runAllDetections } from '../../lib/notificationService'
 import { Timestamp, collection, doc, setDoc, deleteDoc, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import './OrderSheetCreate.css'
@@ -424,6 +425,12 @@ export default function PurchaseOrderCreate() {
                     amount: row.totalAmount
                 })
             }
+
+
+            // 매입 발주 생성 후 재고/결품/단가표/정산 감지 트리거 — 백그라운드 실행
+            runAllDetections().catch(err => {
+                console.warn('Background detection after PO creation failed:', err)
+            })
 
             const link = `${window.location.origin}/purchase-order/${token}`
             navigator.clipboard.writeText(link)

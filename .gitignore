@@ -46,3 +46,15 @@ coverage/
 # Misc
 *.local
 .eslintcache
+
+# BlueForge
+project.json
+.blueforge/
+
+# Secrets (절대 커밋 금지)
+service-account.json
+*-service-account.json
+
+# Google Cloud SDK (로컬 도구 — 저장소에 포함하지 않음)
+google-cloud-sdk/
+google-cloud-cli-*.tar.gz

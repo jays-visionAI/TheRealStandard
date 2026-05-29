@@ -128,7 +128,7 @@ export default function SystemSettings() {
                     <h1 className="text-2xl font-bold flex items-center gap-2">
                         <SettingsIcon size={28} className="text-primary" /> 시스템 및 API 설정
                     </h1>
-                    <p className="text-muted mt-1">TRS 시스템의 핵심 API 연동 및 기업 정보를 관리합니다.</p>
+                    <p className="text-muted mt-1">MEATGO 시스템의 핵심 API 연동 및 기업 정보를 관리합니다.</p>
                 </div>
             </div>
 

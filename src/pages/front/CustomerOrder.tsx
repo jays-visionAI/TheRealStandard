@@ -113,7 +113,7 @@ export default function CustomerOrder() {
         <div className="customer-order">
             {/* Header */}
             <header className="order-header glass-card">
-                <div className="header-logo">TRS 주문시스템</div>
+                <div className="header-logo">MEATGO 주문시스템</div>
 
                 <div className="header-info">
                     <h1>{orderInfo.customerName}님의 주문서</h1>

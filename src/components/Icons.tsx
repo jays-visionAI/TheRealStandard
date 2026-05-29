@@ -7,8 +7,8 @@ interface IconProps {
     color?: string
 }
 
-// TRS 로고 (THE REAL STANDARD)
-export const TRSLogo: FC<{ size?: number; className?: string }> = ({ size = 40, className = '' }) => (
+// MEATGO 로고
+export const MeatgoLogo: FC<{ size?: number; className?: string }> = ({ size = 40, className = '' }) => (
     <svg width={size} height={size} viewBox="0 0 48 48" fill="none" className={className}>
         {/* 고기 모양 로고 */}
         <defs>

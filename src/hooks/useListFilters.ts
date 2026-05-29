@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 
-const STORAGE_KEY = 'trs_list_page_size'
+const STORAGE_KEY = 'meatgo_list_page_size'
 
 function getStoredPageSize(): number {
     try {

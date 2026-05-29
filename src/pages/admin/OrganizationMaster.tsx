@@ -9,6 +9,7 @@ import {
 } from '../../lib/userService'
 import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon, KakaoIcon, AlertTriangleIcon, XIcon, CheckIcon } from '../../components/Icons'
 import { sendInviteMessage } from '../../lib/kakaoService'
+import { createInviteToken } from '../../lib/inviteTokenService'
 import './OrganizationMaster.css'
 
 // Customer 타입 정의 (FirestoreUser 기반, 폼용 확장 필드 포함)
@@ -220,10 +221,9 @@ export default function OrganizationMaster() {
 
     // 초대장 생성 및 링크 복사
     const handleGenerateInvite = async (customer: Customer) => {
-        const token = `invite-${Math.random().toString(36).substr(2, 9)}`
         try {
-            await updateUser(customer.id, { inviteToken: token })
-            const inviteUrl = `${window.location.origin}/invite/${token}`
+            const inviteToken = await createInviteToken({ userId: customer.id, type: 'CUSTOMER' })
+            const inviteUrl = `${window.location.origin}/invite/${inviteToken.token}`
             await navigator.clipboard.writeText(inviteUrl)
             await loadCustomers()
             setInviteModalLink(inviteUrl)
@@ -236,10 +236,9 @@ export default function OrganizationMaster() {
 
     // 카카오톡 초대 메시지 전송
     const handleKakaoInvite = async (customer: Customer) => {
-        const token = `invite-${Math.random().toString(36).substr(2, 9)}`
         try {
-            await updateUser(customer.id, { inviteToken: token })
-            const inviteUrl = `${window.location.origin}/invite/${token}`
+            const inviteToken = await createInviteToken({ userId: customer.id, type: 'CUSTOMER' })
+            const inviteUrl = `${window.location.origin}/invite/${inviteToken.token}`
             await loadCustomers()
             sendInviteMessage(customer.companyName || '', inviteUrl)
         } catch (err) {

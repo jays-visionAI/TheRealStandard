@@ -72,6 +72,7 @@ export interface FirestoreUser {
      * 주의: orderSheets.inviteTokenId(주문장 보기 토큰)와는 별개 시스템.
      * SUPPLIER 흐름은 이걸 안 씀(createUserWithAuth로 즉시 발급).
      */
+    /** @deprecated inviteTokens 컬렉션으로 이관 예정. 신규 코드는 inviteTokens/{tokenId} 사용. */
     inviteToken?: string
     mustChangePassword?: boolean  // 첫 로그인 시 비밀번호 변경 강제 (관리자가 임시PW로 발급한 경우)
 

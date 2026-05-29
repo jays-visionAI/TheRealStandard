@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserByInviteToken, updateUser, type FirestoreUser } from '../../lib/userService'
+import { getUserById, updateUser, type FirestoreUser } from '../../lib/userService'
+import { getInviteToken, markInviteTokenUsed, clearLegacyInviteToken } from '../../lib/inviteTokenService'
 import { CheckCircleIcon, KeyIcon, MailIcon, BuildingIcon, UserIcon } from '../../components/Icons'
 import './InviteActivation.css'
 
@@ -34,7 +35,18 @@ export default function InviteActivation() {
         try {
             setLoading(true)
 
-            const cData = await getUserByInviteToken(token)
+            // 1. inviteTokens 컬렉션에서 토큰 조회 (신규)
+            const inviteToken = await getInviteToken(token)
+
+            // 2. 토큰이 없으면 레거시 users.inviteToken 필드로 폴백
+            let cData: FirestoreUser | null = null
+            if (inviteToken) {
+                cData = await getUserById(inviteToken.userId)
+            } else {
+                // 레거시 폴백: users.inviteToken 필드로 조회
+                const { getUserByInviteToken } = await import('../../lib/userService')
+                cData = await getUserByInviteToken(token)
+            }
 
             if (cData) {
                 setCustomer({
@@ -102,12 +114,17 @@ export default function InviteActivation() {
             const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password)
             const firebaseUid = userCredential.user.uid
 
-            // 2. Firestore 고객 정보 업데이트 (이메일, 상태, Firebase UID, 토큰 제거)
+            // 2. 초대 토큰 사용 완료 처리 (inviteTokens 컬렉션)
+            if (token) {
+                await markInviteTokenUsed(token).catch(() => {})
+                await clearLegacyInviteToken(customer.id).catch(() => {})
+            }
+
+            // 3. Firestore 고객 정보 업데이트 (이메일, 상태, Firebase UID)
             await updateUser(customer.id, {
                 email: normalizedEmail,
                 status: 'ACTIVE',
                 firebaseUid: firebaseUid,
-                inviteToken: '',  // 토큰 사용 완료 -> 재사용 방지
             })
 
             setIsSuccess(true)
