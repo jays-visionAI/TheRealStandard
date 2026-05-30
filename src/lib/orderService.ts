@@ -265,6 +265,12 @@ export async function getSalesOrderItems(salesOrderId: string): Promise<Firestor
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FirestoreSalesOrderItem))
 }
 
+/** 전체 매출 주문 품목 일괄 조회 (수익성 분석 등 집계용 — 컬렉션 1회 read) */
+export async function getAllSalesOrderItems(): Promise<FirestoreSalesOrderItem[]> {
+    const snapshot = await getDocs(collection(db, SALES_ORDER_ITEMS_COLLECTION))
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as FirestoreSalesOrderItem))
+}
+
 export async function setSalesOrderItems(salesOrderId: string, items: Omit<FirestoreSalesOrderItem, 'id' | 'salesOrderId'>[]): Promise<void> {
     for (let i = 0; i < items.length; i++) {
         const item = items[i]

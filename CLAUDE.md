@@ -61,8 +61,12 @@ src/
 ## 개발 로드맵 (docs/MeatGo_Implementation_Plan_v2.md)
 
 - **Phase 0** MVP 정합성: 대체로 완료 (0.2 inviteToken 이관 진행 중, 0.4 외부 API키 Firestore화·0.5 거래처 포털 회사서류 완료)
-- **Phase 1** 카탈로그/콘텐츠 풍부화: 1.1 멀티미디어 모델 + 1.2 MediaUploader 완료 → 다음: 1.3 YouTube embed, 1.4 공개카탈로그 강화, 1.5 상품 상세 `/products/:id`, 1.8 거래문의 leads 폼
-- Phase 2 운영 효율화/영업도구 → Phase 3 AI 인사이트 → Phase 4 수산 확장 → Phase 5 마켓플레이스화
+- **Phase 1** 카탈로그/콘텐츠 풍부화: **완료** (1.3 YouTube 라이트박스 `YouTubeModal`, 1.4 캐러셀 `ImageCarousel`, 1.5 상품상세 `/products/:id`, 1.6 주문그리드 썸네일, 1.7 랜딩 거래문의→leads, 1.8 leads 어드민 인박스 `/admin/leads`)
+- **Phase 2** 운영 효율화/영업도구: 진행 중 — **2.2 거래처 수익성 분석 완료**(`/admin/insights/customer-profitability`, `profitabilityService`). 미착수: 2.1 가격동기화·2.5 알림톡·2.6 PDF이메일·2.7 세금계산서(모두 Cloud Functions+외부 SaaS 필요), 2.3 SALES 매뉴얼, 2.4 자동발주 템플릿
+- Phase 3 AI 인사이트 → Phase 4 수산 확장 → Phase 5 마켓플레이스화
+
+> 공용 컴포넌트: `YouTubeModal`, `ImageCarousel`, `LeadInquiryForm`, `MediaUploader`. 공용 서비스: `leadService`, `profitabilityService`.
+> ⚠️ leads 기능은 운영에서 `firebase deploy --only firestore:rules` 후에만 저장됨(규칙에 `leads` 추가됨).
 
 ## 컨벤션 / 주의사항
 

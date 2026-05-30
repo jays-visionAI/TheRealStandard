@@ -71,6 +71,7 @@ import DispatchView from './pages/public/DispatchView'
 import PublicCatalog from './pages/public/PublicCatalog'
 import ProductDetail from './pages/public/ProductDetail'
 import LeadInbox from './pages/admin/LeadInbox'
+import CustomerProfitability from './pages/admin/CustomerProfitability'
 import PriceListGuestView from './pages/front/PriceListGuestView'
 
 // Front (Customer) Pages
@@ -195,6 +196,7 @@ function App() {
                         <Route index element={<AdminDashboardRouter />} />
                         <Route path="documents" element={<DocumentHub />} />
                         <Route path="leads" element={<LeadInbox />} />
+                        <Route path="insights/customer-profitability" element={<CustomerProfitability />} />
                         <Route path="users/list" element={<UserManagement />} />
                         <Route path="users" element={<UserList />} />
                         <Route path="users/staff" element={<UserList />} />
