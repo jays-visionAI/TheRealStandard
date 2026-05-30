@@ -50,7 +50,7 @@ export interface FirestoreProduct {
  * 레거시 imageUrl을 mediaImages[0]으로 변환 (마이그레이션 없이 런타임 호환).
  * 카드/테이블에서 항상 이 함수를 통해 대표 이미지를 가져오면 안전.
  */
-export function getPrimaryImageUrl(p: FirestoreProduct): string | undefined {
+export function getPrimaryImageUrl(p: Pick<FirestoreProduct, 'mediaImages' | 'imageUrl'>): string | undefined {
     if (p.mediaImages && p.mediaImages.length > 0) {
         const primary = p.mediaImages.find(m => m.isPrimary) || p.mediaImages[0]
         return primary.thumbnailUrl || primary.url

@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { ClipboardListIcon, UserIcon, TrashIcon, PrinterIcon, ClockIcon, MegaphoneIcon, PackageIcon, MessageSquareIcon, MapPinIcon, InfoIcon, SparklesIcon, SendIcon, AlertTriangleIcon } from '../../components/Icons'
 import { getOrderSheetByToken, getOrderSheetItems, updateOrderSheet, setOrderSheetItems, type FirestoreOrderSheet } from '../../lib/orderService'
-import { getAllProducts, type FirestoreProduct } from '../../lib/productService'
+import { getAllProducts, getPrimaryImageUrl, type FirestoreProduct } from '../../lib/productService'
 import { compareProductOrder } from '../../lib/productSortOrder'
 import { getUserById } from '../../lib/userService'
 import './B2BOrderGrid.css'
@@ -15,6 +15,29 @@ interface Product extends Omit<FirestoreProduct, 'createdAt' | 'updatedAt'> {
     unitPrice: number
     createdAt?: Date
     updatedAt?: Date
+}
+
+// ============================================
+// 상품 썸네일 (드롭다운/선택셀 공용)
+// ============================================
+function ProductThumb({ product }: { product?: Product }) {
+    const img = product ? getPrimaryImageUrl(product) : undefined
+    const emoji = product?.category1 === '냉장' ? '🧊' : product?.category1 === '냉동' ? '❄️' : '🥩'
+    return (
+        <div style={{
+            width: '32px', height: '32px', flexShrink: 0,
+            borderRadius: '6px', overflow: 'hidden',
+            background: '#F1F5F9', border: '1px solid #E2E8F0',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '15px',
+        }}>
+            {img ? (
+                <img src={img} alt={product?.name || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+            ) : (
+                <span>{emoji}</span>
+            )}
+        </div>
+    )
 }
 
 // ============================================
@@ -1086,7 +1109,10 @@ export default function B2BOrderGrid() {
                                     </td>
                                     <td className="col-no mobile-hidden">{index + 1}</td>
                                     <td className="col-product">
-                                        <div className="product-input-wrapper" ref={activeRowId === row.id ? dropdownRef : null}>
+                                        <div className="product-input-wrapper" ref={activeRowId === row.id ? dropdownRef : null} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {row.productId && (
+                                                <ProductThumb product={products.find(prod => prod.id === row.productId)} />
+                                            )}
                                             <input
                                                 ref={el => { if (el) inputRefs.current.set(`name-${row.id}`, el) }}
                                                 type="text"
@@ -1120,6 +1146,7 @@ export default function B2BOrderGrid() {
                                                             onClick={() => selectProduct(row.id, product)}
                                                             onMouseEnter={() => setHighlightIndex(idx)}
                                                         >
+                                                            <ProductThumb product={product} />
                                                             <div className="flex flex-col">
                                                                 <span className="product-name text-sm">{product.name}</span>
                                                                 <span className="product-price text-xs text-blue-600">₩{formatCurrency(product.unitPrice)}</span>
