@@ -4,6 +4,7 @@
  */
 
 import { getApiKey } from '../../stores/systemStore'
+import { apiOrigin } from './apiBase'
 
 const BASE_URL = '/api/kamis/service/price/xml.do'
 
@@ -22,7 +23,7 @@ export async function fetchKamisItemPrice(
     itemCode: string,
     regday: string
 ): Promise<KamisPriceItem[]> {
-    const url = new URL(BASE_URL, window.location.origin)
+    const url = new URL(BASE_URL, apiOrigin())
     url.searchParams.set('action', 'periodProductList')
     url.searchParams.set('p_productclscode', '02')
     url.searchParams.set('p_itemcategorycode', itemCategoryCode)

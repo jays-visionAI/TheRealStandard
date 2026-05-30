@@ -5,6 +5,7 @@
  */
 
 import { getApiKey } from '../../stores/systemStore'
+import { apiOrigin } from './apiBase'
 
 const NEWS_API = '/api/naver/v1/search/news.json'
 
@@ -22,7 +23,7 @@ export async function searchNaverNews(
     start: number = 1,
     sort: 'sim' | 'date' = 'date'
 ): Promise<NaverNewsItem[]> {
-    const url = `${NEWS_API}?query=${encodeURIComponent(query)}&display=${display}&start=${start}&sort=${sort}`
+    const url = `${apiOrigin()}${NEWS_API}?query=${encodeURIComponent(query)}&display=${display}&start=${start}&sort=${sort}`
 
     try {
         const res = await fetch(url, {

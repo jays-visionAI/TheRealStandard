@@ -5,8 +5,9 @@
  */
 
 import { getApiKey } from '../../stores/systemStore'
+import { apiOrigin } from './apiBase'
 
-const BASE_URL = '/api/datago/B552895'  // vite proxy 경로
+const BASE_URL = '/api/datago/B552895'  // dev: vite proxy / prod: Cloudflare Worker
 
 export interface EkapePriceItem {
     delDate: string
@@ -29,7 +30,7 @@ export async function fetchEkapeDailyPrices(
     date: string,
     cattleType: '1' | '2' = '2'
 ): Promise<EkapePriceItem[]> {
-    const url = new URL(`${BASE_URL}/getKpnPriceList/getKpnPriceList`, window.location.origin)
+    const url = new URL(`${BASE_URL}/getKpnPriceList/getKpnPriceList`, apiOrigin())
     url.searchParams.set('serviceKey', getApiKey('datagoKey'))
     url.searchParams.set('delDate', date)
     url.searchParams.set('cattleClsCd', cattleType)
