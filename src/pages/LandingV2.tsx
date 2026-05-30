@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getDefaultPathForRole } from '../components/ProtectedRoute'
+import { createLead } from '../lib/leadService'
 
 // ============================================
 // 컬러 토큰 (Forest Green + Charcoal Gold)
@@ -33,14 +34,42 @@ const FONT = `'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-s
 function ContactModal({ onClose }: { onClose: () => void }) {
     const [submitting, setSubmitting] = useState(false)
     const [done, setDone] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
+        const fd = new FormData(e.currentTarget)
+        const companyName = (fd.get('companyName') as string || '').trim()
+        const contactName = (fd.get('contactName') as string || '').trim()
+        const phone = (fd.get('phone') as string || '').trim()
+        const email = (fd.get('email') as string || '').trim()
+        const categories = fd.getAll('categories').map(String)
+        const expectedVolume = (fd.get('expectedVolume') as string || '').trim()
+        const memo = (fd.get('memo') as string || '').trim()
+
+        if (!companyName || !contactName || !phone) {
+            setError('회사명 · 담당자명 · 연락처는 필수입니다.')
+            return
+        }
+
+        // 카테고리/예상거래액/메모를 message로 통합 (Lead 모델의 message 단일 필드)
+        const message = [
+            categories.length ? `관심 카테고리: ${categories.join(', ')}` : '',
+            expectedVolume ? `월 예상 거래액: ${expectedVolume}` : '',
+            memo,
+        ].filter(Boolean).join('\n')
+
         setSubmitting(true)
-        // TODO Phase 1.8: Firestore leads 컬렉션 저장 + 관리자 알림
-        await new Promise(r => setTimeout(r, 600))
-        setSubmitting(false)
-        setDone(true)
+        setError(null)
+        try {
+            await createLead({ companyName, contactName, phone, email: email || undefined, message: message || undefined, source: 'LANDING' })
+            setDone(true)
+        } catch (err) {
+            console.error('Failed to submit lead:', err)
+            setError('문의 전송에 실패했습니다. 잠시 후 다시 시도해주세요.')
+        } finally {
+            setSubmitting(false)
+        }
     }
 
     return (
@@ -116,6 +145,9 @@ function ContactModal({ onClose }: { onClose: () => void }) {
                             </div>
                             <FormField label="월 예상 거래액 (선택)" name="expectedVolume" as="select" options={['~500만원', '500~2000만원', '2000만원 이상']} />
                             <FormField label="문의 내용 (선택)" name="memo" as="textarea" placeholder="궁금하신 사항을 자유롭게 적어주세요." />
+                            {error && (
+                                <div style={{ fontSize: '13px', color: '#DC2626', fontWeight: 500, marginTop: '8px' }}>{error}</div>
+                            )}
                             <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
                                 <button type="button" onClick={onClose} style={{
                                     flex: 1, background: 'transparent', color: C.textMuted,
