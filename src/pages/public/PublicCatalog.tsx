@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getAllProducts, getPrimaryImageUrl, type FirestoreProduct } from '../../lib/productService'
 import { useAuth } from '../../contexts/AuthContext'
+import YouTubeModal from '../../components/YouTubeModal'
 import { COLOR, FONT, RADIUS, SHADOW, containerStyle, capsuleStyle, btnPrimary, btnSecondary, btnGhost } from '../../styles/design-tokens'
 
 type Category = 'all' | '냉장' | '냉동' | '부산물'
@@ -42,6 +43,7 @@ export default function PublicCatalog() {
     const [products, setProducts] = useState<FirestoreProduct[]>([])
     const [loading, setLoading] = useState(true)
     const [activeCategory, setActiveCategory] = useState<Category>('all')
+    const [videoModal, setVideoModal] = useState<{ url: string; title: string } | null>(null)
 
     useEffect(() => {
         getAllProducts()
@@ -191,13 +193,20 @@ export default function PublicCatalog() {
                                         )
                                     })()}
                                     {p.videoUrl && (
-                                        <div style={{
-                                            position: 'absolute', top: '10px', right: '10px',
-                                            background: 'rgba(0,0,0,0.7)', color: '#fff',
-                                            borderRadius: '4px', padding: '3px 8px',
-                                            fontSize: '11px', fontWeight: 600,
-                                            display: 'flex', alignItems: 'center', gap: '4px',
-                                        }}>▶ 영상</div>
+                                        <button
+                                            onClick={() => setVideoModal({ url: p.videoUrl!, title: p.name })}
+                                            title="영상 재생"
+                                            style={{
+                                                position: 'absolute', top: '10px', right: '10px',
+                                                background: 'rgba(0,0,0,0.7)', color: '#fff',
+                                                border: 'none', borderRadius: '4px', padding: '4px 9px',
+                                                fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', gap: '4px',
+                                                transition: 'background 0.15s',
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.92)' }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.7)' }}
+                                        >▶ 영상</button>
                                     )}
                                 </div>
                                 <div style={{ padding: '16px' }}>
@@ -261,6 +270,13 @@ export default function PublicCatalog() {
             <footer style={{ background: COLOR.surfaceAlt, borderTop: `1px solid ${COLOR.border}`, padding: '24px', textAlign: 'center', color: COLOR.textFaint, fontSize: '13px' }}>
                 © {new Date().getFullYear()} MEATGO. 프리미엄 육류 B2B 유통.
             </footer>
+
+            <YouTubeModal
+                isOpen={!!videoModal}
+                videoUrl={videoModal?.url}
+                title={videoModal?.title}
+                onClose={() => setVideoModal(null)}
+            />
         </div>
     )
 }
