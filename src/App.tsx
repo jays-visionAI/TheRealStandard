@@ -70,6 +70,7 @@ import PurchaseOrderView from './pages/front/PurchaseOrderView'
 import DispatchView from './pages/public/DispatchView'
 import PublicCatalog from './pages/public/PublicCatalog'
 import ProductDetail from './pages/public/ProductDetail'
+import LeadInbox from './pages/admin/LeadInbox'
 import PriceListGuestView from './pages/front/PriceListGuestView'
 
 // Front (Customer) Pages
@@ -193,6 +194,7 @@ function App() {
                     >
                         <Route index element={<AdminDashboardRouter />} />
                         <Route path="documents" element={<DocumentHub />} />
+                        <Route path="leads" element={<LeadInbox />} />
                         <Route path="users/list" element={<UserManagement />} />
                         <Route path="users" element={<UserList />} />
                         <Route path="users/staff" element={<UserList />} />

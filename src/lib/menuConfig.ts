@@ -35,6 +35,12 @@ export const menuConfig: MenuItem[] = [
         roles: ['ADMIN', 'OPS', 'SALES', 'PURCHASE', 'ACCOUNTING'],
     },
     {
+        label: '거래문의 (Leads)',
+        path: '/admin/leads',
+        iconKey: 'orders',
+        roles: ['ADMIN', 'OPS', 'SALES'],
+    },
+    {
         label: '상품관리',
         iconKey: 'products',
         roles: ['ADMIN', 'OPS', 'SALES', 'PURCHASE'],
