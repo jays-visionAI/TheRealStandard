@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSystemStore } from '../../stores/systemStore'
 import { getSystemApiKeys, saveSystemApiKeys } from '../../lib/systemConfigService'
+import { apiOrigin } from '../../lib/external/apiBase'
 import { useAuth } from '../../contexts/AuthContext'
 import {
     SettingsIcon,
@@ -88,17 +89,17 @@ export default function SystemSettings() {
                 if (!key) throw new Error('API 키가 입력되지 않았습니다.')
                 const today = new Date()
                 const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
-                url = `/api/datago/B552895/getKpnPriceList/getKpnPriceList?serviceKey=${encodeURIComponent(key)}&delDate=${dateStr}&cattleClsCd=2&numOfRows=1&pageNo=1&_type=json`
+                url = `${apiOrigin()}/api/datago/B552895/getKpnPriceList/getKpnPriceList?serviceKey=${encodeURIComponent(key)}&delDate=${dateStr}&cattleClsCd=2&numOfRows=1&pageNo=1&_type=json`
             } else if (service === 'kamis') {
                 const key = formData.kamisKey || import.meta.env.VITE_KAMIS_KEY || ''
                 const id = formData.kamisId || import.meta.env.VITE_KAMIS_ID || ''
                 if (!key || !id) throw new Error('KAMIS 키 또는 ID가 입력되지 않았습니다.')
-                url = `/api/kamis/service/price/xml.do?action=periodProductList&p_productclscode=02&p_itemcategorycode=500&p_itemcode=514&p_regday=2026-05-01&p_convert_kg_yn=Y&p_cert_key=${encodeURIComponent(key)}&p_cert_id=${encodeURIComponent(id)}&p_returntype=json`
+                url = `${apiOrigin()}/api/kamis/service/price/xml.do?action=periodProductList&p_productclscode=02&p_itemcategorycode=500&p_itemcode=514&p_regday=2026-05-01&p_convert_kg_yn=Y&p_cert_key=${encodeURIComponent(key)}&p_cert_id=${encodeURIComponent(id)}&p_returntype=json`
             } else if (service === 'naver') {
                 const clientId = formData.naverClientId || import.meta.env.VITE_NAVER_CLIENT_ID || ''
                 const clientSecret = formData.naverClientSecret || import.meta.env.VITE_NAVER_CLIENT_SECRET || ''
                 if (!clientId || !clientSecret) throw new Error('네이버 Client ID/Secret이 입력되지 않았습니다.')
-                url = `/api/naver/v1/search/news.json?query=${encodeURIComponent('한우 시세')}&display=1&sort=date`
+                url = `${apiOrigin()}/api/naver/v1/search/news.json?query=${encodeURIComponent('한우 시세')}&display=1&sort=date`
                 headers['X-Naver-Client-Id'] = clientId
                 headers['X-Naver-Client-Secret'] = clientSecret
             }
