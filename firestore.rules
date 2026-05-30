@@ -246,5 +246,14 @@ service cloud.firestore {
       allow read: if isStaff();
       allow write: if isAdmin();
     }
+
+    // ============ LEADS (비회원 거래문의 인입 — 공개 create, 영업/운영자 read) ============
+    match /leads/{leadId} {
+      // 생성: 비회원 포함 누구나 (공개 카탈로그 거래문의 폼)
+      allow create: if true;
+      // 조회/상태변경: 영업·운영자만
+      allow read, update: if isStaff();
+      allow delete: if isAdmin();
+    }
   }
 }

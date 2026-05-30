@@ -174,11 +174,12 @@ export default function PublicCatalog() {
                         gap: '20px',
                     }}>
                         {filtered.map(p => (
-                            <article key={p.id} style={{
+                            <article key={p.id} onClick={() => navigate(`/products/${p.id}`)} style={{
                                 background: COLOR.surface,
                                 border: `1px solid ${COLOR.border}`,
                                 borderRadius: RADIUS.xl,
                                 overflow: 'hidden',
+                                cursor: 'pointer',
                                 transition: 'transform 0.2s, border-color 0.2s, box-shadow 0.2s',
                             }}
                                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = COLOR.primary; e.currentTarget.style.boxShadow = SHADOW.lg }}
@@ -192,7 +193,7 @@ export default function PublicCatalog() {
                                     />
                                     {p.videoUrl && (
                                         <button
-                                            onClick={() => setVideoModal({ url: p.videoUrl!, title: p.name })}
+                                            onClick={(e) => { e.stopPropagation(); setVideoModal({ url: p.videoUrl!, title: p.name }) }}
                                             title="영상 재생"
                                             style={{
                                                 position: 'absolute', top: '10px', right: '10px',

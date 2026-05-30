@@ -69,6 +69,7 @@ import OrderSheetView from './pages/front/OrderSheetView'
 import PurchaseOrderView from './pages/front/PurchaseOrderView'
 import DispatchView from './pages/public/DispatchView'
 import PublicCatalog from './pages/public/PublicCatalog'
+import ProductDetail from './pages/public/ProductDetail'
 import PriceListGuestView from './pages/front/PriceListGuestView'
 
 // Front (Customer) Pages
@@ -110,6 +111,7 @@ function App() {
                     <Route path="/about" element={<LandingPage />} />
                     <Route path="/landing-v2" element={<LandingV2 />} />
                     <Route path="/products" element={<PublicCatalog />} />
+                    <Route path="/products/:id" element={<ProductDetail />} />
                     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
                     <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
                     <Route path="/order-sheet/:token" element={<OrderSheetView />} />
