@@ -126,6 +126,18 @@ export const menuConfig: MenuItem[] = [
         ],
     },
     {
+        label: '운영 가이드',
+        iconKey: 'docs',
+        roles: ['ADMIN', 'OPS', 'SALES'],
+        children: [
+            {
+                label: '영업담당 가이드',
+                path: '/admin/help/sales-guide',
+                roles: ['ADMIN', 'OPS', 'SALES'],
+            },
+        ],
+    },
+    {
         label: 'Users',
         iconKey: 'users',
         roles: ['ADMIN', 'OPS', 'SALES', 'PURCHASE'],

@@ -10,6 +10,8 @@ import {
 import { BuildingIcon, SearchIcon, CheckCircleIcon, UsersIcon, StarIcon, ClipboardListIcon, PhoneIcon, MapPinIcon, UserIcon, WalletIcon, FileTextIcon, PauseCircleIcon, KakaoIcon, AlertTriangleIcon, XIcon, CheckIcon } from '../../components/Icons'
 import { sendInviteMessage } from '../../lib/kakaoService'
 import { createInviteToken } from '../../lib/inviteTokenService'
+import { getCreatorStamp } from '../../lib/auditing'
+import { useAuth } from '../../contexts/AuthContext'
 import './OrganizationMaster.css'
 
 // Customer 타입 정의 (FirestoreUser 기반, 폼용 확장 필드 포함)
@@ -64,6 +66,10 @@ function toCustomer(user: FirestoreUser): Customer {
 }
 
 export default function OrganizationMaster() {
+    const { user } = useAuth()
+    // SALES는 기본적으로 "내 거래처만" 보기로 시작 (영업 자원 집중)
+    const isSales = user?.role === 'SALES'
+
     // Firebase에서 직접 로드되는 거래처 목록
     const [customers, setCustomers] = useState<Customer[]>([])
     const [loading, setLoading] = useState(true)
@@ -71,6 +77,7 @@ export default function OrganizationMaster() {
 
     const [searchQuery, setSearchQuery] = useState('')
     const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all')
+    const [mineOnly, setMineOnly] = useState(isSales)
     const [showModal, setShowModal] = useState(false)
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
     const [formData, setFormData] = useState<Partial<Customer>>({})
@@ -124,9 +131,12 @@ export default function OrganizationMaster() {
                 (filterActive === 'active' && customer.isActive) ||
                 (filterActive === 'inactive' && !customer.isActive)
 
-            return matchesSearch && matchesActive
+            // 내 거래처만 보기 (작성자 == 현재 사용자)
+            const matchesMine = !mineOnly || customer.createdBy === user?.id
+
+            return matchesSearch && matchesActive && matchesMine
         })
-    }, [customers, searchQuery, filterActive])
+    }, [customers, searchQuery, filterActive, mineOnly, user?.id])
 
     // 통계
     const stats = useMemo(() => ({
@@ -196,7 +206,8 @@ export default function OrganizationMaster() {
                 })
                 alert('거래처 정보가 수정되었습니다.')
             } else {
-                // 신규 등록 - 통합 users 컬렉션에 생성
+                // 신규 등록 - 통합 users 컬렉션에 생성 (작성자 스탬프 — "내 거래처만 보기"용)
+                const stamp = getCreatorStamp()
                 await createUser({
                     email: formData.email || '',
                     name: formData.contactPerson || formData.ceoName || '',
@@ -204,6 +215,9 @@ export default function OrganizationMaster() {
                     role: 'CUSTOMER',
                     status: 'PENDING',
                     business: businessData,
+                    createdBy: stamp.createdBy,
+                    createdByName: stamp.createdByName,
+                    createdByRole: stamp.createdByRole,
                 })
                 alert('새 거래처가 등록되었습니다. 초대장을 발송할 수 있습니다.')
             }
@@ -381,6 +395,10 @@ export default function OrganizationMaster() {
                     >
                         비활성
                     </button>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginLeft: 'auto', fontSize: '13px', fontWeight: 600, color: '#374151', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        <input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
+                        내 거래처만 보기
+                    </label>
                 </div>
             </div>
 

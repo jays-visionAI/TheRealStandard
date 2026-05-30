@@ -79,6 +79,11 @@ export interface FirestoreUser {
     // 사업체 정보 (CUSTOMER, SUPPLIER, 3PL 역할인 경우)
     business?: BusinessProfile
 
+    // 작성자 스탬프 (Phase 2.3 — "내 거래처만 보기"용. 레거시 문서는 없을 수 있어 optional)
+    createdBy?: string            // 등록한 임직원 UID (SALES/ADMIN 등)
+    createdByName?: string        // 표시용 이름
+    createdByRole?: UserRole | 'GUEST' | 'SYSTEM'
+
     createdAt: Timestamp
     updatedAt: Timestamp
     lastLogin?: Timestamp
