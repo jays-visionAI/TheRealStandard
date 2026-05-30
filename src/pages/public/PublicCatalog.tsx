@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { getAllProducts, getPrimaryImageUrl, type FirestoreProduct } from '../../lib/productService'
+import { getAllProducts, getAllImageUrls, type FirestoreProduct } from '../../lib/productService'
 import { useAuth } from '../../contexts/AuthContext'
 import YouTubeModal from '../../components/YouTubeModal'
+import ImageCarousel from '../../components/ImageCarousel'
 import { COLOR, FONT, RADIUS, SHADOW, containerStyle, capsuleStyle, btnPrimary, btnSecondary, btnGhost } from '../../styles/design-tokens'
 
 type Category = 'all' | '냉장' | '냉동' | '부산물'
@@ -184,14 +185,11 @@ export default function PublicCatalog() {
                                 onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.borderColor = COLOR.border; e.currentTarget.style.boxShadow = '' }}
                             >
                                 <div style={{ aspectRatio: '4/3', width: '100%', overflow: 'hidden', background: COLOR.surfaceAlt, position: 'relative' }}>
-                                    {(() => {
-                                        const img = getPrimaryImageUrl(p)
-                                        return img ? (
-                                            <img src={img} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
-                                        ) : (
-                                            <CategoryPlaceholder category={p.category1} />
-                                        )
-                                    })()}
+                                    <ImageCarousel
+                                        images={getAllImageUrls(p)}
+                                        alt={p.name}
+                                        fallback={<CategoryPlaceholder category={p.category1} />}
+                                    />
                                     {p.videoUrl && (
                                         <button
                                             onClick={() => setVideoModal({ url: p.videoUrl!, title: p.name })}
