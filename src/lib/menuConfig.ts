@@ -82,6 +82,11 @@ export const menuConfig: MenuItem[] = [
                 path: '/admin/confirmed-purchase-orders',
                 roles: ['ADMIN', 'OPS', 'PURCHASE'],
             },
+            {
+                label: '자동발주 템플릿',
+                path: '/admin/order-templates',
+                roles: ['ADMIN', 'OPS', 'SALES'],
+            },
         ],
     },
     {

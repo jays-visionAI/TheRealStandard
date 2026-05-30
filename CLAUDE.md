@@ -62,11 +62,11 @@ src/
 
 - **Phase 0** MVP 정합성: 대체로 완료 (0.2 inviteToken 이관 진행 중, 0.4 외부 API키 Firestore화·0.5 거래처 포털 회사서류 완료)
 - **Phase 1** 카탈로그/콘텐츠 풍부화: **완료** (1.3 YouTube 라이트박스 `YouTubeModal`, 1.4 캐러셀 `ImageCarousel`, 1.5 상품상세 `/products/:id`, 1.6 주문그리드 썸네일, 1.7 랜딩 거래문의→leads, 1.8 leads 어드민 인박스 `/admin/leads`)
-- **Phase 2** 운영 효율화/영업도구: 진행 중 — **2.2 거래처 수익성 분석 완료**(`/admin/insights/customer-profitability`, `profitabilityService`). 미착수: 2.1 가격동기화·2.5 알림톡·2.6 PDF이메일·2.7 세금계산서(모두 Cloud Functions+외부 SaaS 필요), 2.3 SALES 매뉴얼, 2.4 자동발주 템플릿
+- **Phase 2** 운영 효율화/영업도구: 진행 중 — **완료: 2.2 거래처 수익성**(`/admin/insights/customer-profitability`), **2.3 SALES 권한/가이드**(`/admin/help/sales-guide` + "내 거래처만 보기" createdBy 필터), **2.4 자동발주 템플릿 프론트**(`/admin/order-templates`, `orderTemplateService` — 주간 자동생성 배치는 CF 도입 후). **미착수: 2.1 가격동기화·2.5 알림톡·2.6 PDF이메일·2.7 세금계산서(모두 Cloud Functions+외부 SaaS 필요)**
 - Phase 3 AI 인사이트 → Phase 4 수산 확장 → Phase 5 마켓플레이스화
 
-> 공용 컴포넌트: `YouTubeModal`, `ImageCarousel`, `LeadInquiryForm`, `MediaUploader`. 공용 서비스: `leadService`, `profitabilityService`.
-> ⚠️ leads 기능은 운영에서 `firebase deploy --only firestore:rules` 후에만 저장됨(규칙에 `leads` 추가됨).
+> 공용 컴포넌트: `YouTubeModal`, `ImageCarousel`, `LeadInquiryForm`, `MediaUploader`. 공용 서비스: `leadService`, `profitabilityService`, `orderTemplateService`.
+> ⚠️ leads·orderTemplates 기능은 운영에서 `firebase deploy --only firestore:rules` 후에만 저장됨(규칙에 `leads`, `orderTemplates` 추가됨).
 
 ## 컨벤션 / 주의사항
 

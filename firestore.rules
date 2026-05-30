@@ -247,6 +247,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ============ ORDER TEMPLATES (정기/자동 발주 템플릿 — 영업/운영자) ============
+    match /orderTemplates/{templateId} {
+      allow read, create, update: if isStaff();
+      allow delete: if isStaff();
+    }
+
     // ============ LEADS (비회원 거래문의 인입 — 공개 create, 영업/운영자 read) ============
     match /leads/{leadId} {
       // 생성: 비회원 포함 누구나 (공개 카탈로그 거래문의 폼)

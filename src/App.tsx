@@ -73,6 +73,7 @@ import ProductDetail from './pages/public/ProductDetail'
 import LeadInbox from './pages/admin/LeadInbox'
 import CustomerProfitability from './pages/admin/CustomerProfitability'
 import SalesGuide from './pages/admin/SalesGuide'
+import OrderTemplates from './pages/admin/OrderTemplates'
 import PriceListGuestView from './pages/front/PriceListGuestView'
 
 // Front (Customer) Pages
@@ -199,6 +200,7 @@ function App() {
                         <Route path="leads" element={<LeadInbox />} />
                         <Route path="insights/customer-profitability" element={<CustomerProfitability />} />
                         <Route path="help/sales-guide" element={<SalesGuide />} />
+                        <Route path="order-templates" element={<OrderTemplates />} />
                         <Route path="users/list" element={<UserManagement />} />
                         <Route path="users" element={<UserList />} />
                         <Route path="users/staff" element={<UserList />} />
