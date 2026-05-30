@@ -143,6 +143,18 @@ export default function ShipmentList() {
         }
     }
 
+    // 운송비 인라인 저장 (거래처 수익성 분석 반영 — Phase 2.2 보강)
+    const saveShippingCost = async (s: FirestoreShipment, raw: string) => {
+        const value = Math.max(0, Math.round(Number(raw) || 0))
+        if (value === (s.shippingCost ?? 0)) return
+        try {
+            await updateShipment(s.id, { shippingCost: value })
+            setShipments(prev => prev.map(x => x.id === s.id ? { ...x, shippingCost: value } : x))
+        } catch (err) {
+            console.error('Failed to save shipping cost:', err)
+        }
+    }
+
     if (loading) {
         return (
             <div className="page-container">
@@ -174,13 +186,14 @@ export default function ShipmentList() {
                             <th>차량</th>
                             <th>기사</th>
                             <th>도착예정</th>
+                            <th>운송비</th>
                             <th>상태</th>
                             <th>작업</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredShipments.length === 0 ? (
-                            <tr><td colSpan={7} className="text-center text-muted py-8">배송 데이터가 없습니다.</td></tr>
+                            <tr><td colSpan={8} className="text-center text-muted py-8">배송 데이터가 없습니다.</td></tr>
                         ) : (
                             filteredShipments.map(s => (
                                 <tr key={s.id}>
@@ -189,6 +202,17 @@ export default function ShipmentList() {
                                     <td>{s.vehicleNumber || '-'}</td>
                                     <td>{s.driverName || '-'}</td>
                                     <td>{formatEta(s.etaAt || s.eta)}</td>
+                                    <td>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            defaultValue={s.shippingCost ?? ''}
+                                            placeholder="0"
+                                            onBlur={(e) => saveShippingCost(s, e.target.value)}
+                                            style={{ width: '90px', padding: '5px 8px', fontSize: '13px', textAlign: 'right', border: '1px solid #E5E7EB', borderRadius: '6px' }}
+                                            title="운송비(원) — 입력 후 포커스를 벗어나면 저장됩니다"
+                                        />
+                                    </td>
                                     <td>{getStatusBadge(s.status as ShipmentStatus, s.isModified, s.dispatcherToken)}</td>
                                     <td className="flex gap-2">
                                         {s.status === 'PREPARING' && <button className="btn btn-primary btn-sm" onClick={() => openModal(s)}>{s.dispatcherToken ? '배차진행' : '배차요청'}</button>}

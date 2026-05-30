@@ -107,6 +107,7 @@ export default function CustomerProfitability() {
                                     <th style={thL}>거래처</th>
                                     <th style={th}>매출</th>
                                     <th style={th}>매입원가</th>
+                                    <th style={th}>운송비</th>
                                     <th style={th}>회수기간비</th>
                                     <th style={th}>공헌이익</th>
                                     <th style={th}>CM%</th>
@@ -136,6 +137,7 @@ export default function CustomerProfitability() {
                                                 </td>
                                                 <td style={td}>{won(r.revenue)}</td>
                                                 <td style={td}>{won(r.cost)}</td>
+                                                <td style={td}>{won(r.transportCost)}</td>
                                                 <td style={td}>{won(r.carryingCost)}</td>
                                                 <td style={{ ...td, fontWeight: 700 }}>{won(r.contributionMargin)}</td>
                                                 <td style={{ ...td, color: low ? '#DC2626' : '#047857', fontWeight: 700 }}>{pct(r.cmPercent)}</td>
@@ -145,7 +147,7 @@ export default function CustomerProfitability() {
                                             </tr>
                                             {isOpen && (
                                                 <tr>
-                                                    <td colSpan={10} style={{ padding: '16px 20px', background: '#F9FAFB', borderBottom: '1px solid #F3F4F6' }}>
+                                                    <td colSpan={11} style={{ padding: '16px 20px', background: '#F9FAFB', borderBottom: '1px solid #F3F4F6' }}>
                                                         <div style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '10px' }}>월별 매출 추이</div>
                                                         {r.monthly.length === 0 ? (
                                                             <div style={{ fontSize: '13px', color: '#9CA3AF' }}>월별 데이터가 없습니다.</div>

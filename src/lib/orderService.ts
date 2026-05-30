@@ -302,6 +302,7 @@ export interface FirestoreShipment extends Partial<CreatorStamp> {
     eta?: Timestamp
     etaAt?: Timestamp
     status: 'PREPARING' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED'
+    shippingCost?: number // 운송비(원) — 거래처 수익성 분석에 반영 (Phase 2.2 보강)
     isModified?: boolean // 수정 여부
     modifiedAt?: Timestamp // 마지막 수정 일시
     createdAt: Timestamp

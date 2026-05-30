@@ -1,4 +1,4 @@
-import { getAllSalesOrders, getAllSalesOrderItems, type FirestoreSalesOrder } from './orderService'
+import { getAllSalesOrders, getAllSalesOrderItems, getAllShipments, type FirestoreSalesOrder } from './orderService'
 import { getAllProducts } from './productService'
 import { getAllSettlements } from './settlementService'
 
@@ -61,11 +61,12 @@ function monthKey(ts: any): string | null {
  * @param opportunityRate 회수기간 연 기회비용율 (예: 0.08 = 연 8%)
  */
 export async function computeCustomerProfitability(opportunityRate = 0.08): Promise<ProfitabilityResult> {
-    const [orders, items, products, settlements] = await Promise.all([
+    const [orders, items, products, settlements, shipments] = await Promise.all([
         getAllSalesOrders(),
         getAllSalesOrderItems(),
         getAllProducts(),
         getAllSettlements(),
+        getAllShipments(),
     ])
 
     const costPriceById = new Map<string, number>()
@@ -118,6 +119,18 @@ export async function computeCustomerProfitability(opportunityRate = 0.08): Prom
         a.cost += cp * kg
     })
 
+    // 운송비 (shipment.shippingCost → sourceSalesOrderId → 고객)
+    let hasAnyShippingCost = false
+    shipments.forEach(sh => {
+        const cost = sh.shippingCost ?? 0
+        if (cost <= 0) return
+        const o = orderById.get(sh.sourceSalesOrderId)
+        if (!o || !o.customerOrgId) return
+        const a = ensure(o.customerOrgId, o.customerName || '(이름없음)')
+        a.transportCost += cost
+        hasAnyShippingCost = true
+    })
+
     // 회수기간 비용 + 미수 + 평균 결제기한
     settlements.forEach(s => {
         if (!s.customerOrgId) return
@@ -162,7 +175,9 @@ export async function computeCustomerProfitability(opportunityRate = 0.08): Prom
     const totalOutstanding = rows.reduce((s, r) => s + r.outstanding, 0)
 
     const notes = [
-        '운송비는 shipments에 비용 필드가 없어 현재 0으로 계산됩니다. (배송비 모델 추가 시 반영)',
+        hasAnyShippingCost
+            ? '운송비는 배송 목록에서 입력한 shipments.shippingCost 실비 합산입니다. (미입력 배송은 0)'
+            : '운송비가 아직 입력되지 않았습니다. 배송 목록(배송 관리)에서 건별 운송비를 입력하면 공헌이익에 반영됩니다.',
         '매입원가는 상품의 현재 costPrice 기준입니다. (주문 시점 원가 스냅샷이 아닌 현재가)',
     ]
 
