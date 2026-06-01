@@ -3,7 +3,7 @@ import {
     query, where,
     serverTimestamp, Timestamp
 } from 'firebase/firestore'
-import { db } from './firebase'
+import { db, cleanData } from './firebase'
 
 // ============ PRODUCT SERVICE ============
 
@@ -103,7 +103,8 @@ export async function getProductsBySupplier(supplierOrgId: string | null): Promi
 export async function createProduct(data: Omit<FirestoreProduct, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreProduct> {
     const newDocRef = doc(productsRef)
     const now = serverTimestamp()
-    await setDoc(newDocRef, { ...data, createdAt: now, updatedAt: now })
+    // undefined 필드 제거 (Firestore는 undefined 불허) — 타임스탬프는 cleanData 밖에서 추가
+    await setDoc(newDocRef, { ...cleanData(data), createdAt: now, updatedAt: now })
     const created = await getDoc(newDocRef)
     return { id: created.id, ...created.data() } as FirestoreProduct
 }
@@ -111,7 +112,7 @@ export async function createProduct(data: Omit<FirestoreProduct, 'id' | 'created
 export async function createProductWithId(id: string, data: Omit<FirestoreProduct, 'id' | 'createdAt' | 'updatedAt'>): Promise<FirestoreProduct> {
     const docRef = doc(db, PRODUCTS_COLLECTION, id)
     const now = serverTimestamp()
-    await setDoc(docRef, { ...data, createdAt: now, updatedAt: now })
+    await setDoc(docRef, { ...cleanData(data), createdAt: now, updatedAt: now })
     const created = await getDoc(docRef)
     return { id: created.id, ...created.data() } as FirestoreProduct
 }
@@ -119,7 +120,7 @@ export async function createProductWithId(id: string, data: Omit<FirestoreProduc
 export async function updateProduct(id: string, data: Partial<FirestoreProduct>): Promise<void> {
     const docRef = doc(db, PRODUCTS_COLLECTION, id)
     const { id: _id, ...updateData } = data as any
-    await setDoc(docRef, { ...updateData, updatedAt: serverTimestamp() }, { merge: true })
+    await setDoc(docRef, { ...cleanData(updateData), updatedAt: serverTimestamp() }, { merge: true })
 }
 
 export async function deleteProduct(id: string): Promise<void> {
