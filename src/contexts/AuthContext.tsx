@@ -109,10 +109,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         })
                     } else {
                         // users 컬렉션에 doc 없음.
-                        // 정상 흐름(signup, Kakao/Google login)에서는 doc이 함께 생성되므로
-                        // 여기 도달하는 건 비정상 케이스(Firestore 생성 실패 등).
-                        // 이전엔 자동으로 CUSTOMER로 만들었지만 → SUPPLIER/직원 발급 도중 실패 시
-                        // 역할이 오염되는 위험이 있어 제거. 명시적 에러 + 강제 로그아웃.
+                        // 관리자 이메일(예: 구글 로그인으로 새 UID가 생긴 경우)은 문서가 없어도
+                        // ADMIN을 보장한다 — 문서를 생성하고 ADMIN으로 진입.
+                        const isAdminEmail = ADMIN_EMAILS.includes(fbUser.email.toLowerCase())
+                        if (isAdminEmail) {
+                            try {
+                                await createUser({
+                                    email: fbUser.email.toLowerCase(),
+                                    name: fbUser.displayName || '관리자',
+                                    role: 'ADMIN',
+                                    status: 'ACTIVE',
+                                }, fbUser.uid)
+                            } catch (e) {
+                                console.error('Admin user doc auto-create failed:', e)
+                            }
+                            setUser({
+                                id: fbUser.uid,
+                                email: fbUser.email,
+                                name: fbUser.displayName || '관리자',
+                                role: 'ADMIN',
+                                firebaseUid: fbUser.uid,
+                            })
+                            setLoading(false)
+                            return
+                        }
+                        // 비관리자: 정상 흐름이면 doc이 함께 생성되므로 여기 도달은 비정상 케이스.
+                        // 역할 오염 방지를 위해 자동 CUSTOMER 생성하지 않고 명시적 에러 + 로그아웃.
                         console.error('User document not found in Firestore for uid:', fbUser.uid, 'email:', fbUser.email)
                         await signOut(auth)
                         setUser(null)
@@ -122,12 +144,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     }
                 } catch (error) {
                     console.error('Failed to fetch user data:', error)
-                    // Firebase Auth는 성공했지만 Firestore 조회 실패 시
+                    // Firebase Auth는 성공했지만 Firestore 조회 실패 시: 관리자 이메일은 ADMIN 유지
+                    const isAdminEmail = ADMIN_EMAILS.includes((fbUser.email || '').toLowerCase())
                     setUser({
                         id: fbUser.uid,
                         email: fbUser.email,
                         name: fbUser.displayName || '사용자',
-                        role: 'CUSTOMER',
+                        role: isAdminEmail ? 'ADMIN' : 'CUSTOMER',
                         firebaseUid: fbUser.uid,
                         business: undefined // No business profile on error fallback
                     })
