@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import type { UserRole } from '../types'
-import { getUserByEmail, getUserById, createUser, type BusinessProfile } from '../lib/userService'
+import { getUserByEmail, getUserById, createUser, updateUser, type BusinessProfile } from '../lib/userService'
 import { setCurrentActor } from '../lib/auditing'
 import { getSystemApiKeys } from '../lib/systemConfigService'
 import { useSystemStore } from '../stores/systemStore'
@@ -282,15 +282,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             console.log('Google login (popup) success:', googleUser.email)
 
-            // Firestore에 사용자 정보가 없으면 생성
+            // 관리자 이메일이면 ADMIN으로 처리.
+            const isAdminEmail = ADMIN_EMAILS.includes(googleUser.email.toLowerCase())
             const existingUser = await getUserById(googleUser.uid)
             if (!existingUser) {
+                // 문서 없으면 생성 (관리자 이메일이면 ADMIN으로)
                 await createUser({
                     email: googleUser.email,
                     name: googleUser.displayName || '구글 사용자',
-                    role: 'CUSTOMER',
+                    role: isAdminEmail ? 'ADMIN' : 'CUSTOMER',
                     status: 'ACTIVE',
                 }, googleUser.uid)
+            } else if (isAdminEmail && existingUser.role !== 'ADMIN') {
+                // 관리자 이메일인데 문서가 CUSTOMER 등으로 잘못돼 있으면 ADMIN으로 승격(self-heal)
+                await updateUser(existingUser.id, { role: 'ADMIN', status: 'ACTIVE' })
             }
 
             const updatedUser = await getUserById(googleUser.uid)
@@ -299,7 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 id: updatedUser.id,
                 email: updatedUser.email,
                 name: updatedUser.name,
-                role: updatedUser.role,
+                role: isAdminEmail ? 'ADMIN' : updatedUser.role,
                 business: updatedUser.business
             }
         } catch (error: any) {
