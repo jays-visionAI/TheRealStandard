@@ -406,6 +406,44 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
         }
     }
 
+    // 공개 카탈로그 노출 토글 (행 클릭, 낙관적 업데이트)
+    const toggleDisplayOnPublic = async (product: Product) => {
+        const next = !product.displayOnPublic
+        setProducts(prev => prev.map(p => p.id === product.id ? { ...p, displayOnPublic: next } : p))
+        try {
+            await updateProductFirebase(product.id, { displayOnPublic: next })
+        } catch (err) {
+            console.error('Toggle public failed:', err)
+            await loadProducts()
+            showAlert('변경 실패', '공개 설정 변경에 실패했습니다.', true)
+        }
+    }
+
+    // 전체 상품 공개/비공개 일괄 적용
+    const [bulkPublishing, setBulkPublishing] = useState(false)
+    const bulkSetDisplayOnPublic = async (value: boolean) => {
+        const targets = products.filter(p => (p.displayOnPublic === true) !== value)
+        if (targets.length === 0) {
+            showAlert('변경 없음', value ? '이미 모든 상품이 공개 상태입니다.' : '이미 모든 상품이 비공개 상태입니다.')
+            return
+        }
+        if (!confirm(`${targets.length}개 상품을 ${value ? '공개' : '비공개'}로 일괄 변경할까요?`)) return
+        setBulkPublishing(true)
+        try {
+            for (const p of targets) {
+                await updateProductFirebase(p.id, { displayOnPublic: value })
+            }
+            await loadProducts()
+            showAlert('완료', `${targets.length}개 상품을 ${value ? '공개' : '비공개'}로 변경했습니다.`)
+        } catch (err) {
+            console.error('Bulk publish failed:', err)
+            await loadProducts()
+            showAlert('실패', '일괄 변경 중 오류가 발생했습니다.', true)
+        } finally {
+            setBulkPublishing(false)
+        }
+    }
+
     // 가격 히스토리 조회
     const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([])
     const [historyYear, setHistoryYear] = useState<number>(new Date().getFullYear())
@@ -636,6 +674,9 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                     <button className="btn btn-secondary" onClick={openBulkModal}>
                         <FileTextIcon size={18} /> 일괄 수정
                     </button>
+                    <button className="btn btn-ghost" onClick={() => bulkSetDisplayOnPublic(true)} disabled={bulkPublishing} title="모든 상품을 공개 카탈로그(/products)에 노출">
+                        {bulkPublishing ? '처리 중...' : '전체 공개'}
+                    </button>
                     <button className="btn btn-primary" onClick={() => openModal()}>
                         + 상품 추가
                     </button>
@@ -829,11 +870,18 @@ export default function ProductMaster({ channel }: { channel?: 'B2B' | 'B2C' }) 
                                 <td>{product.boxWeight ? `${product.boxWeight} kg` : '-'}</td>
                                 <td className="price-col">₩{formatCurrency(product.wholesalePrice)}</td>
                                 <td>
-                                    {product.displayOnPublic ? (
-                                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#dcfce7', color: '#16a34a', fontWeight: 600 }}>공개</span>
-                                    ) : (
-                                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#f3f4f6', color: '#6b7280' }}>비공개</span>
-                                    )}
+                                    <button
+                                        onClick={() => toggleDisplayOnPublic(product)}
+                                        title="클릭하여 공개/비공개 전환"
+                                        style={{
+                                            cursor: 'pointer', border: 'none', fontSize: '11px', padding: '3px 8px',
+                                            borderRadius: '4px', fontWeight: 600,
+                                            background: product.displayOnPublic ? '#dcfce7' : '#f3f4f6',
+                                            color: product.displayOnPublic ? '#16a34a' : '#6b7280',
+                                        }}
+                                    >
+                                        {product.displayOnPublic ? '공개' : '비공개'}
+                                    </button>
                                 </td>
                                 <td className="last-update-col">{formatLastUpdate(product.createdAt)}</td>
                                 <td className="last-update-col">{formatLastUpdate(product.updatedAt)}</td>

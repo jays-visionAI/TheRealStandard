@@ -166,40 +166,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error: any) {
             console.error('Firebase Login Error Object:', error)
 
-            // Firebase Auth 계정이 없으면 자동 생성 시도 (데모용)
+            // 인증 실패 처리.
+            // [보안] 과거엔 계정이 없으면 입력값으로 자동 생성했으나(가입 통제 우회 위험),
+            // 운영에서는 제거하고 개발(DEV) 데모 편의로만 한정한다. 운영 빌드에선 실행되지 않음.
             if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
-                try {
-                    console.log('Account not found, attempting to create demo account:', normalizedEmail)
-                    // 새 Firebase Auth 계정 생성
-                    const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password)
-                    console.log('Auth account created:', userCredential.user.uid)
-
-                    // Firestore에 사용자 정보 저장 (데모 계정 확인)
-                    const demoAccount = Object.values(DEMO_ACCOUNTS).find(d => d.email === normalizedEmail)
-
-                    await createUser({
-                        email: normalizedEmail,
-                        name: demoAccount?.name || '신규 사용자',
-                        role: demoAccount?.role || 'CUSTOMER',
-                        status: 'ACTIVE',
-                    }, userCredential.user.uid)
-                    console.log('Firestore user identity created')
-                    const newUser = await getUserById(userCredential.user.uid)
-                    if (!newUser) throw new Error('계정 생성 후 정보를 불러올 수 없습니다.')
-                    return {
-                        id: newUser.id,
-                        email: newUser.email,
-                        name: newUser.name,
-                        role: newUser.role,
-                        business: newUser.business
+                if (import.meta.env.DEV) {
+                    try {
+                        const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password)
+                        const demoAccount = Object.values(DEMO_ACCOUNTS).find(d => d.email === normalizedEmail)
+                        await createUser({
+                            email: normalizedEmail,
+                            name: demoAccount?.name || '신규 사용자',
+                            role: demoAccount?.role || 'CUSTOMER',
+                            status: 'ACTIVE',
+                        }, userCredential.user.uid)
+                        const newUser = await getUserById(userCredential.user.uid)
+                        if (!newUser) throw new Error('계정 생성 후 정보를 불러올 수 없습니다.')
+                        return {
+                            id: newUser.id,
+                            email: newUser.email,
+                            name: newUser.name,
+                            role: newUser.role,
+                            business: newUser.business
+                        }
+                    } catch (createError: any) {
+                        if (createError.code === 'auth/email-already-in-use') {
+                            throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.')
+                        }
+                        throw new Error(`계정 생성 실패: ${createError.message}`)
                     }
-                } catch (createError: any) {
-                    console.error('Account Creation Error:', createError)
-                    if (createError.code === 'auth/email-already-in-use') {
-                        throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.')
-                    }
-                    throw new Error(`계정 생성 실패: ${createError.message}`)
                 }
+                // 운영: 자동 생성하지 않고 표준 인증 실패 에러
+                throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.')
             } else if (error.code === 'auth/wrong-password') {
                 throw new Error('비밀번호가 올바르지 않습니다.')
             } else if (error.code === 'auth/invalid-email') {
