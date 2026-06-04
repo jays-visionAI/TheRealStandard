@@ -260,6 +260,14 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ============ ONBOARDING INVITES (공급사 온보딩 토큰 — 토큰 소지자 read, 온보딩 중 본인 update) ============
+    match /onboardingInvites/{token} {
+      allow read: if true;                                   // 토큰으로 접근 (링크 소지자)
+      allow create: if hasAnyRole(['ADMIN', 'OPS', 'PURCHASE']);
+      allow update: if isAuthenticated();                    // 온보딩 중 공급사 본인이 used 표시
+      allow delete: if isAdmin();
+    }
+
     // ============ LEADS (비회원 거래문의 인입 — 공개 create, 영업/운영자 read) ============
     match /leads/{leadId} {
       // 생성: 비회원 포함 누구나 (공개 카탈로그 거래문의 폼)

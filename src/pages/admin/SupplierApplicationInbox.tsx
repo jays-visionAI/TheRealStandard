@@ -3,6 +3,9 @@ import {
     getAllSupplierApplications, updateSupplierApplicationStatus,
     type SupplierApplication, type SupplierApplicationStatus,
 } from '../../lib/supplierApplicationService'
+import {
+    createOnboardingInvite, getOnboardingInviteByApplication, type OnboardingInvite,
+} from '../../lib/onboardingInviteService'
 import { useAuth } from '../../contexts/AuthContext'
 import { FactoryIcon } from '../../components/Icons'
 
@@ -31,6 +34,44 @@ export default function SupplierApplicationInbox() {
     const [filter, setFilter] = useState<'ALL' | SupplierApplicationStatus>('ALL')
     const [updatingId, setUpdatingId] = useState<string | null>(null)
     const [expanded, setExpanded] = useState<string | null>(null)
+    const [inviteByApp, setInviteByApp] = useState<Record<string, OnboardingInvite | null>>({})
+    const [genId, setGenId] = useState<string | null>(null)
+    const [copied, setCopied] = useState<string | null>(null)
+
+    const onboardUrl = (token: string) => `${window.location.origin}/supplier/onboard/${token}`
+
+    const handleExpand = async (a: SupplierApplication) => {
+        const open = expanded === a.id ? null : a.id
+        setExpanded(open)
+        // 승인/온보딩 단계면 온보딩 초대 조회 (미로딩 시)
+        if (open && (a.status === 'APPROVED' || a.status === 'ONBOARDED') && inviteByApp[a.id] === undefined) {
+            const inv = await getOnboardingInviteByApplication(a.id)
+            setInviteByApp(prev => ({ ...prev, [a.id]: inv }))
+        }
+    }
+
+    const generateInvite = async (a: SupplierApplication) => {
+        setGenId(a.id)
+        try {
+            const token = await createOnboardingInvite({
+                applicationId: a.id,
+                companyName: a.companyName,
+                bizRegNo: a.bizRegNo,
+                ceoName: a.ceoName,
+                contactName: a.contactName,
+                contactPhone: a.contactPhone,
+                contactEmail: a.contactEmail,
+                categories: a.categories || [],
+            })
+            const inv = await getOnboardingInviteByApplication(a.id)
+            setInviteByApp(prev => ({ ...prev, [a.id]: inv }))
+            try { await navigator.clipboard.writeText(onboardUrl(token)); setCopied(a.id) } catch { /* 클립보드 미지원 */ }
+        } catch (err) {
+            console.error('Failed to create onboarding invite:', err)
+        } finally {
+            setGenId(null)
+        }
+    }
 
     const load = async () => {
         setLoading(true)
@@ -119,7 +160,7 @@ export default function SupplierApplicationInbox() {
                                 const isOpen = expanded === a.id
                                 return (
                                     <Fragment key={a.id}>
-                                        <tr onClick={() => setExpanded(isOpen ? null : a.id)} style={{ cursor: 'pointer', background: isOpen ? '#F9FAFB' : undefined, opacity: updatingId === a.id ? 0.5 : 1 }}>
+                                        <tr onClick={() => handleExpand(a)} style={{ cursor: 'pointer', background: isOpen ? '#F9FAFB' : undefined, opacity: updatingId === a.id ? 0.5 : 1 }}>
                                             <td style={{ ...td, whiteSpace: 'nowrap', color: '#6B7280' }}>{formatDate(a.createdAt)}</td>
                                             <td style={td}>
                                                 <div style={{ fontWeight: 700 }}>{a.companyName}</div>
@@ -166,6 +207,35 @@ export default function SupplierApplicationInbox() {
                                                     )}
                                                     {a.reviewNote && (
                                                         <div style={{ marginTop: '10px', fontSize: '12px', color: '#B45309' }}>심사 메모: {a.reviewNote}</div>
+                                                    )}
+
+                                                    {/* 온보딩 (승인/온보딩 단계) */}
+                                                    {(a.status === 'APPROVED' || a.status === 'ONBOARDED') && (
+                                                        <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #E5E7EB' }} onClick={(e) => e.stopPropagation()}>
+                                                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>🚪 온보딩 (계정 발급)</div>
+                                                            {(() => {
+                                                                const inv = inviteByApp[a.id]
+                                                                if (inv === undefined) return <div style={{ fontSize: '12px', color: '#9CA3AF' }}>불러오는 중...</div>
+                                                                if (!inv) {
+                                                                    return (
+                                                                        <button onClick={() => generateInvite(a)} disabled={genId === a.id} className="btn btn-primary" style={{ padding: '7px 14px', fontSize: '13px' }}>
+                                                                            {genId === a.id ? '생성 중...' : '온보딩 링크 생성'}
+                                                                        </button>
+                                                                    )
+                                                                }
+                                                                return (
+                                                                    <div>
+                                                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                                            <input readOnly value={onboardUrl(inv.token)} onFocus={(e) => e.target.select()} style={{ flex: 1, minWidth: '260px', padding: '8px 10px', fontSize: '12px', border: '1px solid #E5E7EB', borderRadius: '6px', color: '#374151' }} />
+                                                                            <button onClick={() => { navigator.clipboard?.writeText(onboardUrl(inv.token)); setCopied(a.id) }} className="btn btn-ghost" style={{ padding: '7px 12px', fontSize: '12px' }}>{copied === a.id ? '복사됨 ✓' : '링크 복사'}</button>
+                                                                        </div>
+                                                                        <div style={{ marginTop: '8px', fontSize: '12px', color: inv.used ? '#047857' : '#B45309', fontWeight: 600 }}>
+                                                                            {inv.used ? '✅ 공급사가 온보딩을 완료해 계정이 발급되었습니다.' : '⏳ 공급사에게 이 링크를 전달하세요. (계정 미발급)'}
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })()}
+                                                        </div>
                                                     )}
                                                 </td>
                                             </tr>

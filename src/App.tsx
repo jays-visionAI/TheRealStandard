@@ -71,6 +71,7 @@ import DispatchView from './pages/public/DispatchView'
 import PublicCatalog from './pages/public/PublicCatalog'
 import ProductDetail from './pages/public/ProductDetail'
 import SupplierApply from './pages/public/SupplierApply'
+import SupplierOnboard from './pages/public/SupplierOnboard'
 import LeadInbox from './pages/admin/LeadInbox'
 import SupplierApplicationInbox from './pages/admin/SupplierApplicationInbox'
 import CustomerProfitability from './pages/admin/CustomerProfitability'
@@ -119,6 +120,7 @@ function App() {
                     <Route path="/products" element={<PublicCatalog />} />
                     <Route path="/products/:id" element={<ProductDetail />} />
                     <Route path="/supplier/apply" element={<SupplierApply />} />
+                    <Route path="/supplier/onboard/:token" element={<SupplierOnboard />} />
                     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
                     <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
                     <Route path="/order-sheet/:token" element={<OrderSheetView />} />
