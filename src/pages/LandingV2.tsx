@@ -261,9 +261,9 @@ export default function LandingV2() {
                             fontSize: '56px', fontWeight: 800, lineHeight: 1.15,
                             color: C.secondary, marginTop: '20px', letterSpacing: '-1.5px',
                         }}>
-                            전국 식당에 매일,<br />
-                            <span style={{ color: C.primary }}>신선한 고기를</span><br />
-                            안정적으로.
+                            AI로 똑똑해진<br />
+                            당신의 축산 유통 파트너<br />
+                            <span style={{ color: C.primary }}>'믿고'</span>
                         </h1>
                         <p style={{
                             fontSize: '17px', color: C.textMuted, marginTop: '24px',
