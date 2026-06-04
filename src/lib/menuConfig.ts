@@ -168,6 +168,11 @@ export const menuConfig: MenuItem[] = [
                 roles: ['ADMIN', 'OPS', 'PURCHASE'],
             },
             {
+                label: '공급사 입점신청',
+                path: '/admin/supplier-applications',
+                roles: ['ADMIN', 'OPS', 'PURCHASE'],
+            },
+            {
                 label: '배송업체 관리',
                 path: '/admin/users/carriers',
                 roles: ['ADMIN', 'OPS'],

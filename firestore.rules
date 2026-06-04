@@ -253,6 +253,13 @@ service cloud.firestore {
       allow delete: if isStaff();
     }
 
+    // ============ SUPPLIER APPLICATIONS (공급사 입점 신청 — 공개 create, 구매/운영자 심사) ============
+    match /supplierApplications/{appId} {
+      allow create: if true;
+      allow read, update: if hasAnyRole(['ADMIN', 'OPS', 'PURCHASE']);
+      allow delete: if isAdmin();
+    }
+
     // ============ LEADS (비회원 거래문의 인입 — 공개 create, 영업/운영자 read) ============
     match /leads/{leadId} {
       // 생성: 비회원 포함 누구나 (공개 카탈로그 거래문의 폼)

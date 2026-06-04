@@ -414,7 +414,7 @@ export default function LandingV2() {
                                     </li>
                                 ))}
                             </ul>
-                            <button onClick={() => setContactOpen(true)} style={{
+                            <button onClick={() => navigate('/supplier/apply')} style={{
                                 background: C.primary, color: '#fff', border: 0,
                                 borderRadius: '10px', padding: '14px 28px',
                                 fontSize: '15px', fontWeight: 600, cursor: 'pointer',

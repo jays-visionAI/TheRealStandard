@@ -70,7 +70,9 @@ import PurchaseOrderView from './pages/front/PurchaseOrderView'
 import DispatchView from './pages/public/DispatchView'
 import PublicCatalog from './pages/public/PublicCatalog'
 import ProductDetail from './pages/public/ProductDetail'
+import SupplierApply from './pages/public/SupplierApply'
 import LeadInbox from './pages/admin/LeadInbox'
+import SupplierApplicationInbox from './pages/admin/SupplierApplicationInbox'
 import CustomerProfitability from './pages/admin/CustomerProfitability'
 import SalesGuide from './pages/admin/SalesGuide'
 import OrderTemplates from './pages/admin/OrderTemplates'
@@ -116,6 +118,7 @@ function App() {
                     <Route path="/landing-v2" element={<LandingV2 />} />
                     <Route path="/products" element={<PublicCatalog />} />
                     <Route path="/products/:id" element={<ProductDetail />} />
+                    <Route path="/supplier/apply" element={<SupplierApply />} />
                     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
                     <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
                     <Route path="/order-sheet/:token" element={<OrderSheetView />} />
@@ -198,6 +201,7 @@ function App() {
                         <Route index element={<AdminDashboardRouter />} />
                         <Route path="documents" element={<DocumentHub />} />
                         <Route path="leads" element={<LeadInbox />} />
+                        <Route path="supplier-applications" element={<SupplierApplicationInbox />} />
                         <Route path="insights/customer-profitability" element={<CustomerProfitability />} />
                         <Route path="help/sales-guide" element={<SalesGuide />} />
                         <Route path="order-templates" element={<OrderTemplates />} />
