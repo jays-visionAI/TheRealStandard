@@ -154,8 +154,17 @@ export default function PublicCatalog() {
             {/* Product Grid */}
             <section style={{ ...containerStyle, padding: '8px 24px 64px' }}>
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '80px 0', color: COLOR.textMuted }}>
-                        상품을 불러오는 중...
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div key={i} style={{ background: COLOR.surface, border: `1px solid ${COLOR.border}`, borderRadius: RADIUS.xl, overflow: 'hidden' }}>
+                                <div className="mg-skeleton" style={{ aspectRatio: '4/3', width: '100%' }} />
+                                <div style={{ padding: '16px' }}>
+                                    <div className="mg-skeleton" style={{ height: '14px', width: '40%', borderRadius: '4px', marginBottom: '10px' }} />
+                                    <div className="mg-skeleton" style={{ height: '18px', width: '80%', borderRadius: '4px', marginBottom: '14px' }} />
+                                    <div className="mg-skeleton" style={{ height: '22px', width: '50%', borderRadius: '4px' }} />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : filtered.length === 0 ? (
                     <div style={{
@@ -173,17 +182,19 @@ export default function PublicCatalog() {
                         gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
                         gap: '20px',
                     }}>
-                        {filtered.map(p => (
-                            <article key={p.id} onClick={() => navigate(`/products/${p.id}`)} style={{
+                        {filtered.map((p, idx) => (
+                            <article key={p.id} className="mg-fade-up" onClick={() => navigate(`/products/${p.id}`)} style={{
                                 background: COLOR.surface,
                                 border: `1px solid ${COLOR.border}`,
                                 borderRadius: RADIUS.xl,
                                 overflow: 'hidden',
                                 cursor: 'pointer',
+                                boxShadow: SHADOW.card,
+                                animationDelay: `${Math.min(idx, 12) * 0.04}s`,
                                 transition: 'transform 0.2s, border-color 0.2s, box-shadow 0.2s',
                             }}
-                                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = COLOR.primary; e.currentTarget.style.boxShadow = SHADOW.lg }}
-                                onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.borderColor = COLOR.border; e.currentTarget.style.boxShadow = '' }}
+                                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.borderColor = COLOR.primary; e.currentTarget.style.boxShadow = SHADOW.cardHover }}
+                                onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.borderColor = COLOR.border; e.currentTarget.style.boxShadow = SHADOW.card }}
                             >
                                 <div style={{ aspectRatio: '4/3', width: '100%', overflow: 'hidden', background: COLOR.surfaceAlt, position: 'relative' }}>
                                     <ImageCarousel
@@ -229,13 +240,20 @@ export default function PublicCatalog() {
                                             {p.memo}
                                         </p>
                                     )}
-                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', paddingTop: '10px', borderTop: `1px solid ${COLOR.border}` }}>
-                                        <span style={{ fontSize: '20px', fontWeight: 800, color: COLOR.secondary }}>
-                                            ₩{formatCurrency(p.wholesalePrice)}
-                                        </span>
-                                        <span style={{ fontSize: '12px', color: COLOR.textMuted }}>
-                                            / {p.unit === 'box' ? 'BOX' : 'kg'}
-                                        </span>
+                                    <div style={{ paddingTop: '10px', borderTop: `1px solid ${COLOR.border}` }}>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                                            <span style={{ fontSize: '24px', fontWeight: 900, color: COLOR.price, letterSpacing: '-0.5px' }}>
+                                                ₩{formatCurrency(p.wholesalePrice)}
+                                            </span>
+                                            <span style={{ fontSize: '12px', color: COLOR.textMuted }}>
+                                                / {p.unit === 'box' ? 'BOX' : 'kg'}
+                                            </span>
+                                        </div>
+                                        {p.unit === 'box' && p.boxWeight ? (
+                                            <div style={{ fontSize: '11px', color: COLOR.textMuted, marginTop: '2px' }}>
+                                                kg당 ₩{formatCurrency(Math.round(p.wholesalePrice / p.boxWeight))}
+                                            </div>
+                                        ) : null}
                                     </div>
                                 </div>
                             </article>

@@ -20,6 +20,11 @@ export const COLOR = {
     accent: '#D97706',         // Amber-600
     accentLight: '#FEF3C7',    // Amber-100
 
+    // Price — 커머스 가격 강조 (식욕/거래 신호)
+    price: '#DC2626',          // Red-600 — 가격을 주인공으로
+    priceUp: '#DC2626',        // 시세 상승
+    priceDown: '#047857',      // 시세 하락(=득템)
+
     // Neutrals
     bg: '#FEFCF8',             // Warm White — 따뜻한 배경
     surface: '#FFFFFF',
@@ -52,6 +57,8 @@ export const SHADOW = {
     md: '0 4px 12px rgba(0,0,0,0.06)',
     lg: '0 12px 24px rgba(0,0,0,0.08)',
     primary: '0 4px 12px rgba(4, 120, 87, 0.25)',
+    card: '0 2px 8px rgba(31,41,55,0.06)',          // 진열대 기본
+    cardHover: '0 16px 32px rgba(31,41,55,0.14)',   // hover 띄움
 }
 
 export const MAX_W = '1200px'

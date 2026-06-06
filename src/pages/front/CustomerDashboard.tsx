@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import {
     getOrderSheetsByCustomer,
     getSalesOrdersByCustomer,
+    getAllSalesOrders,
     type FirestoreOrderSheet
 } from '../../lib/orderService'
 import {
@@ -28,6 +29,7 @@ export default function CustomerDashboard() {
     })
     const [recentSheets, setRecentSheets] = useState<FirestoreOrderSheet[]>([])
     const [companyDocs, setCompanyDocs] = useState<FirestoreFileAttachment[]>([])
+    const [platform, setPlatform] = useState<{ orgs: number; orders: number } | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -60,6 +62,17 @@ export default function CustomerDashboard() {
                 })
 
                 setRecentSheets(pending.slice(0, 3))
+
+                // 플랫폼 활동 띠 — 이번 달 전체 발주 활동 (군중 신호). salesOrders read = 인증 사용자 허용
+                try {
+                    const allSO = await getAllSalesOrders()
+                    const monthSO = allSO.filter(o => {
+                        const d = (o.confirmedAt || o.createdAt)?.toDate?.()
+                        return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+                    })
+                    const orgs = new Set(monthSO.map(o => o.customerOrgId).filter(Boolean)).size
+                    setPlatform({ orgs, orders: monthSO.length })
+                } catch { /* 권한/네트워크 실패 시 띠 숨김 */ }
 
                 // MeatGo 회사 서류 로드
                 const docs = await getCompanyDocuments()
@@ -105,6 +118,18 @@ export default function CustomerDashboard() {
                     </div>
                 </div>
             </div>
+
+            {platform && platform.orders > 0 && (
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    background: 'linear-gradient(90deg, #D1FAE5 0%, #ECFDF5 100%)',
+                    border: '1px solid #A7F3D0', borderRadius: '12px',
+                    padding: '12px 18px', margin: '0 0 20px', fontSize: '14px', color: '#065F46', fontWeight: 600,
+                }}>
+                    <span className="mg-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#047857', flexShrink: 0 }} />
+                    <span>🔥 이번 달 <strong>{platform.orgs}곳</strong>의 거래처가 <strong>{platform.orders}건</strong> 발주 중이에요.</span>
+                </div>
+            )}
 
             <div className="dashboard-grid">
                 <div className="grid-section glass-card">

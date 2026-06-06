@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getDefaultPathForRole } from '../components/ProtectedRoute'
 import { createLead } from '../lib/leadService'
+import { getAllProducts, type FirestoreProduct } from '../lib/productService'
 
 // ============================================
 // 컬러 토큰 (Forest Green + Charcoal Gold)
@@ -206,6 +207,27 @@ export default function LandingV2() {
     const navigate = useNavigate()
     const [contactOpen, setContactOpen] = useState(false)
 
+    // 라이브 상품 데이터 (히어로 라벨 + 트러스트바 지표) — products는 공개 read
+    const [products, setProducts] = useState<FirestoreProduct[]>([])
+    const [heroIdx, setHeroIdx] = useState(0)
+    useEffect(() => {
+        getAllProducts().then(all => setProducts(all.filter(p => p.isActive !== false))).catch(() => {})
+    }, [])
+    useEffect(() => {
+        if (products.length < 2) return
+        const t = setInterval(() => setHeroIdx(i => (i + 1) % products.length), 2600)
+        return () => clearInterval(t)
+    }, [products])
+    const liveLabel = products.length > 0 ? products[heroIdx % products.length].name : '한우 1등급'
+    const productCount = products.length
+    const recentCount = useMemo(() => {
+        const now = Date.now()
+        return products.filter(p => {
+            const t = (p.createdAt as any)?.toDate ? (p.createdAt as any).toDate().getTime() : 0
+            return t && (now - t) < 7 * 86400000
+        }).length
+    }, [products])
+
     return (
         <div style={{
             background: C.bg, color: C.text, minHeight: '100vh',
@@ -274,15 +296,15 @@ export default function LandingV2() {
                             <strong style={{ color: C.text }}>B2B 유통 플랫폼</strong>입니다.
                         </p>
                         <div style={{ display: 'flex', gap: '12px', marginTop: '36px', flexWrap: 'wrap' }}>
-                            <button onClick={() => setContactOpen(true)} style={btnPrimaryLg}>
-                                🥩 거래 문의하기 →
+                            <button onClick={() => navigate('/products')} style={btnPrimaryLg}>
+                                🥩 상품 보러가기 →
                             </button>
-                            <button onClick={() => navigate('/products')} style={btnSecondaryLg}>
-                                상품 둘러보기
+                            <button onClick={() => setContactOpen(true)} style={btnSecondaryLg}>
+                                거래 문의하기
                             </button>
                         </div>
                     </div>
-                    <HeroVisual />
+                    <HeroVisual label={liveLabel} />
                 </div>
             </section>
 
@@ -293,10 +315,10 @@ export default function LandingV2() {
                         display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px',
                         textAlign: 'center', fontSize: '14px',
                     }}>
+                        <TrustItem icon="📦" text={productCount > 0 ? `취급 품목 ${productCount}종` : '신선·냉동 전 품목'} />
                         <TrustItem icon="✓" text="HACCP 인증 공급망" />
                         <TrustItem icon="✓" text="콜드체인 99.5%" />
-                        <TrustItem icon="✓" text="자동 정산" />
-                        <TrustItem icon="✓" text="새벽배송 (서울·경기)" />
+                        <TrustItem icon={recentCount > 0 ? '🆕' : '✓'} text={recentCount > 0 ? `이번 주 신규 ${recentCount}건 입고` : '새벽배송 (서울·경기)'} />
                     </div>
                 </div>
             </section>
@@ -433,11 +455,11 @@ export default function LandingV2() {
                     바로 주문할 수 있습니다.
                 </p>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <button onClick={() => setContactOpen(true)} style={btnPrimaryLg}>
-                        🥩 거래 문의하기
+                    <button onClick={() => navigate('/products')} style={btnPrimaryLg}>
+                        🥩 상품 보러가기 →
                     </button>
-                    <button onClick={() => navigate('/products')} style={btnSecondaryLg}>
-                        상품 둘러보기
+                    <button onClick={() => setContactOpen(true)} style={btnSecondaryLg}>
+                        거래 문의하기
                     </button>
                 </div>
             </section>
@@ -490,7 +512,7 @@ export default function LandingV2() {
 // ============================================
 // 보조 컴포넌트
 // ============================================
-function HeroVisual() {
+function HeroVisual({ label }: { label: string }) {
     return (
         <div style={{
             aspectRatio: '4/3', borderRadius: '20px',
@@ -517,11 +539,10 @@ function HeroVisual() {
                 boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
                 fontWeight: 500,
             }}>
-                <span style={{
+                <span className="mg-pulse" style={{
                     width: '8px', height: '8px', borderRadius: '50%', background: C.primary,
-                    boxShadow: `0 0 0 3px ${C.primaryLight}`,
                 }} />
-                <span>지금 입고 중 · 한우 1등급</span>
+                <span>지금 입고 중 · <strong style={{ fontWeight: 700 }}>{label}</strong></span>
             </div>
             <div style={{
                 position: 'absolute', top: '20px', right: '20px',
