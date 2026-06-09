@@ -323,6 +323,12 @@ export default function LandingV2() {
                 </div>
             </section>
 
+            {/* ============ AI 의사결정 브리핑 (차별화 핵심) ============ */}
+            <AIBriefingSection />
+
+            {/* ============ 플랫폼 흐름 (발주~정산 E2E) ============ */}
+            <PlatformFlowSection />
+
             {/* ============ WHY MEATGO ============ */}
             <section style={{ ...maxContainer, padding: '96px 24px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '64px' }}>
@@ -677,6 +683,123 @@ function NavLink({ children, onClick }: { children: React.ReactNode; onClick: ()
                 fontFamily: FONT,
             }}
         >{children}</button>
+    )
+}
+
+// ============================================
+// AI 의사결정 브리핑 (제품 차별화 핵심 — 제품의 깊이를 보여줌)
+// ============================================
+const DECISIONS = [
+    { tag: '매수 타이밍', icon: '📈', title: '삼겹살 — 강력 매수', score: '78', reason: '경락가 60일 최저 · 환율↑로 원가 상승 예상', accent: '#047857', bg: 'rgba(4,120,87,0.12)' },
+    { tag: '판매 가격', icon: '🏷️', title: '목심 단가 −3% 권장', score: 'CM 31%', reason: '재고 과잉 → 회전 촉진', accent: '#D97706', bg: 'rgba(217,119,6,0.12)' },
+    { tag: '재고 처분', icon: '⏳', title: '등심 9일 내 소진 필요', score: '할인 18%', reason: '유통기한 잔여 < 소진 예상일', accent: '#DC2626', bg: 'rgba(220,38,38,0.12)' },
+    { tag: '거래처 이탈', icon: '⚠️', title: '○○식당 이탈 위험 76', score: 'High', reason: '발주 18일째 없음(평소 6일) · 금액 −40%', accent: '#DC2626', bg: 'rgba(220,38,38,0.12)' },
+    { tag: '수요 예측', icon: '🔮', title: '다음 주 +12% 증가 전망', score: '320kg', reason: '명절 수요 · 4주 추세 상승', accent: '#1D4ED8', bg: 'rgba(29,78,216,0.12)' },
+    { tag: '공급사 평가', icon: '🏭', title: '△△미트 신뢰도 B → C', score: '하락', reason: '입고 지연율 상승 · 단가 변동 확대', accent: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
+]
+
+function AIBriefingSection() {
+    return (
+        <section style={{ background: C.surfaceAlt, padding: '100px 0', borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+            <div style={maxContainer}>
+                <div style={{ textAlign: 'center', maxWidth: '720px', margin: '0 auto 48px' }}>
+                    <div style={capsule}>⚡ AI DECISION SUPPORT</div>
+                    <h2 style={{ fontSize: '40px', fontWeight: 800, color: C.secondary, marginTop: '16px', letterSpacing: '-1px', lineHeight: 1.2 }}>
+                        매일 아침, <span style={{ color: C.primary }}>AI가 오늘의 결정</span>을 브리핑합니다
+                    </h2>
+                    <p style={{ fontSize: '17px', color: C.textMuted, marginTop: '16px', lineHeight: 1.7 }}>
+                        축산 시세 · 수급 · 자체 거래 데이터를 종합해 <strong style={{ color: C.text }}>매수 타이밍부터 가격·재고·거래처 이탈까지</strong> — 감이 아니라 데이터로 판단합니다.
+                    </p>
+                </div>
+
+                {/* 제품 목업 패널 */}
+                <div style={{
+                    background: C.secondary, borderRadius: '20px', padding: '24px',
+                    boxShadow: '0 24px 60px rgba(31,41,55,0.28)', overflow: 'hidden',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', color: '#fff' }}>
+                        <span style={{ display: 'flex', gap: '6px' }}>
+                            {['#FF5F57', '#FEBC2E', '#28C840'].map(c => <span key={c} style={{ width: '11px', height: '11px', borderRadius: '50%', background: c }} />)}
+                        </span>
+                        <span style={{ fontSize: '15px', fontWeight: 700, marginLeft: '6px' }}>🌅 오늘의 의사결정 브리핑</span>
+                        <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#9CA3AF' }}>실시간 데이터 · 6개 추천</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+                        {DECISIONS.map((d, i) => (
+                            <div key={d.tag} className="mg-fade-up" style={{
+                                background: '#fff', borderRadius: '14px', padding: '16px',
+                                borderLeft: `4px solid ${d.accent}`, animationDelay: `${i * 0.06}s`,
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.3px' }}>{d.icon} {d.tag}</span>
+                                    <span style={{ fontSize: '11px', fontWeight: 800, color: d.accent, background: d.bg, padding: '2px 8px', borderRadius: '999px' }}>{d.score}</span>
+                                </div>
+                                <div style={{ fontSize: '15px', fontWeight: 800, color: C.secondary, marginBottom: '6px', lineHeight: 1.3 }}>{d.title}</div>
+                                <div style={{ fontSize: '12px', color: C.textMuted, lineHeight: 1.5 }}>{d.reason}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <p style={{ fontSize: '13px', color: C.textFaint, textAlign: 'center', marginTop: '20px', lineHeight: 1.6 }}>
+                    * 정부 공식 시세(축산물품질평가원 경락가 · aT KAMIS)와 자체 거래 데이터 기반.<br />
+                    모든 추천은 <strong>근거와 신뢰도</strong>를 함께 제시하며, 최종 결정은 담당자가 승인합니다.
+                </p>
+            </div>
+        </section>
+    )
+}
+
+// ============================================
+// 플랫폼 흐름 — 발주~정산 End-to-End
+// ============================================
+const FLOW_STEPS = [
+    { icon: '📋', title: '주문 접수', body: '고객 발주·견적, 단가표 자동 전송' },
+    { icon: '✅', title: '검토·확정', body: '수량·단가 검수 후 확정' },
+    { icon: '🚚', title: '배차·출고', body: '콜드체인 차량 추천·배차' },
+    { icon: '📦', title: '입고·검수', body: '창고 게이트 검수·서명' },
+    { icon: '💰', title: '정산·미수', body: '공헌이익·미수채권 자동 집계' },
+]
+const CAPABILITIES = ['거래처 수익성 분석', '자동발주 템플릿', '공급사 셀프 온보딩', '실사 상품 카탈로그', '재고 입출고', '단가표 관리']
+
+function PlatformFlowSection() {
+    return (
+        <section style={{ ...maxContainer, padding: '100px 24px' }}>
+            <div style={{ textAlign: 'center', maxWidth: '720px', margin: '0 auto 56px' }}>
+                <div style={capsule}>🔗 ONE PLATFORM</div>
+                <h2 style={{ fontSize: '40px', fontWeight: 800, color: C.secondary, marginTop: '16px', letterSpacing: '-1px', lineHeight: 1.2 }}>
+                    발주 한 번으로, <span style={{ color: C.primary }}>정산까지 한 흐름</span>으로
+                </h2>
+                <p style={{ fontSize: '17px', color: C.textMuted, marginTop: '16px', lineHeight: 1.7 }}>
+                    수발주·물류·정산이 흩어진 엑셀·카톡·전화를 하나의 데이터로. 한 번 입력하면 끝까지 연결됩니다.
+                </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'stretch', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '40px' }}>
+                {FLOW_STEPS.map((s, i) => (
+                    <div key={s.title} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                            background: C.surface, border: `1px solid ${C.border}`, borderRadius: '16px',
+                            padding: '20px 18px', width: '180px', textAlign: 'center', boxShadow: '0 2px 8px rgba(31,41,55,0.06)',
+                        }}>
+                            <div style={{ fontSize: '30px', marginBottom: '8px' }}>{s.icon}</div>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: C.secondary, marginBottom: '4px' }}>{s.title}</div>
+                            <div style={{ fontSize: '12px', color: C.textMuted, lineHeight: 1.5 }}>{s.body}</div>
+                        </div>
+                        {i < FLOW_STEPS.length - 1 && <span style={{ color: C.primary, fontSize: '20px', fontWeight: 800 }}>→</span>}
+                    </div>
+                ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                {CAPABILITIES.map(c => (
+                    <span key={c} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '6px',
+                        background: C.primaryLight, color: C.primaryDark, borderRadius: '999px',
+                        padding: '8px 16px', fontSize: '14px', fontWeight: 600,
+                    }}>✓ {c}</span>
+                ))}
+            </div>
+        </section>
     )
 }
 
