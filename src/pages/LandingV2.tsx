@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getDefaultPathForRole } from '../components/ProtectedRoute'
@@ -344,10 +344,10 @@ export default function LandingV2() {
             </section>
 
             {/* ============ AI 의사결정 브리핑 (차별화 핵심) ============ */}
-            <AIBriefingSection />
+            <Reveal><AIBriefingSection /></Reveal>
 
             {/* ============ 플랫폼 흐름 (발주~정산 E2E) ============ */}
-            <PlatformFlowSection />
+            <Reveal><PlatformFlowSection /></Reveal>
 
             {/* ============ WHY MEATGO ============ */}
             <section style={{ ...maxContainer, padding: '96px 24px' }}>
@@ -540,44 +540,123 @@ export default function LandingV2() {
 // ============================================
 // 보조 컴포넌트
 // ============================================
+
+// 스크롤 진입 시 페이드·슬라이드 인 (IntersectionObserver, reduced-motion 안전)
+function Reveal({ children, delay = 0, y = 24 }: { children: React.ReactNode; delay?: number; y?: number }) {
+    const ref = useRef<HTMLDivElement>(null)
+    const [shown, setShown] = useState(false)
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setShown(true); return }
+        const el = ref.current
+        if (!el) return
+        const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setShown(true); io.disconnect() } }, { threshold: 0.12 })
+        io.observe(el)
+        return () => io.disconnect()
+    }, [])
+    return (
+        <div ref={ref} style={{
+            opacity: shown ? 1 : 0,
+            transform: shown ? 'none' : `translateY(${y}px)`,
+            transition: `opacity 0.6s ease ${delay}s, transform 0.6s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
+            willChange: 'opacity, transform',
+        }}>{children}</div>
+    )
+}
+
+// 시세 추세 스파크라인 (SVG 드로우 애니메이션)
+function Sparkline({ color = C.primary }: { color?: string }) {
+    const pts = [22, 17, 24, 14, 19, 11, 16, 8, 12, 6]
+    const w = 260, h = 52
+    const max = Math.max(...pts), min = Math.min(...pts)
+    const xy = (v: number, i: number) => [(i / (pts.length - 1)) * w, h - ((v - min) / (max - min || 1)) * (h * 0.78) - 6]
+    const line = pts.map((v, i) => `${i === 0 ? 'M' : 'L'}${xy(v, i).map(n => n.toFixed(1)).join(',')}`).join(' ')
+    const area = `${line} L${w},${h} L0,${h} Z`
+    return (
+        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ width: '100%', height: '52px', display: 'block' }}>
+            <defs>
+                <linearGradient id="mgSpark" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+                    <stop offset="100%" stopColor={color} stopOpacity="0" />
+                </linearGradient>
+            </defs>
+            <path d={area} fill="url(#mgSpark)" />
+            <path className="mg-draw" d={line} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    )
+}
+
+function SisePill({ name, val, delta, up }: { name: string; val: string; delta: string; up?: boolean }) {
+    const c = up ? '#DC2626' : C.primary
+    return (
+        <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '11px', color: C.textMuted, fontWeight: 600, marginBottom: '2px' }}>{name}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                <span style={{ fontSize: '15px', fontWeight: 800, color: C.secondary }}>{val}</span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: c }}>{up ? '▲' : '▼'}{delta}</span>
+            </div>
+        </div>
+    )
+}
+
 function HeroVisual({ label }: { label: string }) {
     return (
-        <div style={{
-            aspectRatio: '4/3', borderRadius: '20px',
-            border: `1px solid ${C.border}`,
-            position: 'relative', overflow: 'hidden',
-            boxShadow: '0 12px 32px rgba(31, 41, 55, 0.12)',
-        }}>
-            <img src="/images/hero-meat.jpg" alt="신선한 정육"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                loading="eager"
-            />
-            {/* 오버레이 — 텍스트 가독성을 위한 어두운 그라데이션 */}
+        <div style={{ position: 'relative' }}>
+            {/* 배경 글로우 */}
+            <div aria-hidden style={{ position: 'absolute', inset: '-12% -10%', background: 'radial-gradient(55% 55% at 72% 28%, rgba(4,120,87,0.14), transparent 70%)', filter: 'blur(8px)', pointerEvents: 'none' }} />
+
+            {/* 프리미엄 정육 사진 카드 */}
             <div style={{
-                position: 'absolute', inset: 0,
-                background: 'linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(31, 41, 55, 0.45) 100%)',
-            }} />
-            <div style={{
-                position: 'absolute', bottom: '20px', left: '20px',
-                background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(8px)',
-                borderRadius: '12px',
-                padding: '12px 16px', fontSize: '13px', color: C.text,
-                display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                fontWeight: 500,
+                aspectRatio: '4/3', borderRadius: '24px', overflow: 'hidden', position: 'relative',
+                boxShadow: '0 30px 70px rgba(31,41,55,0.22)', border: '1px solid rgba(255,255,255,0.5)',
             }}>
-                <span className="mg-pulse" style={{
-                    width: '8px', height: '8px', borderRadius: '50%', background: C.primary,
-                }} />
-                <span>지금 입고 중 · <strong style={{ fontWeight: 700 }}>{label}</strong></span>
+                <img src="/images/hero-meat.jpg" alt="신선한 정육"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} loading="eager" />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(31,41,55,0.4) 100%)' }} />
             </div>
+
+            {/* 플로팅: 입고 라벨 (좌상단) */}
+            <div className="mg-float" style={{
+                position: 'absolute', top: '7%', left: '5%',
+                background: 'rgba(255,255,255,0.94)', backdropFilter: 'blur(10px)', borderRadius: '12px',
+                padding: '10px 14px', fontSize: '13px', color: C.text, fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 8px 24px rgba(31,41,55,0.16)',
+            }}>
+                <span className="mg-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.primary }} />
+                지금 입고 중 · <strong style={{ fontWeight: 800 }}>{label}</strong>
+            </div>
+
+            {/* 플로팅: KPI 칩 (우상단) */}
             <div style={{
-                position: 'absolute', top: '20px', right: '20px',
-                background: C.accent, color: '#fff', borderRadius: '999px',
-                padding: '6px 14px', fontSize: '12px', fontWeight: 600,
-                boxShadow: '0 4px 12px rgba(217, 119, 6, 0.4)',
-            }}>면세</div>
+                position: 'absolute', top: '6%', right: '5%',
+                background: C.secondary, color: '#fff', borderRadius: '12px',
+                padding: '10px 14px', boxShadow: '0 8px 24px rgba(31,41,55,0.28)',
+                display: 'flex', alignItems: 'center', gap: '9px',
+            }}>
+                <span style={{ display: 'inline-flex', width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.12)', color: '#6EE7B7', alignItems: 'center', justifyContent: 'center' }}>
+                    <ChartIcon size={16} />
+                </span>
+                <span style={{ fontSize: '12px' }}><span style={{ color: '#9CA3AF' }}>이번 달 공헌이익</span><br /><strong style={{ fontSize: '15px' }}>+12.4%</strong></span>
+            </div>
+
+            {/* 플로팅: 시세 트렌드 위젯 (하단) — 제품 목업 */}
+            <div className="mg-float" style={{
+                position: 'absolute', left: '4%', right: '4%', bottom: '-7%',
+                background: 'rgba(255,255,255,0.94)', backdropFilter: 'blur(14px)', borderRadius: '16px',
+                padding: '16px 18px', boxShadow: '0 18px 44px rgba(31,41,55,0.20)', border: '1px solid rgba(255,255,255,0.6)',
+                animationDelay: '1s',
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '11px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+                        <TrendingUpIcon size={14} color={C.primary} /> 축산 시세 트렌드
+                    </span>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: C.primary, background: C.primaryLight, padding: '2px 8px', borderRadius: '999px' }}>축평원·aT 연동</span>
+                </div>
+                <Sparkline />
+                <div style={{ display: 'flex', gap: '14px', marginTop: '10px' }}>
+                    <SisePill name="한우 1++ 경락" val="₩21,400" delta="2.1%" up />
+                    <SisePill name="돼지 탕박" val="₩5,820" delta="0.8%" />
+                </div>
+            </div>
         </div>
     )
 }
