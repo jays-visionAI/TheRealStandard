@@ -4,6 +4,26 @@ import { useAuth } from '../contexts/AuthContext'
 import { getDefaultPathForRole } from '../components/ProtectedRoute'
 import { createLead } from '../lib/leadService'
 import { getAllProducts, type FirestoreProduct } from '../lib/productService'
+import {
+    TrendingUpIcon, WalletIcon, HourglassIcon, AlertTriangleIcon, SparklesIcon, FactoryIcon,
+    ClipboardListIcon, CheckCircleIcon, TruckIcon, PackageIcon, ZapIcon, ChartIcon,
+    ShieldIcon, SnowflakeIcon, NetworkIcon, CheckIcon, BoneIcon,
+} from '../components/Icons'
+
+type IconFC = React.FC<{ size?: number; className?: string; color?: string }>
+
+// 프리미엄 아이콘 배지 — 틴티드 라운드 컨테이너 (이모지 대체, SOTA 패턴)
+function IconBadge({ Icon, color, size = 44, radius = 12 }: { Icon: IconFC; color: string; size?: number; radius?: number }) {
+    return (
+        <div style={{
+            width: size, height: size, borderRadius: radius, flexShrink: 0,
+            background: `${color}14`, color,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+            <Icon size={Math.round(size * 0.5)} />
+        </div>
+    )
+}
 
 // ============================================
 // 컬러 토큰 (Forest Green + Charcoal Gold)
@@ -98,8 +118,8 @@ function ContactModal({ onClose }: { onClose: () => void }) {
                             width: '72px', height: '72px', borderRadius: '50%',
                             background: C.primaryLight, color: C.primary,
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '36px', marginBottom: '20px',
-                        }}>✓</div>
+                            marginBottom: '20px',
+                        }}><CheckCircleIcon size={40} /></div>
                         <h3 style={{ fontSize: '22px', fontWeight: 700, color: C.text, marginBottom: '8px' }}>
                             문의 접수 완료
                         </h3>
@@ -297,7 +317,7 @@ export default function LandingV2() {
                         </p>
                         <div style={{ display: 'flex', gap: '12px', marginTop: '36px', flexWrap: 'wrap' }}>
                             <button onClick={() => navigate('/products')} style={btnPrimaryLg}>
-                                🥩 상품 보러가기 →
+                                상품 보러가기 →
                             </button>
                             <button onClick={() => setContactOpen(true)} style={btnSecondaryLg}>
                                 거래 문의하기
@@ -315,10 +335,10 @@ export default function LandingV2() {
                         display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px',
                         textAlign: 'center', fontSize: '14px',
                     }}>
-                        <TrustItem icon="📦" text={productCount > 0 ? `취급 품목 ${productCount}종` : '신선·냉동 전 품목'} />
-                        <TrustItem icon="✓" text="HACCP 인증 공급망" />
-                        <TrustItem icon="✓" text="콜드체인 99.5%" />
-                        <TrustItem icon={recentCount > 0 ? '🆕' : '✓'} text={recentCount > 0 ? `이번 주 신규 ${recentCount}건 입고` : '새벽배송 (서울·경기)'} />
+                        <TrustItem Icon={PackageIcon} text={productCount > 0 ? `취급 품목 ${productCount}종` : '신선·냉동 전 품목'} />
+                        <TrustItem Icon={ShieldIcon} text="HACCP 인증 공급망" />
+                        <TrustItem Icon={SnowflakeIcon} text="콜드체인 99.5%" />
+                        <TrustItem Icon={recentCount > 0 ? SparklesIcon : TruckIcon} text={recentCount > 0 ? `이번 주 신규 ${recentCount}건 입고` : '새벽배송 (서울·경기)'} />
                     </div>
                 </div>
             </section>
@@ -340,13 +360,13 @@ export default function LandingV2() {
                     </h2>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-                    <ValueCard icon="💰" title="안정적 단가"
+                    <ValueCard Icon={WalletIcon} title="안정적 단가"
                         body="축산물품질평가원·KAMIS의 실시간 시장가를 모니터링. 급등기에도 거래처를 단가 충격으로부터 보호합니다."
                     />
-                    <ValueCard icon="⚡" title="자동화된 발주·정산"
+                    <ValueCard Icon={ZapIcon} title="자동화된 발주·정산"
                         body="주문장 → 출고 → 정산까지 한 흐름. 외상 장부, 정산서, 세금계산서 모두 자동. 주말 야근 끝."
                     />
-                    <ValueCard icon="📊" title="데이터 기반 결정"
+                    <ValueCard Icon={ChartIcon} title="데이터 기반 결정"
                         body="이번 주 매수 타이밍, 재고 처분 추천, 거래처별 수익성 분석. 데이터가 답을 줍니다."
                     />
                 </div>
@@ -364,10 +384,10 @@ export default function LandingV2() {
                         </h2>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-                        <StepCard n={1} icon="📋" title="거래 등록" body="영업담당과 간단한 거래 조건 설정. 매일 단가표가 전송됩니다." />
-                        <StepCard n={2} icon="📦" title="발주" body="원하는 품목을 한번에 발주. 익일 새벽 입고." />
-                        <StepCard n={3} icon="✅" title="검수" body="창고 입고 시 실시간 검수와 사진 기록." />
-                        <StepCard n={4} icon="💳" title="정산" body="실중량 기준 정산서 자동발행. 외상 자동 추적." />
+                        <StepCard n={1} Icon={ClipboardListIcon} title="거래 등록" body="영업담당과 간단한 거래 조건 설정. 매일 단가표가 전송됩니다." />
+                        <StepCard n={2} Icon={PackageIcon} title="발주" body="원하는 품목을 한번에 발주. 익일 새벽 입고." />
+                        <StepCard n={3} Icon={CheckCircleIcon} title="검수" body="창고 입고 시 실시간 검수와 사진 기록." />
+                        <StepCard n={4} Icon={WalletIcon} title="정산" body="실중량 기준 정산서 자동발행. 외상 자동 추적." />
                     </div>
                 </div>
             </section>
@@ -383,16 +403,16 @@ export default function LandingV2() {
                     </h2>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '40px' }}>
-                    <CategoryCard emoji="🥩" name="육류" status="NOW SERVING" statusColor={C.primary}
+                    <CategoryCard Icon={BoneIcon} name="육류" status="NOW SERVING" statusColor={C.primary}
                         desc="한우·돼지·오리·닭, 냉장/냉동/부산물"
                         imageUrl="/images/category-meat.jpg"
                         active onClick={() => navigate('/products')}
                     />
-                    <CategoryCard emoji="🥬" name="채소" status="Q1 2027 OPEN" statusColor={C.accent}
+                    <CategoryCard Icon={SparklesIcon} name="채소" status="Q1 2027 OPEN" statusColor={C.accent}
                         desc="산지직송, 친환경·유기농 (예정)"
                         imageUrl="/images/category-veg.jpg"
                     />
-                    <CategoryCard emoji="🌶️" name="양념·가공식품" status="Q2 2027" statusColor={C.textFaint}
+                    <CategoryCard Icon={PackageIcon} name="양념·가공식품" status="Q2 2027" statusColor={C.textFaint}
                         desc="장류, 소스, 가공식품 (예정)"
                         imageUrl="/images/category-sauce.jpg"
                     />
@@ -431,13 +451,15 @@ export default function LandingV2() {
                                 <span style={{ color: C.primaryLight }}>안정적인 판로</span>가 필요하신가요?
                             </h2>
                             <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0 32px' }}>
-                                {[
-                                    ['💰', '빠른 결제 (D+7)'],
-                                    ['📊', '수요예측 데이터 제공'],
-                                    ['📋', '디지털 출고·이력 관리'],
-                                ].map(([icon, text]) => (
-                                    <li key={text} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '16px', color: '#E5E7EB' }}>
-                                        <span style={{ fontSize: '20px' }}>{icon}</span>
+                                {([
+                                    [WalletIcon, '빠른 결제 (D+7)'],
+                                    [ChartIcon, '수요예측 데이터 제공'],
+                                    [ClipboardListIcon, '디지털 출고·이력 관리'],
+                                ] as [IconFC, string][]).map(([Icon, text]) => (
+                                    <li key={text} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px', fontSize: '16px', color: '#E5E7EB' }}>
+                                        <span style={{ display: 'inline-flex', width: '34px', height: '34px', borderRadius: '9px', background: 'rgba(255,255,255,0.1)', color: C.primaryLight, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <Icon size={17} />
+                                        </span>
                                         {text}
                                     </li>
                                 ))}
@@ -560,31 +582,28 @@ function HeroVisual({ label }: { label: string }) {
     )
 }
 
-function TrustItem({ icon, text }: { icon: string; text: string }) {
+function TrustItem({ Icon, text }: { Icon: IconFC; text: string }) {
     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <span style={{ color: C.primaryLight, fontWeight: 700 }}>{icon}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px' }}>
+            <Icon size={17} color={C.primaryLight} />
             <span>{text}</span>
         </div>
     )
 }
 
-function ValueCard({ icon, title, body }: { icon: string; title: string; body: string }) {
+function ValueCard({ Icon, title, body }: { Icon: IconFC; title: string; body: string }) {
     return (
         <div style={{
             background: C.surface, border: `1px solid ${C.border}`,
             borderRadius: '16px', padding: '32px 28px',
             transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
         }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor = C.primary }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 16px 32px rgba(31,41,55,0.10)'; e.currentTarget.style.borderColor = C.primary }}
             onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; e.currentTarget.style.borderColor = C.border }}
         >
-            <div style={{
-                width: '56px', height: '56px', borderRadius: '12px',
-                background: C.primaryLight, color: C.primary,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '28px', marginBottom: '20px',
-            }}>{icon}</div>
+            <div style={{ marginBottom: '20px' }}>
+                <IconBadge Icon={Icon} color={C.primary} size={56} radius={14} />
+            </div>
             <h3 style={{ fontSize: '20px', fontWeight: 700, color: C.secondary, marginBottom: '12px' }}>
                 {title}
             </h3>
@@ -595,7 +614,7 @@ function ValueCard({ icon, title, body }: { icon: string; title: string; body: s
     )
 }
 
-function StepCard({ n, icon, title, body }: { n: number; icon: string; title: string; body: string }) {
+function StepCard({ n, Icon, title, body }: { n: number; Icon: IconFC; title: string; body: string }) {
     return (
         <div style={{
             background: C.surface, border: `1px solid ${C.border}`,
@@ -608,15 +627,17 @@ function StepCard({ n, icon, title, body }: { n: number; icon: string; title: st
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '13px', fontWeight: 700,
             }}>{n}</div>
-            <div style={{ fontSize: '36px', marginTop: '4px', marginBottom: '12px' }}>{icon}</div>
+            <div style={{ marginTop: '4px', marginBottom: '12px' }}>
+                <IconBadge Icon={Icon} color={C.primary} size={44} radius={12} />
+            </div>
             <h4 style={{ fontSize: '16px', fontWeight: 700, color: C.secondary, marginBottom: '8px' }}>{title}</h4>
             <p style={{ fontSize: '13px', color: C.textMuted, lineHeight: 1.6, margin: 0 }}>{body}</p>
         </div>
     )
 }
 
-function CategoryCard({ emoji, name, status, statusColor, desc, active, onClick, imageUrl }: {
-    emoji: string; name: string; status: string; statusColor: string; desc: string;
+function CategoryCard({ Icon, name, status, statusColor, desc, active, onClick, imageUrl }: {
+    Icon: IconFC; name: string; status: string; statusColor: string; desc: string;
     active?: boolean; onClick?: () => void; imageUrl?: string
 }) {
     return (
@@ -643,8 +664,8 @@ function CategoryCard({ emoji, name, status, statusColor, desc, active, onClick,
                         loading="lazy"
                     />
                 ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '80px' }}>
-                        {emoji}
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: active ? C.primary : C.textFaint }}>
+                        <Icon size={64} />
                     </div>
                 )}
                 {/* 상태 뱃지 */}
@@ -664,7 +685,7 @@ function CategoryCard({ emoji, name, status, statusColor, desc, active, onClick,
             {/* 텍스트 */}
             <div style={{ padding: '20px 24px 24px' }}>
                 <h3 style={{ fontSize: '20px', fontWeight: 700, color: C.secondary, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '24px' }}>{emoji}</span>
+                    <Icon size={20} color={active ? C.primary : C.textFaint} />
                     {name}
                 </h3>
                 <p style={{ fontSize: '13px', color: C.textMuted, margin: 0 }}>{desc}</p>
@@ -689,13 +710,13 @@ function NavLink({ children, onClick }: { children: React.ReactNode; onClick: ()
 // ============================================
 // AI 의사결정 브리핑 (제품 차별화 핵심 — 제품의 깊이를 보여줌)
 // ============================================
-const DECISIONS = [
-    { tag: '매수 타이밍', icon: '📈', title: '삼겹살 — 강력 매수', score: '78', reason: '경락가 60일 최저 · 환율↑로 원가 상승 예상', accent: '#047857', bg: 'rgba(4,120,87,0.12)' },
-    { tag: '판매 가격', icon: '🏷️', title: '목심 단가 −3% 권장', score: 'CM 31%', reason: '재고 과잉 → 회전 촉진', accent: '#D97706', bg: 'rgba(217,119,6,0.12)' },
-    { tag: '재고 처분', icon: '⏳', title: '등심 9일 내 소진 필요', score: '할인 18%', reason: '유통기한 잔여 < 소진 예상일', accent: '#DC2626', bg: 'rgba(220,38,38,0.12)' },
-    { tag: '거래처 이탈', icon: '⚠️', title: '○○식당 이탈 위험 76', score: 'High', reason: '발주 18일째 없음(평소 6일) · 금액 −40%', accent: '#DC2626', bg: 'rgba(220,38,38,0.12)' },
-    { tag: '수요 예측', icon: '🔮', title: '다음 주 +12% 증가 전망', score: '320kg', reason: '명절 수요 · 4주 추세 상승', accent: '#1D4ED8', bg: 'rgba(29,78,216,0.12)' },
-    { tag: '공급사 평가', icon: '🏭', title: '△△미트 신뢰도 B → C', score: '하락', reason: '입고 지연율 상승 · 단가 변동 확대', accent: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
+const DECISIONS: { tag: string; Icon: IconFC; title: string; score: string; reason: string; accent: string }[] = [
+    { tag: '매수 타이밍', Icon: TrendingUpIcon, title: '삼겹살 — 강력 매수', score: '78', reason: '경락가 60일 최저 · 환율↑로 원가 상승 예상', accent: '#047857' },
+    { tag: '판매 가격', Icon: WalletIcon, title: '목심 단가 −3% 권장', score: 'CM 31%', reason: '재고 과잉 → 회전 촉진', accent: '#D97706' },
+    { tag: '재고 처분', Icon: HourglassIcon, title: '등심 9일 내 소진 필요', score: '할인 18%', reason: '유통기한 잔여 < 소진 예상일', accent: '#DC2626' },
+    { tag: '거래처 이탈', Icon: AlertTriangleIcon, title: '○○식당 이탈 위험 76', score: 'High', reason: '발주 18일째 없음(평소 6일) · 금액 −40%', accent: '#DC2626' },
+    { tag: '수요 예측', Icon: SparklesIcon, title: '다음 주 +12% 증가 전망', score: '320kg', reason: '명절 수요 · 4주 추세 상승', accent: '#1D4ED8' },
+    { tag: '공급사 평가', Icon: FactoryIcon, title: '△△미트 신뢰도 B → C', score: '하락', reason: '입고 지연율 상승 · 단가 변동 확대', accent: '#6B7280' },
 ]
 
 function AIBriefingSection() {
@@ -703,7 +724,7 @@ function AIBriefingSection() {
         <section style={{ background: C.surfaceAlt, padding: '100px 0', borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
             <div style={maxContainer}>
                 <div style={{ textAlign: 'center', maxWidth: '720px', margin: '0 auto 48px' }}>
-                    <div style={capsule}>⚡ AI DECISION SUPPORT</div>
+                    <div style={capsule}><SparklesIcon size={14} /> AI DECISION SUPPORT</div>
                     <h2 style={{ fontSize: '40px', fontWeight: 800, color: C.secondary, marginTop: '16px', letterSpacing: '-1px', lineHeight: 1.2 }}>
                         매일 아침, <span style={{ color: C.primary }}>AI가 오늘의 결정</span>을 브리핑합니다
                     </h2>
@@ -716,23 +737,31 @@ function AIBriefingSection() {
                 <div style={{
                     background: C.secondary, borderRadius: '20px', padding: '24px',
                     boxShadow: '0 24px 60px rgba(31,41,55,0.28)', overflow: 'hidden',
+                    border: '1px solid rgba(255,255,255,0.06)',
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', color: '#fff' }}>
                         <span style={{ display: 'flex', gap: '6px' }}>
                             {['#FF5F57', '#FEBC2E', '#28C840'].map(c => <span key={c} style={{ width: '11px', height: '11px', borderRadius: '50%', background: c }} />)}
                         </span>
-                        <span style={{ fontSize: '15px', fontWeight: 700, marginLeft: '6px' }}>🌅 오늘의 의사결정 브리핑</span>
-                        <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#9CA3AF' }}>실시간 데이터 · 6개 추천</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 700, marginLeft: '6px' }}>
+                            <SparklesIcon size={16} /> 오늘의 의사결정 브리핑
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginLeft: 'auto', fontSize: '12px', color: '#9CA3AF' }}>
+                            <span className="mg-pulse" style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#28C840' }} /> 실시간 · 6개 추천
+                        </span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                         {DECISIONS.map((d, i) => (
                             <div key={d.tag} className="mg-fade-up" style={{
                                 background: '#fff', borderRadius: '14px', padding: '16px',
-                                borderLeft: `4px solid ${d.accent}`, animationDelay: `${i * 0.06}s`,
+                                border: '1px solid #EEF0F2', animationDelay: `${i * 0.06}s`,
                             }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                                    <span style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.3px' }}>{d.icon} {d.tag}</span>
-                                    <span style={{ fontSize: '11px', fontWeight: 800, color: d.accent, background: d.bg, padding: '2px 8px', borderRadius: '999px' }}>{d.score}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                                        <IconBadge Icon={d.Icon} color={d.accent} size={34} radius={9} />
+                                        <span style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.4px', textTransform: 'uppercase' }}>{d.tag}</span>
+                                    </div>
+                                    <span style={{ fontSize: '11px', fontWeight: 800, color: d.accent, background: `${d.accent}14`, padding: '3px 9px', borderRadius: '999px' }}>{d.score}</span>
                                 </div>
                                 <div style={{ fontSize: '15px', fontWeight: 800, color: C.secondary, marginBottom: '6px', lineHeight: 1.3 }}>{d.title}</div>
                                 <div style={{ fontSize: '12px', color: C.textMuted, lineHeight: 1.5 }}>{d.reason}</div>
@@ -752,12 +781,12 @@ function AIBriefingSection() {
 // ============================================
 // 플랫폼 흐름 — 발주~정산 End-to-End
 // ============================================
-const FLOW_STEPS = [
-    { icon: '📋', title: '주문 접수', body: '고객 발주·견적, 단가표 자동 전송' },
-    { icon: '✅', title: '검토·확정', body: '수량·단가 검수 후 확정' },
-    { icon: '🚚', title: '배차·출고', body: '콜드체인 차량 추천·배차' },
-    { icon: '📦', title: '입고·검수', body: '창고 게이트 검수·서명' },
-    { icon: '💰', title: '정산·미수', body: '공헌이익·미수채권 자동 집계' },
+const FLOW_STEPS: { Icon: IconFC; title: string; body: string }[] = [
+    { Icon: ClipboardListIcon, title: '주문 접수', body: '고객 발주·견적, 단가표 자동 전송' },
+    { Icon: CheckCircleIcon, title: '검토·확정', body: '수량·단가 검수 후 확정' },
+    { Icon: TruckIcon, title: '배차·출고', body: '콜드체인 차량 추천·배차' },
+    { Icon: PackageIcon, title: '입고·검수', body: '창고 게이트 검수·서명' },
+    { Icon: WalletIcon, title: '정산·미수', body: '공헌이익·미수채권 자동 집계' },
 ]
 const CAPABILITIES = ['거래처 수익성 분석', '자동발주 템플릿', '공급사 셀프 온보딩', '실사 상품 카탈로그', '재고 입출고', '단가표 관리']
 
@@ -765,7 +794,7 @@ function PlatformFlowSection() {
     return (
         <section style={{ ...maxContainer, padding: '100px 24px' }}>
             <div style={{ textAlign: 'center', maxWidth: '720px', margin: '0 auto 56px' }}>
-                <div style={capsule}>🔗 ONE PLATFORM</div>
+                <div style={capsule}><NetworkIcon size={14} /> ONE PLATFORM</div>
                 <h2 style={{ fontSize: '40px', fontWeight: 800, color: C.secondary, marginTop: '16px', letterSpacing: '-1px', lineHeight: 1.2 }}>
                     발주 한 번으로, <span style={{ color: C.primary }}>정산까지 한 흐름</span>으로
                 </h2>
@@ -779,13 +808,15 @@ function PlatformFlowSection() {
                     <div key={s.title} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{
                             background: C.surface, border: `1px solid ${C.border}`, borderRadius: '16px',
-                            padding: '20px 18px', width: '180px', textAlign: 'center', boxShadow: '0 2px 8px rgba(31,41,55,0.06)',
+                            padding: '24px 18px', width: '180px', textAlign: 'center', boxShadow: '0 2px 8px rgba(31,41,55,0.06)',
                         }}>
-                            <div style={{ fontSize: '30px', marginBottom: '8px' }}>{s.icon}</div>
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+                                <IconBadge Icon={s.Icon} color={C.primary} size={48} radius={14} />
+                            </div>
                             <div style={{ fontSize: '15px', fontWeight: 800, color: C.secondary, marginBottom: '4px' }}>{s.title}</div>
                             <div style={{ fontSize: '12px', color: C.textMuted, lineHeight: 1.5 }}>{s.body}</div>
                         </div>
-                        {i < FLOW_STEPS.length - 1 && <span style={{ color: C.primary, fontSize: '20px', fontWeight: 800 }}>→</span>}
+                        {i < FLOW_STEPS.length - 1 && <span style={{ color: C.borderDark, fontSize: '18px' }}>→</span>}
                     </div>
                 ))}
             </div>
@@ -794,9 +825,9 @@ function PlatformFlowSection() {
                 {CAPABILITIES.map(c => (
                     <span key={c} style={{
                         display: 'inline-flex', alignItems: 'center', gap: '6px',
-                        background: C.primaryLight, color: C.primaryDark, borderRadius: '999px',
+                        background: C.surface, color: C.text, border: `1px solid ${C.border}`, borderRadius: '999px',
                         padding: '8px 16px', fontSize: '14px', fontWeight: 600,
-                    }}>✓ {c}</span>
+                    }}><CheckIcon size={15} color={C.primary} /> {c}</span>
                 ))}
             </div>
         </section>
