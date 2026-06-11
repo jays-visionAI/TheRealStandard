@@ -13,9 +13,16 @@ import {
     TruckIcon,
     TrendingUpIcon,
     ChevronRightIcon,
-    FileTextIcon
+    FileTextIcon,
+    SparklesIcon,
+    RefreshCwIcon,
+    StarIcon,
+    WalletIcon,
+    ChartIcon,
+    ArrowRightIcon
 } from '../../components/Icons'
 import { getCompanyDocuments, type FirestoreFileAttachment } from '../../lib/fileService'
+import { computeCustomerInsights, type CustomerInsightResult, type InsightKind } from '../../lib/customerInsightService'
 import './CustomerDashboard.css'
 
 export default function CustomerDashboard() {
@@ -30,6 +37,7 @@ export default function CustomerDashboard() {
     const [recentSheets, setRecentSheets] = useState<FirestoreOrderSheet[]>([])
     const [companyDocs, setCompanyDocs] = useState<FirestoreFileAttachment[]>([])
     const [platform, setPlatform] = useState<{ orgs: number; orders: number } | null>(null)
+    const [insightResult, setInsightResult] = useState<CustomerInsightResult | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -73,6 +81,13 @@ export default function CustomerDashboard() {
                     const orgs = new Set(monthSO.map(o => o.customerOrgId).filter(Boolean)).size
                     setPlatform({ orgs, orders: monthSO.length })
                 } catch { /* 권한/네트워크 실패 시 띠 숨김 */ }
+
+                // 맞춤 인사이트 (주문 0건=코호트 / 이력 있음=개인화) — 실패 시 섹션 생략
+                try {
+                    setInsightResult(await computeCustomerInsights(user.id))
+                } catch (e) {
+                    console.warn('Customer insights skipped:', e)
+                }
 
                 // MeatGo 회사 서류 로드
                 const docs = await getCompanyDocuments()
@@ -127,7 +142,71 @@ export default function CustomerDashboard() {
                     padding: '12px 18px', margin: '0 0 20px', fontSize: '14px', color: '#065F46', fontWeight: 600,
                 }}>
                     <span className="mg-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#047857', flexShrink: 0 }} />
-                    <span>🔥 이번 달 <strong>{platform.orgs}곳</strong>의 거래처가 <strong>{platform.orders}건</strong> 발주 중이에요.</span>
+                    <span>이번 달 <strong>{platform.orgs}곳</strong>의 거래처가 <strong>{platform.orders}건</strong> 발주 중이에요.</span>
+                </div>
+            )}
+
+            {/* 맞춤 인사이트 (베타) — 주문 0건이면 플랫폼 평균, 이력 있으면 개인화 */}
+            {insightResult && insightResult.insights.length > 0 && (
+                <div className="glass-card" style={{ padding: '20px 22px', marginBottom: '20px', borderRadius: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <SparklesIcon size={18} color="#047857" />
+                        <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: '#1F2937' }}>맞춤 인사이트</h3>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#047857', background: '#D1FAE5', padding: '2px 8px', borderRadius: '999px' }}>BETA</span>
+                    </div>
+                    <p style={{ fontSize: '12px', color: '#6B7280', margin: '0 0 14px' }}>
+                        {insightResult.mode === 'PERSONAL'
+                            ? '사장님의 주문 데이터를 분석한 결과예요.'
+                            : '아직 주문 이력이 없어 플랫폼 평균 데이터를 보여드려요. 주문이 쌓이면 맞춤 분석으로 바뀝니다.'}
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
+                        {insightResult.insights.map(ins => {
+                            const tone = ins.tone === 'warning' ? '#DC2626' : ins.tone === 'action' ? '#047857' : '#1D4ED8'
+                            const iconMap: Record<InsightKind, React.ReactNode> = {
+                                reorder: <RefreshCwIcon size={16} />, spend: <TrendingUpIcon size={16} />,
+                                top: <StarIcon size={16} />, cross: <SparklesIcon size={16} />,
+                                settlement: <WalletIcon size={16} />, popular: <StarIcon size={16} />,
+                                pattern: <ChartIcon size={16} />, start: <ArrowRightIcon size={16} />,
+                            }
+                            return (
+                                <div key={ins.id} style={{
+                                    background: '#fff', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '14px 16px',
+                                    display: 'flex', flexDirection: 'column', gap: '8px',
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{
+                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                            width: '30px', height: '30px', borderRadius: '8px',
+                                            background: `${tone}14`, color: tone,
+                                        }}>{iconMap[ins.kind]}</span>
+                                        <span style={{ fontSize: '10px', fontWeight: 600, color: '#9CA3AF' }}>
+                                            {ins.basis === 'personal' ? '내 주문 기반' : '플랫폼 평균'}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '14px', fontWeight: 800, color: '#1F2937' }}>{ins.title}</span>
+                                            {ins.metric && <span style={{ fontSize: '13px', fontWeight: 800, color: tone }}>{ins.metric}</span>}
+                                        </div>
+                                        <p style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.6, margin: '4px 0 0' }}>{ins.body}</p>
+                                    </div>
+                                    {ins.cta && (
+                                        <button
+                                            onClick={() => navigate(ins.cta!.path)}
+                                            style={{
+                                                alignSelf: 'flex-start', marginTop: 'auto',
+                                                background: 'transparent', border: 'none', padding: 0,
+                                                fontSize: '12px', fontWeight: 700, color: tone, cursor: 'pointer',
+                                            }}
+                                        >{ins.cta.label} →</button>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                    {insightResult.sampleNote && (
+                        <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '12px 0 0' }}>* {insightResult.sampleNote}</p>
+                    )}
                 </div>
             )}
 

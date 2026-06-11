@@ -65,7 +65,7 @@ src/
 - **Phase 2** 운영 효율화/영업도구: 진행 중 — **완료: 2.2 거래처 수익성**(`/admin/insights/customer-profitability`), **2.3 SALES 권한/가이드**(`/admin/help/sales-guide` + "내 거래처만 보기" createdBy 필터), **2.4 자동발주 템플릿 프론트**(`/admin/order-templates`, `orderTemplateService` — 주간 자동생성 배치는 CF 도입 후). **미착수: 2.1 가격동기화·2.5 알림톡·2.6 PDF이메일·2.7 세금계산서(모두 Cloud Functions+외부 SaaS 필요)**
 - Phase 3 AI 인사이트 → Phase 4 수산 확장 → Phase 5 마켓플레이스화
 
-> 공용 컴포넌트: `YouTubeModal`, `ImageCarousel`, `LeadInquiryForm`, `MediaUploader`. 공용 서비스: `leadService`, `profitabilityService`, `orderTemplateService`.
+> 공용 컴포넌트: `YouTubeModal`, `ImageCarousel`, `LeadInquiryForm`, `MediaUploader`. 공용 서비스: `leadService`, `profitabilityService`, `orderTemplateService`, `customerInsightService`(고객 대시보드 맞춤 인사이트 — 주문 0건=코호트/이력=개인화, docs/customer_insights_spec.md).
 > ⚠️ leads·orderTemplates 기능은 운영에서 `firebase deploy --only firestore:rules` 후에만 저장됨(규칙에 `leads`, `orderTemplates` 추가됨).
 
 ## 컨벤션 / 주의사항
