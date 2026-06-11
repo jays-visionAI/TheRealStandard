@@ -188,6 +188,7 @@ export default function CustomerDashboard() {
                                 top: <StarIcon size={16} />, cross: <SparklesIcon size={16} />,
                                 settlement: <WalletIcon size={16} />, popular: <StarIcon size={16} />,
                                 pattern: <ChartIcon size={16} />, start: <ArrowRightIcon size={16} />,
+                                market: <TrendingUpIcon size={16} />,
                             }
                             return (
                                 <div key={ins.id} style={{

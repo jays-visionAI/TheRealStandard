@@ -121,12 +121,17 @@ export const menuConfig: MenuItem[] = [
     {
         label: '인사이트',
         iconKey: 'transactions',
-        roles: ['ADMIN', 'OPS', 'SALES'],
+        roles: ['ADMIN', 'OPS', 'SALES', 'PURCHASE'],
         children: [
             {
                 label: '거래처 수익성',
                 path: '/admin/insights/customer-profitability',
                 roles: ['ADMIN', 'OPS', 'SALES'],
+            },
+            {
+                label: '축산물 시세',
+                path: '/admin/insights/market-prices',
+                roles: ['ADMIN', 'OPS', 'PURCHASE'],
             },
         ],
     },

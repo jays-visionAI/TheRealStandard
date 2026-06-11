@@ -246,7 +246,8 @@ service cloud.firestore {
     }
     // ============ MARKET PRICES (외부 시장가격 데이터) ============
     match /marketPrices/{id} {
-      allow read: if isStaff();
+      // 정부 경매가(비민감) — 고객 대시보드 시세 인사이트가 읽으므로 인증 사용자 read 허용
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 

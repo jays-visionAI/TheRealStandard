@@ -71,6 +71,39 @@ export async function ingestEkapeDailyPrices(dateStr: string): Promise<number> {
     return count
 }
 
+/** 특정 날짜에 EKAPE 데이터가 이미 수집됐는지 (중복 수집 방지) */
+async function hasEkapeDataForDate(priceDate: Timestamp): Promise<boolean> {
+    const next = Timestamp.fromDate(new Date(priceDate.toDate().getTime() + 86400000))
+    const q = query(
+        ref,
+        where('source', '==', 'EKAPE'),
+        where('priceDate', '>=', priceDate),
+        where('priceDate', '<', next),
+        limit(1)
+    )
+    const snap = await getDocs(q)
+    return !snap.empty
+}
+
+/**
+ * 최근 N일(영업일 무관, 달력일 기준) EKAPE 시세를 수집해 marketPrices에 적재.
+ * 이미 적재된 날짜는 건너뜀(중복 방지). 관리자(키 보유)가 호출. cron 도입 전 수동 트리거.
+ * @returns { days: 시도 일수, ingested: 신규 적재 레코드 수, skipped: 이미있던 날짜 수 }
+ */
+export async function ingestEkapeRange(days: number = 14): Promise<{ days: number; ingested: number; skipped: number }> {
+    let ingested = 0, skipped = 0
+    for (let i = 1; i <= days; i++) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        const priceDate = Timestamp.fromDate(new Date(d.getFullYear(), d.getMonth(), d.getDate()))
+        if (await hasEkapeDataForDate(priceDate)) { skipped++; continue }
+        const dateStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+        const n = await ingestEkapeDailyPrices(dateStr)
+        ingested += n
+    }
+    return { days, ingested, skipped }
+}
+
 /**
  * 특정 상품 타입의 최근 N일 가격 추이
  */

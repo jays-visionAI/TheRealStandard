@@ -3,13 +3,15 @@ import {
     type FirestoreSalesOrder, type FirestoreSalesOrderItem,
 } from './orderService'
 import { getSettlementsByCustomer } from './settlementService'
+import { getSpeciesPriceTrend, dominantSpecies, guessSpecies, SPECIES_LABEL } from './marketInsightService'
+import type { ProductType } from './marketDataService'
 
 // ============ CUSTOMER INSIGHT SERVICE (고객 맞춤 인사이트 — v1 룰 기반) ============
 // docs/customer_insights_spec.md 참고.
 // 본인 주문 0건 → COHORT(플랫폼 평균/인기), ≥1건 → PERSONAL(본인 이력 + 교차추천).
 // ML/예측이 아니라 룰 기반이며, 모든 카드에 데이터 출처(personal/cohort)를 표기한다.
 
-export type InsightKind = 'reorder' | 'spend' | 'top' | 'cross' | 'settlement' | 'popular' | 'pattern' | 'start'
+export type InsightKind = 'reorder' | 'spend' | 'top' | 'cross' | 'settlement' | 'popular' | 'pattern' | 'start' | 'market'
 export type InsightTone = 'info' | 'action' | 'warning'
 export type InsightBasis = 'personal' | 'cohort'
 
@@ -62,6 +64,44 @@ function aggregateItems(items: FirestoreSalesOrderItem[]): { productId: string; 
     return [...map.values()].sort((a, b) => b.kg - a.kg)
 }
 
+/**
+ * 시세 연계 카드 (v2) — 단골 품목의 육종 도매 시세 주간 동향.
+ * marketPrices(관리자 수집)에서 읽으므로 키 불필요. 데이터 없으면 null.
+ * @param species 표시할 육종. PERSONAL은 단골 육종, COHORT는 인기 품목 육종.
+ * @param basis 출처 라벨
+ */
+async function buildMarketInsight(species: ProductType, basis: InsightBasis): Promise<CustomerInsight | null> {
+    try {
+        const trend = await getSpeciesPriceTrend(species)
+        if (!trend.hasData) return null
+        const pct = trend.changePct
+        const up = pct >= 0
+        const label = SPECIES_LABEL[species]
+        const abs = Math.abs(pct).toFixed(1)
+        // 변동이 미미하면(±1.5% 미만) 안정세로 표현, 상승/하락이면 행동 제안
+        let body: string, tone: InsightTone = 'info'
+        if (Math.abs(pct) < 1.5) {
+            body = `${label} 도매 평균가가 지난주와 비슷한 수준(₩${won(trend.latestAvg)})으로 안정적이에요.`
+        } else if (up) {
+            body = `${label} 도매 평균가가 지난주 대비 올랐어요(₩${won(trend.weekAgoAvg)}→₩${won(trend.latestAvg)}). 단골 품목 발주는 조금 서두르는 게 유리할 수 있어요.`
+            tone = 'action'
+        } else {
+            body = `${label} 도매 평균가가 지난주 대비 내렸어요(₩${won(trend.weekAgoAvg)}→₩${won(trend.latestAvg)}). 지금이 매입에 유리한 시점일 수 있어요.`
+            tone = 'action'
+        }
+        return {
+            id: 'market', kind: 'market', basis, tone,
+            title: `${label} 도매 시세 동향`,
+            body,
+            metric: `${up ? '▲' : '▼'} ${abs}%`,
+            cta: { label: '상품 카탈로그 보기', path: '/order/catalog' },
+        }
+    } catch (err) {
+        console.warn('buildMarketInsight failed:', err)
+        return null
+    }
+}
+
 export async function computeCustomerInsights(customerOrgId: string): Promise<CustomerInsightResult> {
     const [ownOrders, allOrders, allItems] = await Promise.all([
         getSalesOrdersByCustomer(customerOrgId),
@@ -99,6 +139,11 @@ export async function computeCustomerInsights(customerOrgId: string): Promise<Cu
                 metric: avg > 0 ? `건당 평균 ₩${won(avg)}` : undefined,
             })
         }
+
+        // 시세 동향 — 인기 품목의 지배적 육종 기준 (없으면 돼지 기본)
+        const cohortSpecies = dominantSpecies(cohortTop.map(t => ({ productName: t.productName, kg: t.kg }))) || 'PORK'
+        const cohortMarket = await buildMarketInsight(cohortSpecies, 'cohort')
+        if (cohortMarket) insights.push(cohortMarket)
 
         insights.push({
             id: 'start', kind: 'start', basis: 'cohort', tone: 'action',
@@ -173,14 +218,28 @@ export async function computeCustomerInsights(customerOrgId: string): Promise<Cu
     }
 
     // 3) 단골 품목 Top 3
+    const ownTop = aggregateItems(ownItems).slice(0, 3)
     {
-        const top = aggregateItems(ownItems).slice(0, 3)
-        if (top.length > 0) {
+        if (ownTop.length > 0) {
             insights.push({
                 id: 'top', kind: 'top', basis: 'personal', tone: 'info',
                 title: '사장님의 단골 품목',
-                body: top.map((t, i) => `${i + 1}. ${t.productName} (${Math.round(t.kg).toLocaleString()}kg)`).join('  '),
+                body: ownTop.map((t, i) => `${i + 1}. ${t.productName} (${Math.round(t.kg).toLocaleString()}kg)`).join('  '),
             })
+        }
+    }
+
+    // 3.5) 시세 동향 — 단골 품목의 육종 도매 시세 주간 변동 (v2, marketPrices 기반)
+    {
+        const species = dominantSpecies(aggregateItems(ownItems).map(t => ({ productName: t.productName, kg: t.kg })))
+        if (species) {
+            const market = await buildMarketInsight(species, 'personal')
+            if (market) {
+                // 단골 품목명을 한 개 곁들여 개인화
+                const topName = ownTop[0]?.productName
+                if (topName) market.title = `${guessSpecies(topName) === species ? topName + ' 등 ' : ''}${SPECIES_LABEL[species]} 시세 동향`
+                insights.push(market)
+            }
         }
     }
 
