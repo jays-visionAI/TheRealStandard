@@ -130,11 +130,11 @@ export async function generateText(input: GenerateInput): Promise<string | null>
             case 'minimax':
                 return await callMessagesApi('/api/minimax', apiKey, cfg.minimaxModel || DEFAULT_MODELS.minimax, input)
             case 'openai':
-                return await callChatCompletions('https://api.openai.com/v1', apiKey, DEFAULT_MODELS.openai, input)
+                return await callChatCompletions('https://api.openai.com/v1', apiKey, cfg.openaiModel || DEFAULT_MODELS.openai, input)
             case 'deepseek':
-                return await callChatCompletions('https://api.deepseek.com', apiKey, DEFAULT_MODELS.deepseek, input)
+                return await callChatCompletions('https://api.deepseek.com', apiKey, cfg.deepseekModel || DEFAULT_MODELS.deepseek, input)
             case 'gemini':
-                return await callGemini(apiKey, DEFAULT_MODELS.gemini, input)
+                return await callGemini(apiKey, cfg.geminiModel || DEFAULT_MODELS.gemini, input)
             default:
                 return null
         }

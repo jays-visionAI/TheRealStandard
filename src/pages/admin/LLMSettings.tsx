@@ -35,8 +35,11 @@ export default function LLMSettings() {
         minimaxApiKey: '',
         minimaxModel: DEFAULT_MODELS.minimax,
         openaiApiKey: settings.openaiApiKey || '',
+        openaiModel: DEFAULT_MODELS.openai,
         geminiApiKey: settings.geminiApiKey || '',
+        geminiModel: DEFAULT_MODELS.gemini,
         deepseekApiKey: settings.deepseekApiKey || '',
+        deepseekModel: DEFAULT_MODELS.deepseek,
         activeLlmProvider: (settings.activeLlmProvider || 'anthropic') as LlmProvider,
     })
     const [loading, setLoading] = useState(true)
@@ -64,8 +67,11 @@ export default function LLMSettings() {
                         minimaxApiKey: remote.minimaxApiKey ?? prev.minimaxApiKey,
                         minimaxModel: remote.minimaxModel ?? prev.minimaxModel,
                         openaiApiKey: remote.openaiApiKey ?? prev.openaiApiKey,
+                        openaiModel: remote.openaiModel ?? prev.openaiModel,
                         geminiApiKey: remote.geminiApiKey ?? prev.geminiApiKey,
+                        geminiModel: remote.geminiModel ?? prev.geminiModel,
                         deepseekApiKey: remote.deepseekApiKey ?? prev.deepseekApiKey,
+                        deepseekModel: remote.deepseekModel ?? prev.deepseekModel,
                         activeLlmProvider: remote.activeLlmProvider ?? prev.activeLlmProvider,
                     }))
                 }
@@ -292,7 +298,14 @@ export default function LLMSettings() {
                                     {testStatus.openai.status === 'testing' ? <LoaderIcon className="animate-spin" size={16} /> : '연결 테스트'}
                                 </button>
                             </div>
-                            <p className="help-text">GPT-4o, GPT-3.5 Turbo 등을 사용하는 데 필요합니다.</p>
+                            <label style={{ display: 'block', marginTop: '12px' }}>모델</label>
+                            <input
+                                type="text"
+                                value={formData.openaiModel}
+                                onChange={e => setFormData({ ...formData, openaiModel: e.target.value })}
+                                placeholder="gpt-4o-mini"
+                            />
+                            <p className="help-text">gpt-4o-mini(저가·기본) / gpt-4o 등. platform.openai.com에서 발급.</p>
                             {testStatus.openai.status !== 'idle' && (
                                 <p className={`text-sm mt-1 flex items-center gap-1 ${testStatus.openai.status === 'success' ? 'text-green-500' : 'text-red-500'}`}>
                                     {testStatus.openai.status === 'success' ? <CheckCircleIcon size={14} /> : <AlertCircleIcon size={14} />}
@@ -328,7 +341,14 @@ export default function LLMSettings() {
                                     {testStatus.gemini.status === 'testing' ? <LoaderIcon className="animate-spin" size={16} /> : '연결 테스트'}
                                 </button>
                             </div>
-                            <p className="help-text">Google AI Studio 또는 Vertex AI에서 발급받은 키를 입력하세요.</p>
+                            <label style={{ display: 'block', marginTop: '12px' }}>모델</label>
+                            <input
+                                type="text"
+                                value={formData.geminiModel}
+                                onChange={e => setFormData({ ...formData, geminiModel: e.target.value })}
+                                placeholder="gemini-2.0-flash"
+                            />
+                            <p className="help-text">gemini-2.0-flash(저가·기본) / gemini-2.5-pro 등. Google AI Studio에서 발급.</p>
                             {testStatus.gemini.status !== 'idle' && (
                                 <p className={`text-sm mt-1 flex items-center gap-1 ${testStatus.gemini.status === 'success' ? 'text-green-500' : 'text-red-500'}`}>
                                     {testStatus.gemini.status === 'success' ? <CheckCircleIcon size={14} /> : <AlertCircleIcon size={14} />}
@@ -364,7 +384,14 @@ export default function LLMSettings() {
                                     {testStatus.deepseek.status === 'testing' ? <LoaderIcon className="animate-spin" size={16} /> : '연결 테스트'}
                                 </button>
                             </div>
-                            <p className="help-text">DeepSeek-V3, DeepSeek-R1 등을 사용하는 데 필요합니다.</p>
+                            <label style={{ display: 'block', marginTop: '12px' }}>모델</label>
+                            <input
+                                type="text"
+                                value={formData.deepseekModel}
+                                onChange={e => setFormData({ ...formData, deepseekModel: e.target.value })}
+                                placeholder="deepseek-chat"
+                            />
+                            <p className="help-text">deepseek-chat(범용·기본) / deepseek-reasoner(추론) / deepseek-v4-flash · v4-pro (신규).</p>
                             {testStatus.deepseek.status !== 'idle' && (
                                 <p className={`text-sm mt-1 flex items-center gap-1 ${testStatus.deepseek.status === 'success' ? 'text-green-500' : 'text-red-500'}`}>
                                     {testStatus.deepseek.status === 'success' ? <CheckCircleIcon size={14} /> : <AlertCircleIcon size={14} />}

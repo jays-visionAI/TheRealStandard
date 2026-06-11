@@ -59,8 +59,11 @@ export interface LlmSettings {
     minimaxApiKey?: string
     minimaxModel?: string        // 기본 MiniMax-M2 (Anthropic 호환 API)
     openaiApiKey?: string
+    openaiModel?: string         // 기본 gpt-4o-mini
     geminiApiKey?: string
+    geminiModel?: string         // 기본 gemini-2.0-flash
     deepseekApiKey?: string
+    deepseekModel?: string       // 기본 deepseek-chat
     updatedAt?: any
     updatedBy?: string
 }
