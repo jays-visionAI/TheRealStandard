@@ -80,13 +80,26 @@ export default function MarketPrices() {
                 try {
                     const r = await probeEkapeRaw(op, ymd)
                     lines.push(`[${ymd}] ${op}: HTTP ${r.status} · code=${r.resultCode ?? '-'} · msg=${r.resultMsg ?? '-'} · items=${r.itemCount}`)
-                    if (!firstRaw) firstRaw = `[첫 응답 원본 — ${ymd} ${op}]\n${r.rawSnippet || '(빈 본문)'}`
+                    // 데이터가 들어있을 법한 응답(태그가 많음)이면 구조를 보여줌
+                    const dataTags = r.allTags.filter(t => !['response', 'header', 'body', 'resultCode', 'resultMsg', 'notice', 'numOfRows', 'pageNo', 'totalCount', 'items', 'item'].includes(t))
+                    if (!firstRaw || dataTags.length > 0) {
+                        firstRaw = `[응답 구조 — ${ymd} ${op}]\n전체 태그: ${r.allTags.join(', ') || '(없음)'}\n데이터 추정 태그: ${dataTags.join(', ') || '(없음)'}\n\n원본:\n${r.rawSnippet || '(빈 본문)'}`
+                    }
                     if (r.itemCount > 0) {
                         lines.push(`   ▶ 필드: ${r.firstItemFields.join(', ')}`)
                         lines.push(`   ▶ 원본: ${r.rawSnippet.replace(/\s+/g, ' ').slice(0, 500)}`)
                         setProbeOut(lines.join('\n'))
                         setProbing(false)
                         return // 첫 성공 응답에서 멈춤
+                    }
+                    // 데이터 태그가 보이면(=성공 응답인데 item이 아님) 즉시 멈추고 구조 표시
+                    if (dataTags.length > 0) {
+                        lines.push('\n→ 데이터로 보이는 태그 발견! 아래 구조 확인:')
+                        lines.push('────────────────────────────')
+                        lines.push(firstRaw)
+                        setProbeOut(lines.join('\n'))
+                        setProbing(false)
+                        return
                     }
                 } catch (e: any) {
                     lines.push(`[${ymd}] ${op}: ERROR ${e?.message}`)

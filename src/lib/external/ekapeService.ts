@@ -110,7 +110,7 @@ export async function fetchEkapeBeefGradePrices(date: string): Promise<EkapePric
  */
 export async function probeEkapeRaw(op: string, date: string): Promise<{
     url: string; status: number; resultCode?: string; resultMsg?: string;
-    itemCount: number; firstItemFields: string[]; rawSnippet: string
+    itemCount: number; firstItemFields: string[]; allTags: string[]; rawSnippet: string
 }> {
     const url = new URL(`${BASE}/${op}`, apiOrigin())
     url.searchParams.set('serviceKey', getApiKey('datagoKey'))
@@ -123,9 +123,11 @@ export async function probeEkapeRaw(op: string, date: string): Promise<{
         status = res.status
         text = await res.text()
     } catch (e: any) {
-        return { url: url.pathname, status, itemCount: 0, firstItemFields: [], rawSnippet: `FETCH ERROR: ${e?.message}` }
+        return { url: url.pathname, status, itemCount: 0, firstItemFields: [], allTags: [], rawSnippet: `FETCH ERROR: ${e?.message}` }
     }
     const items = parseItems(text)
+    // 응답에 존재하는 모든 XML 태그명을 추출 (성공 응답의 실제 구조 파악용)
+    const allTags = [...new Set([...text.matchAll(/<([a-zA-Z_][\w]*)\b/g)].map(m => m[1]))]
     return {
         url: url.pathname,
         status,
@@ -133,6 +135,7 @@ export async function probeEkapeRaw(op: string, date: string): Promise<{
         resultMsg: text.match(/<resultMsg>([^<]*)<\/resultMsg>/)?.[1],
         itemCount: items.length,
         firstItemFields: items[0] ? Object.keys(items[0]) : [],
-        rawSnippet: text.slice(0, 1200),
+        allTags,
+        rawSnippet: text.slice(0, 1500),
     }
 }
