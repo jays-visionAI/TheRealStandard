@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ingestEkapeRange } from '../../lib/marketDataService'
+import { probeEkapeRaw } from '../../lib/external/ekapeService'
 import { getSpeciesPriceTrend, SPECIES_LABEL, type MarketTrend } from '../../lib/marketInsightService'
 import { TrendingUpIcon, ChartIcon, LoaderIcon, RefreshCwIcon, CheckCircleIcon, AlertCircleIcon } from '../../components/Icons'
 
@@ -63,6 +64,38 @@ export default function MarketPrices() {
     const [loading, setLoading] = useState(true)
     const [ingesting, setIngesting] = useState(false)
     const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+    const [probing, setProbing] = useState(false)
+    const [probeOut, setProbeOut] = useState<string>('')
+
+    // 진단: 후보 operation × 최근 며칠을 직접 호출해 원본 응답을 보여줌 (필드명/구조 확정용)
+    const handleProbe = async () => {
+        setProbing(true); setProbeOut('진단 중...')
+        const ops = ['cattle', 'pigGrade', 'pigJejuGrade']
+        const lines: string[] = []
+        for (let i = 1; i <= 5; i++) {
+            const d = new Date(); d.setDate(d.getDate() - i)
+            const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+            for (const op of ops) {
+                try {
+                    const r = await probeEkapeRaw(op, ymd)
+                    lines.push(`[${ymd}] ${op}: HTTP ${r.status} · code=${r.resultCode ?? '-'} · msg=${r.resultMsg ?? '-'} · items=${r.itemCount}`)
+                    if (r.itemCount > 0) {
+                        lines.push(`   ▶ 필드: ${r.firstItemFields.join(', ')}`)
+                        lines.push(`   ▶ 원본: ${r.rawSnippet.replace(/\s+/g, ' ').slice(0, 400)}`)
+                        setProbeOut(lines.join('\n'))
+                        setProbing(false)
+                        return // 첫 성공 응답에서 멈춤
+                    }
+                } catch (e: any) {
+                    lines.push(`[${ymd}] ${op}: ERROR ${e?.message}`)
+                }
+            }
+            setProbeOut(lines.join('\n'))
+        }
+        lines.push('\n→ 모든 후보에서 item 0건. resultMsg를 확인하세요(키 미등록/파라미터 오류 가능).')
+        setProbeOut(lines.join('\n'))
+        setProbing(false)
+    }
 
     const reload = async () => {
         setLoading(true)
@@ -104,7 +137,17 @@ export default function MarketPrices() {
                 <button className="btn btn-primary" onClick={() => handleIngest(14)} disabled={ingesting}>
                     {ingesting ? <LoaderIcon className="animate-spin" size={16} /> : <RefreshCwIcon size={16} />} 최근 14일 수집
                 </button>
+                <button className="btn btn-ghost" onClick={handleProbe} disabled={probing} title="EKAPE 원본 응답을 확인합니다">
+                    {probing ? <LoaderIcon className="animate-spin" size={16} /> : '🔬'} 원본 응답 진단
+                </button>
             </div>
+
+            {probeOut && (
+                <pre style={{
+                    background: '#0F172A', color: '#A5F3FC', padding: '14px 16px', borderRadius: 12, marginBottom: 20,
+                    fontSize: 12, lineHeight: 1.6, overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+                }}>{probeOut}</pre>
+            )}
 
             {msg && (
                 <div style={{

@@ -102,3 +102,37 @@ export async function fetchEkapeDailyPrices(
 export async function fetchEkapeBeefGradePrices(date: string): Promise<EkapePriceItem[]> {
     return fetchEkapeDailyPrices(date, '1')
 }
+
+/**
+ * 진단: 특정 operation의 원본 응답을 그대로 반환 (필드명/구조/에러 확인용).
+ * @param op cattle | pigGrade | pigJejuGrade ...
+ * @param date YYYYMMDD
+ */
+export async function probeEkapeRaw(op: string, date: string): Promise<{
+    url: string; status: number; resultCode?: string; resultMsg?: string;
+    itemCount: number; firstItemFields: string[]; rawSnippet: string
+}> {
+    const url = new URL(`${BASE}/${op}`, apiOrigin())
+    url.searchParams.set('serviceKey', getApiKey('datagoKey'))
+    url.searchParams.set('startYmd', date)
+    url.searchParams.set('endYmd', date)
+    if (op.startsWith('pig')) url.searchParams.set('skinYn', 'Y')
+    let status = 0, text = ''
+    try {
+        const res = await fetch(url.toString())
+        status = res.status
+        text = await res.text()
+    } catch (e: any) {
+        return { url: url.pathname, status, itemCount: 0, firstItemFields: [], rawSnippet: `FETCH ERROR: ${e?.message}` }
+    }
+    const items = parseItems(text)
+    return {
+        url: url.pathname,
+        status,
+        resultCode: text.match(/<resultCode>([^<]*)<\/resultCode>/)?.[1],
+        resultMsg: text.match(/<resultMsg>([^<]*)<\/resultMsg>/)?.[1],
+        itemCount: items.length,
+        firstItemFields: items[0] ? Object.keys(items[0]) : [],
+        rawSnippet: text.slice(0, 1200),
+    }
+}
