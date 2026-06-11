@@ -23,6 +23,7 @@ import {
 } from '../../components/Icons'
 import { getCompanyDocuments, type FirestoreFileAttachment } from '../../lib/fileService'
 import { computeCustomerInsights, type CustomerInsightResult, type InsightKind } from '../../lib/customerInsightService'
+import { summarizeInsights } from '../../lib/aiAdvisorService'
 import './CustomerDashboard.css'
 
 export default function CustomerDashboard() {
@@ -38,6 +39,7 @@ export default function CustomerDashboard() {
     const [companyDocs, setCompanyDocs] = useState<FirestoreFileAttachment[]>([])
     const [platform, setPlatform] = useState<{ orgs: number; orders: number } | null>(null)
     const [insightResult, setInsightResult] = useState<CustomerInsightResult | null>(null)
+    const [aiSummary, setAiSummary] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -84,7 +86,12 @@ export default function CustomerDashboard() {
 
                 // 맞춤 인사이트 (주문 0건=코호트 / 이력 있음=개인화) — 실패 시 섹션 생략
                 try {
-                    setInsightResult(await computeCustomerInsights(user.id))
+                    const result = await computeCustomerInsights(user.id)
+                    setInsightResult(result)
+                    // AI 해설 (전역 LLM 설정에 활성 제공자+키가 있을 때만) — 비차단, 실패 시 생략
+                    summarizeInsights(result.mode, result.insights)
+                        .then(s => { if (s) setAiSummary(s) })
+                        .catch(() => { })
                 } catch (e) {
                     console.warn('Customer insights skipped:', e)
                 }
@@ -159,6 +166,20 @@ export default function CustomerDashboard() {
                             ? '사장님의 주문 데이터를 분석한 결과예요.'
                             : '아직 주문 이력이 없어 플랫폼 평균 데이터를 보여드려요. 주문이 쌓이면 맞춤 분석으로 바뀝니다.'}
                     </p>
+                    {aiSummary && (
+                        <div style={{
+                            display: 'flex', gap: '10px', alignItems: 'flex-start',
+                            background: 'linear-gradient(90deg, #ECFDF5 0%, #F0FDFA 100%)',
+                            border: '1px solid #A7F3D0', borderRadius: '12px',
+                            padding: '12px 16px', marginBottom: '14px',
+                        }}>
+                            <SparklesIcon size={16} color="#047857" />
+                            <div>
+                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#047857', marginBottom: '3px' }}>AI 요약</div>
+                                <p style={{ fontSize: '13px', color: '#065F46', lineHeight: 1.6, margin: 0 }}>{aiSummary}</p>
+                            </div>
+                        </div>
+                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
                         {insightResult.insights.map(ins => {
                             const tone = ins.tone === 'warning' ? '#DC2626' : ins.tone === 'action' ? '#047857' : '#1D4ED8'

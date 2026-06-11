@@ -4,7 +4,7 @@ compatibility_date = "2024-11-01"
 
 # 운영 origin 허용 목록 (필요 시 커스텀 도메인 추가)
 [vars]
-ALLOWED_ORIGINS = "https://therealstandard-1e322.web.app,https://therealstandard-1e322.firebaseapp.com,http://localhost:5173"
+ALLOWED_ORIGINS = "https://meatgo.kr,https://www.meatgo.kr,https://therealstandard-1e322.web.app,https://therealstandard-1e322.firebaseapp.com,https://therealstandard.pages.dev,http://localhost:3000,http://localhost:5173"
 
 # 비밀키는 커밋하지 말고 아래처럼 등록:
 #   wrangler secret put NAVER_CLIENT_ID
@@ -12,6 +12,8 @@ ALLOWED_ORIGINS = "https://therealstandard-1e322.web.app,https://therealstandard
 #   wrangler secret put DATAGO_KEY
 #   wrangler secret put KAMIS_KEY
 #   wrangler secret put KAMIS_ID
+#   wrangler secret put ANTHROPIC_API_KEY   (선택 — 설정 시 클라이언트 키 대신 서버측 키 사용)
+#   wrangler secret put MINIMAX_API_KEY     (선택 — 동일)
 # (향후) SOLAPI_API_KEY / SOLAPI_API_SECRET / RESEND_API_KEY / POPBILL_LINK_ID / POPBILL_SECRET_KEY
 
 # 2.1 자동 가격 동기화 일배치 — 구현 후 주석 해제 (UTC 19:00 = KST 04:00)

@@ -150,6 +150,15 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // LLM 설정 — 인증 사용자 read 허용 (고객 대시보드 AI 해설이 활성 제공자/모델을 읽음).
+    // 쓰기는 ADMIN만. ⚠️ 키가 로그인 사용자에게 읽힐 수 있음(B2B 통제계정 전제) —
+    // 강화 필요 시 Worker secret으로 이관.
+    match /system/llm-settings {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
     // ============ DOCUMENTS (레거시 문서 컬렉션 — fileAttachments 권장) ============
     match /documents/{documentId} {
       allow read: if isAuthenticated();

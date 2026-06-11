@@ -20,12 +20,18 @@ export interface Env {
     DATAGO_KEY?: string
     KAMIS_KEY?: string
     KAMIS_ID?: string
+    // LLM (선택 — secret 설정 시 클라이언트 전달 키 대신 서버측 키 사용 = 키 비노출 강화)
+    ANTHROPIC_API_KEY?: string
+    MINIMAX_API_KEY?: string
 }
 
 const UPSTREAMS: Record<string, string> = {
     '/api/datago': 'https://apis.data.go.kr',
     '/api/kamis': 'http://www.kamis.or.kr',
     '/api/naver': 'https://openapi.naver.com',
+    // LLM — 브라우저 CORS 불가 제공자를 프록시. MiniMax는 Anthropic 호환 API 사용.
+    '/api/anthropic': 'https://api.anthropic.com',
+    '/api/minimax': 'https://api.minimax.io/anthropic',
 }
 
 function corsHeaders(origin: string | null, env: Env): Record<string, string> {
@@ -39,7 +45,7 @@ function corsHeaders(origin: string | null, env: Env): Record<string, string> {
     return {
         'Access-Control-Allow-Origin': allow,
         'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type,X-Naver-Client-Id,X-Naver-Client-Secret',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Naver-Client-Id,X-Naver-Client-Secret,x-api-key,anthropic-version',
         'Access-Control-Max-Age': '86400',
         'Vary': 'Origin',
     }
@@ -80,11 +86,22 @@ export default {
 
         const headers = new Headers()
         headers.set('Accept', request.headers.get('Accept') || '*/*')
+        const ct = request.headers.get('Content-Type')
+        if (ct) headers.set('Content-Type', ct)
         if (prefix === '/api/naver') {
             const id = env.NAVER_CLIENT_ID || request.headers.get('X-Naver-Client-Id') || ''
             const secret = env.NAVER_CLIENT_SECRET || request.headers.get('X-Naver-Client-Secret') || ''
             if (id) headers.set('X-Naver-Client-Id', id)
             if (secret) headers.set('X-Naver-Client-Secret', secret)
+        }
+        if (prefix === '/api/anthropic' || prefix === '/api/minimax') {
+            // 키: Worker secret 우선(서버측 보관 강화), 없으면 클라이언트 전달값(어드민 전역 설정) 사용
+            const secretKey = prefix === '/api/anthropic' ? env.ANTHROPIC_API_KEY : env.MINIMAX_API_KEY
+            const apiKey = secretKey || request.headers.get('x-api-key') || ''
+            if (apiKey) headers.set('x-api-key', apiKey)
+            headers.set('anthropic-version', request.headers.get('anthropic-version') || '2023-06-01')
+            const auth = request.headers.get('Authorization')
+            if (auth) headers.set('Authorization', auth)
         }
 
         try {

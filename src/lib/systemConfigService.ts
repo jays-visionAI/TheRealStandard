@@ -44,3 +44,49 @@ export async function saveSystemApiKeys(keys: Partial<SystemApiKeys>, updatedBy:
         updatedBy,
     }, { merge: true })
 }
+
+// ============ LLM 설정 (system/llm-settings) — 전역 영속화 ============
+// 과거 LLMSettings 페이지는 zustand(localStorage)에만 저장해 "그 브라우저에서만" 적용되던 버그가 있었음.
+// 이 문서가 단일 진실 공급원(SSOT): 어드민이 저장하면 모든 사용자/기능에 전역 반영된다.
+// rules: read는 인증 사용자(고객 대시보드 AI 해설이 사용), write는 ADMIN만.
+
+export type LlmProvider = 'anthropic' | 'minimax' | 'openai' | 'gemini' | 'deepseek'
+
+export interface LlmSettings {
+    activeLlmProvider?: LlmProvider
+    anthropicApiKey?: string
+    anthropicModel?: string      // 기본 claude-haiku-4-5 (저가형)
+    minimaxApiKey?: string
+    minimaxModel?: string        // 기본 MiniMax-M2 (Anthropic 호환 API)
+    openaiApiKey?: string
+    geminiApiKey?: string
+    deepseekApiKey?: string
+    updatedAt?: any
+    updatedBy?: string
+}
+
+const LLM_DOC_ID = 'llm-settings'
+
+export async function getLlmSettings(): Promise<LlmSettings | null> {
+    try {
+        const snap = await getDoc(doc(db, COLLECTION, LLM_DOC_ID))
+        if (!snap.exists()) return null
+        return snap.data() as LlmSettings
+    } catch (err) {
+        console.error('Failed to load LLM settings:', err)
+        return null
+    }
+}
+
+export async function saveLlmSettings(settings: Partial<LlmSettings>, updatedBy: string): Promise<void> {
+    const ref = doc(db, COLLECTION, LLM_DOC_ID)
+    const clean: Record<string, any> = {}
+    for (const [k, v] of Object.entries(settings)) {
+        if (v !== undefined) clean[k] = v
+    }
+    await setDoc(ref, {
+        ...clean,
+        updatedAt: serverTimestamp(),
+        updatedBy,
+    }, { merge: true })
+}
