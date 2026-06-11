@@ -71,18 +71,18 @@ export async function ingestEkapeDailyPrices(dateStr: string): Promise<number> {
     return count
 }
 
-/** 특정 날짜에 EKAPE 데이터가 이미 수집됐는지 (중복 수집 방지) */
+/** 특정 날짜에 EKAPE 데이터가 이미 수집됐는지 (중복 수집 방지)
+ *  priceDate 단일 필드 범위만 사용 → 복합 인덱스 불필요. source는 클라이언트에서 확인. */
 async function hasEkapeDataForDate(priceDate: Timestamp): Promise<boolean> {
     const next = Timestamp.fromDate(new Date(priceDate.toDate().getTime() + 86400000))
     const q = query(
         ref,
-        where('source', '==', 'EKAPE'),
         where('priceDate', '>=', priceDate),
         where('priceDate', '<', next),
-        limit(1)
+        limit(20)
     )
     const snap = await getDocs(q)
-    return !snap.empty
+    return snap.docs.some(d => d.data().source === 'EKAPE')
 }
 
 /**
@@ -114,15 +114,18 @@ export async function getPriceTrend(
     const since = new Date()
     since.setDate(since.getDate() - days)
 
+    // priceDate 단일 필드 범위 + 동일 필드 orderBy → 복합 인덱스 불필요.
+    // productType 필터는 클라이언트에서 적용 (데이터량 작음).
     const q = query(
         ref,
-        where('productType', '==', productType),
         where('priceDate', '>=', Timestamp.fromDate(since)),
         orderBy('priceDate', 'asc'),
-        limit(1000)
+        limit(3000)
     )
     const snap = await getDocs(q)
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as FirestoreMarketPrice))
+    return snap.docs
+        .map(d => ({ id: d.id, ...d.data() } as FirestoreMarketPrice))
+        .filter(p => p.productType === productType)
 }
 
 /**
