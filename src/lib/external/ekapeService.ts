@@ -75,18 +75,24 @@ export async function fetchEkapeDailyPrices(
             console.warn(`EKAPE ${op} resultCode=${resultCode}: ${resultMsg}`)
             return []
         }
-        // 필드명은 오퍼레이션별로 상이 — 후보 키 매핑(키 활성화 후 실데이터로 정밀화 권장)
-        return parseItems(text).map(rec => ({
-            delDate: pick(rec, ['auctDate', 'judgeDate', 'abattDate', 'baseDate']) || date,
+        // 필드명은 오퍼레이션별로 상이 — 공식 명세 명명 규칙(gradeCode/gradeName, *Price, *Cnt, abattName) 기반 후보 매핑
+        const items = parseItems(text)
+        const mapped = items.map(rec => ({
+            delDate: pick(rec, ['auctDate', 'auctYmd', 'judgeDate', 'abattDate', 'baseDate']) || date,
             cattleClsCd: cattleType,
-            gradeCd: pick(rec, ['gradeCd', 'judgeGradeCd', 'grade', 'gradeNm', 'auctGradeNm']) || '',
-            marketCd: pick(rec, ['abattCd', 'marketCd']) || '',
-            marketName: pick(rec, ['abattNm', 'marketNm', 'abattName']) || '',
-            avgPrice: num(pick(rec, ['avgAmt', 'auctAvgAmt', 'avgPrice', 'aucAvgAmt', 'avgAuctAmt'])),
-            maxPrice: num(pick(rec, ['maxAmt', 'auctMaxAmt', 'maxPrice'])),
-            minPrice: num(pick(rec, ['minAmt', 'auctMinAmt', 'minPrice'])),
-            judgeHead: num(pick(rec, ['judgeHeadCnt', 'auctCnt', 'judgeHead', 'headCnt'])),
+            gradeCd: pick(rec, ['gradeName', 'gradeNm', 'gradeCode', 'gradeCd', 'judgeGradeCd', 'grade']) || '',
+            marketCd: pick(rec, ['abattCode', 'abattCd', 'marketCd']) || '',
+            marketName: pick(rec, ['abattName', 'abattNm', 'marketNm']) || '',
+            avgPrice: num(pick(rec, ['avgPrice', 'avgAmt', 'auctAvgAmt', 'totPrice', 'avgAuctAmt'])),
+            maxPrice: num(pick(rec, ['maxPrice', 'maxAmt', 'auctMaxAmt'])),
+            minPrice: num(pick(rec, ['minPrice', 'minAmt', 'auctMinAmt'])),
+            judgeHead: num(pick(rec, ['auctCnt', 'judgeHeadCnt', 'totCnt', 'headCnt', 'judgeHead'])),
         }))
+        // 진단: 항목은 있는데 가격 매핑이 전부 0이면 실제 태그명을 로깅 (후보 키 보강용)
+        if (items.length > 0 && mapped.every(m => m.avgPrice === 0)) {
+            console.warn(`EKAPE ${op} 가격 매핑 실패 — 실제 필드:`, Object.keys(items[0]))
+        }
+        return mapped
     } catch (err) {
         console.error('Failed to fetch EKAPE prices:', err)
         return []
