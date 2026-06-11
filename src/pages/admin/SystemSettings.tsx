@@ -24,6 +24,7 @@ export default function SystemSettings() {
     const [formData, setFormData] = useState({ ...settings })
     const [isSaving, setIsSaving] = useState(false)
     const [message, setMessage] = useState({ type: '', text: '' })
+    const [testErrors, setTestErrors] = useState<Record<string, string>>({})
     const [testResults, setTestResults] = useState<Record<string, 'idle' | 'loading' | 'success' | 'error'>>({
         datago: 'idle',
         kamis: 'idle',
@@ -87,9 +88,10 @@ export default function SystemSettings() {
             if (service === 'datago') {
                 const key = formData.datagoKey || import.meta.env.VITE_DATAGO_KEY || ''
                 if (!key) throw new Error('API 키가 입력되지 않았습니다.')
-                const today = new Date()
-                const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
-                url = `${apiOrigin()}/api/datago/B552895/getKpnPriceList/getKpnPriceList?serviceKey=${encodeURIComponent(key)}&delDate=${dateStr}&cattleClsCd=2&numOfRows=1&pageNo=1&_type=json`
+                // 실제 엔드포인트는 축평원 자체 서버(data.ekape.or.kr) — 소도체 경락가격으로 핑
+                const d = new Date(Date.now() - 24 * 60 * 60 * 1000) // 어제 (당일 데이터 미존재 대비)
+                const ymd = d.toISOString().slice(0, 10).replace(/-/g, '')
+                url = `${apiOrigin()}/api/ekape/openapi-data/service/user/grade/auct/cattle?serviceKey=${encodeURIComponent(key)}&startYmd=${ymd}&endYmd=${ymd}`
             } else if (service === 'kamis') {
                 const key = formData.kamisKey || import.meta.env.VITE_KAMIS_KEY || ''
                 const id = formData.kamisId || import.meta.env.VITE_KAMIS_ID || ''
@@ -105,12 +107,20 @@ export default function SystemSettings() {
             }
 
             const res = await fetch(url, { headers })
-            if (!res.ok) throw new Error(`HTTP ${res.status}`)
-            await res.json()
+            const text = await res.text()
+            // data.go.kr/축평원은 인증 오류도 HTTP 200 + XML로 반환 → 본문에서 사유 추출
+            const xmlMsg = text.match(/<resultMsg>([^<]*)<\/resultMsg>/)?.[1]
+                || text.match(/<returnAuthMsg>([^<]*)<\/returnAuthMsg>/)?.[1]
+            const xmlCode = text.match(/<resultCode>([^<]*)<\/resultCode>/)?.[1]
+            if (xmlCode && xmlCode !== '00') throw new Error(xmlMsg || `resultCode ${xmlCode}`)
+            if (!res.ok) throw new Error(xmlMsg || `HTTP ${res.status}`)
+            if (service !== 'datago') JSON.parse(text) // JSON 응답 서비스 검증
             setTestResults(prev => ({ ...prev, [service]: 'success' }))
-        } catch (err) {
+            setTestErrors(prev => ({ ...prev, [service]: '' }))
+        } catch (err: any) {
             console.error(`${service} test failed:`, err)
             setTestResults(prev => ({ ...prev, [service]: 'error' }))
+            setTestErrors(prev => ({ ...prev, [service]: err?.message || '알 수 없는 오류' }))
         }
     }
 
@@ -118,7 +128,11 @@ export default function SystemSettings() {
         const status = testResults[service]
         if (status === 'loading') return <span className="test-badge loading">테스트 중...</span>
         if (status === 'success') return <span className="test-badge success"><CheckCircleIcon size={12} /> 연결 성공</span>
-        if (status === 'error') return <span className="test-badge error"><AlertTriangleIcon size={12} /> 연결 실패</span>
+        if (status === 'error') return (
+            <span className="test-badge error" title={testErrors[service]}>
+                <AlertTriangleIcon size={12} /> 연결 실패{testErrors[service] ? ` — ${testErrors[service]}` : ''}
+            </span>
+        )
         return null
     }
 
@@ -217,7 +231,7 @@ export default function SystemSettings() {
                     </div>
                     <div className="card-body">
                         <div className="form-group">
-                            <label>API 인증키 (Encoding)</label>
+                            <label>API 인증키 (Decoding — 일반 인증키)</label>
                             <input
                                 type="password"
                                 value={formData.datagoKey || ''}

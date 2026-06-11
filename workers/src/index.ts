@@ -27,6 +27,7 @@ export interface Env {
 
 const UPSTREAMS: Record<string, string> = {
     '/api/datago': 'https://apis.data.go.kr',
+    '/api/ekape': 'http://data.ekape.or.kr',     // 축평원 자체 서버 (경락가격 실제 엔드포인트)
     '/api/kamis': 'http://www.kamis.or.kr',
     '/api/naver': 'https://openapi.naver.com',
     // LLM — 브라우저 CORS 불가 제공자를 프록시. MiniMax는 Anthropic 호환 API 사용.

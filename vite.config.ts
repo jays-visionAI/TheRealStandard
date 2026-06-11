@@ -19,6 +19,11 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api\/datago/, ''),
             },
+            '/api/ekape': {
+                target: 'http://data.ekape.or.kr',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api\/ekape/, ''),
+            },
             '/api/kamis': {
                 target: 'http://www.kamis.or.kr',
                 changeOrigin: true,
