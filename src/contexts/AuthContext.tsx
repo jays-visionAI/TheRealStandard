@@ -38,6 +38,7 @@ interface AuthContextType {
     isWarehouse: boolean
     isAccounting: boolean
     updateUserPassword: (newPassword: string) => Promise<void>
+    refreshUser: () => Promise<void>
     signup: (email: string, password: string, name: string, businessData?: BusinessProfile) => Promise<User>
 }
 
@@ -345,6 +346,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }
 
+    // Firestore의 사용자 문서를 다시 읽어 컨텍스트를 갱신한다.
+    // 프로필 저장 등으로 users 문서가 바뀐 직후, 전체 페이지 리로드 없이
+    // ProtectedRoute 가드(business/mustChangePassword 판정)가 최신 상태를 보게 한다.
+    const refreshUser = async () => {
+        const fbUser = auth.currentUser
+        if (!fbUser?.email) return
+        try {
+            const firestoreUser = await getUserById(fbUser.uid)
+            if (!firestoreUser) return
+            const isAdminEmail = ADMIN_EMAILS.includes(fbUser.email.toLowerCase())
+            setUser({
+                id: firestoreUser.id,
+                email: firestoreUser.email,
+                name: firestoreUser.business?.companyName || firestoreUser.name,
+                role: (isAdminEmail ? 'ADMIN' : firestoreUser.role) as UserRole,
+                firebaseUid: fbUser.uid,
+                business: firestoreUser.business,
+                mustChangePassword: firestoreUser.mustChangePassword
+            })
+        } catch (err) {
+            console.error('refreshUser failed:', err)
+        }
+    }
+
     const signup: AuthContextType['signup'] = async (email, password, name, businessData) => {
         const normalizedEmail = email.toLowerCase().trim()
         try {
@@ -430,6 +455,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 isWarehouse,
                 isAccounting,
                 updateUserPassword,
+                refreshUser,
                 signup,
             }}
         >

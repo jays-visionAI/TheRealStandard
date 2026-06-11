@@ -20,12 +20,14 @@ import { getFilesByRelated, deleteFile, type FirestoreFileAttachment } from '../
 import './ProfileSetup.css'
 
 export default function ProfileSetup() {
-    const { user, updateUserPassword } = useAuth()
+    const { user, updateUserPassword, refreshUser } = useAuth()
     const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isPasswordChanging, setIsPasswordChanging] = useState(false)
-    const [isOnboarding, setIsOnboarding] = useState(false)
+    // 온보딩 판정은 ProtectedRoute 가드와 동일한 기준(컨텍스트)을 사용한다.
+    // (가드: mustChangePassword || !business.companyName → 모든 메뉴를 이 화면으로 강제)
+    const isOnboarding = !!user?.mustChangePassword || !user?.business?.companyName
     const [bizRegFiles, setBizRegFiles] = useState<FirestoreFileAttachment[]>([])
     const [companyProfileFiles, setCompanyProfileFiles] = useState<FirestoreFileAttachment[]>([])
 
@@ -53,9 +55,6 @@ export default function ProfileSetup() {
                 const userData = await getUserById(user.id)
                 if (userData?.business) {
                     setFormData(userData.business)
-                    setIsOnboarding(false)
-                } else {
-                    setIsOnboarding(true)
                 }
             } catch (err) {
                 console.error('Failed to load profile:', err)
@@ -88,10 +87,10 @@ export default function ProfileSetup() {
                 status: 'ACTIVE'
             })
 
-            // 성공 후 대시보드로 이동
+            // 컨텍스트 갱신 → ProtectedRoute 가드가 최신 business를 보고 메뉴를 풀어줌
+            await refreshUser()
             alert('비즈니스 프로필이 저장되었습니다.')
-            // AuthContext 상태 갱신을 위해 전체 페이지 리로드
-            window.location.href = '/order/dashboard'
+            navigate('/order/dashboard')
         } catch (err) {
             console.error('Save failed:', err)
             alert('저장에 실패했습니다. 다시 시도해주세요.')
@@ -122,11 +121,11 @@ export default function ProfileSetup() {
                     console.warn('mustChangePassword flag clear failed:', e)
                 }
             }
+            // 컨텍스트 갱신 → mustChangePassword 강제 리디렉션 해제
+            await refreshUser()
             alert('비밀번호가 성공적으로 변경되었습니다.')
             setNewPassword('')
             setConfirmPassword('')
-            // 강제 리디렉션 해제를 위해 페이지 리로드 (AuthContext가 새 user 상태 가져옴)
-            window.location.href = '/'
         } catch (err: any) {
             alert(err.message)
             if (err.message.includes('다시 로그인')) {
@@ -141,6 +140,21 @@ export default function ProfileSetup() {
 
     return (
         <div className="profile-setup-container">
+            {/* 온보딩 가드 안내 — 왜 다른 메뉴가 안 열리는지 명확히 */}
+            {isOnboarding && (
+                <div style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '10px',
+                    maxWidth: '860px', margin: '0 auto 16px',
+                    background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: '12px',
+                    padding: '14px 18px', fontSize: '14px', color: '#92400E', lineHeight: 1.6,
+                }}>
+                    <LockIcon size={18} />
+                    <span>
+                        <strong>사업자 정보를 먼저 완성해주세요.</strong><br />
+                        거래 시작에 필요한 기본 정보입니다. 저장을 완료하면 대시보드·발주·정산 등 모든 메뉴가 열립니다.
+                    </span>
+                </div>
+            )}
             <div className="profile-setup-card glass-card animate-fade-in">
                 <div className="setup-header">
                     <div className="brand-badge">MEATGO Partner</div>
@@ -350,14 +364,17 @@ export default function ProfileSetup() {
                     )}
 
                     <div className="setup-footer">
-                        <button
-                            type="button"
-                            className="btn btn-ghost"
-                            onClick={() => navigate(-1)}
-                            disabled={isSubmitting}
-                        >
-                            취소
-                        </button>
+                        {/* 온보딩 중엔 취소 불가 — 가드가 다시 이 화면으로 돌려보냄 */}
+                        {!isOnboarding && (
+                            <button
+                                type="button"
+                                className="btn btn-ghost"
+                                onClick={() => navigate(-1)}
+                                disabled={isSubmitting}
+                            >
+                                취소
+                            </button>
+                        )}
                         <button type="submit" className="btn btn-primary btn-lg" disabled={isSubmitting}>
                             {isSubmitting ? '저장 중...' : (isOnboarding ? '프로필 완성 및 시작하기' : '수정 완료')}
                             {!isSubmitting && <ArrowRightIcon size={18} />}

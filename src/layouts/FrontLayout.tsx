@@ -52,6 +52,11 @@ export default function FrontLayout() {
 
     const menus = getMenus()
 
+    // 온보딩 미완성(ProtectedRoute 가드와 동일 기준) — 메뉴를 잠그고 이유를 안내
+    const isOnboarding = !!user
+        && ['CUSTOMER', 'SUPPLIER', '3PL'].includes(user.role)
+        && (!!user.mustChangePassword || !user.business?.companyName)
+
     return (
         <div className="front-layout-v2">
             {/* Sidebar - Only shown for logged in users with an organization */}
@@ -62,10 +67,22 @@ export default function FrontLayout() {
                     </div>
 
                     <nav className="sidebar-nav">
+                        {isOnboarding && (
+                            <div style={{
+                                margin: '0 12px 10px', padding: '10px 12px',
+                                background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: '10px',
+                                fontSize: '12px', color: '#92400E', lineHeight: 1.5, fontWeight: 600,
+                            }}>
+                                사업자 정보를 완성하면<br />모든 메뉴가 열립니다.
+                            </div>
+                        )}
                         {menus.map((menu) => (
                             <Link
                                 key={menu.path}
                                 to={menu.path}
+                                onClick={(e) => { if (isOnboarding) e.preventDefault() }}
+                                title={isOnboarding ? '사업자 정보 완성 후 이용할 수 있습니다' : undefined}
+                                style={isOnboarding ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
                                 className={`nav-item ${location.pathname === menu.path ? 'active' : ''}`}
                             >
                                 <span className="nav-icon">{menu.icon}</span>
