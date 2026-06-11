@@ -72,6 +72,7 @@ export default function MarketPrices() {
         setProbing(true); setProbeOut('진단 중...')
         const ops = ['cattle', 'pigGrade', 'pigJejuGrade']
         const lines: string[] = []
+        let firstRaw = '' // 첫 호출의 원본 본문을 항상 보여줌 (응답 구조 확인용)
         for (let i = 1; i <= 5; i++) {
             const d = new Date(); d.setDate(d.getDate() - i)
             const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
@@ -79,20 +80,24 @@ export default function MarketPrices() {
                 try {
                     const r = await probeEkapeRaw(op, ymd)
                     lines.push(`[${ymd}] ${op}: HTTP ${r.status} · code=${r.resultCode ?? '-'} · msg=${r.resultMsg ?? '-'} · items=${r.itemCount}`)
+                    if (!firstRaw) firstRaw = `[첫 응답 원본 — ${ymd} ${op}]\n${r.rawSnippet || '(빈 본문)'}`
                     if (r.itemCount > 0) {
                         lines.push(`   ▶ 필드: ${r.firstItemFields.join(', ')}`)
-                        lines.push(`   ▶ 원본: ${r.rawSnippet.replace(/\s+/g, ' ').slice(0, 400)}`)
+                        lines.push(`   ▶ 원본: ${r.rawSnippet.replace(/\s+/g, ' ').slice(0, 500)}`)
                         setProbeOut(lines.join('\n'))
                         setProbing(false)
                         return // 첫 성공 응답에서 멈춤
                     }
                 } catch (e: any) {
                     lines.push(`[${ymd}] ${op}: ERROR ${e?.message}`)
+                    if (!firstRaw) firstRaw = `ERROR: ${e?.message}`
                 }
             }
             setProbeOut(lines.join('\n'))
         }
-        lines.push('\n→ 모든 후보에서 item 0건. resultMsg를 확인하세요(키 미등록/파라미터 오류 가능).')
+        lines.push('\n→ 모든 후보에서 item 0건. 아래 원본 본문을 확인하세요:')
+        lines.push('────────────────────────────')
+        lines.push(firstRaw)
         setProbeOut(lines.join('\n'))
         setProbing(false)
     }
