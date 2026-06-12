@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "seed:images": "node scripts/seed_product_images.mjs"
+    "seed:images": "node scripts/seed_product_images.mjs",
+    "deploy": "npm run build && npm run deploy:pages",
+    "deploy:pages": "cd workers && npx wrangler pages deploy ../dist --project-name=therealstandard --branch=main --commit-dirty=true",
+    "deploy:firebase": "npx firebase deploy --only hosting",
+    "deploy:all": "npm run build && npm run deploy:pages && npm run deploy:firebase"
   },
   "keywords": [
     "meat-distribution",
