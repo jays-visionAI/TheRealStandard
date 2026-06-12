@@ -82,8 +82,10 @@ service cloud.firestore {
         isGuestOrderSheet(request.resource.data.orderSheetId);
       allow update: if isAuthenticated() ||
         isGuestOrderSheet(resource.data.orderSheetId);
-      // 삭제: 내부 직원
-      allow delete: if isStaff();
+      // 삭제: 인증 사용자 또는 게스트 발주 (고객이 주문 제출 시 setOrderSheetItems가
+      // 기존 품목을 삭제→재생성하므로 create/update와 동일 권한 필요)
+      allow delete: if isAuthenticated() ||
+        isGuestOrderSheet(resource.data.orderSheetId);
     }
 
     // ============ SALES ORDERS (확정주문) ============

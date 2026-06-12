@@ -88,17 +88,16 @@ export async function getNotificationsForUser(
     userRole: string,
     limitCount = 50
 ): Promise<FirestoreNotification[]> {
+    // 단일 필드 where만 사용 → 복합 인덱스 불필요. 정렬은 아래에서 클라이언트로 처리.
     const q1 = query(
         notifRef,
         where('recipientUserId', '==', userId),
-        orderBy('createdAt', 'desc'),
         limit(limitCount)
     )
 
     const q2 = query(
         notifRef,
         where('recipientRoles', 'array-contains', userRole),
-        orderBy('createdAt', 'desc'),
         limit(limitCount)
     )
 
