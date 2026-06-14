@@ -133,6 +133,11 @@ export const menuConfig: MenuItem[] = [
                 path: '/admin/insights/market-prices',
                 roles: ['ADMIN', 'OPS', 'PURCHASE'],
             },
+            {
+                label: '매출 일괄입력',
+                path: '/admin/insights/sales-import',
+                roles: ['ADMIN', 'OPS', 'SALES'],
+            },
         ],
     },
     {

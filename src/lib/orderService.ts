@@ -207,6 +207,7 @@ export interface FirestoreSalesOrderItem {
     salesOrderId: string
     productId: string
     productName: string
+    productCode?: string  // 외부 시스템(엑셀) 제품코드
     qtyKg: number
     qtyBox?: number
     boxWeight?: number // kg per box

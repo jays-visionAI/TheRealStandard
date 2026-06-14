@@ -76,6 +76,7 @@ import LeadInbox from './pages/admin/LeadInbox'
 import SupplierApplicationInbox from './pages/admin/SupplierApplicationInbox'
 import CustomerProfitability from './pages/admin/CustomerProfitability'
 import MarketPrices from './pages/admin/MarketPrices'
+import SalesImport from './pages/admin/SalesImport'
 import SalesGuide from './pages/admin/SalesGuide'
 import OrderTemplates from './pages/admin/OrderTemplates'
 import PriceListGuestView from './pages/front/PriceListGuestView'
@@ -207,6 +208,7 @@ function App() {
                         <Route path="supplier-applications" element={<SupplierApplicationInbox />} />
                         <Route path="insights/customer-profitability" element={<CustomerProfitability />} />
                         <Route path="insights/market-prices" element={<MarketPrices />} />
+                        <Route path="insights/sales-import" element={<SalesImport />} />
                         <Route path="help/sales-guide" element={<SalesGuide />} />
                         <Route path="order-templates" element={<OrderTemplates />} />
                         <Route path="users/list" element={<UserManagement />} />
